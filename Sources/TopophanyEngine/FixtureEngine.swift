@@ -291,6 +291,11 @@ extension FixtureEngine {
     /// replayed from `origin`: every frame due by then received when it was
     /// due, then the reader rules applied at that moment.
     public static func reading(_ scenario: Scenario, request: Request, origin: Date, after: TimeInterval) -> Reading {
+        policy(scenario, request: request, origin: origin, after: after).evaluate(at: origin.addingTimeInterval(after))
+    }
+
+    /// A reader that has received the fixture's frames up to `after`.
+    public static func policy(_ scenario: Scenario, request: Request, origin: Date, after: TimeInterval) -> ReaderPolicy {
         let now = origin.addingTimeInterval(after)
         var policy = ReaderPolicy()
         policy.sourceStarted()
@@ -298,6 +303,6 @@ extension FixtureEngine {
             policy.receive(frame, line: line, at: at)
             if frame.lifecycle == .stopped { policy.sourceEnded(at: at) }
         }
-        return policy.evaluate(at: now)
+        return policy
     }
 }
