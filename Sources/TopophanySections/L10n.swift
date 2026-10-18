@@ -12,8 +12,18 @@ public enum L10n {
         forced.withLock { $0 = localization }
     }
 
+    /// A localization for one task and what it calls, ahead of the forced
+    /// one: tests in other languages run beside tests in English.
+    @TaskLocal public static var scoped: String?
+
+    public static func with<T>(_ localization: String, _ body: () throws -> T) rethrows -> T {
+        try $scoped.withValue(localization, operation: body)
+    }
+
+    private static var chosen: String? { scoped ?? forced.withLock { $0 } }
+
     public static var localization: String {
-        forced.withLock { $0 } ?? Bundle.module.preferredLocalizations.first ?? "en"
+        chosen ?? Bundle.module.preferredLocalizations.first ?? "en"
     }
 
     /// The language to ask `topo preview` for: `en`, `ja` or `zh`.
@@ -28,7 +38,7 @@ public enum L10n {
 
     /// `base`, or its forced localization's sub-bundle.
     public static func bundle(for base: Bundle) -> Bundle {
-        guard let l = forced.withLock({ $0 }),
+        guard let l = chosen,
               let path = base.path(forResource: l, ofType: "lproj"),
               let b = Bundle(path: path) else { return base }
         return b

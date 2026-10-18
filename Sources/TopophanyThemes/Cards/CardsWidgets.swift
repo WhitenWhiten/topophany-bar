@@ -431,15 +431,39 @@ struct WidgetMeter: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(label).font(t.font(10.5)).foregroundStyle(p.l2).frame(width: 30, alignment: .leading)
+            labelText.frame(minWidth: 30, alignment: .leading)
             Meter(percent: meter.percent, limit: meter.limit, palette: p)
-            Text(meter.percent.map { Words.percent($0, digits: 0) } ?? "—")
-                .font(t.mono(11, .semibold)).foregroundStyle(meter.percent == nil ? p.l3 : p.l1)
-                .frame(width: 32, alignment: .trailing)
+            valueText
         }
         .lineLimit(1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(meter.percent.map { "\(label) \(Words.percent($0, digits: 0))" } ?? "\(label) \(tr("unknown"))"))
+        .accessibilityLabel(spoken)
+    }
+
+    /// As a row of a Grid of meters.
+    var row: some View {
+        GridRow {
+            labelText.frame(minWidth: 30, alignment: .leading)
+            Meter(percent: meter.percent, limit: meter.limit, palette: p)
+            valueText
+        }
+        .lineLimit(1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
+    }
+
+    var labelText: some View {
+        Text(label).font(t.font(10.5)).foregroundStyle(p.l2).fixedSize()
+    }
+
+    var valueText: some View {
+        Text(meter.percent.map { Words.percent($0, digits: 0) } ?? "—")
+            .font(t.mono(11, .semibold)).foregroundStyle(meter.percent == nil ? p.l3 : p.l1)
+            .frame(width: 32, alignment: .trailing)
+    }
+
+    var spoken: Text {
+        Text(meter.percent.map { "\(label) \(Words.percent($0, digits: 0))" } ?? "\(label) \(tr("unknown"))")
     }
 }
 
@@ -465,10 +489,11 @@ struct WidgetServerCard: View {
                 }
             }
             .accessibilityElement(children: .combine)
-            VStack(spacing: 8) {
-                WidgetMeter(label: tr("CPU"), meter: card.cpu, p: p, t: t)
-                WidgetMeter(label: tr("Mem"), meter: card.memory, p: p, t: t)
-                WidgetMeter(label: tr("Disk"), meter: card.disk, p: p, t: t)
+            // One grid, so the label column fits the longest label.
+            Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 8) {
+                WidgetMeter(label: tr("CPU"), meter: card.cpu, p: p, t: t).row
+                WidgetMeter(label: tr("Mem"), meter: card.memory, p: p, t: t).row
+                WidgetMeter(label: tr("Disk"), meter: card.disk, p: p, t: t).row
             }
             .padding(.top, 13).padding(.bottom, 10)
             Spacer(minLength: 0)

@@ -156,6 +156,9 @@ public struct CellCanvas: View {
     static func drawText(_ ctx: inout GraphicsContext, _ s: String, x: Double, y: Double, color: RGBA, bold: Bool,
                          metrics m: CellMetrics) {
         let font = font(m, bold: bold)
+        // Wide characters come from a fallback font about one em wide; a
+        // little larger, they fill their two cells as a terminal's do.
+        let wide = Font.system(size: m.fontSize * 1.1, weight: bold ? .bold : .regular, design: .monospaced)
         let mid = y + m.line / 2
         var col = 0
         var run = ""
@@ -174,7 +177,7 @@ public struct CellCanvas: View {
             } else {
                 flush()
                 if ch != " " {
-                    let t = Text(verbatim: String(ch)).font(font).foregroundColor(Color(color))
+                    let t = Text(verbatim: String(ch)).font(w == 2 ? wide : font).foregroundColor(Color(color))
                     ctx.draw(t, at: CGPoint(x: x + (Double(col) + Double(w) / 2) * m.cell, y: mid), anchor: .center)
                 }
             }

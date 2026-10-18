@@ -68,10 +68,11 @@ struct CellsBodies {
             let left: [Seg] = s.isBlind
                 ? [.glyph(.flag, p.faint), .t(" ", p.text), .t(tr("incidents not known"), p.faint)]
                 : [.glyph(.flag, inc > 0 ? p.down : p.faint), .t(" ", p.text), .t("\(inc)", inc > 0 ? p.text : p.faint, bold: inc > 0),
-                   .t(tr(" incidents"), p.muted)]
+                   .t(inc == 1 ? tr(" incident") : tr(" incidents"), p.muted)]
             var right: [Seg] = []
             if let live = s.observersLive, let all = s.observersAll, !s.isBlind {
-                right = [.glyph(.target, p.accent2), .t(" ", p.text), .t("\(live)/\(all)", p.text, bold: true), .t(tr(" observers live"), p.muted)]
+                right = [.glyph(.target, p.accent2), .t(" ", p.text), .t("\(live)/\(all)", p.text, bold: true),
+                         .t(all == 1 ? tr(" observer live") : tr(" observers live"), p.muted)]
             }
             w.line(left, right)
         }
