@@ -218,4 +218,51 @@ import Testing
         p.receive(f, at: c.now())
         #expect(p.evaluate(at: c.now()).availability == .unsupported)
     }
+
+    @Test func serverCardsKeepTheirNestedDeadlines() throws {
+        let c = clock
+        let g = c.now()
+        let card = ServerCard(
+            id: "oracle-ny", name: "Oracle New York", kind: "host", provider: "Oracle", place: "New York", health: .up, note: "",
+            resources: [.init(check: "oracle-ny-host", observer: "ny-oracle", health: .up, freshness: "fresh", sampledAt: g,
+                              validUntil: g.addingTimeInterval(5),
+                              cpu: .init(percent: 26.3, limit: 90, logical: 8),
+                              memory: .init(percent: 46.2, limit: 90, usedBytes: 1, totalBytes: 2),
+                              disk: .init(percent: 58.4, limit: 90, path: "/", usedBytes: 1, totalBytes: 2),
+                              process: .init(name: "caddy", matching: 1))],
+            services: [],
+            observes: [ObserverVerdict(id: "ny-oracle", name: "New York Oracle", health: .up, state: .clear, live: true,
+                                       lastSeen: g, counts: HealthCounts(up: 9, warning: 0, down: 0, unknown: 0)),
+                       ObserverVerdict(id: "late", name: "Late", health: .up, state: .clear, live: true, lastSeen: g,
+                                       counts: HealthCounts(up: 2, warning: 1, down: 0, unknown: 0))])
+        var withDeadline = card
+        withDeadline.observes[1].validUntil = g.addingTimeInterval(8)
+        let row = Row(id: "server-1", metric: "server.card", value: .serverCard(withDeadline), health: .up, validUntil: g.addingTimeInterval(15))
+        var p = ReaderPolicy()
+        p.receive(frame(at: g, rows: [row]), at: g)
+
+        guard case .serverCard(let fresh) = p.evaluate(at: g.addingTimeInterval(4)).row("server-1")?.value else { Issue.record("no card"); return }
+        #expect(fresh.resources[0].cpu?.percent == 26.3)
+
+        let r = p.evaluate(at: g.addingTimeInterval(8))
+        #expect(r.row("server-1")?.isCurrent == true, "a nested deadline never expires the card")
+        guard case .serverCard(let late) = r.row("server-1")?.value else { Issue.record("no card"); return }
+        let res = late.resources[0]
+        #expect(res.cpu?.percent == nil)
+        #expect(res.cpu?.limit == nil)
+        #expect(res.memory?.percent == nil)
+        #expect(res.disk?.path == "/")
+        #expect(res.disk?.percent == nil)
+        #expect(res.process?.name == "caddy")
+        #expect(res.process?.matching == nil)
+        #expect(res.health == .unknown)
+        #expect(res.freshness == "stale")
+        #expect(res.sampledAt == g)
+        // Observers without a deadline of their own rely on the row's.
+        #expect(late.observes[0].health == .up)
+        #expect(late.observes[1].state == .cached)
+        #expect(late.observes[1].live == false)
+        #expect(late.observes[1].counts == HealthCounts(up: 0, warning: 0, down: 0, unknown: 3))
+        #expect(late.observes[1].lastSeen == g)
+    }
 }

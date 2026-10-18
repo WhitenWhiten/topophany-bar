@@ -114,8 +114,11 @@ public struct ObserverVerdict: Sendable, Hashable, Decodable, Identifiable {
     public var live: Bool?
     public var lastSeen: Date?
     public var counts: HealthCounts?
+    /// The deadline of the checks and heartbeat behind this verdict, where
+    /// `topo` states one (a server card's `observes`).
+    public var validUntil: Date?
 
-    enum CodingKeys: String, CodingKey { case id, name, node, health, state, live, lastSeen = "last_seen", counts }
+    enum CodingKeys: String, CodingKey { case id, name, node, health, state, live, lastSeen = "last_seen", counts, validUntil = "valid_until" }
 
     public init(id: String, name: String, node: String = "", health: Health, state: VerdictState?, live: Bool?,
                 lastSeen: Date?, counts: HealthCounts?) {
@@ -139,6 +142,7 @@ public struct ObserverVerdict: Sendable, Hashable, Decodable, Identifiable {
         live = try? c.decodeIfPresent(Bool.self, forKey: .live)
         lastSeen = c.timestamp(.lastSeen)
         counts = try? c.decodeIfPresent(HealthCounts.self, forKey: .counts)
+        validUntil = c.timestamp(.validUntil)
     }
 }
 
@@ -425,6 +429,43 @@ public struct ServerCard: Sendable, Hashable, Decodable, Identifiable {
             self.name = name
             self.matching = matching
         }
+    }
+}
+
+extension ServerCard {
+    /// The card with each resource's and nested observer's own deadline
+    /// applied at `now` (PROTOCOL.md §3.3): past it, a resource keeps its
+    /// identity and times but none of its numbers, and an observer keeps its
+    /// identity and `last_seen` with everything it counted moved to unknown.
+    /// A nested deadline never expires the whole card.
+    public func applyingDeadlines(at now: Date, tolerance: TimeInterval) -> ServerCard {
+        var c = self
+        let horizon = now.addingTimeInterval(tolerance)
+        func lapsed(_ d: Date?) -> Bool { d.map { now >= $0 || $0 > horizon } ?? false }
+        c.resources = resources.map { r in
+            guard lapsed(r.validUntil) || (r.sampledAt.map { $0 > horizon } ?? false) else { return r }
+            var x = r
+            x.health = .unknown
+            if x.freshness == "fresh" { x.freshness = "stale" }
+            x.cpu = r.cpu.map { _ in CPU(percent: nil, limit: nil, logical: nil) }
+            x.memory = r.memory.map { m in Memory(percent: nil, limit: nil, usedBytes: nil, totalBytes: nil, basis: m.basis) }
+            x.disk = r.disk.map { d in Disk(percent: nil, limit: nil, path: d.path, usedBytes: nil, totalBytes: nil) }
+            x.process = r.process.map { ProcessMatch(name: $0.name, matching: nil) }
+            return x
+        }
+        c.observes = observes.map { o in
+            guard lapsed(o.validUntil) else { return o }
+            var x = o
+            x.state = .cached
+            x.health = .unknown
+            x.live = false
+            if let k = o.counts {
+                let all = (k.up ?? 0) + (k.warning ?? 0) + (k.down ?? 0) + (k.unknown ?? 0)
+                x.counts = HealthCounts(up: 0, warning: 0, down: 0, unknown: all)
+            }
+            return x
+        }
+        return c
     }
 }
 

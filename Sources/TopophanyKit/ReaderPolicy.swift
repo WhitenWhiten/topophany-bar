@@ -37,6 +37,9 @@ public struct ReaderPolicy: Sendable {
     public private(set) var errorRequestID: String?
     /// The last verdict that was current when it arrived, kept as history.
     public private(set) var lastKnown: LastKnown?
+    /// Each row's last value, by row ID, metric and node. Shown only as
+    /// history: names with every health withheld.
+    public private(set) var lastValues: [String: Row] = [:]
 
     public init() {}
 
@@ -70,6 +73,9 @@ public struct ReaderPolicy: Sendable {
             frame = incoming
             self.line = line
             receivedAt = now
+            for row in incoming.rows where row.value.isKnown {
+                lastValues[Self.key(row)] = row
+            }
             error = nil
             errorRequestID = nil
             source = .open
@@ -96,9 +102,13 @@ public struct ReaderPolicy: Sendable {
                 rows.append(Self.read(row, availability: availability, at: now))
             }
         }
-        return Reading(now: now, availability: availability, frame: frame, receivedAt: receivedAt, rows: rows,
-                       error: error, errorRequestID: errorRequestID, lastKnown: lastKnown)
+        var r = Reading(now: now, availability: availability, frame: frame, receivedAt: receivedAt, rows: rows,
+                        error: error, errorRequestID: errorRequestID, lastKnown: lastKnown)
+        r.lastValues = lastValues
+        return r
     }
+
+    static func key(_ row: Row) -> String { "\(row.id)|\(row.metric)|\(row.select?.node ?? "")" }
 
     func availability(at now: Date) -> Reading.Availability {
         switch source {
@@ -122,6 +132,11 @@ public struct ReaderPolicy: Sendable {
         let horizon = now.addingTimeInterval(futureTolerance)
         if until > horizon || (row.sampledAt.map { $0 > horizon } ?? false) {
             return RowReading(row: row, status: .withheld(.implausible))
+        }
+        // A server card's resources and observers keep their own deadlines,
+        // even while the row is current; a renewed lease never renews them.
+        if case .serverCard(let c) = row.value {
+            return RowReading(row: row, status: .current, current: .serverCard(c.applyingDeadlines(at: now, tolerance: futureTolerance)))
         }
         return RowReading(row: row, status: .current)
     }
@@ -194,9 +209,18 @@ public struct Reading: Sendable {
         self.lastKnown = lastKnown
     }
 
+    /// Rows' last values, for history only.
+    public var lastValues: [String: Row] = [:]
+
     public var isLive: Bool { availability == .live }
 
     public func row(_ id: String) -> RowReading? { rows.first { $0.row.id == id } }
+
+    /// A row's value when current, else its last value, as history.
+    public func lastValue(of row: RowReading) -> RowValue {
+        if row.row.value.isKnown { return row.row.value }
+        return lastValues[ReaderPolicy.key(row.row)]?.value ?? .none
+    }
 }
 
 public struct RowReading: Sendable, Hashable {
@@ -218,14 +242,17 @@ public struct RowReading: Sendable, Hashable {
 
     public var row: Row
     public var status: Status
+    private var current: RowValue?
 
-    public init(row: Row, status: Status) {
+    public init(row: Row, status: Status, current: RowValue? = nil) {
         self.row = row
         self.status = status
+        self.current = current
     }
 
     public var isCurrent: Bool { status == .current }
 
-    /// The value, only while it is current.
-    public var value: RowValue { isCurrent ? row.value : .none }
+    /// The value, only while it is current, with any nested deadlines
+    /// applied.
+    public var value: RowValue { isCurrent ? current ?? row.value : .none }
 }
