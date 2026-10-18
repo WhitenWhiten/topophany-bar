@@ -199,14 +199,64 @@ func config(_ path: String, backoff: TimeInterval = 0.2) -> ProcessEngine.Config
         // Another scenario, applied without a restart.
         try await engine.update(preview("it-2", scenario: 1, limit: 5))
         #expect(await rec.wait(timeout: 20) { frames($0).contains { $0.requestID == "it-2" } })
-        // A refused line leaves the previous request running.
-        try await engine.update(preview("it-3", limit: 99))
+        // A refused line leaves the previous request running. The compiler
+        // never writes a limit over 20, so set it by hand.
+        var refused = preview("it-3")
+        refused.template.rows = refused.template.rows.map { var r = $0; if r.metric == "attention.list" { r.limit = 99 }; return r }
+        try await engine.update(refused)
         #expect(await rec.wait(timeout: 20) { frames($0).contains { $0.requestID == "it-3" && $0.lifecycle == .error } })
+        let afterRefusal = rec.frames.count
+        #expect(await rec.wait(timeout: 20) { frames($0).dropFirst(afterRefusal).contains { $0.requestID == "it-2" && $0.lifecycle == .running } })
 
         await engine.stop()
         await rec.finished()
         #expect(rec.frames.last?.lifecycle == .stopped)
         #expect(!rec.statuses.contains { if case .restarting = $0 { true } else { false } })
+    }
+}
+
+/// Every preview scenario, in every language, with every section and a
+/// node that doesn't exist: each row decodes to its metric's shape.
+@Suite(.serialized, .enabled(if: Integration.topo != nil)) struct PreviewScenarioTests {
+    @Test func everyScenarioDecodes() async throws {
+        var s = Settings()
+        s.topo.source = "preview"
+        s.sections.setEnabled(.servers, true)
+        s.sections.serverNodes = ["relay", "app", "jp-openlist", "no-such-node"]
+        s.sections.mac.mode = .server
+        s.sections.mac.node = "mac"
+        let engine = ProcessEngine(configuration: config(Integration.topo!))
+        var first = TemplateCompiler().request(for: s, revision: 0)
+        first.requestID = "scenario-start"
+        let rec = Recorder(engine.start(first))
+        for lang in ["en", "ja", "zh"] {
+            for scenario in 0...17 {
+                s.topo.scenario = scenario
+                let id = "scenario-\(lang)-\(scenario)"
+                var r = TemplateCompiler().request(for: s, revision: 0, lang: lang)
+                r.requestID = id
+                try await engine.update(r)
+                let got = await rec.wait(timeout: 20) { frames($0).contains { $0.requestID == id } }
+                #expect(got, "\(id): no frame")
+                guard let f = rec.frames.last(where: { $0.requestID == id }) else { continue }
+                #expect(f.lifecycle == .running, "\(id): \(f.lifecycle) \(String(describing: f.error))")
+                for row in f.rows {
+                    switch row.value {
+                    case .malformed, .other: Issue.record("\(id) \(row.id) \(row.metric): \(row.value)")
+                    default: break
+                    }
+                    if row.id == TemplateCompiler.RowID.server(3) {
+                        // An unreachable collector (13) can't say which nodes exist.
+                        let reason = scenario == 13 ? "source_unavailable" : "entity_missing"
+                        #expect(row.value == .none && row.reason == reason, "\(id): \(row.reason)")
+                    } else if row.value == .none {
+                        #expect(!row.reason.isEmpty, "\(id) \(row.id): empty with no reason")
+                    }
+                }
+            }
+        }
+        await engine.stop()
+        await rec.finished()
     }
 }
 
