@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>topophany-bar · design preview</title>
+<link rel="icon" href="assets/mark.svg">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .hero-scenes .desk { width: 100%; height: 900px; }
+  .flow { display: grid; grid-template-columns: 1fr 120px 1fr 120px 1fr; align-items: center; gap: 0; margin-top: 24px; }
+  .node { border-radius: 14px; padding: 16px 18px; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); min-height: 150px; }
+  .node .k { font: 600 11px ui-monospace, "SF Mono", monospace; letter-spacing: .04em; color: #5eead4; text-transform: uppercase; }
+  .node h4 { margin: 6px 0 6px; font-size: 16px; font-weight: 650; }
+  .node p { margin: 0; color: #9da1a9; font-size: 13px; line-height: 1.5; }
+  .node.app { box-shadow: inset 0 0 0 1px rgba(10,132,255,.45); background: linear-gradient(160deg, rgba(10,132,255,.12), rgba(255,255,255,.02)); }
+  .node.app .k { color: #64d2ff; }
+  .pipe { display: flex; flex-direction: column; gap: 10px; align-items: stretch; padding: 0 8px; }
+  .pipe div { position: relative; font: 600 10.5px ui-monospace, "SF Mono", monospace; color: #9da1a9; text-align: center; padding-bottom: 7px; }
+  .pipe div::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, rgba(94,234,212,.15), rgba(94,234,212,.75)); border-radius: 2px; }
+  .pipe div.back::after { background: linear-gradient(270deg, rgba(100,210,255,.15), rgba(100,210,255,.8)); }
+  .pipe div::before { content: ""; position: absolute; bottom: -3px; right: -2px; border: 4px solid transparent; border-left: 6px solid rgba(94,234,212,.85); }
+  .pipe div.back::before { right: auto; left: -2px; border-left: 4px solid transparent; border-right: 6px solid rgba(100,210,255,.9); }
+  .local { margin: 14px 0 0; display: grid; grid-template-columns: 1fr 120px 1fr 120px 1fr; align-items: center; }
+  .codes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  @media (max-width: 1100px) { .codes { grid-template-columns: 1fr; } }
+  pre {
+    margin: 0; padding: 16px 18px; border-radius: 12px; background: #0a1016; box-shadow: inset 0 0 0 1px #243443;
+    font: 12px/1.6 ui-monospace, "SF Mono", Menlo, monospace; color: #d5dee7; overflow: auto; white-space: pre;
+  }
+  pre .c { color: #4a5868; } pre .k { color: #7dd3fc; } pre .s { color: #5eead4; } pre .n { color: #fbbf24; } pre .h { color: #f87171; }
+  .codes > div { min-width: 0; }
+  .codecap { font-size: 12.5px; color: #8b8f97; margin: 0 0 8px 2px; }
+  .codecap b { color: #e3e5e8; }
+  .free { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 20px; }
+  @media (max-width: 1100px) { .free { grid-template-columns: 1fr; } }
+  .free .card ul { margin: 8px 0 0; padding-left: 18px; color: #b6b9c0; font-size: 13.5px; line-height: 1.7; }
+  .free .card.yes { box-shadow: inset 0 0 0 1px rgba(48,209,88,.3); }
+  .free .card.no { box-shadow: inset 0 0 0 1px rgba(255,159,10,.3); }
+  .free .card h4 span { font-weight: 500; color: #7d818a; font-size: 12.5px; margin-left: 6px; }
+  .wrow { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; padding: 40px 24px; }
+  .themes4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+  @media (max-width: 1200px) { .themes4 { grid-template-columns: 1fr 1fr; } }
+  .th { border-radius: 14px; overflow: hidden; background: rgba(255,255,255,.03); box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); }
+  .th .tile { height: 300px; position: relative; overflow: hidden; display: flex; justify-content: center; padding-top: 16px; }
+  .th .tile > div { transform: scale(.78); transform-origin: top center; }
+  .th .meta { padding: 12px 14px 14px; }
+  .th .meta b { display: block; font-size: 14px; }
+  .th .meta span { font: 11.5px ui-monospace, "SF Mono", monospace; color: #8b8f97; }
+  .pk { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  @media (max-width: 1100px) { .pk { grid-template-columns: 1fr; } }
+  .pk .node { min-height: 0; }
+  .pk .node code { font-size: 11.5px; }
+  .shared { margin-top: 14px; padding: 14px 18px; border-radius: 14px; background: rgba(94,234,212,.05); box-shadow: inset 0 0 0 1px rgba(94,234,212,.22); color: #b6b9c0; font-size: 13.5px; }
+  .shared b { color: #e8e9ec; }
+</style>
+</head>
+<body>
+<div class="top"><img src="assets/mark.svg" alt=""><span class="brand">topophany-bar<span>design preview</span></span>
+  <nav><a class="on" href="index.html">Overview</a><a href="playground.html">Playground</a><a href="states.html">States</a><a href="widgets.html">Widgets</a><a href="settings.html">Settings</a><a href="DESIGN.md">Design notes</a></nav></div>
+<div class="wrap">
+  <div class="eyebrow">Design preview · v1 · macOS 26 and later</div>
+  <h1>topophany-bar</h1>
+  <p class="lede">Your whole network's status, one glance away in the macOS menu bar and on the desktop. A native companion to <code>topo</code> that shows what the collector concludes and never decides anything itself. It ships with two themes, the native macOS look and the TUI's own ink and phosphor, and is built so more can follow.</p>
+
+  <h2>Three looks, one meaning</h2>
+  <p class="sub">The same collector, three ways. The status card is always first. Everything below it is a section you can turn off or reorder. Open the <a href="playground.html">playground</a> to try every state, theme and setting.</p>
+  <div class="grid3 hero-scenes">
+    <div><div id="s1"></div><p class="cap"><b>Native · dark</b>: an outage seen only from Seattle and San Jose</p></div>
+    <div><div id="s2"></div><p class="cap"><b>Native · light</b>: all clear, This Mac shown as a server</p></div>
+    <div><div id="s3"></div><p class="cap"><b>Terminal</b>: the TUI's boxed panels, degraded, with This Mac's local readings</p></div>
+  </div>
+
+  <h2>Widgets that match the bar</h2>
+  <p class="sub">Small, medium, large and extra large. Widgets are drawn by the same renderer from the same section pieces and in the same theme as the panel. See <a href="widgets.html">every size and state</a>.</p>
+  <div class="desk wall-dark wrow" id="wd"></div>
+
+  <h2>Themes are a renderer plus tokens</h2>
+  <p class="sub">A <b>renderer</b> is code: it lays out sections for the panel and for each widget size. v1 has two: <code>cards</code> (Native) and <code>cells</code> (Terminal). A <b>theme</b> is data: a renderer's name and a token set of colors, materials and type. Adding a theme needs no code. Adding a renderer does, and every theme of that renderer comes with it. Status glyphs and what they mean belong to the renderer, so no theme can make two states look alike. Below, <b>Aurora</b> and <b>Paper</b> are example user themes that are token files only.</p>
+  <div class="themes4" id="themes"></div>
+
+  <h2>How it works</h2>
+  <p class="sub">The app is a renderer. <code>topo</code> stays the brain: it holds the credentials, reads the collector and works out every row with the same code the TUI uses. They talk over a pipe, so there's no file to poll and no orphan process. When the app quits, <code>topo</code> sees its stdin close and exits.</p>
+  <div class="flow">
+    <div class="node app"><span class="k">topophany-bar.app</span><h4>Swift · AppKit shell + SwiftUI</h4><p>Draws the status item and the panel, and applies the deadlines in each frame. It holds no token and opens no network connection.</p></div>
+    <div class="pipe"><div>stdin · request</div><div class="back">stdout · frames</div></div>
+    <div class="node"><span class="k">topo monitor stream</span><h4>child process · Go</h4><p>Reads one JSON request per line on stdin and writes one panel frame per line on stdout: on change, on any health or freshness transition, and to renew its lease.</p></div>
+    <div class="pipe"><div>saved profile · TLS</div><div class="back">/v1/snapshot</div></div>
+    <div class="node"><span class="k">collector</span><h4>topo serve</h4><p>Unchanged. The bar is one more read-only viewer.</p></div>
+  </div>
+  <div class="pk">
+    <div class="node"><span class="k">Shared packages · no AppKit</span><p style="margin-top:6px"><code>TopophanyKit</code> (frames, deadlines, requests, settings) · <code>TopophanySections</code> (one model per section) · <code>TopophanyThemes</code> (renderers, tokens, theme files) · <code>TopophanyWidgets</code> · <code>LocalReadings</code>. SwiftUI and Foundation only, so they build for any Apple platform.</p></div>
+    <div class="node"><span class="k">Engine protocol</span><p style="margin-top:6px"><code>ProcessEngine</code> runs <code>topo monitor stream</code>. A later <code>EmbeddedEngine</code> links the same Go core as a library and speaks the same JSON, for a sandbox that can't start a process. Nothing above the engine changes.</p></div>
+    <div class="node"><span class="k">Widgets · App Group</span><p style="margin-top:6px">A widget runs in its own process and can't read the pipe, so the app hands it the latest frame and theme through its App Group. It reloads widgets when the verdict changes, and on a slow heartbeat otherwise.</p></div>
+  </div>
+  <div class="shared"><b>This Mac</b> has two modes. <b>Local readings</b> come straight from macOS (Mach host statistics, IOKit), read by the app, never via <code>topo</code> and never via <code>top</code>. <b>As a server</b> is the Servers-tab card for this Mac's node, read from the collector. Separately, <code>topo</code>'s own host check stops running <code>top</code> on macOS: it reads the same kernel counters in-process, still without CGO.</div>
+
+  <div class="codes">
+    <div><p class="codecap"><b>stdin</b>: what the app asks for. A new line swaps the request live, so settings apply without a restart.</p>
+<pre><span class="c">// one line per request; pretty-printed here</span>
+{<span class="k">"schema"</span>: <span class="n">1</span>, <span class="k">"profile"</span>: <span class="s">"home"</span>, <span class="k">"observer"</span>: <span class="s">""</span>, <span class="k">"interval"</span>: <span class="s">"5s"</span>,
+ <span class="k">"template"</span>: {<span class="k">"schema"</span>: <span class="n">1</span>, <span class="k">"title"</span>: <span class="s">"Topophany"</span>, <span class="k">"bar"</span>: {<span class="k">"row"</span>: <span class="s">"status"</span>},
+  <span class="k">"rows"</span>: [
+   {<span class="k">"id"</span>: <span class="s">"status"</span>,    <span class="k">"metric"</span>: <span class="s">"summary.verdict"</span>},
+   {<span class="k">"id"</span>: <span class="s">"seen"</span>,      <span class="k">"metric"</span>: <span class="s">"observers.verdicts"</span>, <span class="k">"visual"</span>: <span class="s">"list"</span>},
+   {<span class="k">"id"</span>: <span class="s">"attention"</span>, <span class="k">"metric"</span>: <span class="s">"attention.list"</span>, <span class="k">"visual"</span>: <span class="s">"list"</span>, <span class="k">"limit"</span>: <span class="n">3</span>},
+   {<span class="k">"id"</span>: <span class="s">"apps"</span>,      <span class="k">"metric"</span>: <span class="s">"applications.list"</span>, <span class="k">"visual"</span>: <span class="s">"list"</span>},
+   {<span class="k">"id"</span>: <span class="s">"nyc"</span>,       <span class="k">"metric"</span>: <span class="s">"server.card"</span>, <span class="k">"select"</span>: {<span class="k">"node"</span>: <span class="s">"oracle-ny"</span>}}
+  ]}}</pre></div>
+    <div><p class="codecap"><b>stdout</b>: the existing panel schema, one frame per line. Every row states its own health, freshness and deadline.</p>
+<pre>{<span class="k">"schema"</span>: <span class="n">1</span>, <span class="k">"sequence"</span>: <span class="n">1842</span>, <span class="k">"lifecycle"</span>: <span class="s">"running"</span>, <span class="k">"project"</span>: <span class="s">"homelab"</span>,
+ <span class="k">"generated_at"</span>: <span class="s">"2026-10-18T13:30:37Z"</span>,
+ <span class="k">"publisher_expires_at"</span>: <span class="s">"2026-10-18T13:31:07Z"</span>,
+ <span class="k">"rows"</span>: [
+  {<span class="k">"id"</span>: <span class="s">"status"</span>, <span class="k">"health"</span>: <span class="h">"down"</span>, <span class="k">"freshness"</span>: <span class="s">"fresh"</span>,
+   <span class="k">"value"</span>: {<span class="k">"state"</span>: <span class="s">"incidents"</span>, <span class="k">"glyph"</span>: <span class="s">"✖"</span>, <span class="k">"incidents"</span>: <span class="n">5</span>,
+     <span class="k">"counts"</span>: {<span class="k">"up"</span>: <span class="n">63</span>, <span class="k">"warning"</span>: <span class="n">0</span>, <span class="k">"down"</span>: <span class="n">5</span>, <span class="k">"unknown"</span>: <span class="n">0</span>},
+     <span class="k">"observers"</span>: {<span class="k">"live"</span>: <span class="n">11</span>, <span class="k">"all"</span>: <span class="n">11</span>}},
+   <span class="k">"valid_until"</span>: <span class="s">"2026-10-18T13:30:48Z"</span>},
+  {<span class="k">"id"</span>: <span class="s">"seen"</span>, <span class="k">"value"</span>: [{<span class="k">"observer"</span>: <span class="s">"seattle-windows"</span>, <span class="k">"health"</span>: <span class="h">"down"</span>, <span class="k">"down"</span>: <span class="n">3</span>}, <span class="c">…</span>]},
+  {<span class="k">"id"</span>: <span class="s">"attention"</span>, <span class="k">"more"</span>: <span class="n">14</span>, <span class="k">"value"</span>: [{<span class="k">"kind"</span>: <span class="s">"incident"</span>, <span class="k">"summary"</span>: <span class="c">…</span>}]}
+ ]}</pre></div>
+  </div>
+
+  <h2>How much freedom</h2>
+  <p class="sub">The rule: <b>users choose what to look at, never what it means.</b> If the bar could say "CPU over 80% is red", it would become a second, unreviewed monitoring policy that disagrees with the TUI and the webhooks.</p>
+  <div class="free">
+    <div class="card yes"><h4>Yours to choose <span>Settings</span></h4><ul>
+      <li>Theme; light, dark or system</li>
+      <li>Menu bar: symbol, count or words; status colors or monochrome</li>
+      <li>Which sections appear, and their order</li>
+      <li>How many attention rows; which applications</li>
+      <li>Pinned servers; what each widget shows</li>
+      <li>This Mac: local readings, as a server, or off; and which readings</li>
+      <li>Profile, observer view, refresh (1 s to 1 h)</li>
+    </ul></div>
+    <div class="card no"><h4>Fixed by Topophany <span>topology + collector</span></h4><ul>
+      <li>What counts as up, warn, down or unknown</li>
+      <li>Thresholds (<code>max_cpu_percent</code> and others live in the topology)</li>
+      <li>Freshness, staleness and publisher deadlines</li>
+      <li>How groups add up: unknown stays in every denominator</li>
+      <li>Status glyphs and what they mean, in every theme</li>
+      <li>No expressions or formulas in templates</li>
+    </ul></div>
+    <div class="card"><h4>Not in v1</h4><ul>
+      <li>Local notifications (collector webhooks already alert)</li>
+      <li>An animated runner: the item shows status only</li>
+      <li>RunCat or file output; the stream replaces it</li>
+      <li>Loading user theme files (the format is designed; v1 ships Native and Terminal)</li>
+      <li>The embedded engine; history charts beyond local sparklines</li>
+    </ul></div>
+  </div>
+
+  <h2>Explore</h2>
+  <div class="links">
+    <a href="playground.html"><b>Playground →</b><span>Every state, theme and setting, live</span></a>
+    <a href="states.html"><b>States →</b><span>The status item and status card in all five states</span></a>
+    <a href="widgets.html"><b>Widgets →</b><span>Four sizes, both themes, every state, monochrome</span></a>
+    <a href="settings.html"><b>Settings →</b><span>General, Appearance, Sections, This Mac</span></a>
+    <a href="DESIGN.md"><b>Design notes →</b><span>Architecture, protocol, themes, widgets, phases</span></a>
+  </div>
+</div>
+<script src="assets/data.js"></script>
+<script src="assets/render.js"></script>
+<script src="assets/widgets.js"></script>
+<script>
+  const D = window.TB_DATA;
+  const base = () => Object.assign(TB.defaults(), { cls: 'narrow', fit: true, fitPad: 30 });
+  TB.scene(document.getElementById('s1'), D.scenarios.incidents, Object.assign(base(), { appearance: 'dark' }));
+  TB.scene(document.getElementById('s2'), D.scenarios.clear, Object.assign(base(), { appearance: 'light', mac: 'server' }));
+  TB.scene(document.getElementById('s3'), D.scenarios.degraded, Object.assign(base(), { theme: 'tui', appearance: 'dark', text: 'words' }));
+
+  const sc = D.scenarios.incidents;
+  document.getElementById('wd').innerHTML = [
+    TB.widget('status', 's', sc, { theme: 'native', appearance: 'dark' }),
+    TB.widget('status', 'm', sc, { theme: 'native', appearance: 'dark' }),
+    TB.widget('status', 's', sc, { theme: 'tui' }),
+    TB.widget('status', 'm', sc, { theme: 'tui' }),
+  ].join('');
+
+  const tO = Object.assign(TB.defaults(), { sections: { seen: true, attention: false, apps: false, servers: false, mac: false } });
+  const themes = [
+    ['Native', 'renderer: cards · tokens: system', 'dark', TB.nativePanel(sc, Object.assign({}, tO, { appearance: 'dark' }))],
+    ['Terminal', 'renderer: cells · palette: TUI', 'dark', TB.tuiPanel(sc, Object.assign({}, tO, { theme: 'tui' }))],
+    ['Aurora*', 'renderer: cards · tokens: aurora.json', 'dark', TB.nativePanel(sc, Object.assign({}, tO, { appearance: 'dark', tokens: 'aurora' }))],
+    ['Paper*', 'renderer: cells · palette: paper.json', 'light', TB.tuiPanel(sc, Object.assign({}, tO, { theme: 'tui', palette: 'paper' }))],
+  ];
+  document.getElementById('themes').innerHTML = themes.map(([n, m, wall, html]) =>
+    `<div class="th"><div class="tile desk wall-${wall}">${html}</div><div class="meta"><b>${n}</b><span>${m}</span></div></div>`).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+# `topo monitor stream`: protocol 1
+
+This is the contract between `topo` (the producer, in the topophany repository) and topophany-bar (the consumer). It is authoritative: where `design/DESIGN.md` and this file differ, this file wins. A change to it needs both sides.
+
+The stream reuses the `topo monitor` panel format (template schema 1, panel output schema 1). The additions are marked **new**.
+
+## 1. The process
+
+```
+topo monitor stream                 # requests on stdin, frames on stdout
+topo monitor stream --capabilities  # one JSON line describing what this topo supports, then exit 0
+```
+
+- **stdin:** requests, one JSON object per line (NDJSON, UTF-8). A line may be at most 256 KiB; a longer one is an `invalid_request`, and the stream keeps reading.
+- **stdout:** frames, one JSON object per line, at most 1 MiB each. Nothing else is ever written to stdout.
+- **stderr:** short human-readable diagnostics, one per line, never secrets, raw upstream errors or tokens. Consumers may show them; they must not parse them.
+- **Files:** the process writes none (no output file, no lock). It reads only the client credential file, and only for `source: "client"`.
+
+Lifecycle:
+
+1. **Start.** Wait for the first request. No frames are written before one arrives.
+2. **A valid request:** write a frame at once, then keep writing per section 4.
+3. **Another valid request line:** replace the running request atomically, with a new `config_revision` and the new `request_id`, and write a frame at once.
+4. **An invalid request line:** write an error frame (section 3.2) and leave the previous request running, if there is one.
+5. **stdin reaches EOF, or SIGINT/SIGTERM:** write one final frame with `lifecycle: "stopped"` and no values, then exit 0.
+6. **stdout is closed (EPIPE):** exit 0 without writing anything else.
+
+Exit codes:
+
+- **0** in every runtime case above;
+- **2** only for invalid command-line flags.
+
+Bad requests, unreachable collectors and credential problems never end the process.
+
+### Capabilities
+
+`--capabilities` prints one line:
+
+```json
+{"protocol":1,"version":"1.3.0","sources":["client","preview"],
+ "visuals":["text","bar","status","list","card"],
+ "metrics":[{"name":"summary.verdict","type":"object","sources":["client","collector"],"visual":"status"}, …]}
+```
+
+`metrics` is the catalog `topo monitor metrics` prints, plus each metric's allowed `visual`. A consumer checks `protocol == 1` and the metrics it needs before it starts a stream. A `topo` without this subcommand exits non-zero, and the consumer says that `topo` must be upgraded.
+
+## 2. Requests
+
+```json
+{
+  "schema": 1,
+  "request_id": "settings-42",
+  "source": "client",
+  "credentials": "",
+  "profile": "",
+  "project": "",
+  "observer": "",
+  "interval": "5s",
+  "template": { "schema": 1, "title": "Topophany", "bar": { "row": "status" }, "rows": [ … ] }
+}
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `schema` | int, required | `1` |
+| `request_id` | string, ≤ 64 bytes | Echoed in every frame for this request, so the consumer can tell when a new request took effect. |
+| `source` | `"client"` (default) or `"preview"` | `client` reads a collector through saved credentials, as `topo` does. `preview` reads `topo preview`'s synthetic evidence and needs no collector or credentials. |
+| `credentials` | absolute path or `""` | Credential file; `""` uses `topo`'s normal discovery. `client` only. |
+| `profile` | string | Saved profile; `""` uses the active profile. `client` only. |
+| `project` | string | When set, a snapshot from another project is refused (`project_mismatch`). |
+| `observer` | string | The view, as `topo --observer`; `""` is all observers. |
+| `scenario` | int ≥ 0 | `preview` only: the scenario as `topo preview scenarios` numbers them. `0` is the calm network. |
+| `lang` | `"en"`, `"ja"` or `"zh"` | `preview` only: the language of the built-in network. Default `"en"`. |
+| `interval` | duration, `1s` to `1h` | Display cadence, as `topo monitor configure --interval`. Default `5s`. |
+| `template` | template schema 1 | What to compute; see 2.1. |
+
+### 2.1 Template additions (new)
+
+The template is `topo monitor`'s schema 1, validated as today, with these additions:
+
+- **Row field `limit`:** an int, 1 to 20; default 5; only for `attention.list`.
+- **Selector `node`:** a topology node ID (`config.ID`); only for `server.card`, where it is required.
+- **New visuals:** `status`, `list` and `card`. Each metric allows exactly one visual (table below); `text` and `bar` keep their meaning for the existing metrics.
+- **`bar.row`:** must still reference a row. The consumer points it at the `summary.verdict` row.
+
+| Metric (new) | Visual | Selector | Sources |
+|---|---|---|---|
+| `summary.verdict` | `status` | none | client, collector, preview |
+| `observers.verdicts` | `list` | none | client, collector, preview |
+| `attention.list` | `list` | none (`limit`) | client, collector, preview |
+| `applications.list` | `list` | none | client, collector, preview |
+| `server.card` | `card` | `node` (required) | client, collector, preview |
+
+The existing metrics (`summary.status`, `check.status`, `host.*`, …) remain valid in stream requests with their current sources. `preview` behaves as `client` for source checks.
+
+## 3. Frames
+
+### 3.1 Normal frames
+
+This is the panel output schema 1 that `topo monitor` already writes:
+
+```json
+{
+  "schema": 1, "name": "stream", "request_id": "settings-42",
+  "config_revision": "…", "instance": "…", "sequence": 1842,
+  "source": "client", "project": "homelab", "observer": "",
+  "lifecycle": "running",
+  "generated_at": "2026-10-18T13:30:37Z", "publisher_expires_at": "2026-10-18T13:31:07Z",
+  "title": "Topophany", "icon": "", "bar_row": "status",
+  "rows": [ { …row… } ]
+}
+```
+
+- **`name`** is always `"stream"`.
+- **`request_id`** is **new**.
+- **`lifecycle`** is `running`, `error` or `stopped`.
+- **`sequence`** increases within an `instance` and may skip.
+
+Every row keeps its template fields and adds the fields every row has today:
+
+- `value`, `unit` and `text`;
+- `health`: `up`, `degraded`, `down` or `unknown`;
+- `freshness` and `reason`;
+- `sampled_at`, the newest underlying sample;
+- `valid_until`, the earliest deadline among the evidence the value relies on.
+
+When the collector can't be read, the frame is still `running`. Its rows have `value: null`, `health: "unknown"`, `freshness: "unavailable"` and `reason: "source_unavailable"`, exactly as `topo monitor run` behaves today.
+
+### 3.2 Error frames (new)
+
+```json
+{"schema":1,"name":"stream","request_id":"settings-43","lifecycle":"error",
+ "error":{"code":"invalid_request","message":"row attention: limit must be 1..20"},
+ "generated_at":"…","publisher_expires_at":"…","rows":[]}
+```
+
+Error codes:
+
+| Code | When |
+|---|---|
+| `invalid_request` | A malformed line, an unknown field value, or a template that fails validation. |
+| `unsupported_protocol` | `schema` isn't 1. |
+| `credentials_unavailable` | The credential file can't be read. |
+| `profile_not_found` | The profile isn't in the credential file. |
+| `project_mismatch` | The snapshot's project differs from `project`. |
+
+An error frame has no rows. The consumer keeps showing the last `running` frame, subject to its deadlines (section 5). An error never stops a previously valid request.
+
+### 3.3 Row values for the new metrics
+
+All times are RFC 3339 UTC. Every count is an integer ≥ 0. Every percentage is a number from 0 to 100, or `null` when unknown. Names are the topology's display names (the ID when a name is unset).
+
+#### `summary.verdict`
+
+```json
+{"state":"incidents","glyph":"✖","text":"5 INCIDENTS",
+ "counts":{"up":63,"warning":0,"down":5,"unknown":0,"paused":0,"maintenance":0},
+ "configured":68,"incidents":5,"observers":{"live":11,"all":11}}
+```
+
+- **`state`, `glyph`, `text`:** from `view.Verdict()`. `state` is one of `clear`, `degraded`, `incidents`, `down`, `incomplete`, `no-evidence`, `no-checks` or `cached`.
+- **`counts`:** `View.Counts()`, plus how many unknown checks are paused or in maintenance. `configured` is their sum.
+- **`observers`:** `View.Live()`.
+- **The row's `health`:**
+  - `clear` → `up`;
+  - `degraded` → `degraded`;
+  - `incidents` and `down` → `down`;
+  - every other state → `unknown`.
+- **The row's `text`:** `text`.
+
+#### `observers.verdicts`
+
+```json
+[{"id":"seattle-macbook","name":"Seattle MacBook","node":"macbook","health":"down","state":"incidents",
+  "live":true,"last_seen":"2026-10-18T13:30:33Z","counts":{"up":13,"warning":0,"down":1,"unknown":0}}]
+```
+
+- **One entry per observer in the view,** at most 64.
+- **`state`:** the verdict of that observer's own view, the snapshot as `?observer=<id>` would scope it. `health` maps it as for `summary.verdict`; an observer that isn't live is `unknown`.
+- **Order:** `down`, `degraded`, `unknown`, `up`, then by name.
+- **The row's `health`:** the worst entry. **`text`:** for example `"3 of 11 see a problem"`.
+
+#### `attention.list`
+
+```json
+{"total":17,"items":[
+  {"kind":"incident","id":"inc-7f3a","title":"Seattle MacBook → Primary BandwagonHost → Oracle Exit A",
+   "route":["Primary BandwagonHost","Oracle Exit A"],"observer":"seattle-macbook","observer_name":"Seattle MacBook",
+   "since":"2026-10-18T13:26:02Z","health":"down","state":"open"}]}
+```
+
+- **`items`:** the first `limit` entries of the Overview's Needs attention list, in its order (open ledger incidents first, then `view.AttentionRank`). `total` counts the whole list.
+- **`kind`:** as `view.Row.Kind`: `incident`, `path`, `service`, `node`, `check`, `observer`, `endpoint` or `link`.
+- **`title`:** the TUI's title for the entry.
+- **`route`:** `title` split on `" → "`, without a leading element equal to `observer_name`. A single element when the title has no arrows.
+- **`observer`, `observer_name`:** the observer the entry was seen from, or `""` when it has none.
+- **`since`:** the ledger's `since` for incidents; `null` otherwise.
+- **`state`:** the TUI's state word, lowercased. One of `open`, `recovering`, `down`, `warn`, `affected`, `outdated`, `silent`, `paused`, `maintenance` or `unknown`.
+- **The row's `health`:** the worst item's, or `up` when the list is empty in a current view.
+
+#### `applications.list`
+
+```json
+[{"id":"proxy","name":"Proxy chain","environment":"","health":"degraded",
+  "services":[{"id":"vless-entry","name":"VLESS+Reality Entry (Primary)","health":"degraded","monitored":true,"affected":false}],
+  "counts":{"up":3,"warning":3,"down":0,"unknown":0},"attention":3,"unmonitored":0}]
+```
+
+- **One entry per application group** as the Services tab groups by application (with `environment` when the topology declares environments). At most 64 entries, with at most 64 services each, in topology order.
+- **`health`:** the group's evidence as the TUI computes it (`view/group_evidence.go`). In a cached view, everything is `unknown`.
+- **`attention`:** how many services are not up, not counting unmonitored ones. **`unmonitored`:** how many services no check measures.
+
+#### `server.card`
+
+```json
+{"id":"oracle-ny","name":"Oracle New York","kind":"host","provider":"Oracle","group":"","where":"New York",
+ "health":"up","note":"",
+ "resources":[{"check":"oracle-ny-host","observer":"ny-oracle","health":"up","freshness":"fresh",
+   "sampled_at":"2026-10-18T13:30:33Z","valid_until":"2026-10-18T13:31:03Z",
+   "cpu":{"percent":26.3,"limit":90,"logical":8},
+   "memory":{"percent":46.2,"limit":90,"used_bytes":7944011776,"total_bytes":17179869184,"basis":"…"},
+   "disk":{"percent":58.4,"limit":90,"path":"/","used_bytes":161061273600,"total_bytes":274877906944},
+   "process":{"name":"caddy","matching":1}}],
+ "services":[{"id":"main-site","name":"Main Site (Caddy + Blog)","health":"up","monitored":true,"affected":false}],
+ "observes":[{"id":"ny-oracle","name":"New York Oracle Cloud","health":"up","state":"clear","live":true,
+   "last_seen":"2026-10-18T13:30:33Z","counts":{"up":9,"warning":0,"down":0,"unknown":0}}]}
+```
+
+- **Built from `View.Fleet().Card(node)`.**
+  - `kind` and `provider` come from the node.
+  - `where` is `Card.Where`.
+  - `health` and `note` (`affected`, `outdated` or `""`) are the node's state as the Servers tab shows it.
+- **`resources`:** one entry per host check on the node (`CardResource`), primary disk first.
+  - `limit` is the check's `max_*_percent`, or `null` when the check sets none.
+  - Each number is `null` unless the check is `fresh`: values are withheld exactly as the TUI's server card withholds them. `sampled_at` is kept.
+  - `process` is `null` when the check names no process.
+- **`services`:** up to 32 services, trouble first, as `Card.Services`.
+- **`observes`:** the observers on this node, each with its own verdict, as in `observers.verdicts`.
+- **An unknown node:** `value: null`, `health: "unknown"`, `reason: "entity_missing"`.
+- **The row's `valid_until`:** the earliest of its resources' and the node state's deadlines.
+
+## 4. When frames are written
+
+These are the same rules as `topo monitor` output today, with the pipe as the sink:
+
+- **Source refresh:** at most 5 s apart. Evidence ages every second.
+- **Changed values:** written at the display cadence (`interval`).
+- **Health, freshness and lifecycle transitions:** written at once.
+- **Unchanged content:** skipped, except that the lease is renewed at least every 10 s.
+- **The lease:** `publisher_expires_at` is the frame's time plus 30 s.
+- **No buffering:** each frame is one write followed by a flush.
+
+## 5. Reader rules (consumers)
+
+These are the rules `topo monitor preview` applies, and topophany-bar's `ReaderPolicy` implements them:
+
+- **Every second, check deadlines** against the consumer's clock. When `publisher_expires_at` has passed, everything is unavailable and the status item shows ◌. When a row's `valid_until` has passed, that row's value is withheld.
+- **Treat implausibly future timestamps as unavailable.** A timestamp is implausible when it lies more than 5 minutes beyond the consumer's clock.
+- **Never extend a row's validity** because a later frame renewed the lease without changing that row.
+- **Treat the process exiting, or stdout closing, as unavailable at once.**
+- **Never show an error frame as content.** Keep the last `running` frame and apply the rules above to it.
+
+## 6. Versioning
+
+Fields may be added to requests, frames and values without changing `protocol`, and consumers ignore fields they don't know. Renaming or removing a field, or changing a meaning, needs protocol 2, and `--capabilities` must then list both protocols for as long as both are served.

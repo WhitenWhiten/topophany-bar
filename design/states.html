@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>States · topophany-bar</title>
+<link rel="icon" href="assets/mark.svg">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .matrix { display: grid; grid-template-columns: 170px repeat(5, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+  .mh { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #7d818a; padding: 0 2px 2px; align-self: end; }
+  .rowh { display: flex; flex-direction: column; justify-content: center; padding-right: 6px; }
+  .rowh b { font-size: 14px; font-weight: 650; }
+  .rowh span { font-size: 12px; color: #868a92; line-height: 1.4; margin-top: 2px; }
+  .strip { position: relative; border-radius: 10px; overflow: hidden; padding: 12px 6px; display: flex; align-items: center; justify-content: center; }
+  .strip .mb { position: static; height: auto; justify-content: center; padding: 0; zoom: 1.4; background: transparent; backdrop-filter: none; }
+  .strip .mb-right { flex-direction: column; gap: 6px; }
+  .strip.wall-dark::before, .strip.wall-light::before, .strip.wall-dark::after, .strip.wall-light::after { display: none; }
+  .strip.wall-dark { background: linear-gradient(180deg, rgba(8, 10, 18, .55), rgba(8, 10, 18, .35)), linear-gradient(110deg, #213d78, #3b2768 55%, #11454a); }
+  .strip.wall-light { background: linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .35)), linear-gradient(110deg, #a9c8ff, #dcc6ff 55%, #b5efe1); }
+
+  .heroes { display: grid; grid-template-columns: 150px repeat(3, minmax(0, 1fr)); gap: 14px; align-items: center; }
+  .tile { border-radius: 14px; overflow: hidden; padding: 18px; display: flex; justify-content: center; position: relative; isolation: isolate; }
+  .tile .nv-panel { width: 344px; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 18px; margin: 4px 0 16px; color: #9a9ea6; font-size: 12.5px; }
+  .legend-row span { display: inline-flex; align-items: center; gap: 6px; }
+  .rules { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+</style>
+</head>
+<body>
+<div class="top"><img src="assets/mark.svg" alt=""><span class="brand">topophany-bar<span>design preview</span></span>
+  <nav><a href="index.html">Overview</a><a href="playground.html">Playground</a><a class="on" href="states.html">States</a><a href="widgets.html">Widgets</a><a href="settings.html">Settings</a><a href="DESIGN.md">Design notes</a></nav></div>
+<div class="wrap">
+  <div class="eyebrow">At a glance</div>
+  <h1>Five states, readable from across the room</h1>
+  <p class="lede">The status item answers one question: what does the collector conclude right now? The verdict is the TUI's own (<code>view.Verdict</code>). Shape and color both carry it, so the state still reads in monochrome or to a color-blind eye.</p>
+
+  <h2>The status item</h2>
+  <p class="sub">Shown at 140% here. Each cell stacks the three menu bar modes: <b>Symbol</b>, <b>Count</b> and <b>Words</b>. The count is what needs attention: incidents, warnings or unknown checks. When nothing does, no number appears.</p>
+  <div class="legend-row">
+    <span>●&nbsp; clear</span><span>▲&nbsp; degraded</span><span>✖&nbsp; incidents or down</span><span>○&nbsp; incomplete evidence</span><span>◌&nbsp; offline: the collector or the engine stopped answering</span>
+  </div>
+  <div class="matrix" id="items"></div>
+
+  <h2>The status card</h2>
+  <p class="sub">The first card of the panel, in every state. It can't be hidden. The bar under the headline counts every configured check: unknown is hatched, never left out of the denominator. When the engine goes quiet, the card turns <b>CACHED</b> and says what the last snapshot said, rather than leaving an old green on screen.</p>
+  <div class="heroes" id="heroes"></div>
+
+  <h2>Rules every state follows</h2>
+  <div class="rules">
+    <div class="card"><span class="k">never green without evidence</span><h4>Nothing is inferred</h4><p>The app shows only what <code>topo</code> sends. It never decides that something is up, down or at fault, and never sets a threshold of its own.</p></div>
+    <div class="card"><span class="k">lease + valid_until</span><h4>Blind is its own state</h4><p>Each frame carries the publisher's lease and every row's <code>valid_until</code>. Past either deadline the row is withheld, and when the lease lapses the bar turns ◌, even if the last frame said all clear.</p></div>
+    <div class="card"><span class="k">color is never alone</span><h4>Shape, then color</h4><p>Badges change shape (● ▲ ■✕ ○ ◌) as well as color, so the state still reads in monochrome. Text keeps text colors, and status colors appear only where they mean status.</p></div>
+    <div class="card"><span class="k">local ≠ evidence</span><h4>This Mac is labeled</h4><p>Local readings come from the Mac itself, not from a check. They carry no health, keep working while offline, and say "local readings" wherever they appear.</p></div>
+  </div>
+</div>
+<script src="assets/data.js"></script>
+<script src="assets/render.js"></script>
+<script>
+  const D = window.TB_DATA;
+  const NOTES = {
+    clear: 'Every active check passes; no incidents.',
+    degraded: 'Checks warn (a policy or an assertion), nothing open.',
+    incidents: 'The ledger has open incidents, or checks are down.',
+    incomplete: 'Active checks without current evidence: a silent observer.',
+    offline: 'The publisher’s lease lapsed or the collector can’t be reached.',
+  };
+  const looks = [
+    ['Native · dark bar', { theme: 'native', color: 'status' }, 'dark'],
+    ['Native · light bar', { theme: 'native', color: 'status' }, 'light'],
+    ['Native · monochrome', { theme: 'native', color: 'mono' }, 'dark'],
+    ['Terminal · dark bar', { theme: 'tui' }, 'dark'],
+    ['Terminal · light bar', { theme: 'tui' }, 'light'],
+  ];
+  let h = '<div></div>' + looks.map(([t]) => `<div class="mh">${t}</div>`).join('');
+  D.order.forEach((k) => {
+    const sc = D.scenarios[k];
+    h += `<div class="rowh"><b>${sc.label}</b><span>${NOTES[k]}</span></div>`;
+    looks.forEach(([, o, ap]) => {
+      const items = ['symbol', 'count', 'words'].map((text) => TB.statusItem(sc, Object.assign({ text }, o))).join('');
+      h += `<div class="strip wall-${ap}"><div class="mb mb-${ap}"><div class="mb-right">${items}</div></div></div>`;
+    });
+  });
+  document.getElementById('items').innerHTML = h;
+
+  let g = '<div></div><div class="mh">Native · dark</div><div class="mh">Native · light</div><div class="mh">Terminal</div>';
+  D.order.forEach((k) => {
+    const sc = D.scenarios[k];
+    const o = Object.assign(TB.defaults(), { heroOnly: true });
+    g += `<div class="rowh"><b>${sc.label}</b><span>${NOTES[k]}</span></div>`;
+    g += `<div class="tile desk wall-dark">${TB.nativePanel(sc, Object.assign({}, o, { appearance: 'dark' }))}</div>`;
+    g += `<div class="tile desk wall-light">${TB.nativePanel(sc, Object.assign({}, o, { appearance: 'light' }))}</div>`;
+    g += `<div class="tile desk wall-dark">${TB.tuiPanel(sc, Object.assign({}, o, { theme: 'tui' }))}</div>`;
+  });
+  document.getElementById('heroes').innerHTML = g;
+</script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+// Topophany Bar design preview: draws the status item, the panel in either
+// theme, the menu bar and the desktop behind them from one sample frame.
+(function () {
+  const TB = (window.TB = {});
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------------------------------------------------------------- shared
+  const GLYPH = { up: '●', degraded: '▲', down: '✖', unknown: '○', cached: '◌' };
+  const CLS = { up: 'up', degraded: 'warn', down: 'down', unknown: 'unk', cached: 'unk' };
+  TB.glyph = (h) => GLYPH[h] || '○';
+  TB.cls = (h) => CLS[h] || 'unk';
+
+  function mix(a, b, t) {
+    const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const x = p(a), y = p(b);
+    return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  }
+  TB.mix = mix;
+
+  // The TUI's loadColor: teal until the reading nears its limit, amber past it.
+  function loadColor(v, limit) {
+    if (!(limit > 0) || limit > 100) limit = 100;
+    if (v > limit) return '#fbbf24';
+    const t = Math.min(1, Math.max(0, (v / limit - 0.55) / 0.45));
+    return mix('#5eead4', '#fbbf24', t * t);
+  }
+
+  // ----------------------------------------------------------------- icons
+  const sv = (body, vb = 20, extra = '') =>
+    `<svg viewBox="0 0 ${vb} ${vb}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ${extra}>${body}</svg>`;
+
+  function gearPath(cx, cy, ro, ri, n) {
+    const pts = [];
+    const step = (Math.PI * 2) / n;
+    for (let i = 0; i < n; i++) {
+      const a = i * step - Math.PI / 2;
+      [[-0.5, ri], [-0.3, ri], [-0.2, ro], [0.2, ro], [0.3, ri]].forEach(([f, r]) => {
+        pts.push([cx + r * Math.cos(a + f * step), cy + r * Math.sin(a + f * step)]);
+      });
+    }
+    return 'M' + pts.map((p) => p.map((v) => v.toFixed(2)).join(' ')).join('L') + 'Z';
+  }
+
+  const I = {
+    globe: sv('<circle cx="10" cy="10" r="7.2"/><ellipse cx="10" cy="10" rx="3.1" ry="7.2"/><path d="M2.8 10h14.4"/>'),
+    terminal: sv('<rect x="2.6" y="3.6" width="14.8" height="12.8" rx="3.2"/><path d="M6.2 8.1l2.4 1.9-2.4 1.9M10.6 12.3h3.2"/>'),
+    gear: sv(`<path d="${gearPath(10, 10, 7.6, 5.9, 8)}"/><circle cx="10" cy="10" r="2.4"/>`),
+    scope: sv('<circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="3.3"/><circle cx="10" cy="10" r=".7" fill="currentColor"/>'),
+    alert: sv('<path d="M8.6 3.9a1.6 1.6 0 0 1 2.8 0l6 10.6a1.6 1.6 0 0 1-1.4 2.4H4a1.6 1.6 0 0 1-1.4-2.4Z"/><path d="M10 8.2v3.4"/><circle cx="10" cy="14" r=".45" fill="currentColor"/>'),
+    apps: sv('<path d="M10 2.8 17 6.4 10 10 3 6.4Z"/><path d="M3 10.1l7 3.6 7-3.6"/><path d="M3 13.7l7 3.6 7-3.6"/>'),
+    server: sv('<rect x="3" y="3.4" width="14" height="5.6" rx="1.8"/><rect x="3" y="11" width="14" height="5.6" rx="1.8"/><circle cx="6.1" cy="6.2" r=".55" fill="currentColor"/><circle cx="6.1" cy="13.8" r=".55" fill="currentColor"/>'),
+    laptop: sv('<rect x="4" y="4.2" width="12" height="8.4" rx="1.4"/><path d="M2.2 15.6h15.6"/>'),
+    cpu: sv('<rect x="5" y="5" width="10" height="10" rx="2.2"/><rect x="8" y="8" width="4" height="4" rx=".9"/><path d="M8 2.6v2.4M12 2.6v2.4M8 15v2.4M12 15v2.4M2.6 8h2.4M2.6 12h2.4M15 8h2.4M15 12h2.4"/>'),
+    memory: sv('<rect x="2.6" y="5.6" width="14.8" height="8" rx="1.8"/><path d="M5.6 13.6v2.6M8.6 13.6v2.6M11.4 13.6v2.6M14.4 13.6v2.6M6 8.6h2.4M11.6 8.6h2.4"/>'),
+    drive: sv('<rect x="2.6" y="5.8" width="14.8" height="8.4" rx="2.6"/><path d="M5.8 10h4.4"/><circle cx="14" cy="10" r=".7" fill="currentColor"/>'),
+    net: sv('<path d="M6.6 15.4V4.8M3.9 7.5l2.7-2.7 2.7 2.7M13.4 4.6v10.6M10.7 12.5l2.7 2.7 2.7-2.7"/>'),
+    power: sv('<path d="M10 3.2v6.4"/><path d="M6.1 5.6a6.1 6.1 0 1 0 7.8 0"/>'),
+    chevron: sv('<path d="M8 5.5 12.5 10 8 14.5"/>'),
+    bolt: sv('<path d="M11 2.8 5.6 11h4l-1 6.2 5.8-8.4h-4.1Z" fill="currentColor" stroke-width="1"/>'),
+    info: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 9v4.6"/><circle cx="10" cy="6.4" r=".5" fill="currentColor"/>'),
+  };
+  TB.icons = I;
+
+  function battery(pct, charging) {
+    const w = Math.max(1.5, (10.2 * pct) / 100);
+    return sv(`<rect x="2.4" y="6" width="13.6" height="8" rx="2.3"/><path d="M17.9 8.7v2.6"/><rect x="4" y="7.6" width="${w.toFixed(1)}" height="4.8" rx="1.1" fill="currentColor" stroke="none"/>` +
+      (charging ? '<path d="M9.9 6.9 7.9 10.3h2.3l-.4 2.8 2.5-3.6h-2.3Z" fill="var(--bolt, #fff)" stroke="none"/>' : ''));
+  }
+
+  // A status mark: shape and color both say the health.
+  function mark(h, size = 14) {
+    const c = `class="mk mk-${TB.cls(h)}" width="${size}" height="${size}"`;
+    switch (h) {
+      case 'up':
+        return `<svg ${c} viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.2" fill="currentColor"/></svg>`;
+      case 'degraded':
+        return `<svg ${c} viewBox="0 0 14 14"><path d="M6.1 1.9a1 1 0 0 1 1.8 0l5 9.1a1 1 0 0 1-.9 1.5H2a1 1 0 0 1-.9-1.5Z" fill="currentColor"/><path d="M7 5.2v3" stroke="var(--on, #fff)" stroke-width="1.4" stroke-linecap="round"/><circle cx="7" cy="10.2" r=".75" fill="var(--on, #fff)"/></svg>`;
+      case 'down':
+        return `<svg ${c} viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="currentColor"/><path d="M4.9 4.9l4.2 4.2M9.1 4.9 4.9 9.1" stroke="var(--on, #fff)" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+      case 'cached':
+        return `<svg ${c} viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.2 1.9"/></svg>`;
+      default:
+        return `<svg ${c} viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.8" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
+    }
+  }
+  TB.mark = mark;
+
+  // The hero's symbol: a tile filled with the verdict's color and its glyph.
+  function heroSymbol(state) {
+    const g = {
+      clear: '<path d="M14.5 23.5l6 6 12-13" stroke-width="3.6"/>',
+      degraded: '<path d="M23.5 13.5v11" stroke-width="3.8"/><circle cx="23.5" cy="31.6" r="2.3" fill="#fff" stroke="none"/>',
+      incidents: '<path d="M16.5 16.5l14 14M30.5 16.5l-14 14" stroke-width="3.6"/>',
+      incomplete: '<circle cx="15.5" cy="23.5" r="2.4" fill="#fff" stroke="none"/><circle cx="23.5" cy="23.5" r="2.4" fill="#fff" stroke="none"/><circle cx="31.5" cy="23.5" r="2.4" fill="#fff" stroke="none"/>',
+      offline: '<path d="M13 19.4a15 15 0 0 1 21 0M16.6 23.6a9.6 9.6 0 0 1 13.8 0M20.4 27.6a4.4 4.4 0 0 1 6.2 0" stroke-width="2.6"/><path d="M14 13l19.6 20" stroke-width="2.8"/>',
+    }[state];
+    return `<div class="nv-sym sym-${state}"><svg viewBox="0 0 47 47" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">${g}</svg></div>`;
+  }
+
+  function spark(vals, w, h, cls, max) {
+    const top = max || Math.max(...vals) * 1.15;
+    const pts = vals.map((v, i) => [(i / (vals.length - 1)) * w, h - 1 - (v / top) * (h - 3)]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
+    const id = 'g' + Math.random().toString(36).slice(2, 8);
+    return `<svg class="spark ${cls}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="${h}">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>
+      <path d="${line}L${w} ${h}L0 ${h}Z" fill="url(#${id})"/><path d="${line}" stroke="currentColor" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+  }
+
+  const SEV = { down: 0, degraded: 1, unknown: 2, cached: 3, up: 4 };
+  const worst = (a, b) => SEV[a.health] - SEV[b.health] || (parseInt(b.note) || 0) - (parseInt(a.note) || 0);
+  const fromArrows = (t) => esc(t).split(' → ').join('<i class="arr">→</i>');
+  const mins = (s) => s.replace(/m$/, ' min').replace(/s ago$/, ' s ago');
+
+  // ---------------------------------------------------------- native theme
+  function nvMeter(v, limit, withheld) {
+    if (withheld) return '<div class="nv-meter withheld"></div>';
+    const over = limit && v > limit;
+    return `<div class="nv-meter"><i class="${over ? 'over' : ''}" style="width:${v}%"></i>${limit && limit < 100 ? `<b style="left:${limit}%"></b>` : ''}</div>`;
+  }
+
+  function nvServer(s, opts = {}) {
+    const pill = s.withheld ? '<span class="pill p-unk">CACHED</span>'
+      : `<span class="pill p-${TB.cls(s.health)}">${s.pill || { up: 'UP', degraded: 'WARN', down: 'DOWN' }[s.health] || 'UNKNOWN'}</span>`;
+    const m = (label, r) => `<div class="nv-res"><div class="nv-res-top"><span>${label}</span><b>${!s.withheld && r.v > r.limit ? mark('degraded', 9) : ''}${s.withheld ? '—' : r.v.toFixed(0) + '%'}</b></div>${nvMeter(r.v, r.limit, s.withheld)}</div>`;
+    return `<div class="nv-server">
+      <div class="nv-server-head"><span class="nv-ico2">${opts.icon || I.server}</span>
+        <div class="nv-server-name"><b>${esc(s.name)}</b><span>${esc([s.kind, s.provider, s.place].join(' · '))}</span></div>${pill}</div>
+      <div class="nv-res3">${m('CPU', s.cpu)}${m('Memory', s.mem)}${m('Disk', s.disk)}</div>
+      <div class="nv-server-foot"><span>${esc(s.services)}</span><span>${s.withheld ? 'last reading ' : ''}${esc(s.updated)}</span></div>
+    </div>`;
+  }
+
+  function nvLocal(L) {
+    return `<div class="nv-tiles">
+      <div class="nv-tile"><div class="nv-tile-h"><span>${I.cpu}CPU</span><b>${L.cpu.v.toFixed(1)}%</b></div>
+        ${spark(L.cpu.spark, 140, 22, 'acc', Math.max(25, Math.max(...L.cpu.spark) * 1.2))}
+        <div class="nv-tile-f">System ${L.cpu.sys}% · User ${L.cpu.user}%</div></div>
+      <div class="nv-tile"><div class="nv-tile-h"><span>${I.memory}Memory</span><b>${L.mem.v.toFixed(1)}%</b></div>
+        <div class="nv-tile-bar">${nvMeter(L.mem.v)}</div>
+        <div class="nv-tile-f">Pressure ${L.mem.pressure.toFixed(0)}% · App ${L.mem.app} GB</div></div>
+      <div class="nv-tile"><div class="nv-tile-h"><span>${I.drive}Storage</span><b>${L.disk.v.toFixed(1)}%</b></div>
+        <div class="nv-tile-bar">${nvMeter(L.disk.v)}</div>
+        <div class="nv-tile-f">${L.disk.used} of ${L.disk.total} GB used</div></div>
+      <div class="nv-tile"><div class="nv-tile-h"><span>${I.net}Network</span><b class="nv-iface">${L.net.iface}</b></div>
+        <div class="nv-duo">${spark(L.net.downSpark, 140, 22, 'acc')}${spark(L.net.upSpark, 140, 22, 'acc2')}</div>
+        <div class="nv-tile-f"><span class="c-acc">↓</span> ${L.net.down.replace(' kB/s', '')} · <span class="c-acc2">↑</span> ${L.net.up}</div></div>
+    </div>
+    <div class="nv-batt"><span class="nv-batt-i">${battery(L.battery.v, true)}</span><b>${L.battery.v}%</b><span>${L.battery.state} · ${L.battery.remain}</span></div>`;
+  }
+
+  // Token sets for the cards renderer. Native is the system's own; Aurora is an
+  // example user theme that only overrides tokens.
+  const TOKENS = {
+    aurora: {
+      dark: { acc: '#2dd4bf', acc2: '#a78bfa', card: 'rgba(45, 212, 191, .07)', 'card-b': 'rgba(94, 234, 212, .14)', 'panel-bg': 'rgba(12, 28, 34, .62)', fill: 'rgba(94, 234, 212, .2)', fill2: 'rgba(94, 234, 212, .09)' },
+      light: { acc: '#0d9488', acc2: '#7c3aed', card: 'rgba(240, 253, 250, .7)', 'card-b': 'rgba(13, 148, 136, .14)', 'panel-bg': 'rgba(236, 253, 248, .62)', fill: 'rgba(13, 148, 136, .18)', fill2: 'rgba(13, 148, 136, .08)' },
+    },
+  };
+  TB.tokens = TOKENS;
+  const tokenStyle = (o) => {
+    const t = o.tokens && TOKENS[o.tokens] && TOKENS[o.tokens][o.appearance];
+    return t ? ` style="${Object.entries(t).map(([k, v]) => `--${k}:${v}`).join(';')}"` : '';
+  };
+
+  TB._cards = { mark, heroSymbol, spark, nvMeter, nvServer, nvLocal, fromArrows, mins, worst, I, battery };
+
+  TB.nativePanel = function (sc, o) {
+    const L = window.TB_DATA.local;
+    const v = sc.verdict;
+    const c = sc.counts;
+    const total = sc.configured;
+    const on = o.sections;
+    const out = [];
+
+    if (!o.heroOnly) out.push(`<header class="nv-head">
+      <img class="nv-mark" src="assets/mark.svg" alt="">
+      <div class="nv-head-t"><b>Topophany</b><span>homelab · all observers</span></div>
+      <button class="nv-btn" title="Open in Terminal">${I.terminal}</button>
+      <button class="nv-btn" title="Settings">${I.gear}</button>
+    </header>`);
+
+    // Status: always first, never optional.
+    const seg = (n, k) => (n ? `<i class="seg s-${k}" style="flex:${n}"></i>` : '');
+    const leg = (n, h, word) => `<span class="${n ? '' : 'zero'}">${mark(h, 9)}<b>${n}</b>${word}</span>`;
+    const offline = v.state === 'offline';
+    out.push(`<section class="nv-card nv-hero hero-${v.state}">
+      <div class="nv-hero-top">${heroSymbol(v.state)}
+        <div class="nv-hero-t"><b>${esc(v.title)}</b><span>${esc(v.sub)}</span></div></div>
+      ${offline
+        ? `<div class="nv-cached"><span class="pill p-unk">CACHED</span>Last snapshot ${esc(sc.updated)} said <b>${esc(sc.lastKnown.toLowerCase())}</b>. Nothing current is known.</div>`
+        : `<div class="nv-stack" title="${c.up} up · ${c.warn} warn · ${c.down} down · ${c.unknown} unknown">${seg(c.up, 'up')}${seg(c.warn, 'warn')}${seg(c.down, 'down')}${seg(c.unknown, 'unk')}</div>
+      <div class="nv-legend">${leg(c.up, 'up', 'up')}${leg(c.warn, 'degraded', 'warn')}${leg(c.down, 'down', 'down')}${leg(c.unknown, 'unknown', 'unknown')}</div>`}
+      <div class="nv-meta"><span>${I.scope}${sc.observers.live}/${sc.observers.total} observers live</span><span>${offline ? 'Updated ' + esc(sc.updated) : 'Updated ' + esc(sc.updated.replace('s ago', ' s ago'))}</span></div>
+    </section>`);
+
+    if (o.heroOnly) return `<div class="nv ${o.appearance}"${tokenStyle(o)}><div class="nv-panel">${out.join('')}</div></div>`;
+
+    if (on.seen) {
+      const bad = sc.seen.filter((x) => x.health !== 'up');
+      const good = sc.seen.length - bad.length;
+      let chips;
+      if (offline) chips = `<span class="chip">${mark('cached', 11)}Not known while offline</span>`;
+      else if (!bad.length) chips = `<span class="chip chip-calm">${mark('up', 10)}All ${sc.seen.length} observers report no problem</span>`;
+      else chips = bad.sort(worst).map((x) => `<span class="chip chip-${TB.cls(x.health)}">${mark(x.health, 11)}${esc(x.name)}<em>${esc(x.note)}</em></span>`).join('') +
+        `<span class="chip chip-calm">${mark('up', 10)}${good} others report no problem</span>`;
+      out.push(`<section class="nv-card"><h3>${I.scope}Seen from<em>${sc.seen.length} observers</em></h3><div class="nv-chips">${chips}</div></section>`);
+    }
+
+    if (on.attention && sc.attention.length) {
+      const rows = sc.attention.slice(0, o.limit).map((a) => `<div class="nv-row">
+        <span class="nv-row-i">${mark(a.health, 14)}</span>
+        <div class="nv-row-m"><div class="t">${fromArrows(a.title)}</div><div class="s">${esc(a.kind)} · from ${esc(a.from)} · ${mins(a.since)}</div></div>
+        <span class="pill p-${TB.cls(a.health)}">${esc(a.state.toUpperCase())}</span></div>`).join('');
+      const rest = sc.attention.length - o.limit + sc.more;
+      out.push(`<section class="nv-card"><h3>${I.alert}Needs attention<em>${sc.attention.length + sc.more}</em></h3>${rows}
+        ${rest > 0 ? `<a class="nv-more">${rest} more in Topophany ${I.chevron}</a>` : ''}</section>`);
+    }
+
+    if (on.apps) {
+      const rows = sc.apps.map((a) => {
+        const h = a.cached ? 'cached' : a.health || 'up';
+        const dots = a.services.map((s) => mark(a.cached ? 'cached' : s, 8)).join('');
+        return `<div class="nv-app ${a.cached ? 'cached' : ''}"><span class="nv-app-n">${mark(h, 10)}${esc(a.name)}</span><span class="nv-dots">${dots}</span><span class="nv-app-note ${a.health === 'degraded' ? 'attn' : ''}">${esc(a.note || 'all up')}</span></div>`;
+      }).join('');
+      out.push(`<section class="nv-card"><h3>${I.apps}Applications<em>23 services in 6</em></h3>${rows}</section>`);
+    }
+
+    if (on.servers) {
+      out.push(`<section class="nv-card"><h3>${I.server}Servers<em>2 pinned</em></h3>${sc.servers.map((s) => nvServer(s)).join('<div class="nv-sep"></div>')}</section>`);
+    }
+
+    if (on.mac && o.mac !== 'off') {
+      if (o.mac === 'server') {
+        const ob = sc.mac.observes;
+        out.push(`<section class="nv-card"><h3>${I.laptop}This Mac<em>as a server · macbook</em></h3>${nvServer(sc.mac, { icon: I.laptop })}
+          <div class="nv-observes">${I.scope}<span>Observes from here</span><b>${mark(ob.health, 10)}${esc(ob.text)}</b></div></section>`);
+      } else {
+        out.push(`<section class="nv-card"><h3>${I.laptop}This Mac<em>${L.model} · local readings</em></h3>${nvLocal(L)}</section>`);
+      }
+    }
+
+    out.push(`<footer class="nv-foot"><span class="nv-conn ${sc.live ? 'live' : 'off'}"><i></i>${sc.live ? 'Connected · ' + sc.collector : 'Unreachable · ' + sc.collector}</span><button>Quit</button></footer>`);
+    return `<div class="nv ${o.appearance}"${tokenStyle(o)}><div class="nv-panel">${out.join('')}</div></div>`;
+  };
+
+  // ------------------------------------------------------- cells renderer
+  // The Terminal theme, and any theme built on it: a monospace cell grid
+  // whose sections are the TUI's boxed panels, the title set in the border.
+  // A theme of this family is only a palette; the layout is the renderer's.
+  const PALETTES = {
+    terminal: {
+      ink: '#0a1016', inkHi: '#0f1820', sel: '#112c34', key: '#1a2b36', line: '#243443', track: '#16232d',
+      text: '#d5dee7', muted: '#8393a3', faint: '#4a5868', glow: '#f0fdfa', acc: '#5eead4', acc2: '#7dd3fc', kind: '#fda4af',
+      up: '#4ade80', warn: '#fbbf24', down: '#f87171', unk: '#6b7a8c',
+    },
+    // An example user theme: the same renderer, a light palette.
+    paper: {
+      ink: '#f5f0e6', inkHi: '#ece5d7', sel: '#e4ddcc', key: '#e3dbca', line: '#d3c9b5', track: '#e6dfd0',
+      text: '#2a2925', muted: '#6e695d', faint: '#a29c8e', glow: '#ffffff', acc: '#0f766e', acc2: '#1d4ed8', kind: '#be185d',
+      up: '#15803d', warn: '#b45309', down: '#b91c1c', unk: '#8b8678',
+    },
+  };
+  TB.palettes = PALETTES;
+  const pal = (o) => PALETTES[(o && o.palette) || 'terminal'];
+  const paletteVars = (p) => Object.entries({
+    ink: p.ink, 'ink-hi': p.inkHi, sel: p.sel, key: p.key, line: p.line, track: p.track, text: p.text, muted: p.muted,
+    faint: p.faint, acc: p.acc, acc2: p.acc2, kind: p.kind, up: p.up, warn: p.warn, down: p.down, unk: p.unk,
+  }).map(([k, v]) => `--${k}:${v}`).join(';');
+  TB.paletteVars = paletteVars;
+
+  // One cell per code point; anything a fallback font might draw wider is
+  // held to one cell. Box drawing and blocks stay in the monospace font.
+  const cell = (ch) => {
+    const cp = ch.codePointAt(0);
+    if (cp < 0x80 || (cp >= 0x2500 && cp <= 0x259f)) return esc(ch);
+    return `<span class="g">${esc(ch)}</span>`;
+  };
+  const len = (s) => [...s].length;
+  const trunc = (s, n) => (len(s) > n ? [...s].slice(0, Math.max(0, n - 1)).join('') + '…' : s);
+  const S = (text, cls) => ({ text, cls });
+  const draw = (segs) => segs.map((s) => (s.html ? s.html : `<span class="${s.cls || ''}">${[...s.text].map(cell).join('')}</span>`)).join('');
+  const width = (segs) => segs.reduce((n, s) => n + (s.w != null ? s.w : len(s.text)), 0);
+  function tl(left, right = [], cls = '', w = IW) {
+    const pad = Math.max(1, w - width(left) - width(right));
+    return `<div class="tl ${cls}">${draw(left)}${' '.repeat(pad)}${draw(right)}</div>`;
+  }
+  const blank = () => '<div class="tl"> </div>';
+  const tglyph = (h) => S(TB.glyph(h), 'h-' + TB.cls(h));
+  const W = 48;   // the panel's columns inside its margins
+  const IW = 46;  // a box's columns inside its border
+
+  function box(title, right, body, opt = {}) {
+    const style = opt.tint ? ` style="--bc:${opt.tint}"` : '';
+    return `<section class="tbox ${opt.cls || ''}"${style}><div class="tbox-t"><span>${draw(title)}</span>${right ? `<span>${draw(right)}</span>` : ''}</div>${body}</section>`;
+  }
+  const title = (t, extra) => [S(' ' + t, 'acc b'), ...(extra ? [S(' · ', 'faint'), S(extra, 'muted')] : []), S(' ')];
+
+  const BIG = {
+    '0': ['###', '#.#', '#.#', '#.#', '###'], '1': ['.#.', '##.', '.#.', '.#.', '###'],
+    '2': ['###', '..#', '###', '#..', '###'], '3': ['###', '..#', '.##', '..#', '###'],
+    '4': ['#.#', '#.#', '###', '..#', '..#'], '5': ['###', '#..', '###', '..#', '###'],
+    '6': ['###', '#..', '###', '#.#', '###'], '7': ['###', '..#', '.#.', '.#.', '.#.'],
+    '8': ['###', '#.#', '###', '#.#', '###'], '9': ['###', '#.#', '###', '..#', '###'],
+    '-': ['...', '...', '###', '...', '...'],
+  };
+  // The TUI's bigText: a 3x5 pixel font in half blocks, each pixel row a
+  // shade of the color, lit from above.
+  function bigDigits(s, color, p) {
+    const shade = [mix(color, p.glow, 0.4), mix(color, p.glow, 0.18), color, mix(color, p.ink, 0.14), mix(color, p.ink, 0.28)];
+    const wcols = 4 * s.length - 1;
+    let rects = '';
+    [...s].forEach((ch, k) => BIG[ch].forEach((row, y) => [...row].forEach((px, x) => {
+      if (px === '#') rects += `<rect x="${x + 4 * k}" y="${y}" width="1.04" height="1.04" fill="${shade[y]}"/>`;
+    })));
+    return `<svg class="tbig" style="width:${wcols}ch" viewBox="0 0 ${wcols} 6" preserveAspectRatio="none" shape-rendering="crispEdges">${rects}</svg>`;
+  }
+  const tone = (cls, p) => ({ up: p.up, warn: p.warn, down: p.down, unk: p.unk }[cls]);
+
+  // The TUI's loadColor over the palette: accent until a reading nears its
+  // limit, warning past it.
+  function loadTone(v, limit, p) {
+    if (!(limit > 0) || limit > 100) limit = 100;
+    if (v > limit) return p.warn;
+    const t = Math.min(1, Math.max(0, (v / limit - 0.55) / 0.45));
+    return mix(p.acc, p.warn, t * t);
+  }
+  function tBar(v, limit, n, p, opt = {}) {
+    if (opt.withheld) return { html: `<span class="tbar withheld" style="width:${n}ch"></span>`, w: n };
+    const color = opt.plain ? p.acc : loadTone(v, limit, p);
+    const lim = limit && limit < 100 ? `<b style="left:${limit}%"></b>` : '';
+    return { html: `<span class="tbar" style="width:${n}ch"><i style="width:${v}%;--c:${color}"></i>${lim}</span>`, w: n };
+  }
+  // The TUI's sparks: one block per reading, scaled to the series' peak.
+  const sparks = (vals, n, top) => vals.slice(-n).map((v) => '▁▂▃▄▅▆▇█'[Math.max(0, Math.min(7, Math.round((v / top) * 7)))]).join('');
+
+  function tStatusBody(sc, p, w, opt = {}) {
+    const v = sc.verdict;
+    const c = sc.counts;
+    const offline = v.state === 'offline';
+    const vcls = offline ? 'unk' : TB.cls(v.health);
+    const out = [];
+    out.push(tl([S((offline ? '◌' : TB.glyph(v.health)) + ' ' + (opt.short ? v.tui.replace('INCOMPLETE EVIDENCE', 'INCOMPLETE') : v.tui), 'h-' + vcls + ' b')], [], '', w));
+    const big = bigDigits(v.big, tone(vcls, p), p);
+    const lines = opt.short ? [v.bigTop.split(' ')[0], v.bigTop.split(' ').slice(1).join(' ')] : [v.bigTop, v.bigBottom];
+    out.push(`<div class="tblock"><span class="tb-sp"> </span>${big}<span class="tb-sp">  </span><div class="tb-lines"><div class="tl">${draw([S(lines[0])])}</div><div class="tl">${draw([S(lines[1], 'muted')])}</div><div class="tl"> </div></div></div>`);
+    if (offline) {
+      out.push(tl([S('╌'.repeat(w), 'faint')], [], '', w));
+      out.push(tl([S('◌', 'h-unk'), S(opt.short ? ' last: ' : ' last snapshot said ', 'muted'), S(sc.lastKnown.toLowerCase(), 'b')], [], '', w));
+    } else {
+      const share = (n) => Math.round((n / sc.configured) * w);
+      const rule = [S('━'.repeat(share(c.up)), 'h-up'), S('━'.repeat(share(c.warn)), 'h-warn'), S('━'.repeat(share(c.down)), 'h-down'), S('━'.repeat(share(c.unknown)), 'h-unk')];
+      rule[0].text = '━'.repeat(Math.max(0, len(rule[0].text) + w - width(rule)));
+      out.push(tl(rule, [], '', w));
+      const cnt = (n, h, word) => [S(TB.glyph(h), n ? 'h-' + TB.cls(h) : 'faint'), S(' '), S(String(n), n ? 'b' : 'faint'), S(word ? ' ' + word + '  ' : ' ', n ? 'muted' : 'faint')];
+      if (opt.short) out.push(tl([...cnt(c.up, 'up'), ...cnt(c.warn, 'degraded'), ...cnt(c.down, 'down'), ...cnt(c.unknown, 'unknown')], [], '', w));
+      else out.push(tl([...cnt(c.up, 'up', 'up'), ...cnt(c.warn, 'degraded', 'warn'), ...cnt(c.down, 'down', 'down'), ...cnt(c.unknown, 'unknown', 'unknown')], [], '', w));
+    }
+    if (!opt.short) {
+      out.push(tl([S('⚑', sc.incidents ? 'h-down' : 'faint'), S(' '), S(String(sc.incidents), sc.incidents ? 'b' : 'faint'), S(' incidents', 'muted')],
+        [S('◎', 'acc2'), S(' '), S(sc.observers.live + '/' + sc.observers.total, 'b'), S(' observers live', 'muted')], '', w));
+    }
+    return out.join('');
+  }
+  const statusTint = (sc, p) => mix(tone(sc.verdict.state === 'offline' ? 'unk' : TB.cls(sc.verdict.health), p), p.ink, 0.42);
+
+  function tSeenBody(sc, w, max = 99) {
+    const bad = sc.seen.filter((x) => x.health !== 'up').sort(worst);
+    if (sc.verdict.state === 'offline') return tl([S('◌', 'h-unk'), S(' not known while offline', 'muted')], [], '', w);
+    if (!bad.length) return tl([tglyph('up'), S(' all ' + sc.seen.length + ' observers report no problem', 'muted')], [], '', w);
+    return bad.slice(0, max).map((x) => tl([tglyph(x.health), S(' '), S(trunc(x.name, w - 10))], [S(x.note, 'h-' + TB.cls(x.health))], '', w)).join('') +
+      tl([tglyph('up'), S(' ' + (sc.seen.length - bad.length) + ' others report no problem', 'muted')], [], '', w);
+  }
+
+  function tAttentionBody(sc, w, limit, opt = {}) {
+    const rows = sc.attention.slice(0, limit).map((a, i) => {
+      const st = a.state === 'unknown' ? 'unknown' : a.state;
+      const head = tl([tglyph(a.health), S(' '), S(trunc(a.title, w - 3 - len(st) - 1), 'b')], [S(st, 'h-' + TB.cls(a.health) + ' b')], '', w);
+      const sub = tl([S('  ' + a.kind + ' · ' + a.from + ' · ' + a.since, 'muted')], [], '', w);
+      return `<div class="trow ${i === 0 && opt.focus ? 'focus' : ''}">${head}${opt.compact ? '' : sub}</div>`;
+    }).join('');
+    const rest = sc.attention.length - limit + sc.more;
+    return rows + (rest > 0 ? tl([S('+' + rest + ' more', 'faint')], opt.compact ? [] : [S('↵', 'acc'), S(' open in topo', 'faint')], '', w) : '');
+  }
+
+  function tAppsBody(sc, w, opt = {}) {
+    return sc.apps.map((a) => {
+      const h = a.cached ? 'cached' : a.health || 'up';
+      const dots = [];
+      a.services.forEach((s) => dots.push(a.cached ? S('◌', 'h-unk') : tglyph(s), ...(opt.tight ? [] : [S(' ')])));
+      const note = a.tuiNote && !opt.noNote ? S(a.tuiNote, a.health === 'degraded' ? 'h-warn' : 'muted') : S('');
+      return tl([tglyph(h), S(' '), S(trunc(a.name, opt.name || 15).padEnd(opt.name || 15), a.health === 'degraded' ? 'b' : ''), S(' '), ...dots], [note], '', w);
+    }).join('');
+  }
+
+  function tServerBody(s, p, w, opt = {}) {
+    const out = [];
+    out.push(tl([S(s.kind, 'kind'), S(' · ', 'faint'), S(s.provider, 'muted'), S(' · ', 'faint'), S(s.place, 'muted')], [S(s.withheld ? 'last ' + s.updated : s.updated, 'faint')], '', w));
+    const barN = opt.bar || 20;
+    const row = (label, r) => {
+      const val = s.withheld ? '     —' : (r.v.toFixed(1) + '%').padStart(6);
+      const detail = opt.noDetail || s.withheld ? '' : r.detail.replace(' / ', '/');
+      return tl([S(label.padEnd(opt.label || 7), 'muted'), S(val, s.withheld ? 'faint' : 'b'), S(' '), tBar(r.v, r.limit, barN, p, { withheld: s.withheld })], [S(detail, 'muted')], '', w);
+    };
+    out.push(row('CPU', s.cpu), row(opt.label === 4 ? 'MEM' : 'MEMORY', s.mem), row('DISK', s.disk));
+    if (s.observes && opt.observes) {
+      const ob = s.observes;
+      out.push(tl([S('◎', 'acc2'), S(' from here  ', 'muted'), tglyph(ob.health), S(' ' + ob.text, ob.health === 'up' ? '' : 'h-' + TB.cls(ob.health))], [S(ob.ago, 'faint')], '', w));
+    }
+    return out.join('');
+  }
+  const serverTitle = (s) => [S(' '), S(TB.glyph(s.withheld ? 'cached' : s.health), 'h-' + (s.withheld ? 'unk' : TB.cls(s.health))), S(' ' + s.name + ' ', 'b')];
+  const serverPill = (s) => {
+    const t = s.withheld ? 'CACHED' : s.pill || { up: 'UP', degraded: 'WARN', down: 'DOWN' }[s.health] || 'UNKNOWN';
+    return [S(' ' + t + ' ', 'pill pill-' + (s.withheld ? 'unk' : TB.cls(s.health)))];
+  };
+
+  TB.tuiPanel = function (sc, o) {
+    const p = pal(o);
+    const L = window.TB_DATA.local;
+    const v = sc.verdict;
+    const offline = v.state === 'offline';
+    const out = [];
+
+    out.push(tl([S('◉', 'acc'), S(' TOPOPHANY', 'acc b'), S(' ╱ ', 'faint'), S('homelab', 'b'), S(' · all observers', 'faint')],
+      [sc.live ? S('● LIVE', 'h-up b') : S('◌ OFFLINE', 'h-down b')], 'bar head', W));
+
+    out.push(box(title('STATUS'), [S(' ' + (offline ? 'cached ' : 'updated ') + sc.updated + ' ', 'muted')], tStatusBody(sc, p, IW), { tint: statusTint(sc, p), cls: 'status' }));
+    if (o.heroOnly) return `<div class="tv" style="${paletteVars(p)}"><div class="tv-panel">${out.join('')}<div class="tgap"></div></div></div>`;
+
+    if (o.sections.seen) out.push(box(title('SEEN FROM', String(sc.seen.length)), null, tSeenBody(sc, IW)));
+    if (o.sections.attention && sc.attention.length) {
+      out.push(box(title('NEEDS ATTENTION', String(sc.attention.length + sc.more)), null, tAttentionBody(sc, IW, o.limit, { focus: true })));
+    }
+    if (o.sections.apps) out.push(box(title('SERVICES', '23 in 6 apps'), null, tAppsBody(sc, IW)));
+    if (o.sections.servers) sc.servers.forEach((s) => out.push(box(serverTitle(s), serverPill(s), tServerBody(s, p, IW))));
+
+    if (o.sections.mac && o.mac !== 'off') {
+      if (o.mac === 'server') {
+        const s = sc.mac;
+        out.push(box([...title('THIS MAC'), S(TB.glyph(s.withheld ? 'cached' : s.health), 'h-' + (s.withheld ? 'unk' : TB.cls(s.health))), S(' ' + s.name + ' ', 'b')], serverPill(s), tServerBody(s, p, IW, { observes: true })));
+      } else {
+        const lab = (t) => S(t.padEnd(7), 'muted');
+        const n = 19;
+        const body = [
+          tl([lab('CPU'), S((L.cpu.v.toFixed(1) + '%').padStart(6), 'b'), S(' '), S(sparks(L.cpu.spark, n, Math.max(...L.cpu.spark)), 'acc')], [S('sys ' + Math.round(L.cpu.sys) + ' usr ' + Math.round(L.cpu.user), 'muted')]),
+          tl([lab('MEMORY'), S((L.mem.v.toFixed(1) + '%').padStart(6), 'b'), S(' '), tBar(L.mem.v, 0, n, p, { plain: true })], [S('press ' + L.mem.pressure.toFixed(0) + '%', 'muted')]),
+          tl([lab('DISK'), S((L.disk.v.toFixed(1) + '%').padStart(6), 'b'), S(' '), tBar(L.disk.v, 0, n, p, { plain: true })], [S(Math.round(L.disk.used) + '/' + Math.round(L.disk.total) + ' GB', 'muted')]),
+          tl([lab('NET'), S('↓ ', 'acc'), S(L.net.down, 'b'), S('  ↑ ', 'acc2'), S(L.net.up, 'b')], [S(L.net.iface, 'muted')]),
+          tl([lab('POWER'), S(L.battery.v + '%', 'b'), S(' ' + L.battery.state.toLowerCase(), 'h-up'), S(' · ' + L.battery.remain, 'muted')]),
+        ].join('');
+        out.push(box(title('THIS MAC', 'local readings'), [S(' ' + L.model + ' ', 'muted')], body));
+      }
+    }
+
+    const key = (k, label) => [S(' ' + k + ' ', 'key'), S(' ' + label + '  ', 'muted')];
+    out.push('<div class="tgap"></div>' + tl([...key('↵', 'Open'), ...key(',', 'Settings'), ...key('q', 'Quit')],
+      [S(sc.collector + ' · ' + (sc.live ? sc.updated.replace(' ago', '') : 'unreachable'), sc.live ? 'faint' : 'h-down')], 'bar foot', W));
+    return `<div class="tv" style="${paletteVars(p)}"><div class="tv-panel">${out.join('')}</div></div>`;
+  };
+
+  // Shared with the widgets, which draw the same sections at other sizes.
+  TB._cells = { S, tl, draw, box, title, trunc, tglyph, bigDigits, tBar, sparks, pal, paletteVars, statusTint, tone,
+    tStatusBody, tSeenBody, tAttentionBody, tAppsBody, tServerBody, serverTitle, serverPill };
+
+  // -------------------------------------------------------- status item
+  // The template globe with a status badge cut into its corner.
+  TB.statusItem = function (sc, o) {
+    const v = sc.verdict;
+    const st = v.state === 'offline' ? 'cached' : v.health;
+    if (o.theme === 'tui') {
+      const g = v.state === 'offline' ? '◌' : TB.glyph(v.health);
+      const cls = v.state === 'offline' ? 'unk' : TB.cls(v.health);
+      const text = o.text === 'symbol' ? '' : o.text === 'count'
+        ? (v.count ? ' ' + v.count : '') : ' ' + v.tui.replace('INCOMPLETE EVIDENCE', 'INCOMPLETE');
+      return `<span class="mb-item ours titem ${o.pressed ? 'pressed' : ''}"><span class="tchip" style="${TB.paletteVars(TB.palettes[o.palette || 'terminal'])}"><span class="g h-${cls}">${g}</span>${esc(text)}</span></span>`;
+    }
+    const mono = o.color === 'mono';
+    const id = 'm' + Math.random().toString(36).slice(2, 8);
+    const badge = {
+      up: '<circle cx="14.6" cy="14.6" r="3.3" fill="var(--b)"/>',
+      degraded: '<path d="M14.6 10.9l3.7 6.5h-7.4Z" fill="var(--b)" stroke="var(--b)" stroke-width=".8" stroke-linejoin="round"/>',
+      down: '<rect x="11.1" y="11.1" width="7" height="7" rx="1.6" fill="var(--b)"/><path d="M13.1 13.1l3 3M16.1 13.1l-3 3" stroke="var(--bx)" stroke-width="1.15" stroke-linecap="round"/>',
+      unknown: '<circle cx="14.6" cy="14.6" r="2.7" fill="none" stroke="var(--b)" stroke-width="1.3"/>',
+      cached: '<circle cx="14.6" cy="14.6" r="2.7" fill="none" stroke="var(--b)" stroke-width="1.3" stroke-dasharray="1.4 1.2"/>',
+    }[st];
+    const words = { clear: 'All clear', degraded: 'Degraded', incidents: v.count + ' incidents', incomplete: 'Incomplete', offline: 'Offline' }[v.state];
+    const text = o.text === 'symbol' ? '' : o.text === 'count' ? (v.count ? String(v.count) : '') : words;
+    return `<span class="mb-item ours nitem b-${mono ? 'mono' : TB.cls(st)} ${o.pressed ? 'pressed' : ''}">
+      <svg viewBox="0 0 19 19" width="19" height="19"><defs><mask id="${id}"><rect width="19" height="19" fill="#fff"/><circle cx="14.6" cy="14.6" r="5.1" fill="#000"/></mask></defs>
+        <g mask="url(#${id})" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><ellipse cx="9" cy="9" rx="3" ry="7"/><path d="M2 9h14"/></g>${badge}</svg>${text ? `<span class="nitem-t">${esc(text)}</span>` : ''}</span>`;
+  };
+
+  // ----------------------------------------------------------- menu bar
+  const wifi = '<svg viewBox="0 0 20 16" width="17" height="14" fill="currentColor"><path d="M10 13.6a1.5 1.5 0 1 0 0 .01ZM5.9 9.7a5.9 5.9 0 0 1 8.2 0l-1.3 1.4a4 4 0 0 0-5.6 0ZM3 6.8a10 10 0 0 1 14 0l-1.4 1.4a8 8 0 0 0-11.2 0ZM.2 3.9a14 14 0 0 1 19.6 0l-1.4 1.4A12 12 0 0 0 1.6 5.3Z"/></svg>';
+  const cc = '<svg viewBox="0 0 20 16" width="17" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="17" height="5.4" rx="2.7"/><rect x="1.5" y="9.1" width="17" height="5.4" rx="2.7"/><circle cx="6" cy="4.2" r="1.3" fill="currentColor"/><circle cx="14" cy="11.8" r="1.3" fill="currentColor"/></svg>';
+  const batt = '<svg viewBox="0 0 28 14" width="26" height="13"><rect x=".75" y=".75" width="23.5" height="12.5" rx="3.6" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2"/><rect x="2.5" y="2.5" width="16.5" height="9" rx="2.1" fill="currentColor"/><path d="M26 5v4" stroke="currentColor" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  const search = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="6.8" cy="6.8" r="5"/><path d="M10.6 10.6 14.5 14.5"/></svg>';
+
+  TB.menubar = function (appearance, item, opts = {}) {
+    return `<div class="mb mb-${appearance}">
+      <div class="mb-left"><span class="mb-apple"><svg viewBox="0 0 24 24" width="14" height="16" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></span><b>Finder</b><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span></div>
+      <div class="mb-right">${item}<span class="mb-sys">${wifi}</span><span class="mb-sys">${batt}</span><span class="mb-sys">${search}</span><span class="mb-sys">${cc}</span><span class="mb-clock">${opts.clock || 'Sun Oct 18&nbsp;&nbsp;6:30 AM'}</span></div>
+    </div>`;
+  };
+
+  // A desktop with the menu bar and, if asked, the panel open beneath it.
+  TB.scene = function (el, sc, o) {
+    const item = TB.statusItem(sc, Object.assign({}, o, { pressed: o.open !== false }));
+    const panel = o.open === false ? '' : (o.theme === 'tui' ? TB.tuiPanel(sc, o) : TB.nativePanel(sc, o));
+    el.className = `desk wall-${o.appearance} ${o.cls || ''}`;
+    el.innerHTML = TB.menubar(o.appearance, item) + (panel ? `<div class="drop">${panel}</div>` : '');
+    if (panel) {
+      requestAnimationFrame(() => {
+        const d = el.querySelector('.drop');
+        const it = el.querySelector('.mb-item.ours');
+        const er = el.getBoundingClientRect();
+        const ir = it.getBoundingClientRect();
+        const dw = d.offsetWidth;
+        let left = ir.left - er.left + ir.width / 2 - dw / 2;
+        left = Math.max(10, Math.min(left, er.width - dw - 10));
+        d.style.left = left + 'px';
+        d.style.visibility = 'visible';
+        if (o.fit) el.style.height = d.offsetHeight + 31 + (o.fitPad || 34) + 'px';
+      });
+    }
+  };
+
+  TB.defaults = () => ({
+    theme: 'native', appearance: 'dark', text: 'count', color: 'status', mac: 'local', limit: 3,
+    sections: { seen: true, attention: true, apps: true, servers: false, mac: true },
+  });
+})();

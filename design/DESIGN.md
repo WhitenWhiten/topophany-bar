@@ -1,0 +1,380 @@
+# topophany-bar: design notes (v1)
+
+A native macOS menu bar app and desktop widgets for `topo`. Draft of 2026-10-18.
+
+- **Repository and product name:** `topophany-bar`.
+- **Minimum system:** macOS 26. Tested on macOS 27.
+
+The HTML previews next to this file show the design:
+
+| Page | What it shows |
+|---|---|
+| `index.html` | overview, the three looks, widgets, themes, architecture |
+| `playground.html` | every state, theme and setting, live |
+| `states.html` | the status item and status card in all five states |
+| `widgets.html` | four sizes, both themes, every state, monochrome rendering |
+| `settings.html` | the Settings window |
+
+## 1. Goal
+
+**At a glance, what does the collector conclude right now?** The menu bar item answers that and nothing else. One click opens a panel that says where the problem is, which vantage points see it, what is affected, and how this Mac is doing. Widgets pin the same cards to the desktop.
+
+Out of scope for v1:
+
+- an animated runner (the item shows status only)
+- local notifications (collector webhooks already alert)
+- RunCat or any file output (the stream replaces them)
+- loading user theme files (the format is designed in section 8)
+- the embedded engine (section 10.2)
+- history charts beyond the local sparklines
+- Windows and Linux
+
+## 2. Principles
+
+1. **Shows, never decides.** Every state, count and health comes from `topo`, computed by `internal/view` exactly as the TUI computes it. The app sets no thresholds and infers no fault.
+2. **Blind is a state.** Freshness is separate from health. Past the publisher's lease or a row's `valid_until`, the row is withheld and the item turns ◌. Widgets get the same rule through their timeline (section 7.3). An old green never stays on screen.
+3. **Shape, then color.** Every status mark changes shape (● ▲ ✕ ○ ◌) as well as color. Shapes belong to the renderer, so no theme can remove that distinction.
+4. **Unknown is never zero.** Bars and ratios keep unknown in the denominator, drawn hatched. Unknown numbers are `null`.
+5. **Local is not evidence.** This Mac's local readings carry no health, are labeled "local readings", and never leave the Mac.
+6. **Beauty through restraint.** The panel is calm when things are calm: color appears only where something needs a look.
+
+## 3. The status item
+
+| Verdict (`view.Verdict().State`) | Badge | Color | Count | Words | Terminal chip |
+|---|---|---|---|---|---|
+| `clear` | ● dot | green | none | All clear | `● ALL CLEAR` |
+| `degraded` | ▲ triangle | orange | warn checks | Degraded | `▲ DEGRADED` |
+| `incidents` | ✕ in rounded square | red | open incidents | *n* incidents | `✖ 5 INCIDENTS` |
+| `down` (no incident yet) | ✕ in rounded square | red | down checks | *n* down | `✖ 2 DOWN` |
+| `incomplete`, `no-evidence`, `no-checks` | ○ ring | gray | unknown checks | Incomplete | `○ INCOMPLETE` |
+| `cached`, lease lapsed, engine stopped | ◌ dashed ring | gray | none | Offline | `◌ OFFLINE` |
+
+- **Native:** a template-image globe with the badge cut into its corner.
+- **Terminal:** a chip in the theme's ink.
+- **Settings:** Show = Symbol, Count or Words (default Count). Status colors = on or off; with colors off the badge keeps its shape.
+- **VoiceOver:** "Topophany: 5 incidents, updated 4 seconds ago."
+
+## 4. The panel
+
+The header shows the mark, the project and view, Open in Terminal (⌘O) and Settings (⌘,). The footer shows the connection and Quit. Sections run in this default order:
+
+1. **Status.** Fixed, always first, pinned when the panel scrolls.
+   - The verdict.
+   - Every configured check by health, as a stacked bar with unknown hatched, plus a legend.
+   - Observers live, and when the frame was updated.
+   - Offline: a CACHED card with the last snapshot's verdict, and no bar.
+2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
+3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty.
+4. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
+5. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld.
+6. **This Mac.** See section 5.
+
+Size:
+
+- **Native:** 344 pt wide.
+- **Terminal:** 48 columns of SF Mono 12 inside 7 pt margins.
+- **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls.
+
+The Terminal theme draws each section as the TUI draws a panel:
+
+- **Boxes:** a rounded box with its title set in the top border, and right-aligned metadata in the border as well.
+- **The status box:** its border is tinted by the verdict.
+- **Focus:** the focused row gets the TUI's selection background and accent bar, for keyboard use (↑↓, ↵).
+- **The count:** the TUI's big 3×5 digits.
+- **Meters:** colored by `loadColor`.
+- **CPU history:** block sparks.
+- **Footer:** keycaps for Open, Settings and Quit.
+
+## 5. This Mac
+
+There are three modes: **Local readings**, **As a server** and **Off**.
+
+### Local readings
+
+The app reads these natively, every 2 s by default:
+
+| Reading | Source | Shown |
+|---|---|---|
+| CPU | `host_processor_info` tick deltas | total, system, user; 60-sample sparkline |
+| Memory | `host_statistics64`, `kern.memorystatus_level` | used %, pressure, app / wired / compressed (as Activity Monitor) |
+| Storage | `volumeAvailableCapacityForImportantUsage` | used %, used of total |
+| Network | `getifaddrs` counters on the primary interface (`NWPathMonitor`) | ↓ / ↑ rate, two sparklines, interface and address |
+| Battery | IOKit power sources | charge, state, time remaining (hidden on desktops) |
+
+Local readings never pass through `topo`, and nothing runs `top`. The `topo` client process the app starts samples nothing from the host, and section 11.3 removes `top` from `topo`'s own host check as well.
+
+### As a server
+
+A `server.card` row for the chosen node: the card the Servers tab draws, read from the collector. It adds "From here", the verdict of the observer on that node. Settings suggests the node whose ID or name matches the Mac's `LocalHostName`. Without a host check on the node, resources read unknown.
+
+## 6. Themes in v1
+
+| Theme | Renderer | Tokens |
+|---|---|---|
+| **Native** | `cards` | System materials and colors. Glass, SF Pro, SF Symbols, system green, orange, red and gray, and the accent color for capacity. Light, dark or Match System. |
+| **Terminal** | `cells` | The TUI's palette from `internal/tui/theme.go`: ink `#0A1016`, accent `#5EEAD4`, sky `#7DD3FC`, up `#4ADE80`, warn `#FBBF24`, down `#F87171`, unknown `#6B7A8C`, line `#243443`. It always paints its ink. |
+
+The theme applies to the panel, the menu bar item and every widget.
+
+## 7. Widgets
+
+### 7.1 Kinds and sizes
+
+Sizes in points sit on a 170 pt grid with 24 pt gaps.
+
+| Kind | Small 170×170 | Medium 364×170 | Large 364×364 | Extra large 752×364 |
+|---|---|---|---|---|
+| **Status** | verdict, bar, observers, age | Status, plus Needs attention (or Applications when nothing needs attention) | Status with legend, Seen from, Needs attention | Large, plus Applications and pinned Servers |
+| **Server** | one node: CPU, memory and disk against limits, state, age | plus its services and what it observes from there | n/a | n/a |
+
+Every widget is built from the same section models and the same renderer as the panel, in the same theme. In the cells renderer they become the TUI's boxes at 11 pt. In **Edit Widget**, users choose what a widget shows (the medium widget's right side; the server, including This Mac) and its theme (default: the same as the bar). They never choose what it means. Clicking a widget opens the panel; clicking an attention row opens the TUI on it.
+
+### 7.2 Data
+
+A widget extension runs in its own process and can't attach to the app's pipe. The app is the only reader of `topo`. After each frame it keeps the latest frame and the theme in its App Group container, and asks WidgetKit to reload:
+
+- **At once** when the verdict state changes, or a widget-visible row changes health.
+- **On a heartbeat** of 30 min while nothing changes.
+
+Local readings are not offered in widgets, because a widget can't refresh often enough to show them live.
+
+### 7.3 Honesty
+
+Each reload gives WidgetKit two timeline entries:
+
+- **Now:** the current verdict.
+- **Not current:** dated at the next heartbeat plus 15 min.
+
+If the app quits, crashes or the Mac sleeps through a renewal, the widget switches itself to **Not current**. It shows the last verdict as history ("Last known: 5 incidents · 47 min ago"), never as now. The widget's age line uses WidgetKit's relative date, which counts up without reloads.
+
+### 7.4 Rendering modes
+
+macOS draws desktop widgets without background or color while another app is in front. Shape-first glyphs keep every state readable there. In that mode, the cells renderer drops its box borders for plain headings.
+
+## 8. Theme architecture
+
+Themes must be able to grow: more built-in themes, and user themes later. So a theme is split in two.
+
+- **A renderer** is code, in `TopophanyThemes`. It lays out every section model for every surface (panel, status item, widget sizes). It owns the status glyph shapes and the meaning of each token slot. v1 has `cards` and `cells`. A new renderer (say, a gauge-heavy one) is a new type that conforms to the `Renderer` protocol, and every surface gets it at once.
+- **A theme** is data: the renderer's name plus its tokens.
+
+```json
+{
+  "schema": 1,
+  "id": "paper",
+  "name": "Paper",
+  "renderer": "cells",
+  "appearance": "light",
+  "tokens": {
+    "ink": "#F5F0E6", "inkHigh": "#ECE5D7", "selection": "#E4DDCC", "key": "#E3DBCA", "line": "#D3C9B5", "track": "#E6DFD0",
+    "text": "#2A2925", "muted": "#6E695D", "faint": "#A29C8E", "accent": "#0F766E", "accent2": "#1D4ED8", "kind": "#BE185D",
+    "up": "#15803D", "warning": "#B45309", "down": "#B91C1C", "unknown": "#8B8678"
+  },
+  "font": { "family": "SF Mono", "size": 12 }
+}
+```
+
+- **Token slots:**
+  - `cells` takes the slots above.
+  - `cards` takes `accent`, `accent2`, `card`, `cardEdge`, `panelMaterial`, `fill`, `fill2`, and optionally the status colors. Missing slots fall back to the system's.
+- **Validation:** a theme is refused, with the reason, unless all of these hold:
+  - text on ink is at least 4.5:1;
+  - every pair of status colors differs by at least ΔE 15 (OKLab ×100) to normal vision and at least 8 under simulated color-blindness;
+  - every required slot is present.
+- **What a theme can't change:** glyphs, layout and meaning.
+- **Where themes live:**
+  - Built-in themes are compiled in.
+  - User themes will be read from `~/Library/Application Support/topophany-bar/Themes/*.json`, then validated and copied into the App Group so widgets draw them too.
+  - v1 ships the loader disabled, but both built-in themes go through the same `Theme` type, so the path is already exercised.
+- **Swift types:** `Theme { id, renderer: RendererID, tokens: Tokens }`. `Renderer` is a protocol with `panel(_:)`, `statusItem(_:)` and `widget(_:family:)`, each taking section models and tokens.
+
+The previews include two example user themes, **Aurora** (`cards`) and **Paper** (`cells`), as proof that a token file is a whole theme.
+
+## 9. Configuration
+
+**You choose what to look at, never what it means.**
+
+| Yours (Settings, Edit Widget) | Fixed (topology + collector) |
+|---|---|
+| Theme; panel appearance; text size | What counts as up, warn, down or unknown |
+| Menu bar: Symbol, Count or Words; status colors | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
+| Sections on or off and their order (Status is fixed) | Freshness, staleness, publisher lease |
+| Attention rows (3 or 5); which applications; pinned servers | How groups add up (unknown always counted) |
+| What each widget shows and its theme | Status glyphs and their meaning |
+| This Mac mode, readings, volume, interface, sample rate | No expressions or formulas |
+| `topo` path, profile, observer view, refresh (1 s to 1 h); open at login; terminal for the TUI | |
+
+Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On every change the app compiles them into a `topo` monitor template and sends it to the running engine.
+
+```json
+{
+  "schema": 1,
+  "topo": { "path": "/opt/homebrew/bin/topo", "profile": "home", "observer": "", "interval": "5s" },
+  "appearance": { "theme": "native", "panel": "system", "menuBar": { "show": "count", "statusColors": true } },
+  "sections": [
+    { "id": "status" },
+    { "id": "seen" },
+    { "id": "attention", "limit": 3 },
+    { "id": "applications", "only": [] },
+    { "id": "servers", "enabled": false, "nodes": ["oracle-ny", "bwh-la"] },
+    { "id": "mac", "mode": "local", "readings": ["cpu", "memory", "storage", "network", "battery"], "every": "2s" }
+  ],
+  "openAtLogin": true,
+  "terminal": "com.mitchellh.ghostty"
+}
+```
+
+## 10. Architecture
+
+```
+topophany-bar.app ──stdin: request──▶ topo monitor stream ──TLS, saved profile──▶ topo serve
+     │  ▲ ◀──stdout: frames───────────┘                    ◀──/v1/snapshot────────┘
+     │  └── reads macOS for This Mac (local readings)
+     └──▶ App Group: latest frame + theme ──▶ widget extension (WidgetKit timeline)
+```
+
+### 10.1 Packages
+
+Everything except the app shell is AppKit-free: SwiftUI and Foundation only, so it builds for any Apple platform.
+
+```
+topophany-bar/
+  Package.swift
+  Sources/
+    TopophanyKit/       Frame and Row models, FrameDecoder, ReaderPolicy (deadlines), Request and TemplateCompiler,
+                        Settings, Engine protocol
+    TopophanyEngine/    ProcessEngine; later EmbeddedEngine
+    TopophanySections/  one model per section, built from frames: Status, SeenFrom, Attention, Applications,
+                        ServerCard, Local
+    TopophanyThemes/    Theme, Tokens, ThemeStore, ThemeValidator, Renderer protocol;
+                        Cards/ (SwiftUI) and Cells/ (CellCanvas)
+    TopophanyWidgets/   TimelineProvider (current and not-current entries), widget views per family
+    LocalReadings/      Sampler protocol; Mach and IOKit samplers
+  Apps/
+    topophany-bar/      the macOS shell: StatusItemController, PanelController (NSPanel), Settings window
+    Widgets/            the widget extension: a thin wrapper around TopophanyWidgets
+  Tests/                frame goldens from `topo preview`, deadline rules, template compiler, theme validator,
+                        snapshot images of every section, size and theme
+```
+
+Rules:
+
+- Only `Apps/` imports AppKit.
+- Renderers take section models, never frames.
+- Engines produce frames, never views.
+- **`CellCanvas`** draws any grid of styled cells together with the TUI's vector pieces (boxes, half-block pixels, blocks), crisply at any scale. The `cells` renderer is built on it, and it can draw other cell-based screens too.
+
+### 10.2 Engines
+
+```swift
+protocol Engine {
+    func start(_ request: Request) -> AsyncThrowingStream<Frame, Error>
+    func update(_ request: Request) async throws
+}
+```
+
+- **ProcessEngine** (v1) runs `topo monitor stream` as a child process with pipes.
+  1. **Finding `topo`:** the path setting, then the login shell's `PATH`, then `/opt/homebrew/bin` and `/usr/local/bin`.
+  2. **Version check:** run `topo version`; if `topo` is too old to have `monitor stream`, offer the upgrade command.
+  3. **When the engine stops:** restart it after 1, 2, 4 … up to 30 s, and show ◌ until the next frame.
+  4. **When the app quits:** stdin closes and `topo` exits.
+
+  Spawning a user-installed binary rules out the App Sandbox, so v1 is distributed with a Developer ID, notarized, as a Homebrew cask.
+- **EmbeddedEngine** (later) links `libtopo`: the Go `monitor stream` core built with `-buildmode=c-archive` into an XCFramework. It exposes `topo_stream_start(request, callback)`, `topo_stream_update` and `topo_stream_stop`, and speaks the same request and frame JSON. This is for builds that can't start a process. Only that library build uses cgo, for its C exports; the `topo` binary stays CGO-free with zero modules.
+
+### 10.3 Protocol
+
+The exact contract is [`docs/PROTOCOL.md`](../docs/PROTOCOL.md), which wins wherever it differs from this summary.
+
+**Request (stdin).** One JSON object per line. A new line atomically replaces the running request, so settings apply without a restart. An invalid line leaves the previous request running and produces a frame with `lifecycle: "error"`.
+
+```json
+{"schema":1,"profile":"home","observer":"","interval":"5s",
+ "template":{"schema":1,"title":"Topophany","bar":{"row":"status"},"rows":[
+  {"id":"status","metric":"summary.verdict"},
+  {"id":"seen","metric":"observers.verdicts","visual":"list"},
+  {"id":"attention","metric":"attention.list","visual":"list","limit":3},
+  {"id":"apps","metric":"applications.list","visual":"list"},
+  {"id":"mac","metric":"server.card","select":{"node":"macbook"}}]}}
+```
+
+**Frames (stdout).** The existing panel output schema 1, one object per line, at most 1 MiB:
+
+- **Frame fields:** `name`, `instance`, `sequence`, `lifecycle` (`running`, `error` or `stopped`), `generated_at`, `publisher_expires_at`.
+- **Row fields:** `value`, `text`, `health`, `freshness`, `reason`, `sampled_at`, `valid_until`.
+- **When frames are sent:** on change, on any health, freshness or lifecycle transition, and at least every 10 s to renew the 30 s lease.
+
+The reader rules are those of `topo monitor preview`, and they live in `TopophanyKit.ReaderPolicy`:
+
+- Every second, check the lease and each row's deadline against the clock.
+- Treat implausibly future timestamps as unavailable.
+- Never extend a row because its lease was renewed.
+
+## 11. Changes in `topo`
+
+The value shapes, error codes and the `preview` source are specified in [`docs/PROTOCOL.md`](../docs/PROTOCOL.md).
+
+### 11.1 `topo monitor stream`
+
+The `monitor` core moves into a package with a function API: requests in, frames out. Two thin wrappers sit on top of it:
+
+- the CLI subcommand, over stdin and stdout;
+- later, `libtopo`, over C callbacks.
+
+### 11.2 Metrics
+
+Each is computed from `internal/view`, so the bar and the TUI agree.
+
+| Metric | Visual | Value |
+|---|---|---|
+| `summary.verdict` | `status` | `{state, glyph, text, counts, incidents, observers}` from `View.Verdict`, `Counts`, `Live`. It is separate from `summary.status`, so existing templates keep working. |
+| `observers.verdicts` | `list` | per observer: `id`, `name`, `health`, counts, `live`, `last_seen` |
+| `attention.list` | `list` + `limit` | open ledger records, then `NeedsAttention` rows by `AttentionRank`, plus `more` |
+| `applications.list` | `list` | per application: `id`, `name`, `health`, services, attention and unmonitored counts |
+| `server.card` | `card`, `select.node` | from `Fleet().Card`: resources against limits, services, `observes` |
+
+### 11.3 macOS host check without `top`
+
+Today `sampleDarwinRuntime` (`internal/probe/host_macos_parse.go`) runs four commands on every host check:
+
+- `top -l 2 -s 1`, which costs a full second and a process;
+- `sysctl -n hw.memsize`;
+- `vm_stat`;
+- `ps -axo`.
+
+The Windows sampler already reads counters in-process through `syscall`. On macOS the same is possible without CGO, by calling libSystem through assembly trampolines: the mechanism the standard library and `golang.org/x/sys/unix` use on darwin, written in-tree to keep zero modules.
+
+| Fact | Now | In-process |
+|---|---|---|
+| CPU | `top`, second sample (1 s) | `host_statistics(HOST_CPU_LOAD_INFO)` tick deltas over 200 ms, like Linux; `cpu_sample_ms` becomes 200 |
+| Memory total | `sysctl -n hw.memsize` | `syscall.Sysctl("hw.memsize")` |
+| Memory available | `vm_stat` free + inactive + speculative | `host_statistics64(HOST_VM_INFO64)`, same three counters, so `memory_basis` and every recorded fact keep their meaning |
+| Processes | `ps -axo pid,stat,rss,comm` | `sysctl` `kern.proc.all` for count, zombies and `p_comm`; `proc_pidinfo(PROC_PIDTASKINFO)` for RSS of the selected name only |
+
+How the change is tested and kept safe:
+
+- **Contracts:** unaffected, because a contract covers what is measured, not how.
+- **Failure:** a failing call reports a monitor error, exactly as a failing command does now.
+- **Tests:** the existing fixture tests become tests of struct decoding, plus a darwin-only integration test that compares against `vm_stat` and `ps` once.
+- **The app's local readings:** these remain the app's own, Activity Monitor-style; the two never need to agree, because only `topo`'s are evidence.
+
+## 12. Phases
+
+1. **`topo`:**
+   - the `monitor stream` package and subcommand, the five metrics, and the `list` and `card` visuals, with golden tests over `topo preview` scenarios;
+   - the macOS host check without commands.
+2. **App core:** `TopophanyKit`, ProcessEngine, ReaderPolicy, the status item, and the `cards` renderer with Status, Seen from and Needs attention.
+3. **App complete:**
+   - Applications, Servers and This Mac in both modes;
+   - the `cells` renderer on `CellCanvas`;
+   - Settings, and the theme store with both built-in themes.
+4. **Widgets:** Status in four sizes, Server in two, the App Group hand-off and the not-current timeline.
+5. **Polish:** VoiceOver, Reduce Transparency and Increase Contrast, keyboard navigation, localization (en, ja, zh), signing, notarization and the cask.
+
+Later: user theme files, EmbeddedEngine and `libtopo`, more renderers.
+
+## 13. Open questions
+
+- Should Seen from collapse to counts beyond about 20 observers?
+- Should the Terminal theme follow the user's terminal font when one is set?
+- What should the widget heartbeat be: 30 min, or tuned to the observed reload budget?

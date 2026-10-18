@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widgets · topophany-bar</title>
+<link rel="icon" href="assets/mark.svg">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .deskw { position: relative; width: 100%; padding: 70px 0 44px; }
+  .wgrid { width: 1140px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .wgrid.small { width: auto; justify-content: center; }
+  .scenes2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .scenes2 .deskw { padding: 60px 24px 34px; }
+  .matrix { display: grid; grid-template-columns: 130px repeat(6, 170px); gap: 18px; align-items: center; justify-content: start; }
+  .mh { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #7d818a; }
+  .rowh b { display: block; font-size: 14px; font-weight: 650; }
+  .rowh span { font-size: 12px; color: #868a92; }
+  .wtile { border-radius: 26px; padding: 0; position: relative; isolation: isolate; overflow: hidden; }
+  .wtile.desk { box-shadow: none; }
+  .modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+  .modes .deskw { padding: 28px 24px; }
+  .modes h5 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: rgba(255,255,255,.75); text-align: center; }
+  .mode-row { display: flex; gap: 18px; justify-content: center; }
+  .timeline { margin-top: 18px; padding: 22px 24px; border-radius: 14px; background: rgba(255,255,255,.035); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+  .tlbar { position: relative; height: 10px; border-radius: 5px; margin: 40px 6px 54px; background: linear-gradient(90deg, rgba(48,209,88,.85) 0 62%, rgba(255,255,255,.12) 62% 100%); }
+  .tlbar .seg2 { position: absolute; top: 0; bottom: 0; left: 62%; right: 0; border-radius: 0 5px 5px 0; background: repeating-linear-gradient(135deg, rgba(255,255,255,.22) 0 3px, transparent 3px 6px); }
+  .tick { position: absolute; top: -6px; width: 2px; height: 22px; background: #e8e9ec; border-radius: 1px; }
+  .tick span { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11.5px; color: #b6b9c0; }
+  .tick span.up { bottom: 26px; } .tick span.down { top: 26px; color: #8b8f97; }
+  .cfg { width: 330px; border-radius: 14px; padding: 14px; background: rgba(36,36,40,.82); backdrop-filter: blur(30px); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.16), 0 20px 50px rgba(0,0,0,.45); font: 13px -apple-system, system-ui; color: rgba(255,255,255,.9); }
+  .cfg h6 { margin: 0 0 10px; font-size: 13px; font-weight: 650; }
+  .cfg .r { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-top: .5px solid rgba(255,255,255,.08); }
+  .cfg .r:first-of-type { border-top: 0; }
+  .cfg .pop { padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,.1); font-size: 12.5px; }
+  .cfg .done { margin-top: 10px; text-align: right; }
+  .cfg .done span { padding: 3px 14px; border-radius: 7px; background: #0a84ff; color: #fff; font-weight: 500; }
+  .cfgs { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="top"><img src="assets/mark.svg" alt=""><span class="brand">topophany-bar<span>design preview</span></span>
+  <nav><a href="index.html">Overview</a><a href="playground.html">Playground</a><a href="states.html">States</a><a class="on" href="widgets.html">Widgets</a><a href="settings.html">Settings</a><a href="DESIGN.md">Design notes</a></nav></div>
+<div class="wrap">
+  <div class="eyebrow">Widgets</div>
+  <h1>The panel's cards, pinned to the desktop</h1>
+  <p class="lede">Widgets are built from the same section pieces as the menu bar panel and drawn in the same theme. A widget never computes anything: it shows the last frame the app received, says how old it is, and stops claiming the present once the app stops renewing it.</p>
+
+  <h2>Native</h2>
+  <p class="sub">Status at four sizes (small, medium, large, extra large), plus the Server widget for one pinned node and for This Mac. The collector reports five incidents, seen only from Seattle and San Jose.</p>
+  <div class="deskw desk wall-dark" id="d1"></div>
+
+  <h2>Terminal</h2>
+  <p class="sub">The same widgets in the Terminal theme: the TUI's boxed panels, its big digits and its glyphs, sized down to 11 pt.</p>
+  <div class="deskw desk wall-dark" id="d2"></div>
+
+  <h2>Light, and a theme you could write</h2>
+  <p class="sub">Native follows the system appearance. <b>Paper</b> is not part of v1: it shows that a theme can be only a palette for the Terminal renderer, and the panel and every widget pick it up.</p>
+  <div class="scenes2"><div class="deskw desk wall-light" id="d3"></div><div class="deskw desk wall-light" id="d4"></div></div>
+
+  <h2>Every state</h2>
+  <p class="sub">The small Status widget in the five states the panel has, plus <b>Not current</b>. That one appears when the app has stopped renewing the widget, for example because it quit. It shows the last verdict as history, never as now.</p>
+  <div class="matrix" id="states"></div>
+
+  <h2>Monochrome rendering</h2>
+  <p class="sub">When another app is in front, macOS draws desktop widgets without their background or color. Every status mark has its own shape, so the widget still says what it said in color.</p>
+  <div class="modes" id="modes"></div>
+
+  <h2>Staying honest without being live</h2>
+  <p class="sub">WidgetKit refreshes a widget only a few dozen times a day, so a widget can't follow the 5-second stream. Instead, the app reloads widgets when the verdict changes and renews them on a slow heartbeat. Each reload hands WidgetKit two entries: the verdict now, and a <b>Not current</b> entry dated just past the next renewal. If the app quits or the Mac sleeps through a renewal, the widget changes by itself at that moment.</p>
+  <div class="timeline">
+    <div class="tlbar"><div class="seg2"></div>
+      <div class="tick" style="left:0"><span class="up">6:30 · verdict changed → reload</span><span class="down">entry: 5 incidents</span></div>
+      <div class="tick" style="left:31%"><span class="up">7:00 · heartbeat → reload</span><span class="down">entry: 5 incidents</span></div>
+      <div class="tick" style="left:62%"><span class="up">7:17 · app quit</span><span class="down">no reload</span></div>
+      <div class="tick" style="left:100%;background:#8b8f97"><span class="up">7:45 · deadline (heartbeat + 15 min)</span><span class="down">entry: Not current</span></div>
+    </div>
+  </div>
+
+  <h2>Widget settings</h2>
+  <p class="sub">Widgets use the app's theme by default. In <b>Edit Widget</b> you choose only what a widget shows, never what it means.</p>
+  <div class="cfgs">
+    <div class="cfg"><h6>Status</h6><div class="r"><span>Right side (medium)</span><span class="pop">Needs attention ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
+    <div class="cfg"><h6>Server</h6><div class="r"><span>Server</span><span class="pop">Oracle New York ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
+  </div>
+</div>
+<script src="assets/data.js"></script>
+<script src="assets/render.js"></script>
+<script src="assets/widgets.js"></script>
+<script>
+  const D = window.TB_DATA;
+  const sc = D.scenarios.incidents;
+  const desk = (id, o, set) => {
+    const el = document.getElementById(id);
+    const item = TB.statusItem(sc, Object.assign({ text: 'count', color: 'status' }, o));
+    el.innerHTML = TB.menubar(o.appearance, item, { clock: 'Sun Oct 18&nbsp;&nbsp;6:31 AM' }) +
+      `<div class="wgrid ${set.small ? 'small' : ''}">${set.list.map(([k, s, x]) => TB.widget(k, s, x || sc, Object.assign({}, o, set.extra || {}))).join('')}</div>`;
+    if (set.small) el.classList.add('narrow');
+  };
+  const full = [['status', 'xl'], ['status', 'l'], ['status', 's'], ['status', 'm'], ['server', 's'], ['server', 'm']];
+  desk('d1', { theme: 'native', appearance: 'dark' }, { list: full });
+  desk('d2', { theme: 'tui', appearance: 'dark' }, { list: full });
+  desk('d3', { theme: 'native', appearance: 'light' }, { small: true, list: [['status', 's', D.scenarios.clear], ['status', 'm', D.scenarios.clear]] });
+  desk('d4', { theme: 'tui', appearance: 'light', palette: 'paper' }, { small: true, list: [['status', 's', D.scenarios.clear], ['status', 'm', D.scenarios.clear]] });
+
+  // This Mac as the last widget on the first two desktops
+  ['d1', 'd2'].forEach((id, i) => {
+    const grid = document.querySelector('#' + id + ' .wgrid');
+    const last = grid.lastElementChild;
+    last.outerHTML = TB.widget('server', 'm', sc, { theme: i ? 'tui' : 'native', appearance: 'dark', node: 'mac' });
+  });
+
+  const states = ['clear', 'degraded', 'incidents', 'incomplete', 'offline', 'stale'];
+  let m = '<div></div>' + states.map((k) => `<div class="mh">${D.scenarios[k].label}</div>`).join('');
+  [['Native · dark', { theme: 'native', appearance: 'dark' }, 'dark'], ['Native · light', { theme: 'native', appearance: 'light' }, 'light'], ['Terminal', { theme: 'tui' }, 'dark']].forEach(([t, o, wall]) => {
+    m += `<div class="rowh"><b>${t}</b></div>` + states.map((k) => `<div class="wtile desk wall-${wall}">${TB.widget('status', 's', D.scenarios[k], o)}</div>`).join('');
+  });
+  document.getElementById('states').innerHTML = m;
+
+  document.getElementById('modes').innerHTML = [
+    ['Full color', ''], ['Monochrome (another app in front)', 'vibrant'],
+  ].map(([t, mode]) => `<div class="deskw desk wall-dark"><h5>${t}</h5><div class="mode-row">${TB.widget('status', 's', sc, { theme: 'native', appearance: 'dark', mode })}${TB.widget('status', 'm', sc, { theme: 'native', appearance: 'dark', mode })}</div>
+     <div class="mode-row" style="margin-top:18px">${TB.widget('status', 's', sc, { theme: 'tui', mode })}${TB.widget('status', 'm', sc, { theme: 'tui', mode })}</div></div>`).join('');
+</script>
+</body>
+</html>

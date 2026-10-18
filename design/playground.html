@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playground · topophany-bar</title>
+<link rel="icon" href="assets/mark.svg">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .play { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 26px; align-items: start; }
+  .rail { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 18px; }
+  .ctl h5 { margin: 0 0 7px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #7d818a; }
+  .seg-c { display: flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(255,255,255,.06); }
+  .seg-c button {
+    flex: 1 1 auto; border: 0; background: transparent; color: #b8bbc2; font: 500 12.5px -apple-system, system-ui, sans-serif;
+    padding: 6px 9px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  }
+  .seg-c button:hover { color: #fff; }
+  .seg-c button.on { background: rgba(255,255,255,.14); color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+  .checks label { display: flex; align-items: center; gap: 9px; padding: 4px 2px; color: #c9ccd2; font-size: 13px; cursor: pointer; }
+  .checks input { accent-color: #5eead4; width: 15px; height: 15px; }
+  .checks .locked { color: #6f737b; }
+  .note { font-size: 12px; color: #7d818a; line-height: 1.5; }
+  #stage { width: 100%; height: 1010px; }
+</style>
+</head>
+<body>
+<div class="top"><img src="assets/mark.svg" alt=""><span class="brand">topophany-bar<span>design preview</span></span>
+  <nav><a href="index.html">Overview</a><a class="on" href="playground.html">Playground</a><a href="states.html">States</a><a href="widgets.html">Widgets</a><a href="settings.html">Settings</a><a href="DESIGN.md">Design notes</a></nav></div>
+<div class="wrap">
+  <div class="play">
+    <aside class="rail" id="rail"></aside>
+    <main><div id="stage"></div>
+      <p class="cap">Every control here is a setting in the app. What a state <b>means</b> (which checks are down, what counts as unknown) comes from the collector and can't be changed.</p></main>
+  </div>
+</div>
+<script src="assets/data.js"></script>
+<script src="assets/render.js"></script>
+<script>
+  const D = window.TB_DATA;
+  const st = Object.assign(TB.defaults(), { scenario: 'incidents' });
+  const q = new URLSearchParams(location.search);
+  for (const k of ['theme', 'appearance', 'text', 'color', 'mac', 'scenario']) if (q.get(k)) st[k] = q.get(k);
+  if (q.get('servers')) st.sections.servers = q.get('servers') === '1';
+  if (q.get('limit')) st.limit = +q.get('limit');
+
+  const groups = [
+    ['scenario', 'Collector says', D.order.map((k) => [k, D.scenarios[k].label])],
+    ['theme', 'Theme', [['native', 'Native'], ['tui', 'Terminal'], ['aurora', 'Aurora*'], ['paper', 'Paper*']]],
+    ['appearance', 'Appearance', [['dark', 'Dark'], ['light', 'Light']]],
+    ['text', 'Menu bar shows', [['symbol', 'Symbol'], ['count', 'Count'], ['words', 'Words']]],
+    ['color', 'Menu bar color', [['status', 'Status colors'], ['mono', 'Monochrome']]],
+    ['mac', 'This Mac', [['local', 'Local readings'], ['server', 'As a server'], ['off', 'Off']]],
+    ['limit', 'Needs attention rows', [[3, '3'], [5, '5']]],
+  ];
+  const sections = [['seen', 'Seen from'], ['attention', 'Needs attention'], ['apps', 'Applications'], ['servers', 'Servers (pinned)'], ['mac', 'This Mac']];
+
+  function rail() {
+    const r = document.getElementById('rail');
+    r.innerHTML = groups.map(([key, label, opts]) => `<div class="ctl"><h5>${label}</h5><div class="seg-c">${opts.map(([v, t]) =>
+      `<button data-k="${key}" data-v="${v}" class="${String(st[key]) === String(v) ? 'on' : ''}">${t}</button>`).join('')}</div></div>`).join('') +
+      `<div class="ctl"><h5>Sections</h5><div class="checks"><label class="locked"><input type="checkbox" checked disabled>Status (always first)</label>${sections.map(([k, t]) =>
+        `<label><input type="checkbox" data-s="${k}" ${st.sections[k] ? 'checked' : ''}>${t}</label>`).join('')}</div></div>
+      <p class="note">${{ tui: 'The Terminal theme always paints the TUI’s ink, so Appearance only changes the desktop and menu bar behind it.', paper: '* Paper is an example user theme: only a palette for the Terminal renderer.', aurora: '* Aurora is an example user theme: only tokens over the Native renderer.' }[st.theme] || 'The Native theme follows the system appearance unless you pick one.'}</p>`;
+    r.querySelectorAll('button').forEach((b) => b.onclick = () => { st[b.dataset.k] = b.dataset.k === 'limit' ? +b.dataset.v : b.dataset.v; draw(); });
+    r.querySelectorAll('input[data-s]').forEach((c) => c.onchange = () => { st.sections[c.dataset.s] = c.checked; draw(); });
+  }
+  function draw() {
+    rail();
+    // A theme is a renderer family and a token set; * marks example user themes.
+    const look = { native: { theme: 'native' }, tui: { theme: 'tui' }, aurora: { theme: 'native', tokens: 'aurora' }, paper: { theme: 'tui', palette: 'paper' } }[st.theme];
+    TB.scene(document.getElementById('stage'), D.scenarios[st.scenario], Object.assign({}, st, look));
+  }
+  draw();
+</script>
+</body>
+</html>

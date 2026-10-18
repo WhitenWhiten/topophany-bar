@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · topophany-bar</title>
+<link rel="icon" href="assets/mark.svg">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .wins { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; align-items: start; margin-top: 26px; }
+  @media (max-width: 1250px) { .wins { grid-template-columns: 1fr; } }
+  .stagew { padding: 34px; border-radius: 18px; }
+  .wincap { margin: 14px 4px 0; color: #8b8f97; font-size: 13px; }
+  .wincap b { color: #e3e5e8; }
+
+  .win {
+    --l1: rgba(255,255,255,.9); --l2: rgba(235,235,245,.6); --l3: rgba(235,235,245,.32); --sep: rgba(255,255,255,.07); --acc: #0a84ff;
+    border-radius: 16px; background: rgba(30, 30, 34, .92); backdrop-filter: blur(40px) saturate(1.6); color: var(--l1); overflow: hidden;
+    box-shadow: 0 0 0 .5px rgba(0,0,0,.85), inset 0 0 0 .5px rgba(255,255,255,.15), 0 30px 70px rgba(0,0,0,.5);
+    font: 13px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  .win svg { display: block; }
+  .win-bar { display: flex; align-items: center; height: 40px; padding: 0 14px; position: relative; }
+  .lights { display: flex; gap: 8px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.25); }
+  .lights i:nth-child(1) { background: #ff5f57; } .lights i:nth-child(2) { background: #febc2e; } .lights i:nth-child(3) { background: #28c840; }
+  .win-title { position: absolute; left: 0; right: 0; text-align: center; font-weight: 650; pointer-events: none; }
+  .tabs { display: flex; justify-content: center; gap: 4px; padding: 0 12px 10px; border-bottom: .5px solid var(--sep); }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 12px 4px; border-radius: 8px; color: var(--l2); font-size: 11px; font-weight: 500; }
+  .tab svg { width: 22px; height: 22px; }
+  .tab.on { background: rgba(255,255,255,.08); color: var(--acc); }
+  .tab.on span { color: var(--l1); }
+  .win-body { padding: 4px 20px 20px; }
+  .gt { margin: 16px 4px 6px; font-size: 13px; font-weight: 650; }
+  .gt em { font-style: normal; font-weight: 400; color: var(--l3); margin-left: 6px; font-size: 12px; }
+  .group { background: rgba(255,255,255,.045); border-radius: 10px; box-shadow: inset 0 0 0 .5px rgba(255,255,255,.065); }
+  .grow { display: flex; align-items: center; gap: 12px; padding: 8px 12px; min-height: 42px; border-top: .5px solid var(--sep); }
+  .grow:first-child { border-top: 0; }
+  .grow .lab { flex: 1; min-width: 0; }
+  .grow .lab b { font-weight: 500; display: block; }
+  .grow .lab span { display: block; font-size: 11.5px; color: var(--l2); margin-top: 1px; }
+  .grow .gi { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; color: #fff; flex: none; }
+  .grow .gi svg { width: 16px; height: 16px; }
+  .handle { color: var(--l3); width: 14px; flex: none; }
+  .foot { font-size: 11.5px; color: var(--l2); margin: 8px 4px 0; line-height: 1.45; }
+  .foot code { font-size: 11px; }
+
+  .pop { display: inline-flex; align-items: center; gap: 7px; padding: 3px 6px 3px 10px; border-radius: 6px; background: rgba(255,255,255,.1); box-shadow: inset 0 .5px 0 rgba(255,255,255,.08), 0 .5px 1px rgba(0,0,0,.3); white-space: nowrap; }
+  .pop svg { width: 9px; height: 13px; color: var(--l2); }
+  .btn { padding: 3px 11px; border-radius: 6px; background: rgba(255,255,255,.1); box-shadow: inset 0 .5px 0 rgba(255,255,255,.08), 0 .5px 1px rgba(0,0,0,.3); white-space: nowrap; }
+  .segm { display: inline-flex; padding: 2px; border-radius: 7px; background: rgba(255,255,255,.08); }
+  .segm span { padding: 2px 11px; border-radius: 5px; color: var(--l1); }
+  .segm span.on { background: rgba(255,255,255,.2); box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+  .sw { width: 32px; height: 19px; border-radius: 10px; background: rgba(255,255,255,.16); position: relative; flex: none; }
+  .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.35); }
+  .sw.on { background: var(--acc); }
+  .sw.on::after { left: 15px; }
+  .lock { color: var(--l3); font-size: 11.5px; display: inline-flex; gap: 5px; align-items: center; }
+  .cb { width: 15px; height: 15px; border-radius: 4px; flex: none; background: rgba(255,255,255,.12); display: grid; place-items: center; }
+  .cb.on { background: var(--acc); }
+  .cb.on::after { content: ""; width: 7px; height: 4px; border: solid #fff; border-width: 0 0 1.8px 1.8px; transform: translate(0, -1px) rotate(-45deg); }
+  .field { font: 12px ui-monospace, "SF Mono", Menlo, monospace; padding: 4px 8px; border-radius: 6px; background: rgba(0,0,0,.25); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.1); color: var(--l1); }
+  .ok { color: #30d158; font-size: 12px; display: inline-flex; gap: 4px; align-items: center; }
+  .grow .lab .dot { display: inline-block; vertical-align: 1px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #30d158; display: inline-block; margin-right: 6px; box-shadow: 0 0 0 3px rgba(48,209,88,.2); }
+
+  .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .theme { border-radius: 12px; padding: 8px; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.08); }
+  .theme.on { box-shadow: inset 0 0 0 2px var(--acc); background: rgba(10,132,255,.08); }
+  .thumb { position: relative; height: 176px; border-radius: 8px; overflow: hidden; }
+  .thumb > div { position: absolute; left: 50%; top: 12px; transform: translateX(-50%) scale(.5); transform-origin: top center; }
+  .theme > b { display: flex; align-items: center; gap: 7px; margin: 9px 4px 1px; font-weight: 600; }
+  .theme > span { display: block; margin: 0 4px 2px 22px; font-size: 11.5px; color: var(--l2); }
+  .radio { width: 15px; height: 15px; border-radius: 50%; background: rgba(255,255,255,.12); flex: none; position: relative; }
+  .radio.on { background: var(--acc); }
+  .radio.on::after { content: ""; position: absolute; inset: 4.5px; border-radius: 50%; background: #fff; }
+  .prev { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .prev .mb-item { padding: 0 5px; height: 22px; border-radius: 6px; background: rgba(255,255,255,.06); color: #fff; font: 500 13px -apple-system, system-ui; }
+
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mode { border-radius: 12px; padding: 12px 12px 11px; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.08); }
+  .mode.on { box-shadow: inset 0 0 0 2px var(--acc); background: rgba(10,132,255,.08); }
+  .mode .mi { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(255,255,255,.08); color: var(--l1); margin-bottom: 9px; }
+  .mode.on .mi { background: var(--acc); color: #fff; }
+  .mode .mi svg { width: 18px; height: 18px; }
+  .mode b { display: block; font-weight: 600; }
+  .mode span { display: block; font-size: 11.5px; color: var(--l2); margin-top: 2px; line-height: 1.35; }
+</style>
+</head>
+<body>
+<div class="top"><img src="assets/mark.svg" alt=""><span class="brand">topophany-bar<span>design preview</span></span>
+  <nav><a href="index.html">Overview</a><a href="playground.html">Playground</a><a href="states.html">States</a><a href="widgets.html">Widgets</a><a class="on" href="settings.html">Settings</a><a href="DESIGN.md">Design notes</a></nav></div>
+<div class="wrap">
+  <div class="eyebrow">Configuration</div>
+  <h1>You choose what to look at, never what it means</h1>
+  <p class="lede">Settings change what the panel shows and how it looks. Health, thresholds, freshness and how groups add up come from your topology and the collector, so the bar can never contradict <code>topo</code>, the TUI or your webhooks.</p>
+  <div class="wins" id="wins"></div>
+</div>
+<script src="assets/data.js"></script>
+<script src="assets/render.js"></script>
+<script>
+  const I = TB.icons;
+  const D = window.TB_DATA;
+  const chev = '<svg viewBox="0 0 9 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5 4.5 2l3 3M1.5 9l3 3 3-3"/></svg>';
+  const pop = (t) => `<span class="pop">${t}${chev}</span>`;
+  const sw = (on) => `<span class="sw ${on ? 'on' : ''}"></span>`;
+  const handle = '<svg class="handle" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="3.5" width="10" height="1.4" rx=".7"/><rect x="2" y="6.3" width="10" height="1.4" rx=".7"/><rect x="2" y="9.1" width="10" height="1.4" rx=".7"/></svg>';
+  const half = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 1 0 14Z" fill="currentColor"/></svg>';
+  const list = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7.5 5.5h9M7.5 10h9M7.5 14.5h9"/><circle cx="3.9" cy="5.5" r=".9" fill="currentColor"/><circle cx="3.9" cy="10" r=".9" fill="currentColor"/><circle cx="3.9" cy="14.5" r=".9" fill="currentColor"/></svg>';
+  const lockI = '<svg viewBox="0 0 12 14" width="10" height="12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="6" width="9" height="6.5" rx="1.6"/><path d="M3.5 6V4.4a2.5 2.5 0 0 1 5 0V6"/></svg>';
+  const tabs = (on) => `<div class="tabs">${[['General', I.gear], ['Appearance', half], ['Sections', list], ['This Mac', I.laptop]].map(([t, i]) =>
+    `<div class="tab ${t === on ? 'on' : ''}">${i}<span>${t}</span></div>`).join('')}</div>`;
+  const win = (title, body) => `<div class="win"><div class="win-bar"><div class="lights"><i></i><i></i><i></i></div><div class="win-title">${title}</div></div>${tabs(title)}<div class="win-body">${body}</div></div>`;
+  const row = (lab, sub, ctl, pre = '') => `<div class="grow">${pre}<div class="lab"><b>${lab}</b>${sub ? `<span>${sub}</span>` : ''}</div>${ctl || ''}</div>`;
+  const gi = (icon, color) => `<span class="gi" style="background:${color}">${icon}</span>`;
+
+  // General
+  const general = win('General', `
+    <div class="gt">Topophany</div><div class="group">
+      ${row('topo executable', 'Found on PATH; every reading comes from it', `<span class="field">/opt/homebrew/bin/topo</span><span class="ok">1.2.0 ✓</span>`)}
+      ${row('Profile', 'Saved by <code>topo login</code>; the app never sees a token', pop('home — homelab'))}
+      ${row('View', 'What the collector shows from', pop('All observers'))}
+    </div>
+    <div class="gt">Engine <em>topo monitor stream</em></div><div class="group">
+      ${row('<i class="dot"></i>Running', 'pid 4127 · last frame 2 s ago · lease until 6:30:41', '<span class="btn">Restart</span>')}
+      ${row('Refresh', 'How often topo reads the collector; deadlines are checked every second either way', pop('Every 5 s'))}
+    </div>
+    <div class="gt">Startup</div><div class="group">
+      ${row('Open at login', '', sw(true))}
+      ${row('Open Topophany in', 'Where ⌘O and “more in Topophany” open the TUI', pop('Ghostty'))}
+    </div>`);
+
+  // Appearance, with the real panels as thumbnails
+  const sc = D.scenarios.incidents;
+  const thumbO = Object.assign(TB.defaults(), { sections: { seen: true, attention: true, apps: false, servers: false, mac: false }, limit: 2 });
+  const nThumb = TB.nativePanel(sc, Object.assign({}, thumbO, { appearance: 'dark' }));
+  const tThumb = TB.tuiPanel(sc, Object.assign({}, thumbO, { theme: 'tui' }));
+  const prev = D.order.map((k) => TB.statusItem(D.scenarios[k], { theme: 'native', text: 'count', color: 'status' })).join('');
+  const appearance = win('Appearance', `
+    <div class="gt">Theme</div>
+    <div class="themes">
+      <div class="theme on"><div class="thumb desk wall-dark">${nThumb}</div><b><span class="radio on"></span>Native</b><span>macOS glass, SF Pro and system colors, like the apps beside it.</span></div>
+      <div class="theme"><div class="thumb desk wall-dark">${tThumb}</div><b><span class="radio"></span>Terminal</b><span>Topophany’s TUI: ink, phosphor and monospace, the same glyphs as topo.</span></div>
+    </div>
+    <p class="foot">The theme applies to the panel, the menu bar item and every widget. A later release can add themes as files: a renderer's name and its tokens.</p>
+    <div class="gt">Panel</div><div class="group">
+      ${row('Appearance', 'Native theme only; Terminal always paints its ink', pop('Match System'))}
+      ${row('Text size', '', pop('Default'))}
+    </div>
+    <div class="gt">Menu bar</div><div class="group">
+      ${row('Show', 'The count is what needs attention; nothing when all clear', '<span class="segm"><span>Symbol</span><span class="on">Count</span><span>Words</span></span>')}
+      ${row('Status colors', 'Off draws the badge in the menu bar’s own color; its shape still changes', sw(true))}
+      ${row('Preview', '', `<span class="prev mb-dark">${prev}</span>`)}
+    </div>`);
+
+  // Sections
+  const sections = win('Sections', `
+    <div class="gt">Panel sections <em>drag to reorder</em></div><div class="group">
+      ${row('Status', 'The verdict, checks by health, observers live', `<span class="lock">${lockI}Always first</span>`, gi(I.globe, '#30d158'))}
+      ${row('Seen from', 'Which observers see a problem, and that the others don’t', sw(true), handle + gi(I.scope, '#5e5ce6'))}
+      ${row('Needs attention', 'Open incidents first, then anything else that needs a look', pop('3 rows') + sw(true), handle + gi(I.alert, '#ff9f0a'))}
+      ${row('Applications', 'Services folded into the applications you declare', pop('All 6') + sw(true), handle + gi(I.apps, '#0a84ff'))}
+      ${row('Servers', 'The Servers-tab card of each server you pin', '<span class="btn">Choose…</span>' + sw(false), handle + gi(I.server, '#8e8e93'))}
+      ${row('This Mac', 'Set up under This Mac', sw(true), handle + gi(I.laptop, '#64d2ff'))}
+    </div>
+    <p class="foot">Each section is a row set in the template the app sends to <code>topo monitor stream</code>. What makes an entry up, warn or down is set in <code>topology.json</code> (for example <code>max_disk_percent</code>), not here.</p>
+    <div class="gt">When the panel is taller than the screen</div><div class="group">
+      ${row('Keep Status pinned', 'The rest scrolls beneath it', sw(true))}
+    </div>`);
+
+  // This Mac, both modes
+  const modes = (on) => `<div class="modes">
+      <div class="mode ${on === 'local' ? 'on' : ''}"><div class="mi">${I.cpu}</div><b>Local readings</b><span>Read from macOS by the app, live, like RunCat.</span></div>
+      <div class="mode ${on === 'server' ? 'on' : ''}"><div class="mi">${I.server}</div><b>As a server</b><span>This Mac’s card from the collector, as in the Servers tab.</span></div>
+      <div class="mode ${on === 'off' ? 'on' : ''}"><div class="mi">${I.power}</div><b>Off</b><span>No This Mac section.</span></div></div>`;
+  const cb = (on) => `<span class="cb ${on ? 'on' : ''}"></span>`;
+  const local = win('This Mac', `
+    <div class="gt">Show this Mac</div>${modes('local')}
+    <div class="gt">Readings</div><div class="group">
+      ${row('CPU', 'Total, system and user, with a minute of history', '', cb(true))}
+      ${row('Memory', 'Pressure, app, wired and compressed, as Activity Monitor counts them', '', cb(true))}
+      ${row('Storage', '', pop('Macintosh HD'), cb(true))}
+      ${row('Network', 'Throughput and address', pop('Automatic (Wi-Fi)'), cb(true))}
+      ${row('Battery', 'Charge, state and time remaining', '', cb(true))}
+      ${row('Sample every', '', pop('2 s'))}
+    </div>
+    <p class="foot">Local readings are not evidence: they have no health and no thresholds, are never sent to a collector, and keep updating while the collector is unreachable.</p>`);
+  const server = win('This Mac', `
+    <div class="gt">Show this Mac</div>${modes('server')}
+    <div class="gt">Server</div><div class="group">
+      ${row('Node', 'Detected: a worker on this Mac reports as observer <b>seattle-macbook</b>', pop('MacBook Pro · macbook · Seattle'))}
+      ${row('Host resources', 'From check <code>macbook-host</code>, against its own limits', '', cb(true))}
+      ${row('Services', 'The services declared on this node', '', cb(true))}
+      ${row('Observes from here', 'What this Mac’s observer sees: “is it me?”', '', cb(true))}
+    </div>
+    <p class="foot">This is the card everyone else sees for this Mac, read from the collector. Without a host check on the node, its resources read <i>unknown</i>, never zero.</p>`);
+
+  document.getElementById('wins').innerHTML = [
+    [general, '<b>General.</b> The app starts <code>topo monitor stream</code> as its child process. topo holds the credentials; the app only reads frames.'],
+    [appearance, '<b>Appearance.</b> Two themes, one meaning. Thumbnails are the real panels.'],
+    [sections, '<b>Sections.</b> Status is fixed. The rest can be turned off and reordered.'],
+    [local, '<b>This Mac: local readings.</b> RunCat-style live readings of the machine you’re on.'],
+    [server, '<b>This Mac: as a server.</b> The Servers-tab card for this Mac’s node, plus what it observes.'],
+  ].map(([w, c]) => `<div><div class="stagew desk wall-dark">${w}</div><p class="wincap">${c}</p></div>`).join('');
+</script>
+</body>
+</html>
