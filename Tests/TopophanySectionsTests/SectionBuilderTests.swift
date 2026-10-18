@@ -123,12 +123,19 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
         #expect(p.status.title == "Offline")
         #expect(p.status.counts == nil, "unknown, not zero")
         #expect(p.status.count == nil)
-        #expect(p.status.history == "Last snapshot 3 min ago said all clear. Nothing current is known.")
+        #expect(p.status.history == "Last snapshot 3 min ago said **all clear**. Nothing current is known.")
         #expect(p.status.big.digits == "--")
         #expect(p.chrome.connection == .unreachable)
         #expect(p.seen?.isKnown == false)
+        #expect(p.seen?.total == 11, "from history")
         #expect(p.attention == nil)
-        #expect(p.servers.allSatisfy { $0.mark == .offline && $0.cpu.percent == nil })
+        #expect(p.servers.map(\.name) == ["Oracle New York", "BandwagonHost LA"])
+        #expect(p.servers.allSatisfy { $0.mark == .offline && $0.cpu.percent == nil && $0.pill.text == "CACHED" })
+        // Names from the last snapshot; no health.
+        let apps = p.applications!
+        #expect(!apps.isCurrent)
+        #expect(apps.rows.count == 6)
+        #expect(apps.rows.allSatisfy { $0.mark == .offline && $0.note == "cached" })
     }
 
     @Test func staleLeaseLapses() {
@@ -138,7 +145,7 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
         #expect(p.status.kind == .blind(.leaseLapsed))
         #expect(p.status.mark == .offline)
         #expect(p.status.lastKnown?.text == "5 INCIDENTS")
-        #expect(p.status.history == "Last snapshot 30 s ago said 5 incidents. Nothing current is known.")
+        #expect(p.status.history == "Last snapshot 30 s ago said **5 incidents**. Nothing current is known.")
         // Withheld, not gone: names stay, every health is withheld.
         let apps = p.applications!
         #expect(!apps.isCurrent)

@@ -26,6 +26,8 @@ public struct StatusSection: Sendable, Hashable {
         case unreadable
         /// `topo` said nothing current, for another reason.
         case unknown(reason: String)
+        /// A widget that the app stopped renewing: what it shows is history.
+        case notCurrent
     }
 
     public enum Kind: Sendable, Hashable {
@@ -113,6 +115,7 @@ public struct StatusSection: Sendable, Hashable {
             }
         case .blind(.starting): return tr("Starting")
         case .blind(.cached): return tr("Cached")
+        case .blind(.notCurrent): return tr("Not current")
         case .blind: return tr("Offline")
         }
     }
@@ -171,14 +174,16 @@ public struct StatusSection: Sendable, Hashable {
         case .topoTooOld: return tr("This topo has no monitor stream · upgrade it")
         case .unreadable: return tr("topo’s frame can’t be read")
         case .unknown(let r): return r.isEmpty ? tr("Nothing current is known") : tr("Nothing current is known (\(r))")
+        case .notCurrent: return tr("Not renewed by topophany-bar")
         }
     }
 
-    /// "Last snapshot 3 min ago said all clear." for a blind card.
+    /// "Last snapshot 3 min ago said **all clear**. Nothing current is
+    /// known." for a blind card, in Markdown.
     public var history: String {
         guard let k = lastKnown else { return tr("Nothing current is known.") }
         let said = StatusSection.words(for: k)
-        return tr("Last snapshot \(Words.ago(k.at, now: now)) said \(said). Nothing current is known.")
+        return tr("Last snapshot \(Words.ago(k.at, now: now)) said **\(said)**. Nothing current is known.")
     }
 
     /// A past verdict in words, lowercased for a sentence: "all clear".
@@ -209,8 +214,15 @@ public struct StatusSection: Sendable, Hashable {
             }
         case .blind(.starting): return tr("STARTING")
         case .blind(.cached): return tr("CACHED")
+        case .blind(.notCurrent): return tr("NOT CURRENT")
         case .blind: return tr("OFFLINE")
         }
+    }
+
+    /// "Last known: 5 incidents", or what to say when nothing was.
+    public var lastKnownLine: String {
+        guard let k = lastKnown else { return tr("Nothing current is known") }
+        return tr("Last known: \(StatusSection.words(for: k))")
     }
 
     /// The TUI's short words, for the menu bar chip and small widgets.
@@ -227,6 +239,8 @@ public struct StatusSection: Sendable, Hashable {
             case .blind(.collectorUnreachable): return ("--", tr("collector unreachable"), last)
             case .blind(.starting): return ("--", tr("starting topo"), "")
             case .blind(.engineStopped), .blind(.topoNotFound), .blind(.topoTooOld): return ("--", tr("topo not running"), last)
+            case .blind(.notCurrent):
+                return ("--", tr("not current"), lastKnown.map { tr("last known \(Words.ago($0.at, now: now))") } ?? "")
             default: return ("--", tr("not current"), last)
             }
         }

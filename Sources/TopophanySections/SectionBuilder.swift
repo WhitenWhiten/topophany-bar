@@ -151,7 +151,7 @@ public enum SectionBuilder {
     public static func seen(_ r: Reading) -> SeenFromSection {
         guard let row = r.row(RowID.seen) else { return SeenFromSection(problems: nil, calm: 0, total: 0) }
         guard case .observers(let list) = row.value else {
-            if case .observers(let last) = row.row.value { return SeenFromSection(problems: nil, calm: 0, total: last.count) }
+            if case .observers(let last) = r.lastValue(of: row) { return SeenFromSection(problems: nil, calm: 0, total: last.count) }
             return SeenFromSection(problems: nil, calm: 0, total: 0)
         }
         let problems = list.filter { $0.health != .up }.map { o in
@@ -195,7 +195,7 @@ public enum SectionBuilder {
         if case .applications(let l) = row.value {
             current = true
             list = l
-        } else if case .applications(let l) = row.row.value {
+        } else if case .applications(let l) = r.lastValue(of: row) {
             current = false
             list = l
         } else {
@@ -235,19 +235,20 @@ public enum SectionBuilder {
         var seen = Set<String>()
         for node in nodes where TemplateCompiler.validNode(node) && seen.insert(node).inserted {
             let row = r.rows.first { $0.row.metric == "server.card" && $0.row.select?.node == node && $0.row.id != RowID.mac }
-            if let c = server(row, node: node, now: r.now) { out.append(c) }
+            if let c = server(row, node: node, reading: r) { out.append(c) }
         }
         return out
     }
 
     static func server(_ r: Reading, rowID: String, node: String) -> ServerCardModel? {
-        server(r.row(rowID), node: node, now: r.now)
+        server(r.row(rowID), node: node, reading: r)
     }
 
-    static func server(_ row: RowReading?, node: String, now: Date) -> ServerCardModel? {
+    static func server(_ row: RowReading?, node: String, reading r: Reading) -> ServerCardModel? {
         guard let row else { return nil }
+        let now = r.now
         if case .serverCard(let c) = row.value { return card(c, withheld: false, now: now) }
-        if case .serverCard(let c) = row.row.value { return card(c, withheld: true, now: now) }
+        if case .serverCard(let c) = r.lastValue(of: row) { return card(c, withheld: true, now: now) }
         let missing = row.row.reason == "entity_missing"
         let none = ServerCardModel.Meter(percent: nil, limit: nil, detail: "")
         return ServerCardModel(id: node, name: node, kind: "", provider: "", place: missing ? tr("Not in the topology") : "",

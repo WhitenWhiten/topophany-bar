@@ -24,10 +24,13 @@ public enum L10n {
         return "en"
     }
 
-    static var bundle: Bundle {
+    static var bundle: Bundle { bundle(for: .module) }
+
+    /// `base`, or its forced localization's sub-bundle.
+    public static func bundle(for base: Bundle) -> Bundle {
         guard let l = forced.withLock({ $0 }),
-              let path = Bundle.module.path(forResource: l, ofType: "lproj"),
-              let b = Bundle(path: path) else { return .module }
+              let path = base.path(forResource: l, ofType: "lproj"),
+              let b = Bundle(path: path) else { return base }
         return b
     }
 }
