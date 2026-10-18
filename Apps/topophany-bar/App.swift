@@ -42,6 +42,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
     }
 
+    /// Widgets' links: `topophany-bar://panel` opens the panel, and
+    /// `topophany-bar://attention?kind=…&id=…` the TUI on that entry's page.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == "topophany-bar" {
+            let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+            switch url.host() {
+            case "attention":
+                let id = value("id") ?? ""
+                let item = model.panel.attention?.items.first { $0.id == id }
+                    ?? AttentionSection.Item(id: id, kind: value("kind") ?? "", route: [], mark: .unknown,
+                                             pill: .health(.unknown), observer: "", observerName: "", since: nil)
+                openTUI(focus: item)
+            default:
+                if let b = statusItem?.button, panel?.isOpen != true { panel?.open(from: b) }
+            }
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         // stdin closes and topo exits; it writes its last frame first.
         model.stopNow()

@@ -15,14 +15,16 @@ public enum WidgetSchedule {
         h.writtenAt.addingTimeInterval(h.heartbeat + grace)
     }
 
-    /// The two entries of a reload: now, then not current.
-    public static func entries(_ h: Handoff?, at now: Date) -> [(date: Date, panel: PanelModel, isCurrent: Bool)] {
+    /// The two entries of a reload: now, then not current. A Server widget
+    /// passes its node.
+    public static func entries(_ h: Handoff?, at now: Date, server node: String? = nil)
+        -> [(date: Date, panel: PanelModel, isCurrent: Bool)] {
         guard let h else {
             let empty = SectionBuilder.panel(PanelInput(reading: ReaderPolicy().evaluate(at: now), engine: .stopped,
                                                         settings: TopophanyKit.Settings()))
             return [(now, empty.withheld(at: now), false)]
         }
-        let panel = h.panel()
+        let panel = node.map { h.panel(server: $0) } ?? h.panel()
         let stale = notCurrent(after: h)
         if stale <= now { return [(now, panel.withheld(at: now), false)] }
         return [(now, panel, true), (stale, panel.withheld(at: stale), false)]

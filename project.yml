@@ -45,6 +45,9 @@ targets:
         product: TopophanyWidgets
       - package: topophany-bar
         product: LocalReadings
+      - target: TopophanyWidgetsExtension
+        embed: true
+        codeSign: false
     info:
       path: Apps/topophany-bar/Info.plist
       properties:
@@ -56,6 +59,9 @@ targets:
         LSApplicationCategoryType: public.app-category.utilities
         NSHumanReadableCopyright: ""
         TopophanyAppGroup: $(TOPOPHANY_APP_GROUP)
+        CFBundleURLTypes:
+          - CFBundleURLName: io.github.whitenwhiten.topophany-bar
+            CFBundleURLSchemes: [topophany-bar]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.whitenwhiten.topophany-bar
@@ -63,6 +69,40 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_APP_SANDBOX: NO
         GENERATE_INFOPLIST_FILE: NO
+  # Widgets load only when signed with a team, the App Group and the App
+  # Sandbox; until then this builds ad hoc and macOS ignores it.
+  TopophanyWidgetsExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Apps/Widgets
+    dependencies:
+      - package: topophany-bar
+        product: TopophanyKit
+      - package: topophany-bar
+        product: TopophanySections
+      - package: topophany-bar
+        product: TopophanyThemes
+      - package: topophany-bar
+        product: TopophanyWidgets
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+      - sdk: AppIntents.framework
+    info:
+      path: Apps/Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Topophany
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        TopophanyAppGroup: $(TOPOPHANY_APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.whitenwhiten.topophany-bar.widgets
+        PRODUCT_NAME: TopophanyWidgetsExtension
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
 schemes:
   topophany-bar:
     build:
