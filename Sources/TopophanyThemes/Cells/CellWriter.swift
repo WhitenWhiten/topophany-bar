@@ -111,6 +111,7 @@ struct CellWriter {
     var width: Double
     var y: Double = 0
     var items: [CellItem] = []
+    var live: [LiveAge] = []
     var frame: Frame
     /// Monochrome (another app in front): boxes become plain headings.
     var plain = false

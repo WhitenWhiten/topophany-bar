@@ -28,6 +28,9 @@ public struct RenderContext: Sendable {
     /// The tallest the panel may be; Status stays pinned and the rest
     /// scrolls when it would be taller.
     public var maxHeight: Double?
+    /// Ages count up on their own, as a widget's must between reloads.
+    /// Off for snapshots, which draw ages as of the model's `now`.
+    public var liveDates = false
 
     public init(theme: Theme, colorScheme: ColorScheme = .dark, backdrop: Backdrop = .flat,
                 textSize: TopophanyKit.Settings.Appearance.TextSize = .default, focus: String? = nil, reduceTransparency: Bool = false,
@@ -108,6 +111,8 @@ public protocol Renderer {
     func panel(_ model: PanelModel, context: RenderContext) -> AnyView
     func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView
     func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView
+    /// What a widget sits on: WidgetKit's container background.
+    func widgetBackground(context: RenderContext) -> AnyView
 }
 
 @MainActor

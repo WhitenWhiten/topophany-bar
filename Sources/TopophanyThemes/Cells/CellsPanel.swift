@@ -56,8 +56,9 @@ struct CellsBodies {
             w.line([.dashes(n, p.faint)])
             if let k = s.lastKnown {
                 let said = StatusSection.words(for: k)
-                w.line([.mark(.offline, p), .t(short ? tr(" last: ") : tr(" last snapshot said "), p.muted),
-                        .t(CellText.truncate(said, n - 21), p.text, bold: true)])
+                let lead = short ? tr(" last: ") : tr(" last snapshot said ")
+                w.line([.mark(.offline, p), .t(lead, p.muted),
+                        .t(CellText.truncate(said, n - 1 - CellText.width(lead)), p.text, bold: true)])
             } else {
                 w.line([.mark(.offline, p), .t(" " + CellText.truncate(tr("nothing current is known"), n - 2), p.muted)])
             }
@@ -91,6 +92,11 @@ struct CellsBodies {
         for o in problems.prefix(max) {
             focusRow(&w, "seen:" + o.id, lines: 1)
             w.line([.mark(o.mark, p), .t(" " + CellText.truncate(o.name, n - 10), p.text)], [.t(o.note, p.tone(o.mark))])
+        }
+        // Problems left out for room are counted as problems, never as calm.
+        if problems.count > max {
+            let rest = problems[max...]
+            w.line([.mark(rest.first?.mark ?? .unknown, p), .t(" " + tr("+\(rest.count) more see a problem"), p.muted)])
         }
         if s.calm > 0 {
             w.line([.mark(.up, p), .t(" " + tr("\(s.calm) others report no problem"), p.muted)])

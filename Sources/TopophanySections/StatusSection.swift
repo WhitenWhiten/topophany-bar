@@ -124,8 +124,7 @@ public struct StatusSection: Sendable, Hashable {
     public var shortTitle: String {
         switch verdictState {
         case .incomplete?, .noEvidence?, .noChecks?: return tr("Incomplete")
-        case .some: return title
-        case nil: return tr("Offline")
+        case .some, nil: return title
         }
     }
 
@@ -155,6 +154,26 @@ public struct StatusSection: Sendable, Hashable {
             }
         case .blind(let b):
             return Self.reason(b, now: now)
+        }
+    }
+
+    /// The line under a small widget's headline: "5 down · 63 of 68 up".
+    public var shortSubtitle: String {
+        switch kind {
+        case .verdict(let s):
+            guard let c = counts, let up = c.up else { return topoText }
+            let total = configured ?? 0
+            switch s {
+            case .clear: return tr("\(up) of \(total) checks pass")
+            case .degraded: return tr("\(c.warning ?? 0) warn · \(up) of \(total) up")
+            case .incidents, .down: return tr("\(c.down ?? 0) down · \(up) of \(total) up")
+            case .incomplete: return tr("\(c.unknown ?? 0) unknown · \(up) of \(total) up")
+            case .noEvidence, .noChecks, .cached, .other: return subtitle
+            }
+        case .blind(.starting):
+            return subtitle
+        case .blind:
+            return lastKnownLine
         }
     }
 

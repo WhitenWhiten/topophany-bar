@@ -19,6 +19,10 @@ public struct CardsRenderer: Renderer {
     public func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView {
         AnyView(CardsWidget(model: model, size: size, ctx: context))
     }
+
+    public func widgetBackground(context: RenderContext) -> AnyView {
+        AnyView(CardsWidgetBackground(ctx: context))
+    }
 }
 
 /// The menu bar item: a globe with the status badge cut into its corner,

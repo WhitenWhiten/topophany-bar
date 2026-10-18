@@ -16,6 +16,10 @@ public struct CellsRenderer: Renderer {
     }
 
     public func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView {
-        AnyView(Text(model.status.tuiTitle))
+        AnyView(CellsWidget(model: model, size: size, ctx: context))
+    }
+
+    public func widgetBackground(context: RenderContext) -> AnyView {
+        AnyView(Rectangle().fill(Color(CellsPalette(context.theme).ink)))
     }
 }

@@ -50,16 +50,29 @@ public enum CellItem: Sendable {
     case line(from: CGPoint, to: CGPoint, RGBA, width: Double, dash: [Double])
 }
 
+/// An age that counts up on its own, as a widget's must between reloads:
+/// set as live text over the scene, its right edge at `right`.
+public struct LiveAge: Sendable {
+    public var right: Double
+    public var y: Double
+    public var date: Date
+    public var color: RGBA
+    /// Painted behind it, so it can sit on a box's border.
+    public var background: RGBA?
+}
+
 /// A drawn grid of styled cells and the TUI's vector pieces.
 public struct CellScene: Sendable {
     public var size: CGSize
     public var metrics: CellMetrics
     public var items: [CellItem] = []
+    public var live: [LiveAge] = []
 
-    public init(size: CGSize, metrics: CellMetrics, items: [CellItem] = []) {
+    public init(size: CGSize, metrics: CellMetrics, items: [CellItem] = [], live: [LiveAge] = []) {
         self.size = size
         self.metrics = metrics
         self.items = items
+        self.live = live
     }
 }
 
@@ -109,6 +122,20 @@ public struct CellCanvas: View {
             }
         }
         .frame(width: scene.size.width, height: scene.size.height)
+        .overlay(alignment: .topLeading) {
+            ForEach(Array(scene.live.enumerated()), id: \.offset) { _, a in
+                Text(.currentDate, format: .reference(to: a.date, allowedFields: [.minute, .hour, .day], maxFieldCount: 1))
+                    .font(Self.font(scene.metrics, bold: false))
+                    .foregroundStyle(Color(a.color))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.horizontal, a.background == nil ? 0 : scene.metrics.cell)
+                    .frame(height: scene.metrics.line)
+                    .background(a.background.map { Color($0) } ?? .clear)
+                    .frame(width: a.right, alignment: .trailing)
+                    .offset(y: a.y)
+            }
+        }
     }
 
     /// The scene's whole area less the gaps, for an even-odd clip.
