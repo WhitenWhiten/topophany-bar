@@ -34,6 +34,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             item?.update()
             panel?.update()
         }
+        model.onSettingsChange = { [weak self] old, new in
+            if old.openAtLogin != new.openAtLogin { self?.applyLoginItem() }
+        }
         model.start()
         applyLoginItem()
         WidgetNeedsWatcher.start(model: model)

@@ -50,7 +50,20 @@ final class AppModel {
     @ObservationIgnored var onChange: (() -> Void)?
     @ObservationIgnored var widgets: WidgetBridge?
 
-    init(store: SettingsStore = SettingsStore()) {
+    /// Debug builds take `-settings PATH` to use another settings file.
+    static var defaultStore: SettingsStore {
+        #if DEBUG
+        if let path = UserDefaults.standard.string(forKey: "settings") {
+            return SettingsStore(url: URL(filePath: (path as NSString).expandingTildeInPath))
+        }
+        #endif
+        return SettingsStore()
+    }
+
+    /// Told when a saved setting changes, before `topo` hears of it.
+    @ObservationIgnored var onSettingsChange: ((_ old: TopophanyKit.Settings, _ new: TopophanyKit.Settings) -> Void)?
+
+    init(store: SettingsStore = AppModel.defaultStore) {
         self.store = store
         let s = store.load()
         settings = s
@@ -130,6 +143,7 @@ final class AppModel {
         let old = settings
         settings = s
         try? store.save(s)
+        onSettingsChange?(old, s)
         if old.topo.path != s.topo.path || old.topo.source != s.topo.source {
             restartEngine()
             locate()
