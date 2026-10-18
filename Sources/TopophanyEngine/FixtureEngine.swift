@@ -182,11 +182,16 @@ public final class FixtureEngine: Engine {
     // MARK: fitting a frame to the request
 
     private func fit(_ object: [String: JSONValue], at: Date, state s: inout State) -> EngineEvent? {
-        let original = (object["generated_at"].flatMap { if case .string(let g) = $0 { Timestamp.parse(g) } else { nil } }) ?? at
-        var o = Self.shifted(object, by: at.timeIntervalSince(original))
         s.sequence += 1
-        o["sequence"] = .number(Double(s.sequence))
-        if let r = s.request {
+        return Self.event(Self.fitted(object, at: at, sequence: s.sequence, request: s.request))
+    }
+
+    /// A fixture frame moved to `at` and fitted to `request`.
+    static func fitted(_ object: [String: JSONValue], at: Date, sequence: UInt64, request: Request?) -> [String: JSONValue] {
+        let original = (object["generated_at"].flatMap { if case .string(let g) = $0 { Timestamp.parse(g) } else { nil } }) ?? at
+        var o = shifted(object, by: at.timeIntervalSince(original))
+        o["sequence"] = .number(Double(sequence))
+        if let r = request {
             o["request_id"] = .string(r.requestID)
             o["observer"] = .string(r.observer)
             o["bar_row"] = .string(r.template.bar.row)
@@ -195,7 +200,30 @@ public final class FixtureEngine: Engine {
                 o["rows"] = .array(Self.rows(rows, for: r.template))
             }
         }
-        return Self.event(o)
+        return o
+    }
+
+    /// The fixture's frames, fitted to `request` and moved so that the anchor
+    /// is `origin`; one pass, without looping. Error and stopped frames
+    /// are included as they are.
+    public static func timeline(_ scenario: Scenario, request: Request, origin: Date) -> [(at: Date, frame: Frame, line: Data)] {
+        let shift = origin.timeIntervalSince(anchor)
+        var out: [(Date, Frame, Data)] = []
+        var sequence: UInt64 = 0
+        for line in lines(scenario) {
+            guard case .object(let o)? = try? JSONDecoder().decode(JSONValue.self, from: line),
+                  case .string(let g)? = o["generated_at"], let t = Timestamp.parse(g) else { continue }
+            let at = t.addingTimeInterval(shift)
+            let fitted: [String: JSONValue]
+            if case .string("error")? = o["lifecycle"] {
+                fitted = shifted(o, by: shift)
+            } else {
+                sequence += 1
+                fitted = Self.fitted(o, at: at, sequence: sequence, request: request)
+            }
+            if case .frame(let f, let l)? = event(fitted) { out.append((at, f, l)) }
+        }
+        return out.sorted { $0.0 < $1.0 }
     }
 
     static func rows(_ fixture: [JSONValue], for template: Template) -> [JSONValue] {
@@ -255,5 +283,21 @@ public final class FixtureEngine: Engine {
         e.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         guard let line = try? e.encode(JSONValue.object(object)), let frame = FrameDecoder.frame(from: line) else { return nil }
         return .frame(frame, line: line)
+    }
+}
+
+extension FixtureEngine {
+    /// What a reader shows `after` seconds past the anchor of a scenario
+    /// replayed from `origin`: every frame due by then received when it was
+    /// due, then the reader rules applied at that moment.
+    public static func reading(_ scenario: Scenario, request: Request, origin: Date, after: TimeInterval) -> Reading {
+        let now = origin.addingTimeInterval(after)
+        var policy = ReaderPolicy()
+        policy.sourceStarted()
+        for (at, frame, line) in timeline(scenario, request: request, origin: origin) where at <= now {
+            policy.receive(frame, line: line, at: at)
+            if frame.lifecycle == .stopped { policy.sourceEnded(at: at) }
+        }
+        return policy.evaluate(at: now)
     }
 }
