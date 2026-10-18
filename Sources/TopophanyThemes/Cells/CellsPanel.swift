@@ -159,15 +159,24 @@ struct CellsBodies {
         if c.isMissing {
             w.line([.t(c.place, p.muted)])
         } else {
-            w.line([.t(c.kind, p.kind), .t(" · ", p.faint), .t(c.provider, p.muted), .t(" · ", p.faint), .t(c.place, p.muted)],
-                   [.t(ageText, p.faint)])
+            var segs: [Seg] = []
+            for (i, part) in [c.kind, c.provider, c.place].filter({ !$0.isEmpty }).enumerated() {
+                if !segs.isEmpty { segs.append(.t(" · ", p.faint)) }
+                segs.append(.t(part, i == 0 && part == c.kind ? p.kind : p.muted))
+            }
+            w.line(segs, [.t(ageText, p.faint)])
         }
+        func shown(_ m: ServerCardModel.Meter) -> String { m.detail.replacingOccurrences(of: " / ", with: "/") }
+        // The bar gives way to a detail column of at least "76.7/128 GiB",
+        // so bars line up from card to card and a space precedes the detail.
+        let widest = detail ? max(12, [c.cpu, c.memory, c.disk].map { CellText.width(shown($0)) }.max() ?? 0) : 0
+        let bar = widest > 0 ? min(bar, w.frame.columns - labelWidth - 7 - 1 - widest) : bar
         func row(_ label: String, _ m: ServerCardModel.Meter) {
             let value = m.percent.map { CellText.padLeft(Words.percent($0), 6) } ?? "     —"
             let color = m.percent.map { p.load($0, limit: m.limit) } ?? p.track
             w.line([.t(CellText.pad(label, labelWidth), p.muted), .t(value, m.percent == nil ? p.faint : p.text, bold: m.percent != nil),
                     .t(" ", p.text), .bar(cells: bar, percent: m.percent, limit: m.limit, color: color, withheld: m.percent == nil)],
-                   detail && !m.detail.isEmpty ? [.t(m.detail.replacingOccurrences(of: " / ", with: "/"), p.muted)] : [])
+                   detail && !m.detail.isEmpty ? [.t(shown(m), p.muted)] : [])
         }
         row(tr("CPU"), c.cpu)
         row(labelWidth < 7 ? tr("MEM") : tr("MEMORY"), c.memory)
