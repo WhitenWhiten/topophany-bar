@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One surface</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  /* One surface on the desktop, for side-by-side comparison with the app's
+     snapshots. Query: what=panel|hero|widget|item, scenario, theme
+     (native|tui), appearance (dark|light), mac, servers, limit, kind, size. */
+  html, body { margin: 0; background: #fff !important; }
+  #stage { display: inline-block; padding: 24px; border-radius: 0; box-shadow: none; }
+  #stage.desk::before, #stage.desk::after { display: none; }
+  .mb { position: static; height: 26px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="../assets/data.js"></script>
+<script src="../assets/render.js"></script>
+<script src="../assets/widgets.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const D = window.TB_DATA;
+  const o = Object.assign(TB.defaults(), { theme: q.get('theme') || 'native', appearance: q.get('appearance') || 'dark',
+    mac: q.get('mac') || 'local', limit: +(q.get('limit') || 3), text: q.get('text') || 'count', color: q.get('color') || 'status' });
+  if (q.get('servers')) o.sections.servers = q.get('servers') === '1';
+  const sc = D.scenarios[q.get('scenario') || 'incidents'];
+  const el = document.getElementById('stage');
+  const wall = o.theme === 'tui' && q.get('what') !== 'item' ? (q.get('wall') || 'dark') : o.appearance;
+  el.className = 'desk wall-' + wall;
+  const what = q.get('what') || 'panel';
+  if (what === 'panel') el.innerHTML = o.theme === 'tui' ? TB.tuiPanel(sc, o) : TB.nativePanel(sc, o);
+  if (what === 'hero') el.innerHTML = o.theme === 'tui' ? TB.tuiPanel(sc, Object.assign(o, { heroOnly: true })) : TB.nativePanel(sc, Object.assign(o, { heroOnly: true }));
+  if (what === 'widget') el.innerHTML = TB.widget(q.get('kind') || 'status', q.get('size') || 's', sc, Object.assign(o, { node: q.get('node') || '', mode: q.get('mode') || '' }));
+  if (what === 'item') el.innerHTML = `<div class="mb mb-${o.appearance}"><div class="mb-right">${['symbol', 'count', 'words'].map((text) => TB.statusItem(sc, Object.assign({}, o, { text }))).join('')}</div></div>`;
+  el.querySelectorAll('img').forEach((i) => { i.src = i.getAttribute('src').replace(/^assets\//, '../assets/'); });
+</script>
+</body>
+</html>

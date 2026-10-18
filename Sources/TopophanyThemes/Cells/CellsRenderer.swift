@@ -1,0 +1,21 @@
+import SwiftUI
+import TopophanySections
+
+/// `cells`: the Terminal look, the TUI's boxed panels on a cell grid.
+public struct CellsRenderer: Renderer {
+    public init() {}
+
+    public var id: RendererID { .cells }
+
+    public func panel(_ model: PanelModel, context: RenderContext) -> AnyView {
+        AnyView(CellsPanel(model: model, ctx: context))
+    }
+
+    public func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView {
+        AnyView(Text(model.tuiText))
+    }
+
+    public func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView {
+        AnyView(Text(model.status.tuiTitle))
+    }
+}
