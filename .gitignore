@@ -7,3 +7,4 @@ build/
 *.xcworkspace/
 xcuserdata/
 design/shots/*.png
+Tests/Snapshots/out/
