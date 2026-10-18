@@ -237,12 +237,12 @@ All times are RFC 3339 UTC. Every count is an integer ≥ 0. Every percentage is
   - `health` and `note` (`affected`, `outdated` or `""`) are the node's state as the Servers tab shows it.
 - **`resources`:** one entry per host check on the node (`CardResource`), primary disk first.
   - `limit` is the check's `max_*_percent`, or `null` when the check sets none.
-  - Each number is `null` unless the check is `fresh`: values are withheld exactly as the TUI's server card withholds them. `sampled_at` is kept.
+  - Each number is `null` unless the check is `fresh` and its own `valid_until` has not passed. At expiry, set every numeric field (including limits and process matching) to `null`, resource health to `unknown`, and fresh resource freshness to `stale`. Keep the resource entry, `sampled_at`, original `valid_until`, disk path, process name and the rest of the card. A resource deadline alone never expires the whole card.
   - `process` is `null` when the check names no process.
 - **`services`:** up to 32 services, trouble first, as `Card.Services`.
-- **`observes`:** the observers on this node, each with its own verdict, as in `observers.verdicts`.
+- **`observes`:** the observers on this node, each with its own verdict, as in `observers.verdicts`, plus `valid_until` for the checks and heartbeat behind that verdict. At that deadline, retain identity and `last_seen`, set `state: "cached"`, `health: "unknown"`, `live: false`, and move all check counts into `unknown`. This does not expire the rest of the card. Older frames without this field rely on their row deadline.
 - **An unknown node:** `value: null`, `health: "unknown"`, `reason: "entity_missing"`.
-- **The row's `valid_until`:** the earliest of its resources' and the node state's deadlines.
+- **The row's `valid_until`:** the earliest deadline of the source envelope, node state and displayed services, including transitive service dependencies and path dependencies/candidates. Raw resource readings and nested observer verdicts use their own deadlines, not the row deadline. A host check that also supports a service judgment still bounds that judgment.
 
 ## 4. When frames are written
 
@@ -260,6 +260,7 @@ These are the same rules as `topo monitor` output today, with the pipe as the si
 These are the rules `topo monitor preview` applies, and topophany-bar's `ReaderPolicy` implements them:
 
 - **Every second, check deadlines** against the consumer's clock. When `publisher_expires_at` has passed, everything is unavailable and the status item shows ◌. When a row's `valid_until` has passed, that row's value is withheld.
+- **For `server.card`, also apply each resource and nested observer deadline** as specified in section 3.3, even when the row itself remains current. A renewed publisher lease never renews these nested deadlines.
 - **Treat implausibly future timestamps as unavailable.** A timestamp is implausible when it lies more than 5 minutes beyond the consumer's clock.
 - **Never extend a row's validity** because a later frame renewed the lease without changing that row.
 - **Treat the process exiting, or stdout closing, as unavailable at once.**
