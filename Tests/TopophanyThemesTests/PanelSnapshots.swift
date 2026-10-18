@@ -53,6 +53,11 @@ import TopophanySections
         try snapshot("panel-terminal-degraded-servers", OnDesktop(dark: true) {
             CellsPanel(model: servers, ctx: RenderContext(theme: ThemeStore.terminal), focusFirstAttention: true)
         })
+        // Taller than the screen allows: Status stays, the rest scrolls.
+        let tall = previewPanel(.incidents, settings: previewSettings(servers: true, limit: 5))
+        let short = RenderContext(theme: ThemeStore.terminal, maxHeight: 700)
+        let size = try snapshot("panel-terminal-incidents-scrolling", OnDesktop(dark: true) { CellsPanel(model: tall, ctx: short) })
+        #expect(size.height <= 700 + 48 + 0.5, "\(size)")
         let mac = previewPanel(.incidents, settings: previewSettings(mac: .server))
         try snapshot("panel-terminal-incidents-mac", OnDesktop(dark: true) { CellsPanel(model: mac, ctx: RenderContext(theme: ThemeStore.terminal)) })
     }

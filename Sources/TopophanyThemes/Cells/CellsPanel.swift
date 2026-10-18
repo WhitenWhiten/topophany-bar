@@ -251,13 +251,41 @@ struct CellsPanel: View {
     var body: some View {
         let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention)
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-        CellCanvas(scene: scene)
+        fitted(scene)
             .background(shape.fill(Color(CellsPalette(ctx.theme).ink)))
             .clipShape(shape)
             .overlay(shape.strokeBorder(Color(CellsPalette(ctx.theme).line.opacity(ctx.increaseContrast ? 1 : 0.85)), lineWidth: 1))
             .overlay(shape.stroke(Color.black.opacity(0.7), lineWidth: 0.5))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(CellsAccessibility.panel(model))
+    }
+
+    /// The whole scene, or, when it is taller than the screen allows, the
+    /// header, Status (when pinned) and footer fixed and the rest scrolling.
+    @ViewBuilder func fitted(_ scene: CellScene) -> some View {
+        let h = scene.size.height
+        if let maxH = ctx.maxHeight, h > maxH,
+           let header = scene.marks["header"], let status = scene.marks["status"], let footer = scene.marks["footer"] {
+            let top = model.pinStatus ? status : header
+            VStack(spacing: 0) {
+                slice(scene, top: 0, bottom: top)
+                ScrollView(.vertical) { slice(scene, top: top, bottom: footer) }
+                    .scrollIndicators(.automatic)
+                    .frame(height: max(80, maxH - top - (h - footer)))
+                slice(scene, top: footer, bottom: h)
+            }
+            .frame(width: scene.size.width)
+        } else {
+            CellCanvas(scene: scene)
+        }
+    }
+
+    /// A band of the scene, from `top` to `bottom`.
+    func slice(_ scene: CellScene, top: Double, bottom: Double) -> some View {
+        CellCanvas(scene: scene)
+            .offset(y: -top)
+            .frame(width: scene.size.width, height: bottom - top, alignment: .top)
+            .clipped()
     }
 
     static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false) -> CellScene {
@@ -279,6 +307,7 @@ struct CellsPanel: View {
                 .t(" · " + head, p.faint)], live)
         w.y = 28
 
+        var marks = ["header": w.y]
         let x0 = 6.0, x1 = width - 6
         func title(_ t: String, _ extra: String? = nil) -> [Seg] {
             var s: [Seg] = [.t(" " + t, p.accent, bold: true)]
@@ -291,6 +320,7 @@ struct CellsPanel: View {
               x0: x0, x1: x1, style: .panel, tint: b.statusTint(st)) { w in
             b.status(&w, st, blockHeight: 54)
         }
+        marks["status"] = w.y + 2
         for s in model.sections {
             switch s {
             case .seen(let seen):
@@ -321,6 +351,7 @@ struct CellsPanel: View {
         // Footer: keycaps and the connection.
         w.y += 9
         let footTop = w.y
+        marks["footer"] = footTop
         w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 28), p.inkHigh, radius: 0))
         w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 1), p.line.opacity(0.7), radius: 0))
         w.y = footTop + 5
@@ -332,7 +363,9 @@ struct CellsPanel: View {
             : [.t(CellText.truncate(ch.connection == .unreachable ? tr("unreachable") : ch.connectionText.lowercased(), room), p.down)]
         w.line(keys, conn)
         w.y = footTop + 28
-        return CellScene(size: CGSize(width: width, height: w.y), metrics: m, items: w.items)
+        var scene = CellScene(size: CGSize(width: width, height: w.y), metrics: m, items: w.items)
+        scene.marks = marks
+        return scene
     }
 }
 
