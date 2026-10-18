@@ -12,7 +12,7 @@ public struct CellsRenderer: Renderer {
     }
 
     public func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView {
-        AnyView(Text(model.tuiText))
+        AnyView(CellsStatusItem(model: model, ctx: context))
     }
 
     public func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView {
