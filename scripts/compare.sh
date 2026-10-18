@@ -5,7 +5,11 @@
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TMP="$(mktemp -d)"
-"$ROOT/design/shots/shot.sh" "shots/$1" "$TMP/preview.png" 1600 2400 2 >/dev/null
+CH="$HOME/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell"
+# shot.sh's virtual time stalls while the display sleeps; plain headless
+# shots wait for the page's load event, which is enough here.
+"$CH" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --run-all-compositor-stages-before-draw \
+  --window-size=1600,2400 --screenshot="$TMP/preview.png" "file://$ROOT/design/shots/$1" >/dev/null 2>&1
 # Trim the transparent/white margin chrome leaves around the stage.
 W=$(sips -g pixelWidth "$2" | awk '/pixelWidth/{print $2}')
 cat > "$TMP/c.html" <<HTML
@@ -32,7 +36,6 @@ p.onload=fit; s.onload=fit;
 </script>
 HTML
 cp "$2" "$TMP/snap.png"
-CH="$HOME/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell"
-"$CH" --headless --disable-gpu --hide-scrollbars --allow-file-access-from-files --force-device-scale-factor=1 --virtual-time-budget=2000 \
-  --window-size=1300,2200 --screenshot="$3" "file://$TMP/c.html" >/dev/null 2>&1
+"$CH" --headless --disable-gpu --hide-scrollbars --allow-file-access-from-files --force-device-scale-factor=1 --run-all-compositor-stages-before-draw \
+  --window-size="$(( W > 1200 ? W + 140 : 1300 ))",2200 --screenshot="$3" "file://$TMP/c.html" >/dev/null 2>&1
 echo "$3"
