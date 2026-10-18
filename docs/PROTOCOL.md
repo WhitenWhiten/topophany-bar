@@ -159,7 +159,8 @@ All times are RFC 3339 UTC. Every count is an integer ≥ 0. Every percentage is
 ```
 
 - **`state`, `glyph`, `text`:** from `view.Verdict()`. `state` is one of `clear`, `degraded`, `incidents`, `down`, `incomplete`, `no-evidence`, `no-checks` or `cached`.
-- **`counts`:** `View.Counts()`, plus how many unknown checks are paused or in maintenance. `configured` is their sum.
+- **`counts`:** `up`, `warning`, `down` and `unknown` are `View.Counts()`. `paused` and `maintenance` are **subsets of `unknown`**: how many of the unknown checks are paused or in maintenance. They are never added to the total.
+- **`configured`:** `up + warning + down + unknown`, every check in the view. For example, three checks that are up, paused and in maintenance give `up 1, unknown 2, paused 1, maintenance 1, configured 3`.
 - **`observers`:** `View.Live()`.
 - **The row's `health`:**
   - `clear` → `up`;
@@ -195,7 +196,11 @@ All times are RFC 3339 UTC. Every count is an integer ≥ 0. Every percentage is
 - **`route`:** `title` split on `" → "`, without a leading element equal to `observer_name`. A single element when the title has no arrows.
 - **`observer`, `observer_name`:** the observer the entry was seen from, or `""` when it has none.
 - **`since`:** the ledger's `since` for incidents; `null` otherwise.
-- **`state`:** the TUI's state word, lowercased. One of `open`, `recovering`, `down`, `warn`, `affected`, `outdated`, `silent`, `paused`, `maintenance` or `unknown`.
+- **`state`:** the TUI's state word, lowercased.
+  - Incidents: `view.Pill(row)`, so `open` or `recovering`.
+  - Every other kind: `view.State(row)`, so `down`, `warn`, `unknown`, `affected`, `outdated`, `paused`, `maintenance`, `cached` or `recovering`, and `up` where `State` returns `""`.
+
+  Consumers must accept any lowercase word, and fall back on `health` for one they don't know.
 - **The row's `health`:** the worst item's, or `up` when the list is empty in a current view.
 
 #### `applications.list`
