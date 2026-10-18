@@ -24,9 +24,10 @@ public struct SeenFromSection: Sendable, Hashable {
     public var problems: [Entry]?
     /// Observers that report no problem.
     public var calm: Int
-    public var total: Int
+    /// How many observers there are, or nil when that was never known.
+    public var total: Int?
 
-    public init(problems: [Entry]?, calm: Int, total: Int) {
+    public init(problems: [Entry]?, calm: Int, total: Int?) {
         self.problems = problems
         self.calm = calm
         self.total = total

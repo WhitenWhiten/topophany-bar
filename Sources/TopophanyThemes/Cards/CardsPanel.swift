@@ -358,11 +358,11 @@ struct CardsSeen: View {
 
     var body: some View {
         Card(p: p) {
-            CardTitle(symbol: "target", title: tr("Seen from"), meta: tr("\(seen.total) observers"), p: p, t: t)
+            CardTitle(symbol: "target", title: tr("Seen from"), meta: seen.total.map { tr("\($0) observers") } ?? "", p: p, t: t)
             FlowLayout(spacing: 5) {
                 if let problems = seen.problems {
                     if problems.isEmpty {
-                        chip(.up, tr("All \(seen.total) observers report no problem"), nil, calm: true, focused: false)
+                        chip(.up, tr("All \(seen.calm) observers report no problem"), nil, calm: true, focused: false)
                     } else {
                         ForEach(problems) { o in chip(o.mark, o.name, o.note, calm: false, focused: focus == "seen:" + o.id) }
                         if seen.calm > 0 { chip(.up, tr("\(seen.calm) others report no problem"), nil, calm: true, focused: false) }

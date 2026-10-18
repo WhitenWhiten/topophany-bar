@@ -149,10 +149,10 @@ public enum SectionBuilder {
     // MARK: seen from
 
     public static func seen(_ r: Reading) -> SeenFromSection {
-        guard let row = r.row(RowID.seen) else { return SeenFromSection(problems: nil, calm: 0, total: 0) }
+        guard let row = r.row(RowID.seen) else { return SeenFromSection(problems: nil, calm: 0, total: nil) }
         guard case .observers(let list) = row.value else {
             if case .observers(let last) = r.lastValue(of: row) { return SeenFromSection(problems: nil, calm: 0, total: last.count) }
-            return SeenFromSection(problems: nil, calm: 0, total: 0)
+            return SeenFromSection(problems: nil, calm: 0, total: nil)
         }
         let problems = list.filter { $0.health != .up }.map { o in
             SeenFromSection.Entry(id: o.id, name: o.name, mark: Mark(o.health), note: note(o, now: r.now))

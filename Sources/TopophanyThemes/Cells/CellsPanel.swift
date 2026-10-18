@@ -85,7 +85,7 @@ struct CellsBodies {
             return
         }
         if problems.isEmpty {
-            w.line([.mark(.up, p), .t(" " + CellText.truncate(tr("all \(s.total) observers report no problem"), n - 2), p.muted)])
+            w.line([.mark(.up, p), .t(" " + CellText.truncate(tr("all \(s.calm) observers report no problem"), n - 2), p.muted)])
             return
         }
         for o in problems.prefix(max) {
@@ -278,7 +278,7 @@ struct CellsPanel: View {
         for s in model.sections {
             switch s {
             case .seen(let seen):
-                w.box(title(tr("SEEN FROM"), "\(seen.total)"), x0: x0, x1: x1, style: .panel) { b.seen(&$0, seen) }
+                w.box(title(tr("SEEN FROM"), seen.total.map { "\($0)" }), x0: x0, x1: x1, style: .panel) { b.seen(&$0, seen) }
             case .attention(let a):
                 w.box(title(tr("NEEDS ATTENTION"), "\(a.total)"), x0: x0, x1: x1, style: .panel) {
                     b.attention(&$0, a, limit: a.items.count, forceFocusFirst: focusFirstAttention)
@@ -325,7 +325,7 @@ enum CellsAccessibility {
     static func panel(_ m: PanelModel) -> String {
         var parts = [m.status.title, m.status.subtitle]
         if let s = m.seen, let problems = s.problems {
-            parts.append(problems.isEmpty ? tr("All \(s.total) observers report no problem")
+            parts.append(problems.isEmpty ? tr("All \(s.calm) observers report no problem")
                                           : problems.map { "\($0.name) \($0.note)" }.joined(separator: ", "))
         }
         if let a = m.attention {
