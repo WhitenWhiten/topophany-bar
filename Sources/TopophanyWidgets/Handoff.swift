@@ -75,6 +75,17 @@ public struct Handoff: Sendable, Codable {
         return SectionBuilder.panel(PanelInput(reading: reading(), engine: engineRunning ? .running : .stopped,
                                                settings: widgetSettings))
     }
+
+    /// The panel for a Server widget: its node's card is the one server,
+    /// whether or not the panel pins it.
+    public func panel(server node: String) -> PanelModel {
+        var p = panel()
+        if case .server(let c, _)? = p.mac, c.id == node { return p }
+        let cards = SectionBuilder.servers(reading(), nodes: [node])
+        p.sections.removeAll { if case .servers = $0 { true } else { false } }
+        p.sections.append(.servers(cards))
+        return p
+    }
 }
 
 /// Reads and writes the hand-off in the App Group container.
