@@ -66,9 +66,6 @@ struct CardsPanelBackground: View {
             }
             shape.strokeBorder(p.isDark ? Color.white.opacity(ctx.increaseContrast ? 0.45 : 0.2) : Color.white.opacity(0.75),
                                lineWidth: 0.5)
-            if p.isDark {
-                shape.inset(by: 0.5).trim(from: 0, to: 1).stroke(Color.clear)
-            }
         }
         .overlay(shape.stroke(p.isDark ? Color.black.opacity(0.75) : Color.black.opacity(ctx.increaseContrast ? 0.4 : 0.14),
                               lineWidth: 0.5))

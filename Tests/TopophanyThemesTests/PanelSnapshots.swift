@@ -28,6 +28,21 @@ import TopophanySections
         try snapshot("panel-native-light-clear-server", panel(previewPanel(.clear, settings: previewSettings(mac: .server)), theme: ThemeStore.native, dark: false))
     }
 
+    /// Reduce Transparency paints solid fills; Increase Contrast darkens
+    /// secondary text and strengthens edges and separators.
+    @Test func accessibilityPanels() throws {
+        for dark in [true, false] {
+            let a = dark ? "dark" : "light"
+            for (name, rt, hc) in [("reduce-transparency", true, false), ("increase-contrast", false, true)] {
+                let ctx = RenderContext(theme: ThemeStore.native, colorScheme: dark ? .dark : .light,
+                                        reduceTransparency: rt, increaseContrast: hc)
+                try snapshot("panel-native-\(a)-\(name)", OnDesktop(dark: dark) {
+                    CardsRenderer().panel(previewPanel(.degraded), context: ctx)
+                })
+            }
+        }
+    }
+
     @Test func terminalPanels() throws {
         for s in panelScenarios {
             let model = previewPanel(s)
