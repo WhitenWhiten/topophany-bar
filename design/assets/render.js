@@ -423,14 +423,24 @@
     }
     return `<span class="fl-g fl-sym">${I[KIND_ICON[g.kind] || 'server'] || I.server}</span>`;
   }
+  // The nodes of groups left out for room, trouble first.
+  const troubleFirst = (gs) => gs.flatMap((g) => g.nodes).map((s, i) => [s, i])
+    .sort((a, b) => SEV[a[0].health] - SEV[b[0].health] || a[1] - b[1]).map((x) => x[0]);
+  TB.troubleFirst = troubleFirst;
+  // Groups two to a row; groups left out for room, when given, take the
+  // next cell with their nodes' marks, trouble first.
+  function fleetGrid(F, groups, marks = 6, rest = []) {
+    const health = (s) => (F.current ? s.health : 'cached');
+    const tail = (nodes) => `<span class="fl-m">${nodes.slice(0, marks).map((s) => mark(health(s), 8)).join('')}${nodes.length > marks ? `<em>+${nodes.length - marks}</em>` : ''}</span>`;
+    const cell = (g) => `<div class="fl-c ${F.current ? '' : 'cached'}">${fleetGlyph(g)}<span class="fl-t">${esc(g.title)}</span>${g.edge ? `<em>${esc(g.kind)}</em>` : ''}${tail(g.nodes)}</div>`;
+    const more = rest.length ? `<div class="fl-c fl-more ${F.current ? '' : 'cached'}"><span class="fl-g"></span><span class="fl-t">+${rest.length} more</span>${tail(troubleFirst(rest))}</div>` : '';
+    return `<div class="fl-grid">${groups.map(cell).join('')}${more}</div>`;
+  }
   function nvFleet(sc) {
     const F = TB.fleet(sc);
-    const health = (s) => (F.current ? s.health : 'cached');
-    const cell = (g) => `<div class="fl-c ${F.current ? '' : 'cached'}">${fleetGlyph(g)}<span class="fl-t">${esc(g.title)}</span>${g.edge ? `<em>${esc(g.kind)}</em>` : ''}<span class="fl-m">${g.nodes.slice(0, 6).map((s) => mark(health(s), 8)).join('')}${g.nodes.length > 6 ? `<em>+${g.nodes.length - 6}</em>` : ''}</span></div>`;
-    const grid = (gs) => `<div class="fl-grid">${gs.map(cell).join('')}</div>`;
-    return `<section class="nv-card"><h3>${I.fleet}Fleet<em>${F.nodes} servers · ${F.providers} providers</em></h3>${grid(F.edges)}${F.edges.length && F.servers.length ? '<div class="nv-sep fl-sep"></div>' : ''}${grid(F.servers)}</section>`;
+    return `<section class="nv-card"><h3>${I.fleet}Fleet<em>${F.nodes} servers · ${F.providers} providers</em></h3>${fleetGrid(F, F.edges)}${F.edges.length && F.servers.length ? '<div class="nv-sep fl-sep"></div>' : ''}${fleetGrid(F, F.servers)}</section>`;
   }
-  TB._fleet = { nvFleet };
+  TB._fleet = { nvFleet, fleetGrid };
 
   // Token sets for the cards renderer. Native is the system's own; Aurora is an
   // example user theme that only overrides tokens.
@@ -762,26 +772,38 @@
 
   // Fleet as the TUI would draw it: two to a line, logo, who, and a mark per
   // node at the column's end; servers start a line of their own.
-  function tFleetBody(sc, p, w, marks = 4) {
+  // At most `lines` lines: groups left out are counted in the last cell,
+  // their nodes' marks kept.
+  function tFleetBody(sc, p, w, marks = 4, lines = Infinity) {
     const F = TB.fleet(sc);
     const gap = 2;
     const cw = Math.floor((w - gap) / 2);
-    const entry = (g) => {
-      const tail = g.nodes.slice(0, marks).map((s) => tglyph(F.current ? s.health : 'cached'));
-      if (g.nodes.length > marks) tail.push(S('+' + (g.nodes.length - marks), 'faint'));
-      const logo = TB.tlogo(g.provider, p);
-      const lead = logo.length ? logo : [S('  ')];
+    const entry = (lead, title, cls, tag, nodes) => {
+      const tail = nodes.slice(0, marks).map((s) => tglyph(F.current ? s.health : 'cached'));
+      if (nodes.length > marks) tail.push(S('+' + (nodes.length - marks), 'faint'));
       const room = cw - 2 - width(tail) - 1;
-      const tag = g.edge ? ' ' + g.kind : '';
-      const segs = [...lead, S(trunc(g.title, Math.max(1, room)))];
-      if (tag && len(g.title) + len(tag) <= room) segs.push(S(tag, 'faint'));
+      const segs = [...lead, S(trunc(title, Math.max(1, room)), cls)];
+      if (tag && len(title) + len(tag) <= room) segs.push(S(tag, 'faint'));
       return [...segs, S(' '.repeat(Math.max(1, cw - width(segs) - width(tail)))), ...tail];
     };
+    const group = (g) => {
+      const logo = TB.tlogo(g.provider, p);
+      return entry(logo.length ? logo : [S('  ')], g.title, '', g.edge ? ' ' + g.kind : '', g.nodes);
+    };
+    const all = F.edges.length + F.servers.length;
+    const rows = (n) => Math.ceil(n / 2);
+    const need = (k) => { const e = Math.min(k, F.edges.length); return rows(e) + rows(k - e + (k < all ? 1 : 0)); };
+    let shown = all;
+    while (shown > 0 && need(shown) > lines) shown -= 1;
+    const edges = F.edges.slice(0, shown);
+    const servers = F.servers.slice(0, shown - edges.length).map(group);
+    const rest = [...F.edges.slice(edges.length), ...F.servers.slice(shown - edges.length)];
+    if (rest.length) servers.push(entry([S('  ')], '+' + rest.length + ' more', 'muted', '', TB.troubleFirst(rest)));
     const out = [];
-    [F.edges, F.servers].forEach((part) => {
+    [edges.map(group), servers].forEach((part) => {
       for (let i = 0; i < part.length; i += 2) {
-        const segs = entry(part[i]);
-        if (part[i + 1]) segs.push(S(' '.repeat(gap)), ...entry(part[i + 1]));
+        const segs = part[i].slice();
+        if (part[i + 1]) segs.push(S(' '.repeat(gap)), ...part[i + 1]);
         out.push(tl(segs, [], '', w));
       }
     });

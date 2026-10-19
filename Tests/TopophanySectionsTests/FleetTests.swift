@@ -25,6 +25,18 @@ import TopophanyKit
         #expect(f.servers.first { $0.title == "Oracle" }?.nodes.map(\.mark) == [.up, .up])
     }
 
+    /// Groups left out for room show their trouble first, each node with
+    /// its own mark.
+    @Test func troubleFirstForGroupsLeftOut() throws {
+        let f = try #require(zonesPanel(.incidents).fleet)
+        let nodes = FleetSection.troubleFirst(f.servers)
+        #expect(nodes.count == 11)
+        #expect(nodes.first?.name == "BandwagonHost LA")
+        #expect(nodes.first?.mark == .degraded)
+        // The rest keep the list's order.
+        #expect(nodes.dropFirst().map(\.id) == f.servers.flatMap(\.nodes).filter { $0.mark != .degraded }.map(\.id))
+    }
+
     /// The last list, every mark withheld, while nothing current is known.
     @Test func offlineKeepsTheNamesOnly() throws {
         let f = try #require(zonesPanel(.offline).fleet)

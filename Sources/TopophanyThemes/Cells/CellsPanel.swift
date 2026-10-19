@@ -151,30 +151,48 @@ struct CellsBodies {
 
     /// Two to a line, each column as wide as the other: the provider's logo,
     /// who, and a mark per node at the column's end. Edges and platforms
-    /// lead, saying what they are where there's room.
-    func fleet(_ w: inout CellWriter, _ f: FleetSection, columns: Int = 2, marks: Int = 4) {
+    /// lead, saying what they are where there's room. At most `lines`
+    /// lines: groups left out are counted in the last cell, their nodes'
+    /// marks kept, trouble first.
+    func fleet(_ w: inout CellWriter, _ f: FleetSection, columns: Int = 2, marks: Int = 4, lines: Int = .max) {
         let gap = 2
         let cw = (w.frame.columns - gap * (columns - 1)) / columns
-        func entry(_ g: FleetSection.Group) -> [Seg] {
-            var tail: [Seg] = g.nodes.prefix(marks).map { .mark($0.mark, p) }
-            if g.nodes.count > marks { tail.append(.t("+\(g.nodes.count - marks)", p.faint)) }
-            let logo = Seg.logo(g.provider, p)
-            let lead: [Seg] = logo.isEmpty ? [.t("  ", p.text)] : logo
+        func entry(_ lead: [Seg], _ title: String, _ titleColor: RGBA, tag: String, nodes: [FleetSection.Node]) -> [Seg] {
+            var tail: [Seg] = nodes.prefix(marks).map { .mark($0.mark, p) }
+            if nodes.count > marks { tail.append(.t("+\(nodes.count - marks)", p.faint)) }
             let room = cw - 2 - tail.reduce(0) { $0 + $1.width } - 1
-            let tag = g.isEdge ? " " + Words.kind(g.kind) : ""
-            let fits = !tag.isEmpty && CellText.width(g.title) + CellText.width(tag) <= room
-            var segs = lead + [.t(CellText.truncate(g.title, max(1, room)), p.text)]
+            let fits = !tag.isEmpty && CellText.width(title) + CellText.width(tag) <= room
+            var segs = lead + [.t(CellText.truncate(title, max(1, room)), titleColor)]
             if fits { segs.append(.t(tag, p.faint)) }
             let used = segs.reduce(0) { $0 + $1.width } + tail.reduce(0) { $0 + $1.width }
             return segs + [.t(String(repeating: " ", count: max(1, cw - used)), p.text)] + tail
         }
+        func entry(_ g: FleetSection.Group) -> [Seg] {
+            let logo = Seg.logo(g.provider, p)
+            return entry(logo.isEmpty ? [.t("  ", p.text)] : logo, g.title, p.text, tag: g.isEdge ? " " + Words.kind(g.kind) : "",
+                         nodes: g.nodes)
+        }
+        // As many groups as fit, a cell for the rest when some don't.
+        func rows(_ n: Int) -> Int { (n + columns - 1) / columns }
+        func need(_ k: Int) -> Int {
+            let e = min(k, f.edges.count)
+            return rows(e) + rows(k - e + (k < f.groups.count ? 1 : 0))
+        }
+        var shown = f.groups.count
+        while shown > 0, need(shown) > lines { shown -= 1 }
+        let edges = Array(f.edges.prefix(shown))
+        var servers = Array(f.servers.prefix(shown - edges.count)).map(entry)
+        let rest = Array(f.edges.dropFirst(edges.count) + f.servers.dropFirst(shown - edges.count))
+        if !rest.isEmpty {
+            servers.append(entry([.t("  ", p.text)], tr("+\(rest.count) more"), p.muted, tag: "", nodes: FleetSection.troubleFirst(rest)))
+        }
         // Servers start a line of their own after the edges.
-        for part in [f.edges, f.servers] {
+        for part in [edges.map(entry), servers] {
             for row in stride(from: 0, to: part.count, by: columns) {
                 var segs: [Seg] = []
-                for (k, g) in part[row..<min(row + columns, part.count)].enumerated() {
+                for (k, cell) in part[row..<min(row + columns, part.count)].enumerated() {
                     if k > 0 { segs.append(.t(String(repeating: " ", count: gap), p.text)) }
-                    segs += entry(g)
+                    segs += cell
                 }
                 w.line(segs)
             }

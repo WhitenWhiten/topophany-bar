@@ -1287,22 +1287,6 @@
         }
       }
     },
-    "Pin servers in Settings": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "設定でサーバーを固定"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在设置中固定服务器"
-          }
-        }
-      }
-    },
     "Pressure %@ · App %@ GB": {
       "localizations": {
         "ja": {

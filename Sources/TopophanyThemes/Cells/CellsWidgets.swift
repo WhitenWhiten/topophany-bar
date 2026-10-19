@@ -27,7 +27,7 @@ struct CellsWidget: View {
         var w = CellWriter(metrics: m, palette: p, width: bounds.width, frame: .init(x: pad.side, columns: cols))
         w.plain = ctx.widgetRendering == .vibrant
         w.y = pad.top
-        var l = Layout(w: w, b: CellsBodies(p: p, focus: nil), p: p, model: model, ctx: ctx, cols: cols)
+        var l = Layout(w: w, b: CellsBodies(p: p, focus: nil), p: p, model: model, ctx: ctx, cols: cols, bottom: bounds.height - pad.top)
         switch model.kind {
         case .status: l.status(size)
         case .server: l.server(size)
@@ -43,6 +43,8 @@ struct CellsWidget: View {
         var model: WidgetModel
         var ctx: RenderContext
         var cols: Int
+        /// Where boxes must end.
+        var bottom: Double
 
         var cell: Double { w.cell }
         var style: CellWriter.BoxStyle { .widget }
@@ -113,6 +115,16 @@ struct CellsWidget: View {
             }
         }
 
+        /// Fleet in the lines left above the bottom, when two or more are.
+        mutating func fleetBox(_ f: FleetSection, x0: Double, x1: Double) {
+            let chrome = style.margin + style.padTop + style.padBottom + 2
+            let lines = Int(((bottom - w.y - chrome) / w.lineHeight).rounded(.down))
+            guard lines >= 2 else { return }
+            let b = self.b
+            w.box(title(tr("FLEET"), "\(f.nodeCount)"), [.t(" " + tr("\(f.providerCount) providers") + " ", p.muted)],
+                  x0: x0, x1: x1, style: style) { b.fleet(&$0, f, lines: lines) }
+        }
+
         /// Needs attention, or Services when nothing needs attention.
         mutating func rightBox(x0: Double, x1: Double, narrow: Bool) {
             switch (model.right, attention, model.panel.applications) {
@@ -156,6 +168,7 @@ struct CellsWidget: View {
                 } else if let apps = model.panel.applications {
                     servicesBox(apps, x0: split + cell, x1: x1, narrow: false)
                 }
+                if let f = model.panel.fleet { fleetBox(f, x0: split + cell, x1: x1) }
             }
         }
 

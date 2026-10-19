@@ -44,16 +44,15 @@ struct CardsWidget: View {
             large(p, w, appRows: 6)
         case .extraLarge:
             HStack(alignment: .top, spacing: 24) {
-                large(p, w, appRows: 4)
+                large(p, w, appRows: 6)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 VStack(alignment: .leading, spacing: 0) {
                     if hasAttention, let apps = model.panel.applications {
-                        WidgetApplications(apps: apps, rows: 6, p: p, t: t)
-                        WidgetServers(cards: model.panel.servers, p: p, t: t, ctx: ctx).padding(.top, 12)
-                    } else {
-                        WidgetServers(cards: model.panel.servers, p: p, t: t, ctx: ctx)
+                        WidgetApplications(apps: apps, rows: 6, p: p, t: t).padding(.bottom, 12)
                     }
-                    Spacer(minLength: 0)
+                    if let fleet = model.panel.fleet {
+                        WidgetFleet(fleet: fleet, p: p, t: t)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -480,57 +479,49 @@ struct WidgetEmpty: View {
     }
 }
 
-/// Pinned servers, one line of meters each, in the extra large widget.
-struct WidgetServers: View {
-    var cards: [ServerCardModel]
+/// Fleet in the extra large widget's right column, as many of its
+/// groups as fit; those left out are counted, their nodes' marks kept.
+struct WidgetFleet: View {
+    var fleet: FleetSection
     var p: CardsPalette
     var t: CardsType
-    var ctx: RenderContext
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            WidgetHeading(symbol: "server.rack", title: tr("Servers"), meta: tr("\(cards.count) pinned"), p: p, t: t)
-            if cards.isEmpty {
-                Text(tr("Pin servers in Settings")).font(t.font(12)).foregroundStyle(p.l3).padding(.top, 2)
-            }
-            ForEach(Array(cards.enumerated()), id: \.element.id) { i, c in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(c.name).font(t.font(12, .semibold)).lineLimit(1)
-                        Spacer(minLength: 6)
-                        PillView(pill: c.pill, palette: p, type: t)
-                    }
-                    HStack(spacing: 12) {
-                        WidgetMeter(label: tr("CPU"), meter: c.cpu, p: p, t: t)
-                        WidgetMeter(label: tr("Mem"), meter: c.memory, p: p, t: t)
-                        WidgetMeter(label: tr("Disk"), meter: c.disk, p: p, t: t)
-                    }
+            WidgetHeading(symbol: "square.grid.2x2", title: tr("Fleet"),
+                          meta: Words.join([tr("\(fleet.nodeCount) servers"), tr("\(fleet.providerCount) providers")]), p: p, t: t)
+                .padding(.bottom, 2)
+            ViewThatFits(in: .vertical) {
+                ForEach(Array(stride(from: fleet.groups.count, through: 1, by: -1)), id: \.self) { n in
+                    grid(shown: n)
                 }
-                .padding(.top, 7).padding(.bottom, 2)
-                .overlay(alignment: .top) { if i > 0 { Rectangle().fill(p.sep).frame(height: 0.5) } }
-                .accessibilityElement(children: .combine)
             }
         }
+    }
+
+    /// The first `shown` groups, edges first, then a cell for the rest.
+    func grid(shown: Int) -> some View {
+        let edges = Array(fleet.edges.prefix(shown))
+        let servers = Array(fleet.servers.prefix(shown - edges.count))
+        let rest = Array(fleet.edges.dropFirst(edges.count) + fleet.servers.dropFirst(servers.count))
+        return VStack(alignment: .leading, spacing: 0) {
+            FleetGrid(groups: edges, isCurrent: fleet.isCurrent, p: p, t: t, marks: 5)
+            if !edges.isEmpty, !servers.isEmpty || !rest.isEmpty {
+                Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 7)
+            }
+            FleetGrid(groups: servers, isCurrent: fleet.isCurrent, p: p, t: t, marks: 5, more: rest)
+        }
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
 /// "CPU ▬▬▬▏ 26%": a label, the meter against its limit, the value.
-struct WidgetMeter: View {
+@MainActor
+struct WidgetMeter {
     var label: String
     var meter: ServerCardModel.Meter
     var p: CardsPalette
     var t: CardsType
-
-    var body: some View {
-        HStack(spacing: 6) {
-            labelText.frame(minWidth: 30, alignment: .leading)
-            Meter(percent: meter.percent, limit: meter.limit, palette: p)
-            valueText
-        }
-        .lineLimit(1)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spoken)
-    }
 
     /// As a row of a Grid of meters.
     var row: some View {

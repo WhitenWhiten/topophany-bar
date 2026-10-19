@@ -70,6 +70,7 @@ public struct Handoff: Sendable, Codable {
         widgetSettings.sections.attention = true
         widgetSettings.sections.attentionLimit = max(3, s.sections.attentionLimit)
         widgetSettings.sections.applications = true
+        widgetSettings.sections.fleet = true
         widgetSettings.sections.servers = true
         // Widgets draw neither Time zones nor local readings.
         widgetSettings.sections.zones = false

@@ -278,6 +278,8 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .fl-c.cached { opacity: .55; }
 .fl-c .fl-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .fl-c > em { font-style: normal; font-size: 10.5px; color: var(--l3); flex: none; margin-left: -1px; }
+.fl-c.fl-more .fl-t { color: var(--l2); }
+.fl-c.fl-more .fl-g { width: 14px; flex: none; }
 .fl-m { margin-left: auto; display: flex; gap: 2.5px; align-items: center; flex: none; padding-left: 3px; }
 .fl-m em { font-style: normal; font-size: 10px; color: var(--l3); margin-left: 1px; }
 .fl-g { width: 14px; height: 14px; flex: none; display: grid; place-items: center; color: var(--l2); }

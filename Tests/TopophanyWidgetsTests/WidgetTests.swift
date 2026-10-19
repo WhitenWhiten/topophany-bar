@@ -63,6 +63,15 @@ func temporaryStore() -> HandoffStore {
         #expect(p.mac == nil)
     }
 
+    @Test func drawsFleetTheBarHides() {
+        var s = settings()
+        s.sections.fleet = false
+        let p = FixtureEngine.policy(.incidents, request: TemplateCompiler().request(for: s, revision: 1, listServers: true),
+                                     origin: origin, after: 4)
+        let h = Handoff(policy: p, theme: ThemeStore.native, settings: s, engineRunning: true, at: origin.addingTimeInterval(4))
+        #expect(h.panel().fleet?.nodeCount == 14)
+    }
+
     @Test func listsTheServersTopoListed() {
         let p = FixtureEngine.policy(.incidents, request: TemplateCompiler().request(for: settings(), revision: 1, listServers: true),
                                      origin: origin, after: 4)

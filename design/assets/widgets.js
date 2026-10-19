@@ -89,12 +89,12 @@
       if (size === 'm') body = `<div class="w-split"><div class="w-col w-left">${nStatusBlock(sc, false, 'm')}${foot(sc)}</div><div class="w-col w-right">${right}</div></div>`;
       if (size === 'l') body = `<div class="w-col">${nStatusBlock(sc, true, 'l')}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${right}</div>${foot(sc, true)}</div>`;
       if (size === 'xl') {
-        const servers = sc.servers.map((s) => {
-          const x = nServerMini(s);
-          return `<div class="w-srv"><div class="w-srv-h"><b>${esc(s.name)}</b>${x.pill}</div><div class="w-res3">${x.meters}</div></div>`;
-        }).join('');
-        body = `<div class="w-split xl"><div class="w-col">${nStatusBlock(sc, true, 'xl')}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${sc.attention.length ? nAttention(sc, 3) : nApps(sc, 4)}</div>${foot(sc, true)}</div>
-          <div class="w-col w-right">${sc.attention.length ? nApps(sc, 6) : ''}<h4 class="${sc.attention.length ? 'w-gap' : ''}">${C.I.server}Servers<em>2 pinned</em></h4>${servers}</div></div>`;
+        const F = TB.fleet(sc);
+        const G = TB._fleet.fleetGrid;
+        const fleet = `<h4 class="${sc.attention.length ? 'w-gap' : ''}">${C.I.fleet}Fleet<em>${F.nodes} servers · ${F.providers} providers</em></h4>` +
+          `${G(F, F.edges, 5)}${F.edges.length && F.servers.length ? '<div class="nv-sep fl-sep"></div>' : ''}${G(F, F.servers, 5)}`;
+        body = `<div class="w-split xl"><div class="w-col">${nStatusBlock(sc, true, 'xl')}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${sc.attention.length ? nAttention(sc, 3) : nApps(sc, 6)}</div>${foot(sc, true)}</div>
+          <div class="w-col w-right">${sc.attention.length ? nApps(sc, 6) : ''}${fleet}</div></div>`;
       }
     }
     if (kind === 'server') {
@@ -133,8 +133,13 @@
       if (size === 'xl') {
         const lw = 54, rw = cols - lw - 1;
         const services = box(T.title('SERVICES', String(sc.apps.length) + ' apps'), null, T.tAppsBody(sc, rw - 2));
+        // Fleet takes the lines left: each box costs 25 pt besides its
+        // 16 pt lines, under the 16 pt head, inside 8 pt margins.
+        const used = 16 + (sc.attention.length ? 25 + 16 * (Math.min(3, sc.attention.length) + 1) : 0) + 25 + 16 * sc.apps.length;
+        const f = T.tFleetBody(sc, p, rw - 2, 4, Math.floor((SIZE.xl[1] - 16 - used - 25) / 16));
+        const fleet = box(T.title('FLEET', String(f.nodes)), [S(' ' + f.providers + ' providers ', 'muted')], f.body);
         body = head(cols) + `<div class="tcols"><div style="width:${lw}ch">${statusBox(lw - 2)}${box(T.title('SEEN FROM', String(sc.seen.length)), null, T.tSeenBody(sc, lw - 2, 2))}${sc.servers.slice(0, 1).map((s) => box(T.serverTitle(s, p), T.serverPill(s), T.tServerBody(s, p, lw - 2))).join('')}</div>
-          <div style="width:${rw}ch">${right(rw - 2)}${sc.attention.length ? services : ''}</div></div>`;
+          <div style="width:${rw}ch">${right(rw - 2)}${sc.attention.length ? services : ''}${fleet}</div></div>`;
       }
     }
     if (kind === 'server') {

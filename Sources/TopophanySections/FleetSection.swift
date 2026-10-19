@@ -68,6 +68,24 @@ public struct FleetSection: Sendable, Hashable {
         }).count
     }
 
+    /// The nodes of groups left out for room, trouble first, so a cell that
+    /// counts them shows what needs a look before what is up. Each keeps
+    /// its own mark; nothing is added up.
+    public static func troubleFirst(_ groups: [Group]) -> [Node] {
+        func rank(_ m: Mark) -> Int {
+            switch m {
+            case .down: 0
+            case .degraded: 1
+            case .unknown: 2
+            case .offline: 3
+            case .up: 4
+            }
+        }
+        return groups.flatMap(\.nodes).enumerated()
+            .sorted { (rank($0.element.mark), $0.offset) < (rank($1.element.mark), $1.offset) }
+            .map(\.element)
+    }
+
     /// Every mark withheld, the names kept: history, as of the last list.
     public func withheld() -> FleetSection {
         FleetSection(groups: groups.map { g in

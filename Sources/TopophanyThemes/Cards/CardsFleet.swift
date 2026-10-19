@@ -24,7 +24,8 @@ struct CardsFleet: View {
     }
 }
 
-/// Groups two to a row, every column as wide as the other.
+/// Groups two to a row, every column as wide as the other; groups left
+/// out for room, when there are any, take the next cell.
 struct FleetGrid: View {
     var groups: [FleetSection.Group]
     var isCurrent: Bool
@@ -33,14 +34,18 @@ struct FleetGrid: View {
     var marks: Int
     var columns = 2
     var spacing = 7.0
+    var more: [FleetSection.Group] = []
 
     var body: some View {
+        let count = groups.count + (more.isEmpty ? 0 : 1)
         Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: spacing) {
-            ForEach(Array(stride(from: 0, to: groups.count, by: columns)), id: \.self) { i in
+            ForEach(Array(stride(from: 0, to: count, by: columns)), id: \.self) { i in
                 GridRow {
                     ForEach(0..<columns, id: \.self) { k in
                         if i + k < groups.count {
                             FleetCell(group: groups[i + k], isCurrent: isCurrent, p: p, t: t, marks: marks)
+                        } else if i + k == groups.count, !more.isEmpty {
+                            FleetMore(groups: more, isCurrent: isCurrent, p: p, t: t, marks: marks)
                         } else {
                             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                         }
@@ -48,6 +53,36 @@ struct FleetGrid: View {
                 }
             }
         }
+    }
+}
+
+/// Groups left out for room: how many, and their nodes' marks, trouble
+/// first, so trouble left out still shows.
+struct FleetMore: View {
+    var groups: [FleetSection.Group]
+    var isCurrent: Bool
+    var p: CardsPalette
+    var t: CardsType
+    var marks: Int
+
+    var body: some View {
+        let nodes = FleetSection.troubleFirst(groups)
+        HStack(spacing: 6) {
+            Color.clear.frame(width: 14 * t.scale, height: 1)
+            Text(tr("+\(groups.count) more")).font(t.font(12)).foregroundStyle(p.l2).lineLimit(1)
+            Spacer(minLength: 3)
+            HStack(spacing: 2.5) {
+                ForEach(nodes.prefix(marks)) { n in CardMark(mark: n.mark, size: 8, color: p.color(n.mark)) }
+                if nodes.count > marks {
+                    Text(verbatim: "+\(nodes.count - marks)").font(t.font(10)).foregroundStyle(p.l3).padding(.leading, 1)
+                }
+            }
+            .fixedSize()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .opacity(isCurrent ? 1 : 0.55)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(tr("+\(groups.count) more") + ": " + groups.map { FleetCell.nodes($0) }.joined(separator: " · ")))
     }
 }
 
@@ -84,9 +119,9 @@ struct FleetCell: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .opacity(isCurrent ? 1 : 0.55)
-        .help(nodes)
+        .help(Self.nodes(group))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(Words.join([group.title, group.isEdge ? Words.kind(group.kind) : ""]) + ": " + nodes))
+        .accessibilityLabel(Text(Words.join([group.title, group.isEdge ? Words.kind(group.kind) : ""]) + ": " + Self.nodes(group)))
     }
 
     var title: some View {
@@ -94,7 +129,7 @@ struct FleetCell: View {
     }
 
     /// "Oracle LA, up · Oracle New York, warn, affected".
-    var nodes: String {
+    static func nodes(_ group: FleetSection.Group) -> String {
         group.nodes.map { n in [n.name, n.mark.word, n.note].filter { !$0.isEmpty }.joined(separator: ", ") }
             .joined(separator: " · ")
     }
