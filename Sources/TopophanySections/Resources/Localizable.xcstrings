@@ -2563,6 +2563,22 @@
         }
       }
     },
+    "quieted": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミュート中"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已静音"
+          }
+        }
+      }
+    },
     "service": {
       "localizations": {
         "ja": {

@@ -17,6 +17,9 @@ public struct StatusItemModel: Sendable, Hashable {
     public var mark: Mark
     public var show: Settings.Appearance.Show
     public var statusColors: Bool
+    /// The user quieted its alert until it gets worse: the badge keeps its
+    /// shape, in the menu bar's ink.
+    public var quiet: Bool
     /// The text beside the mark, empty for none.
     public var text: String
     /// The TUI's chip text, for the cells renderer.
@@ -30,12 +33,13 @@ public struct StatusItemModel: Sendable, Hashable {
     public var readings: [MenuBarReading]
     public var accessibilityLabel: String
 
-    public init(mark: Mark, show: Settings.Appearance.Show, statusColors: Bool, text: String, tuiText: String,
-                count: Int? = nil, activity: Activity = .resting, motion: Bool = false, readings: [MenuBarReading] = [],
-                accessibilityLabel: String) {
+    public init(mark: Mark, show: Settings.Appearance.Show, statusColors: Bool, quiet: Bool = false, text: String,
+                tuiText: String, count: Int? = nil, activity: Activity = .resting, motion: Bool = false,
+                readings: [MenuBarReading] = [], accessibilityLabel: String) {
         self.mark = mark
         self.show = show
         self.statusColors = statusColors
+        self.quiet = quiet
         self.text = text
         self.tuiText = tuiText
         self.count = count
@@ -45,10 +49,12 @@ public struct StatusItemModel: Sendable, Hashable {
         self.accessibilityLabel = accessibilityLabel
     }
 
-    public init(status: StatusSection, appearance: Settings.Appearance.MenuBar, local: LocalSnapshot? = nil) {
+    public init(status: StatusSection, appearance: Settings.Appearance.MenuBar, local: LocalSnapshot? = nil,
+                quiet: QuietAlert? = nil) {
         mark = status.mark
         show = appearance.show
         statusColors = appearance.statusColors
+        self.quiet = appearance.statusColors && quiet != nil && QuietAlert.alerts(status)
         switch appearance.show {
         case .symbol:
             text = ""
@@ -71,17 +77,26 @@ public struct StatusItemModel: Sendable, Hashable {
         motion = appearance.motion
         readings = appearance.readings.map { MenuBarReading($0, local) }
         let updated = status.updatedAt.map { tr("updated \(Words.agoSpoken($0, now: status.now))") }
-        let verdict = Words.join([tr("Topophany: \(status.shortTitle)"), updated ?? ""]).replacingOccurrences(of: " · ", with: ", ")
+        let verdict = Words.join([tr("Topophany: \(status.shortTitle)"), self.quiet ? tr("quieted") : "", updated ?? ""])
+            .replacingOccurrences(of: " · ", with: ", ")
         let mac = readings.map(\.spoken).joined(separator: ", ")
         accessibilityLabel = readings.isEmpty ? verdict : verdict + "\n" + tr("This Mac: \(mac)")
     }
 
+    /// Draws its marks in their status colors: on, and not quieted.
+    public var tinted: Bool { statusColors && !quiet }
+
     /// Whether it asks for more attention than `other` did: a worse mark, or
     /// more needing attention under the same one. Only that change ripples.
     public func needsMoreAttention(than other: StatusItemModel) -> Bool {
+        Self.asksMoreAttention(mark, count, than: other.mark, other.count)
+    }
+
+    /// ✖ over ▲ over the rest, then more under the same mark.
+    public static func asksMoreAttention(_ mark: Mark, _ count: Int?, than other: Mark, _ otherCount: Int?) -> Bool {
         func rank(_ m: Mark) -> Int { m == .down ? 2 : m == .degraded ? 1 : 0 }
-        if rank(mark) != rank(other.mark) { return rank(mark) > rank(other.mark) }
-        return rank(mark) > 0 && (count ?? 0) > (other.count ?? 0)
+        if rank(mark) != rank(other) { return rank(mark) > rank(other) }
+        return rank(mark) > 0 && (count ?? 0) > (otherCount ?? 0)
     }
 }
 

@@ -23,15 +23,18 @@ public struct PanelInput: Sendable {
     public var machineModel: String
     /// This Mac's time zone, which Time zones marks as here.
     public var here: TimeZone
+    /// The menu bar's alert, if the user quieted it.
+    public var quiet: QuietAlert?
 
     public init(reading: Reading, engine: EngineCondition, settings: Settings, local: LocalSnapshot? = nil,
-                machineModel: String = "Mac", here: TimeZone = .autoupdatingCurrent) {
+                machineModel: String = "Mac", here: TimeZone = .autoupdatingCurrent, quiet: QuietAlert? = nil) {
         self.reading = reading
         self.engine = engine
         self.settings = settings
         self.local = local
         self.machineModel = machineModel
         self.here = here
+        self.quiet = quiet
     }
 }
 
@@ -86,8 +89,10 @@ public enum SectionBuilder {
                 break
             }
         }
+        let alert: MenuBarAlert = !input.settings.appearance.menuBar.statusColors || !QuietAlert.alerts(status) ? .unavailable
+            : input.quiet == nil ? .shown : .quiet
         return PanelModel(chrome: chrome(r, status: status, observer: input.settings.topo.observer),
-                          status: status, sections: sections, pinStatus: s.pinStatus)
+                          status: status, sections: sections, pinStatus: s.pinStatus, alert: alert)
     }
 
     // MARK: status

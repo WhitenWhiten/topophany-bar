@@ -350,12 +350,16 @@ public struct PanelModel: Sendable, Hashable {
     public var sections: [Section]
     /// Keep Status pinned while the rest scrolls.
     public var pinStatus: Bool
+    /// Whether the menu bar's alert can be quieted, or shown again.
+    public var alert: MenuBarAlert
 
-    public init(chrome: PanelChrome, status: StatusSection, sections: [Section], pinStatus: Bool = true) {
+    public init(chrome: PanelChrome, status: StatusSection, sections: [Section], pinStatus: Bool = true,
+                alert: MenuBarAlert = .unavailable) {
         self.chrome = chrome
         self.status = status
         self.sections = sections
         self.pinStatus = pinStatus
+        self.alert = alert
     }
 
     public func section(_ id: SectionID) -> Section? { sections.first { $0.id == id } }
