@@ -537,18 +537,79 @@ struct FlowLayout: Layout {
     }
 }
 
-/// A title split at its arrows, the arrows quieter.
-func routeText(_ route: [String], arrow: Color) -> AttributedString {
-    var out = AttributedString()
-    for (i, part) in route.enumerated() {
-        if i > 0 {
-            var a = AttributedString(" → ")
-            a.foregroundColor = arrow
-            out += a
+/// A title split at its arrows, the arrows quieter, on one line. When it
+/// doesn't fit, the longest parts give up room first, so both ends stay
+/// readable: "Primary Bandwag… → Oracle Exit A".
+struct RouteLine: View {
+    var route: [String]
+    var arrow: Color
+
+    var body: some View {
+        RouteLayout(spacing: 3.5) {
+            ForEach(Array(route.enumerated()), id: \.offset) { i, part in
+                if i > 0 {
+                    Text(verbatim: "→").foregroundStyle(arrow).layoutValue(key: RouteLayout.Fixed.self, value: true)
+                }
+                Text(part)
+            }
         }
-        out += AttributedString(part)
+        .lineLimit(1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(route.joined(separator: " → ")))
     }
-    return out
+}
+
+/// Parts in a line at their own widths while they fit. When they don't,
+/// fixed parts keep theirs and the rest share what's left: a part that
+/// fits an equal share keeps its width, and longer ones split the rest.
+struct RouteLayout: Layout {
+    var spacing: CGFloat
+
+    struct Fixed: LayoutValueKey { static let defaultValue = false }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let widths = widths(proposal.width, subviews)
+        let height = subviews.map { $0.sizeThatFits(.unspecified).height }.max() ?? 0
+        return CGSize(width: widths.reduce(0, +) + gaps(subviews), height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        for (v, w) in zip(subviews, widths(bounds.width, subviews)) {
+            v.place(at: CGPoint(x: x, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(width: w, height: bounds.height))
+            x += w + spacing
+        }
+    }
+
+    func gaps(_ subviews: Subviews) -> CGFloat { spacing * CGFloat(max(0, subviews.count - 1)) }
+
+    func widths(_ available: CGFloat?, _ subviews: Subviews) -> [CGFloat] {
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified).width }
+        guard let available, ideal.reduce(0, +) + gaps(subviews) > available else { return ideal }
+        var out = ideal
+        let shared = subviews.indices.filter { !subviews[$0][Fixed.self] }.sorted { ideal[$0] < ideal[$1] }
+        var room = available - gaps(subviews) - subviews.indices.filter { subviews[$0][Fixed.self] }.reduce(0) { $0 + ideal[$1] }
+        var left = shared.count
+        for i in shared {
+            out[i] = min(ideal[i], max(0, room) / CGFloat(left))
+            room -= out[i]
+            left -= 1
+        }
+        // A cut part ends at a whole letter, short of its share: what it
+        // leaves goes to the next part that was cut, shortest first.
+        for i in shared where out[i] < ideal[i] {
+            let used = min(out[i], subviews[i].sizeThatFits(ProposedViewSize(width: out[i], height: nil)).width)
+            room += out[i] - used
+            out[i] = used
+        }
+        for i in shared where out[i] < ideal[i] && room > 0.5 {
+            let more = min(ideal[i], out[i] + room)
+            let used = min(more, subviews[i].sizeThatFits(ProposedViewSize(width: more, height: nil)).width)
+            room -= used - out[i]
+            out[i] = used
+        }
+        return out
+    }
 }
 
 /// SF Symbols for this Mac's model.

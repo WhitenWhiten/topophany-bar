@@ -300,7 +300,27 @@ public enum CellText {
             out.append(ch)
             w += cw
         }
+        // "Relay…", never "Relay …".
+        while out.last?.isWhitespace == true { out.removeLast() }
         return out + "…"
+    }
+
+    /// A route in at most `n` cells, cut as the Native renderer cuts it so
+    /// both ends stay readable: a part that fits an equal share keeps its
+    /// width, and longer ones split the rest.
+    public static func route(_ parts: [String], _ n: Int) -> String {
+        let arrow = " → "
+        let whole = parts.joined(separator: arrow)
+        var room = n - width(arrow) * (parts.count - 1)
+        guard width(whole) > n, parts.count > 1, room >= 3 * parts.count else { return truncate(whole, n) }
+        var out = parts
+        var left = parts.count
+        for i in parts.indices.sorted(by: { width(parts[$0]) < width(parts[$1]) }) {
+            out[i] = truncate(parts[i], room / left)
+            room -= width(out[i])
+            left -= 1
+        }
+        return out.joined(separator: arrow)
     }
 
     /// Cut or padded with spaces to exactly `n` cells.

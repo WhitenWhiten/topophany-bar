@@ -178,7 +178,63 @@
 
   const SEV = { down: 0, degraded: 1, unknown: 2, cached: 3, up: 4 };
   const worst = (a, b) => SEV[a.health] - SEV[b.health] || (parseInt(b.note) || 0) - (parseInt(a.note) || 0);
-  const fromArrows = (t) => esc(t).split(' → ').join('<i class="arr">→</i>');
+  // A title split at its arrows. fitRoutes() cuts it so both ends stay
+  // readable, as the app's RouteLayout does.
+  const fromArrows = (t) => {
+    const parts = t.split(' → ');
+    if (parts.length < 2) return esc(t);
+    return `<span class="route">${parts.map((x) => `<span class="rp">${esc(x)}</span>`).join('<i class="arr">→</i>')}</span>`;
+  };
+  // A part that fits an equal share of the room keeps its width, and longer
+  // ones split the rest. A cut part ends at a whole letter, and what it
+  // leaves goes to the next cut part, shortest first.
+  function fitRoutes(root) {
+    root.querySelectorAll('.route').forEach((r) => {
+      const parts = [...r.children].filter((x) => x.classList.contains('rp'));
+      parts.forEach((x) => { x.dataset.full = x.dataset.full || x.textContent; x.textContent = x.dataset.full; });
+      const w = (x) => x.getBoundingClientRect().width;
+      const ideal = parts.map(w);
+      const sum = ideal.reduce((a, b) => a + b, 0);
+      let room = r.parentElement.clientWidth - (r.scrollWidth - sum);
+      if (sum <= room) return;
+      // The text cut to `max`, ending in "…" and never in a space.
+      const fit = (x, max) => {
+        const chars = [...x.dataset.full];
+        let lo = 0, hi = chars.length - 1, best = '…';
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          x.textContent = chars.slice(0, mid).join('').replace(/\s+$/, '') + '…';
+          if (w(x) <= max) { best = x.textContent; lo = mid + 1; } else hi = mid - 1;
+        }
+        x.textContent = best;
+        return w(x);
+      };
+      const order = parts.map((_, i) => i).sort((a, b) => ideal[a] - ideal[b]);
+      const out = ideal.slice();
+      let left = parts.length;
+      order.forEach((i) => { out[i] = Math.min(ideal[i], Math.max(0, room) / left); room -= out[i]; left -= 1; });
+      order.forEach((i) => {
+        if (out[i] >= ideal[i]) return;
+        const used = fit(parts[i], out[i]);
+        room += out[i] - used;
+        out[i] = used;
+      });
+      order.forEach((i) => {
+        if (out[i] >= ideal[i] || room <= 0.5) return;
+        const more = Math.min(ideal[i], out[i] + room);
+        parts[i].textContent = parts[i].dataset.full;
+        const used = more >= ideal[i] ? ideal[i] : fit(parts[i], more);
+        room -= used - out[i];
+        out[i] = used;
+      });
+    });
+  }
+  let fitting = false;
+  new MutationObserver(() => {
+    if (fitting) return;
+    fitting = true;
+    requestAnimationFrame(() => { fitting = false; fitRoutes(document); });
+  }).observe(document.body, { childList: true, subtree: true });
   const mins = (s) => s.replace(/m$/, ' min').replace(/s ago$/, ' s ago');
 
   // ---------------------------------------------------------- native theme
@@ -507,7 +563,21 @@
     return `<span class="g">${esc(ch)}</span>`;
   };
   const len = (s) => [...s].length;
-  const trunc = (s, n) => (len(s) > n ? [...s].slice(0, Math.max(0, n - 1)).join('') + '…' : s);
+  const trunc = (s, n) => (len(s) > n ? [...s].slice(0, Math.max(0, n - 1)).join('').replace(/\s+$/, '') + '…' : s);
+  // A route in n cells, cut as the app cuts it so both ends stay readable.
+  const troute = (parts, n) => {
+    const whole = parts.join(' → ');
+    let room = n - 3 * (parts.length - 1);
+    if (len(whole) <= n || parts.length < 2 || room < 3 * parts.length) return trunc(whole, n);
+    const out = parts.slice();
+    let left = parts.length;
+    parts.map((_, i) => i).sort((a, b) => len(parts[a]) - len(parts[b])).forEach((i) => {
+      out[i] = trunc(parts[i], Math.floor(room / left));
+      room -= len(out[i]);
+      left -= 1;
+    });
+    return out.join(' → ');
+  };
   const S = (text, cls) => ({ text, cls });
   const draw = (segs) => segs.map((s) => (s.html ? s.html : `<span class="${s.cls || ''}">${[...s.text].map(cell).join('')}</span>`)).join('');
   const width = (segs) => segs.reduce((n, s) => n + (s.w != null ? s.w : len(s.text)), 0);
@@ -605,7 +675,7 @@
   function tAttentionBody(sc, w, limit, opt = {}) {
     const rows = sc.attention.slice(0, limit).map((a, i) => {
       const st = a.state === 'unknown' ? 'unknown' : a.state;
-      const head = tl([tglyph(a.health), S(' '), S(trunc(a.title, w - 3 - len(st) - 1), 'b')], [S(st, 'h-' + TB.cls(a.health) + ' b')], '', w);
+      const head = tl([tglyph(a.health), S(' '), S(troute(a.title.split(' → '), w - 3 - len(st) - 1), 'b')], [S(st, 'h-' + TB.cls(a.health) + ' b')], '', w);
       const sub = tl([S('  ' + a.kind + ' · ' + a.from + ' · ' + a.since, 'muted')], [], '', w);
       return `<div class="trow ${i === 0 && opt.focus ? 'focus' : ''}">${head}${opt.compact ? '' : sub}</div>`;
     }).join('');

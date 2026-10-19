@@ -324,7 +324,7 @@ struct WidgetAttention: View {
                     HStack(alignment: .top, spacing: 8) {
                         CardMark(mark: a.mark, size: 12, color: p.color(a.mark)).frame(width: 12).padding(.top, 2)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(routeText(a.route, arrow: p.l3)).font(t.font(12, .medium)).foregroundStyle(p.l1)
+                            RouteLine(route: a.route, arrow: p.l3).font(t.font(12, .medium)).foregroundStyle(p.l1)
                             Text(subtitle(a)).font(t.font(10.5)).foregroundStyle(p.l2)
                         }
                         .lineLimit(1)

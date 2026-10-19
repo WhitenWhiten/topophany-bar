@@ -439,8 +439,7 @@ struct CardsAttention: View {
             HStack(spacing: 9) {
                 CardMark(mark: a.mark, size: 14, color: p.color(a.mark)).frame(width: 16)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(routeText(a.route, arrow: p.l3)).font(t.font(12.5, .medium)).foregroundStyle(p.l1)
-                        .lineLimit(1).truncationMode(.tail)
+                    RouteLine(route: a.route, arrow: p.l3).font(t.font(12.5, .medium)).foregroundStyle(p.l1)
                     Text(subtitle(a)).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

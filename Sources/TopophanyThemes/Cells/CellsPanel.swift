@@ -112,7 +112,7 @@ struct CellsBodies {
             let st = item.pill.text
             let lines = compact ? 1 : 2
             if forceFocusFirst && i == 0 { highlight(&w, lines: lines) } else { focusRow(&w, "attention:" + item.id, lines: lines) }
-            w.line([.mark(item.mark, p), .t(" " + CellText.truncate(item.title, n - 3 - CellText.width(st) - 1), p.text, bold: true)],
+            w.line([.mark(item.mark, p), .t(" " + CellText.route(item.route, n - 3 - CellText.width(st) - 1), p.text, bold: true)],
                    [.t(st, p.tone(item.mark), bold: true)])
             if !compact {
                 let sub = Words.join([Words.kind(item.kind), item.observerName,
