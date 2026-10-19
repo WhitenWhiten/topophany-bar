@@ -72,15 +72,19 @@
 
   const seen = (bad) => OBSERVERS.map((name) => Object.assign({ name, health: 'up' }, bad[name] || {}));
 
-  // Every server `topo` lists (servers.list) and the place it names. Time
-  // zones groups them by the zone each place suggests.
+  // Every node with a card in the Servers tab (servers.list): its kind, its
+  // provider and the place it names. Time zones groups them by the zone each
+  // place suggests; Fleet by provider, edges and platforms first.
   const LISTED = [
-    ['macbook', 'MacBook Pro', 'Seattle'], ['seattle-pc', 'Windows Desktop', 'Seattle'], ['router', 'Home Router', 'Seattle'],
-    ['sj-vultr', 'Vultr San Jose', 'San Jose'], ['bwh-la', 'BandwagonHost LA', 'Los Angeles'], ['oracle-la', 'Oracle LA', 'Los Angeles'],
-    ['hnl-vultr', 'Vultr Honolulu', 'Honolulu'], ['oracle-ny', 'Oracle New York', 'New York'], ['azure-ny', 'Azure New York', 'New York'],
-    ['fra-hetzner', 'Hetzner Frankfurt', 'Frankfurt'], ['tokyo-vps', 'GCP Tokyo', 'Tokyo'],
+    ['macbook', 'MacBook Pro', 'laptop', 'Home', 'Seattle'], ['seattle-pc', 'Windows Desktop', 'desktop', 'Home', 'Seattle'],
+    ['router', 'Home Router', 'router', 'Home', 'Seattle'], ['sj-vultr', 'Vultr San Jose', 'host', 'Vultr', 'San Jose'],
+    ['bwh-la', 'BandwagonHost LA', 'host', 'BandwagonHost', 'Los Angeles'], ['oracle-la', 'Oracle LA', 'host', 'Oracle', 'Los Angeles'],
+    ['hnl-vultr', 'Vultr Honolulu', 'host', 'Vultr', 'Honolulu'], ['oracle-ny', 'Oracle New York', 'host', 'Oracle', 'New York'],
+    ['azure-ny', 'Azure New York', 'host', 'Azure', 'New York'], ['fra-hetzner', 'Hetzner Frankfurt', 'host', 'Hetzner', 'Frankfurt'],
+    ['tokyo-vps', 'GCP Tokyo', 'host', 'GCP', 'Tokyo'], ['cloudflare', 'Cloudflare', 'edge', 'Cloudflare', 'anycast'],
+    ['vercel', 'Vercel', 'edge', 'Vercel', 'anycast'], ['supabase', 'Supabase', 'platform', 'Supabase', 'Tokyo'],
   ];
-  const listed = (over) => LISTED.map(([id, name, place]) => ({ id, name, place, health: (over || {})[id] || 'up' }));
+  const listed = (over) => LISTED.map(([id, name, kind, provider, place]) => ({ id, name, kind, provider, place, health: (over || {})[id] || 'up' }));
   // The zone each place's name suggests; Settings can change any of them.
   const PLACE_ZONES = {
     Seattle: 'America/Los_Angeles', 'San Jose': 'America/Los_Angeles', 'Los Angeles': 'America/Los_Angeles',

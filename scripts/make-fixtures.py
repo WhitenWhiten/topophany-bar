@@ -74,6 +74,24 @@ SERVERS = {
                     observer="seattle-macbook", cpu=(18.2, 95, 14), mem=(68.0, 95, int(16.3 * GIB), 24 * GIB),
                     disk=(43.7, 90, 107 * GB, 245 * GB), process=None, services=["tailscale", "topo-worker"]),
 }
+# Every node with a card in the Servers tab (servers.list), in its order:
+# id, name, kind, provider, where.
+LISTED = [
+    ("macbook", "MacBook Pro", "laptop", "Home", "Seattle"),
+    ("seattle-pc", "Windows Desktop", "desktop", "Home", "Seattle"),
+    ("router", "Home Router", "router", "Home", "Seattle"),
+    ("sj-vultr", "Vultr San Jose", "host", "Vultr", "San Jose"),
+    ("bwh-la", "BandwagonHost LA", "host", "BandwagonHost", "Los Angeles"),
+    ("oracle-la", "Oracle LA", "host", "Oracle", "Los Angeles"),
+    ("hnl-vultr", "Vultr Honolulu", "host", "Vultr", "Honolulu"),
+    ("oracle-ny", "Oracle New York", "host", "Oracle", "New York"),
+    ("azure-ny", "Azure New York", "host", "Azure", "New York"),
+    ("fra-hetzner", "Hetzner Frankfurt", "host", "Hetzner", "Frankfurt"),
+    ("tokyo-vps", "GCP Tokyo", "host", "GCP", "Tokyo"),
+    ("cloudflare", "Cloudflare", "edge", "Cloudflare", "anycast"),
+    ("vercel", "Vercel", "edge", "Vercel", "anycast"),
+    ("supabase", "Supabase", "platform", "Supabase", "Tokyo"),
+]
 SERVICE_NAMES = {sid: name for _, _, svcs in APPS for sid, name in svcs}
 SERVICE_NAMES["topo-worker"] = "Topophany worker"
 
@@ -139,6 +157,7 @@ ROWS = [
     dict(id="server-1", label="", metric="server.card", visual="card", select={"node": "oracle-ny"}),
     dict(id="server-2", label="", metric="server.card", visual="card", select={"node": "bwh-la"}),
     dict(id="mac", label="", metric="server.card", visual="card", select={"node": "macbook"}),
+    dict(id="servers", label="", metric="servers.list", visual="list", select={}),
 ]
 
 SEVERITY = {"down": 0, "degraded": 1, "unknown": 2, "up": 3}
@@ -241,6 +260,15 @@ def server_card(sc, node, t, valid):
                 observes=observes)
 
 
+def server_entries(sc):
+    out = []
+    for node, name, kind, provider, where in LISTED:
+        over = sc["servers"].get(node, {})
+        out.append(dict(id=node, name=name, kind=kind, provider=provider, group="", where=where,
+                        health=over.get("health", "up"), note=over.get("note", "")))
+    return out
+
+
 def row(template, value, text, health, t, valid, reason=None, freshness="fresh"):
     r = dict(template)
     r.update(value=value, text=text, health=health, freshness=freshness)
@@ -277,10 +305,12 @@ def running(key, sc, seq, t, extra_rows=()):
         row(ROWS[2], att, "%d need attention" % att["total"], worst(i["health"] for i in att["items"]), t, valid),
         row(ROWS[3], apps, "%d applications" % len(apps), worst(a["health"] for a in apps), t, valid),
     ]
-    for tpl in ROWS[4:]:
+    for tpl in ROWS[4:-1]:
         card = server_card(sc, tpl["select"]["node"], t, valid)
         rows.append(row(tpl, card, card["health"], card["health"], t, valid))
     rows += list(extra_rows)
+    listed = server_entries(sc)
+    rows.append(row(ROWS[-1], listed, "%d servers" % len(listed), worst(s["health"] for s in listed), t, valid))
     return frame(key, seq, t, rows)
 
 

@@ -91,8 +91,9 @@ func zonesPanel(_ scenario: FixtureEngine.Scenario, here: String = "America/Los_
     @Test func groupsByZoneWestToEast() throws {
         let z = try #require(zonesPanel(.incidents).zones)
         #expect(z.zones.map(\.id) == ["Pacific/Honolulu", "America/Los_Angeles", "America/New_York", "Europe/Berlin", "Asia/Tokyo"])
-        #expect(z.serverCount == 11)
-        #expect(z.unplaced == 0)
+        #expect(z.serverCount == 14)
+        // The edges answer from anycast, which has no time zone.
+        #expect(z.unplaced == 2)
         #expect(z.isCurrent)
         let pacific = z.zones[1]
         #expect(pacific.isHere)
@@ -126,7 +127,8 @@ func zonesPanel(_ scenario: FixtureEngine.Scenario, here: String = "America/Los_
     @Test func choicesMoveAndRemovePlaces() throws {
         let p = zonesPanel(.clear) { $0.sections.placeZones = ["Tokyo": "", "Seattle": "America/Tijuana"] }
         let z = try #require(p.zones)
-        #expect(z.unplaced == 1)
+        // Tokyo's two servers, and the two edges at anycast.
+        #expect(z.unplaced == 4)
         #expect(!z.zones.contains { $0.id == "Asia/Tokyo" })
         // Tijuana keeps Pacific time with its changes, so it is here too,
         // beside Los Angeles.

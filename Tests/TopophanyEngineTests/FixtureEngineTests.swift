@@ -67,8 +67,9 @@ func frames(_ events: [EngineEvent]) -> [Frame] {
             Issue.record("no server list")
             return
         }
-        #expect(list.count == 11)
+        #expect(list.count == 14)
         #expect(list.first { $0.id == "bwh-la" }?.note == "affected")
+        #expect(list.filter { $0.kind == "edge" || $0.kind == "platform" }.map(\.provider) == ["Cloudflare", "Vercel", "Supabase"])
         let plain = FixtureEngine.reading(.incidents, request: TemplateCompiler().request(for: s, revision: 1), origin: t, after: 4)
         #expect(plain.row(TemplateCompiler.RowID.servers) == nil)
     }
