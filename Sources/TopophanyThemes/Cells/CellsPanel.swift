@@ -427,6 +427,7 @@ struct CellsPanel: View {
     var ctx: RenderContext
     var focusFirstAttention = false
     @Environment(\.panelActions) private var actions
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hover: String?
 
     static let columns = 48
@@ -485,7 +486,8 @@ struct CellsPanel: View {
     }
 
     /// The whole scene, or, when it is taller than the screen allows, the
-    /// header, Status (when pinned) and footer fixed and the rest scrolling.
+    /// header, Status (when pinned) and footer fixed and the rest scrolling,
+    /// the keyboard's focus kept in view.
     @ViewBuilder func fitted(_ scene: CellScene) -> some View {
         let h = scene.size.height
         if let maxH = ctx.maxHeight, h > maxH,
@@ -493,14 +495,38 @@ struct CellsPanel: View {
             let top = model.pinStatus ? status : header
             VStack(spacing: 0) {
                 slice(scene, top: 0, bottom: top)
-                ScrollView(.vertical) { slice(scene, top: top, bottom: footer) }
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical) {
+                        slice(scene, top: top, bottom: footer)
+                            .overlay(alignment: .topLeading) { focusAnchor(scene, top: top, bottom: footer) }
+                    }
                     .scrollIndicators(.automatic)
                     .frame(height: max(80, maxH - top - (h - footer)))
+                    .onChange(of: ctx.focus) { _, focus in
+                        guard let focus else { return }
+                        withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { proxy.scrollTo(focus) }
+                    }
+                }
                 slice(scene, top: footer, bottom: h)
             }
             .frame(width: scene.size.width)
         } else {
             CellCanvas(scene: scene)
+        }
+    }
+
+    /// An empty view where the focus is drawn, for the scroll to bring
+    /// into view, a line's breadth of the scroll's edges kept clear.
+    @ViewBuilder func focusAnchor(_ scene: CellScene, top: Double, bottom: Double) -> some View {
+        if let focus = ctx.focus, let r = scene.regions["focus"], r.minY >= top, r.maxY <= bottom {
+            let margin = scene.metrics.line
+            let y = max(0, r.minY - top - margin)
+            VStack(spacing: 0) {
+                Color.clear.frame(width: 1, height: y)
+                Color.clear.frame(width: 1, height: min(bottom - top - y, r.height + 2 * margin)).id(focus)
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
     }
 
@@ -637,6 +663,7 @@ struct CellsPanel: View {
         // Each keycap and its label is a button.
         var regions: [String: CGRect] = [:]
         regions["quiet"] = quietRegion
+        regions["focus"] = w.focused
         var col = 0
         for k in keys {
             let n = k.segs.reduce(0) { $0 + $1.width }

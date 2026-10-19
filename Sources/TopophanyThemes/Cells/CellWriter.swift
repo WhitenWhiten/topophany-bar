@@ -137,6 +137,8 @@ struct CellWriter {
     var items: [CellItem] = []
     var live: [LiveAge] = []
     var clocks: [LiveClock] = []
+    /// Where the keyboard's focus is drawn.
+    var focused: CGRect?
     var frame: Frame
     /// Monochrome (another app in front): boxes become plain headings.
     var plain = false
@@ -328,6 +330,7 @@ struct CellWriter {
 
     /// The focused row's background and accent bar, from border to border.
     mutating func focus(x0: Double, x1: Double, top: Double, height: Double) {
+        focused = CGRect(x: x0, y: top, width: x1 - x0, height: height)
         items.append(.fill(CGRect(x: x0 + 1, y: top, width: x1 - x0 - 2, height: height), palette.selection, radius: 0))
         items.append(.fill(CGRect(x: x0 + 1, y: top, width: 2, height: height), palette.accent, radius: 0))
     }

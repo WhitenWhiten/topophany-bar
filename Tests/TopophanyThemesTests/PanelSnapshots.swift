@@ -110,6 +110,21 @@ import TopophanySections
         #expect(live.size.height - live.marks["footer"]! == 28)
     }
 
+    /// The scene says where the keyboard's focus is drawn, for the scroll
+    /// to bring into view; with no focus, nowhere.
+    @Test func terminalFocusRegion() throws {
+        let model = previewPanel(.incidents)
+        let item = try #require(model.attention?.items.last)
+        var ctx = RenderContext(theme: ThemeStore.terminal)
+        #expect(CellsPanel.scene(model, ctx: ctx).regions["focus"] == nil)
+        ctx.focus = "attention:" + item.id
+        let scene = CellsPanel.scene(model, ctx: ctx)
+        let r = try #require(scene.regions["focus"])
+        // Where the highlight is filled, between Status and the footer.
+        #expect(scene.items.contains { if case .fill(let f, _, _) = $0 { f.minY == r.minY && f.height == r.height } else { false } })
+        #expect(r.minY > scene.marks["status"]! && r.maxY < scene.marks["footer"]!)
+    }
+
     /// The keycaps are buttons, within the footer; while there's an alert,
     /// Status's `m` too.
     @Test func terminalKeycaps() throws {

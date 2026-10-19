@@ -7,6 +7,7 @@ struct CardsPanel: View {
     var model: PanelModel
     var ctx: RenderContext
     @Environment(\.panelActions) private var actions
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var scrollHeight: Double = 0
 
     var p: CardsPalette { CardsPalette.resolve(ctx) }
@@ -42,15 +43,21 @@ struct CardsPanel: View {
     }
 
     /// Status stays pinned; the rest scrolls when the panel would be taller
-    /// than the screen allows.
+    /// than the screen allows, and brings the keyboard's focus into view.
     func scrolling(_ p: CardsPalette) -> some View {
-        ScrollView(.vertical) {
-            VStack(spacing: gap) { sections(p) }
-                .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
+        ScrollViewReader { proxy in
+            ScrollView(.vertical) {
+                VStack(spacing: gap) { sections(p) }
+                    .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
+            }
+            .scrollIndicators(.automatic)
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(height: min(scrollHeight, max(120, (ctx.maxHeight ?? .infinity) - 230 * ctx.scale)))
+            .onChange(of: ctx.focus) { _, focus in
+                guard let focus else { return }
+                withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { proxy.scrollTo(focus) }
+            }
         }
-        .scrollIndicators(.automatic)
-        .scrollBounceBehavior(.basedOnSize)
-        .frame(height: min(scrollHeight, max(120, (ctx.maxHeight ?? .infinity) - 230 * ctx.scale)))
     }
 }
 
@@ -476,6 +483,9 @@ struct CardsSeen: View {
                 }
             }
         }
+        // A scroll can't find a chip inside the flow, so the card stands
+        // in for the one focused.
+        .background { if let focus, focus.hasPrefix("seen:") { Color.clear.id(focus) } }
     }
 
     func chip(_ m: Mark, _ name: String, _ note: String?, calm: Bool, focused: Bool) -> some View {
@@ -516,6 +526,7 @@ struct CardsAttention: View {
                     .padding(.top, i == 0 ? 1 : 5.5).padding(.bottom, 5.5)
                     .modifier(HoverRow(p: p))
                     .modifier(FocusRing(on: focus == "attention:" + a.id, p: p))
+                    .id("attention:" + a.id)
             }
             if attention.more > 0 {
                 Rectangle().fill(p.sep).frame(height: 0.5)
@@ -532,6 +543,7 @@ struct CardsAttention: View {
                 .buttonStyle(PressStyle())
                 .modifier(HoverRow(p: p))
                 .modifier(FocusRing(on: focus == "attention:more", p: p))
+                .id("attention:more")
                 .padding(.top, 4)
             }
         }
@@ -593,6 +605,7 @@ struct CardsApplications: View {
                 .padding(.vertical, 2.5)
                 .opacity(apps.isCurrent ? 1 : 0.55)
                 .modifier(FocusRing(on: focus == "app:" + a.id, p: p))
+                .id("app:" + a.id)
                 .accessibilityElement(children: .combine)
             }
         }
@@ -640,6 +653,7 @@ struct CardsServer: View {
             .font(t.font(10.5)).foregroundStyle(p.l3)
         }
         .modifier(FocusRing(on: focused, p: p))
+        .id("server:" + card.id)
     }
 
     func meter(_ label: String, _ m: ServerCardModel.Meter) -> some View {
