@@ -38,7 +38,12 @@ struct CellsBodies {
         if let c = s.counts?.complete, !s.isBlind {
             let total = Double(max(1, c.up + c.warning + c.down + c.unknown))
             func share(_ v: Int) -> Int { Int((Double(v) / total * Double(n)).rounded()) }
-            var parts = [(share(c.up), p.up), (share(c.warning), p.warn), (share(c.down), p.down), (share(c.unknown), p.unknown)]
+            // In one tone a run has no shape to tell up from trouble, so
+            // weight does, as on the cards bar: trouble in the full ink.
+            var parts = w.plain
+                ? [(share(c.up), p.text.opacity(0.3)), (share(c.warning), p.text), (share(c.down), p.text),
+                   (share(c.unknown), p.text.opacity(0.55))]
+                : [(share(c.up), p.up), (share(c.warning), p.warn), (share(c.down), p.down), (share(c.unknown), p.unknown)]
             parts[0].0 = max(0, parts[0].0 + n - parts.reduce(0) { $0 + $1.0 })
             w.line([.rule(parts)])
             func count(_ v: Int, _ m: Mark, _ word: String?) -> [Seg] {
