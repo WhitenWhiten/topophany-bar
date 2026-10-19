@@ -433,13 +433,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld up、%lld warn、%lld down、%lld unknown"
+            "value": "正常 %lld、警告 %lld、ダウン %lld、不明 %lld"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld up，%lld warn，%lld down，%lld unknown"
+            "value": "正常 %lld，警告 %lld，故障 %lld，未知 %lld"
           }
         }
       }
@@ -758,13 +758,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "LIVE"
+            "value": "ライブ"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "LIVE"
+            "value": "实时"
           }
         }
       }
@@ -1030,13 +1030,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "OFFLINE"
+            "value": "オフライン"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "OFFLINE"
+            "value": "离线"
           }
         }
       }
@@ -1416,13 +1416,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "すべて up"
+            "value": "すべて正常"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "全部 up"
+            "value": "全部正常"
           }
         }
       }
@@ -1480,13 +1480,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "down"
+            "value": "ダウン"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "down"
+            "value": "故障"
           }
         }
       }
@@ -1672,13 +1672,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "unknown"
+            "value": "不明"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "unknown"
+            "value": "未知"
           }
         }
       }
@@ -1704,13 +1704,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "up"
+            "value": "正常"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "up"
+            "value": "正常"
           }
         }
       }
@@ -1736,13 +1736,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "warn"
+            "value": "警告"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "warn"
+            "value": "警告"
           }
         }
       }

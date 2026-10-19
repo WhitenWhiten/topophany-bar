@@ -45,6 +45,24 @@ import TopophanyKit
         }
     }
 
+    /// The Terminal look's titles, pills and health words are translated
+    /// too, not left as the TUI's English.
+    @Test func terminalWords() {
+        L10n.with("ja") {
+            let p = panel(.incidents)
+            #expect(p.status.tuiTitle == "インシデント 5 件")
+            #expect(Pill.state("open", health: .down).text == "未解決")
+            #expect(Pill.health(.up).text == "正常")
+            #expect(tr("ALL CLEAR") == "すべて正常")
+        }
+        L10n.with("zh-Hans") {
+            let p = panel(.incidents)
+            #expect(p.status.tuiTitle == "5 个事件")
+            #expect(Pill.health(.down).text == "故障")
+            #expect(p.status.shortSubtitle.hasPrefix("5 项故障"))
+        }
+    }
+
     @Test func everyLanguageKeepsTheNumbers() {
         for l in ["en", "ja", "zh-Hans"] {
             L10n.with(l) {
