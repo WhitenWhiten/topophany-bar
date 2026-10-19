@@ -70,7 +70,7 @@ struct FleetMore: View {
         HStack(spacing: 6) {
             Color.clear.frame(width: 14 * t.scale, height: 1)
             Text(tr("+\(groups.count) more")).font(t.font(12)).foregroundStyle(p.l2).lineLimit(1)
-            Spacer(minLength: 3)
+            Spacer(minLength: 0)
             HStack(spacing: 2.5) {
                 ForEach(nodes.prefix(marks)) { n in CardMark(mark: n.mark, size: 8, color: p.listColor(n.mark)) }
                 if nodes.count > marks {
@@ -108,7 +108,8 @@ struct FleetCell: View {
                 }
                 title
             }
-            Spacer(minLength: 3)
+            // The stack's spacing alone keeps the marks clear of the name.
+            Spacer(minLength: 0)
             HStack(spacing: 2.5) {
                 ForEach(group.nodes.prefix(marks)) { n in CardMark(mark: n.mark, size: 8, color: p.listColor(n.mark)) }
                 if group.nodes.count > marks {
