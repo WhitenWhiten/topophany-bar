@@ -28,6 +28,19 @@ import TopophanySections
         try snapshot("panel-native-light-clear-server", panel(previewPanel(.clear, settings: previewSettings(mac: .server)), theme: ThemeStore.native, dark: false))
     }
 
+    /// A zone with more servers than its row holds: the one in trouble is
+    /// among those drawn.
+    @Test func crowdedZone() throws {
+        var model = previewPanel(.clear)
+        model.sections = model.sections.map { s in
+            guard case .zones(var z) = s, let i = z.zones.firstIndex(where: \.isHere) else { return s }
+            z.zones[i].servers = (1...10).map { .init(id: "n\($0)", name: "n\($0)", mark: $0 == 10 ? .down : .up) }
+            return .zones(z)
+        }
+        try snapshot("panel-native-dark-zones-crowded", panel(model, theme: ThemeStore.native, dark: true))
+        try snapshot("panel-terminal-zones-crowded", panel(model, theme: ThemeStore.terminal, dark: true))
+    }
+
     /// Reduce Transparency paints solid fills; Increase Contrast darkens
     /// secondary text and strengthens edges and separators.
     @Test func accessibilityPanels() throws {

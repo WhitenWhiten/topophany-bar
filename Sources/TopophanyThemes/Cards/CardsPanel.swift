@@ -710,8 +710,10 @@ struct CardsZones: View {
                 }
                 Text(z.title).font(t.font(12)).foregroundStyle(p.l1).lineLimit(1).truncationMode(.tail)
                 Spacer(minLength: 4)
+                // Cut short, trouble first, so trouble left out still shows.
+                let servers = z.servers.count > 8 ? Mark.troubleFirst(z.servers, by: \.mark) : z.servers
                 HStack(spacing: 2.5) {
-                    ForEach(Array(z.servers.prefix(8).enumerated()), id: \.offset) { _, s in
+                    ForEach(Array(servers.prefix(8).enumerated()), id: \.offset) { _, s in
                         CardMark(mark: s.mark, size: 8, color: p.color(s.mark))
                     }
                     if z.servers.count > 8 {
