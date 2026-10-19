@@ -242,7 +242,7 @@ final class StatusItemController: NSObject {
         }
 
         // The readings, once a sample.
-        let rk = ReadingsKey(readings: m.readings, theme: theme.id, dark: dark, scale: scale)
+        let rk = ReadingsKey(readings: m.readings, language: L10n.localization, theme: theme.id, dark: dark, scale: scale)
         if rk != readingsKey {
             readingsKey = rk
             var readings: CGImage?
@@ -302,6 +302,8 @@ final class StatusItemController: NSObject {
 /// What the readings layer shows.
 private struct ReadingsKey: Equatable {
     var readings: [MenuBarReading]
+    /// Their labels' language.
+    var language: String
     var theme: String
     var dark: Bool
     var scale: CGFloat
