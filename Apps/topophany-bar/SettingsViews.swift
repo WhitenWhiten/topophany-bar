@@ -508,14 +508,13 @@ struct SectionsSettings: View {
                         RowLabel("Status", "The verdict, checks by health, observers live")
                     }
                 }
-                ForEach(order, id: \.self) { id in SectionRow(id: id) }
-                    .onMove { from, to in
-                        model.update { s in
-                            var rest = Array(s.sections.order.dropFirst())
-                            rest.move(fromOffsets: from, toOffset: to)
-                            s.sections.order = [.status] + rest
-                        }
-                    }
+                ReorderableRows(ids: order) { rest in
+                    model.update { $0.sections.order = [.status] + rest }
+                } label: { id in
+                    SectionLabel(id: id)
+                } trailing: { id in
+                    SectionControls(id: id)
+                }
             } header: {
                 HStack(spacing: 6) {
                     Text("Panel sections")
@@ -534,24 +533,15 @@ struct SectionsSettings: View {
     }
 }
 
-struct SectionRow: View {
-    @Environment(AppModel.self) private var model
+/// A section's handle, icon and name.
+struct SectionLabel: View {
     var id: SectionID
 
     var body: some View {
-        LabeledContent {
-            HStack(spacing: 10) {
-                controls
-                Toggle("", isOn: Binding(get: { model.settings.sections.isEnabled(id) },
-                                         set: { on in model.update { $0.sections.setEnabled(id, on) } }))
-                    .toggleStyle(.switch).labelsHidden()
-            }
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "line.3.horizontal").font(.system(size: 11)).foregroundStyle(.tertiary).frame(width: 12)
-                IconTile(symbol: symbol, color: color)
-                label
-            }
+        HStack(spacing: 10) {
+            Image(systemName: "line.3.horizontal").font(.system(size: 11)).foregroundStyle(.tertiary).frame(width: 12)
+            IconTile(symbol: symbol, color: color)
+            label
         }
     }
 
@@ -585,6 +575,21 @@ struct SectionRow: View {
         case .applications: RowLabel("Applications", "Services folded into the applications you declare")
         case .servers: RowLabel("Servers", "The Servers-tab card of each server you pin")
         case .mac: RowLabel("This Mac", "Set up under This Mac")
+        }
+    }
+}
+
+/// A section's own controls, then its switch.
+struct SectionControls: View {
+    @Environment(AppModel.self) private var model
+    var id: SectionID
+
+    var body: some View {
+        HStack(spacing: 10) {
+            controls
+            Toggle("", isOn: Binding(get: { model.settings.sections.isEnabled(id) },
+                                     set: { on in model.update { $0.sections.setEnabled(id, on) } }))
+                .toggleStyle(.switch).labelsHidden()
         }
     }
 
