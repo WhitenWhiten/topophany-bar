@@ -775,6 +775,22 @@
         }
       }
     },
+    "Back to top": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先頭に戻る"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回到顶部"
+          }
+        }
+      }
+    },
     "CPU": {
       "localizations": {
         "ja": {
@@ -1411,6 +1427,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "状态"
+          }
+        }
+      }
+    },
+    "Scroll down": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下にスクロール"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "向下滚动"
           }
         }
       }

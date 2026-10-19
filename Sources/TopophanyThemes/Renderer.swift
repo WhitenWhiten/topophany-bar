@@ -28,13 +28,17 @@ public struct RenderContext: Sendable {
     /// The tallest the panel may be; Status stays pinned and the rest
     /// scrolls when it would be taller.
     public var maxHeight: Double?
+    /// How many times the keyboard has asked the panel to leap, as its
+    /// quick scroll does. Each new one leaps once.
+    public var leaps = 0
     /// Ages count up on their own, as a widget's must between reloads.
     /// Off for snapshots, which draw ages as of the model's `now`.
     public var liveDates = false
 
     public init(theme: Theme, colorScheme: ColorScheme = .dark, backdrop: Backdrop = .flat,
                 textSize: TopophanyKit.Settings.Appearance.TextSize = .default, focus: String? = nil, reduceTransparency: Bool = false,
-                increaseContrast: Bool = false, widgetRendering: WidgetRendering = .fullColor, maxHeight: Double? = nil) {
+                increaseContrast: Bool = false, widgetRendering: WidgetRendering = .fullColor, maxHeight: Double? = nil,
+                leaps: Int = 0) {
         self.theme = theme
         self.colorScheme = colorScheme
         self.backdrop = backdrop
@@ -44,6 +48,7 @@ public struct RenderContext: Sendable {
         self.increaseContrast = increaseContrast
         self.widgetRendering = widgetRendering
         self.maxHeight = maxHeight
+        self.leaps = leaps
     }
 
     /// The light or dark the theme draws in.

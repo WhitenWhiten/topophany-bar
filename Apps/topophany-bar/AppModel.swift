@@ -25,6 +25,8 @@ final class AppModel {
     private(set) var lastFrameAt: Date?
     /// The keyboard's place in the panel.
     var focus: String?
+    /// Space presses in the panel, each a leap of its quick scroll.
+    var leaps = 0
     /// The menu bar's alert, quieted until it gets worse. Kept for this
     /// launch only.
     private(set) var quiet: QuietAlert?

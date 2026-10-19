@@ -436,12 +436,14 @@ struct CellsPanel: View {
     @Environment(\.panelActions) private var actions
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hover: String?
+    @State private var position = ScrollPosition(edge: .top)
+    @State private var leapState = PanelLeap()
 
     static let columns = 48
     nonisolated static let radius = 12.0
 
     var body: some View {
-        let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover)
+        let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover, leapUp: leapState.atEnd)
         let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
         let p = CellsPalette(ctx.theme)
         fitted(scene)
@@ -465,7 +467,15 @@ struct CellsPanel: View {
             key(scene, "open", tr("Open in Terminal"), nil) { actions.openTerminal() }
             key(scene, "settings", tr("Settings"), KeyboardShortcut(",", modifiers: [])) { actions.openSettings() }
             key(scene, "quit", tr("Quit"), KeyboardShortcut("q", modifiers: [])) { actions.quit() }
+            key(scene, "leap", leapState.atEnd ? tr("Back to top") : tr("Scroll down"), nil) { leap() }
         }
+    }
+
+    /// About half the panel down, or from the end back to the top.
+    func leap() {
+        guard let panel = ctx.maxHeight else { return }
+        let y = leapState.target(panel: panel)
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { position.scrollTo(y: y) }
     }
 
     /// Status's keycap, from the top: Status stays put while the rest
@@ -508,11 +518,14 @@ struct CellsPanel: View {
                             .overlay(alignment: .topLeading) { focusAnchor(scene, top: top, bottom: footer) }
                     }
                     .scrollIndicators(.never)
+                    .scrollPosition($position)
+                    .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState = new }
                     .frame(height: max(80, maxH - top - (h - footer)))
                     .onChange(of: ctx.focus) { _, focus in
                         guard let focus else { return }
                         withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { proxy.scrollTo(focus) }
                     }
+                    .onChange(of: ctx.leaps) { leap() }
                 }
                 slice(scene, top: footer, bottom: h)
             }
@@ -548,7 +561,10 @@ struct CellsPanel: View {
             .contentShape(Rectangle())
     }
 
-    static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false, hover: String? = nil) -> CellScene {
+    /// - Parameter leapUp: whether the scroll is at its end, and the quick
+    ///   scroll's keycap points back up.
+    static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false, hover: String? = nil,
+                      leapUp: Bool = false) -> CellScene {
         let m = CellMetrics.panel
         let p = CellsPalette(ctx.theme)
         let width = Double(columns) * m.cell + 14
@@ -643,7 +659,12 @@ struct CellsPanel: View {
         func key(_ k: String, _ label: String, _ id: String) -> (id: String, segs: [Seg]) {
             (id, [.key(" \(k) "), .t(" " + label + "  ", hover == id ? p.text : p.muted)])
         }
-        let keys = [key("↵", tr("Open"), "open"), key(",", tr("Settings"), "settings"), key("q", tr("Quit"), "quit")]
+        var keys = [key("↵", tr("Open"), "open"), key(",", tr("Settings"), "settings"), key("q", tr("Quit"), "quit")]
+        // While the panel scrolls, space leaps about half the panel down,
+        // or from the end back to the top.
+        if let maxH = ctx.maxHeight, footTop + 28 > maxH {
+            keys.append(key("␣", leapUp ? "↑" : "↓", "leap"))
+        }
         let room = columns - keys.reduce(0) { $0 + $1.segs.reduce(0) { $0 + $1.width } }
         let conn: Seg
         var ownLine = false

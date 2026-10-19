@@ -185,7 +185,7 @@ final class PanelController: NSObject {
         monitors = []
     }
 
-    /// ↑↓ move, ↵ opens, Esc closes, ⌘O ⌘, ⌘Q.
+    /// ↑↓ move, ↵ opens, Space leaps, Esc closes, ⌘O ⌘, ⌘Q.
     private func key(_ e: NSEvent) -> Bool {
         guard isOpen, e.window === panel else { return false }
         let cmd = e.modifierFlags.contains(.command)
@@ -194,11 +194,19 @@ final class PanelController: NSObject {
         case (126, false, _): move(-1); return true
         case (125, false, _): move(1); return true
         case (36, false, _), (76, false, _): activate(); return true
+        case (49, false, _) where !buttonHasKeyboard: model.leaps += 1; return true
         case (_, true, "o"): actions?.openTerminal(); return true
         case (_, true, ","): actions?.openSettings(); return true
         case (_, true, "q"): actions?.quit(); return true
         default: return false
         }
+    }
+
+    /// Whether a button has the keyboard, as with Full Keyboard Access:
+    /// Space presses it then.
+    private var buttonHasKeyboard: Bool {
+        guard let r = panel?.firstResponder else { return false }
+        return r !== panel && r !== hosting
     }
 
     private func move(_ d: Int) {
@@ -269,7 +277,7 @@ struct PanelRoot: View {
         }
         let ctx = RenderContext(theme: model.theme, colorScheme: scheme, backdrop: .live, textSize: s.textSize,
                                 focus: model.focus, reduceTransparency: reduceTransparency,
-                                increaseContrast: contrast == .increased, maxHeight: maxHeight())
+                                increaseContrast: contrast == .increased, maxHeight: maxHeight(), leaps: model.leaps)
         // Built anew for a new language, which L10n already has: a section
         // whose model didn't change keeps its words otherwise.
         Renderers.renderer(for: model.theme).panel(model.panel, context: ctx)

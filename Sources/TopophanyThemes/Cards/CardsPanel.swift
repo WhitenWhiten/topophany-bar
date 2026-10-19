@@ -9,12 +9,20 @@ struct CardsPanel: View {
     @Environment(\.panelActions) private var actions
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var scrollHeight: Double = 0
+    @State private var position = ScrollPosition(edge: .top)
+    @State private var leapState = PanelLeap()
 
     var p: CardsPalette { CardsPalette.resolve(ctx) }
     var t: CardsType { CardsType(scale: ctx.scale, theme: ctx.theme) }
 
     /// Between cards; ruled sections meet at their rules.
     var gap: Double { p.style.surface == .matte ? 0 : 6 }
+
+    /// The most the scroll shows at once.
+    var scrollLimit: Double { max(120, (ctx.maxHeight ?? .infinity) - 230 * ctx.scale) }
+
+    /// Whether the sections scroll: there's more of them than shows.
+    var scrolls: Bool { model.pinStatus && ctx.maxHeight != nil && scrollHeight > scrollLimit }
 
     var body: some View {
         let p = self.p
@@ -27,7 +35,7 @@ struct CardsPanel: View {
                 CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t)
                 sections(p)
             }
-            CardsFooter(chrome: model.chrome, p: p, t: t)
+            CardsFooter(chrome: model.chrome, p: p, t: t, leapUp: scrolls ? leapState.atEnd : nil, leap: leap)
         }
         .padding(8)
         .frame(width: 344 * ctx.scale)
@@ -52,12 +60,22 @@ struct CardsPanel: View {
             }
             .scrollIndicators(.never)
             .scrollBounceBehavior(.basedOnSize)
-            .frame(height: min(scrollHeight, max(120, (ctx.maxHeight ?? .infinity) - 230 * ctx.scale)))
+            .scrollPosition($position)
+            .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState = new }
+            .frame(height: min(scrollHeight, scrollLimit))
             .onChange(of: ctx.focus) { _, focus in
                 guard let focus else { return }
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { proxy.scrollTo(focus) }
             }
+            .onChange(of: ctx.leaps) { leap() }
         }
+    }
+
+    /// About half the panel down, or from the end back to the top.
+    func leap() {
+        guard scrolls, let panel = ctx.maxHeight else { return }
+        let y = leapState.target(panel: panel)
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { position.scrollTo(y: y) }
     }
 }
 
@@ -190,6 +208,10 @@ struct CardsFooter: View {
     var chrome: PanelChrome
     var p: CardsPalette
     var t: CardsType
+    /// While the panel scrolls, the quick scroll: whether it's at the end
+    /// and goes back up.
+    var leapUp: Bool?
+    var leap: () -> Void = {}
     @Environment(\.panelActions) private var actions
 
     var body: some View {
@@ -203,18 +225,40 @@ struct CardsFooter: View {
             .font(t.font(11)).foregroundStyle(p.l3)
             .accessibilityElement(children: .combine)
             Spacer()
-            Button { actions.quit() } label: {
-                Text(tr("Quit")).font(t.font(11.5, .medium)).foregroundStyle(p.l1)
-                    .padding(.horizontal, 11).padding(.vertical, 3)
-                    .background {
-                        let shape = RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous)
-                        if p.style.surface == .glass { shape.fill(p.fill2) } else { shape.strokeBorder(p.cardEdge, lineWidth: 0.75) }
+            HStack(spacing: 6) {
+                if let up = leapUp {
+                    let label = up ? tr("Back to top") : tr("Scroll down")
+                    Button(action: leap) {
+                        Image(systemName: up ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 10 * t.scale, weight: .semibold))
+                            .contentTransition(.symbolEffect(.replace))
+                            .foregroundStyle(p.l1)
+                            .frame(width: 26 * t.scale)
+                            .frame(maxHeight: .infinity)
+                            .background { key }
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(PressStyle())
+                    .help(label)
+                    .accessibilityLabel(label)
+                }
+                Button { actions.quit() } label: {
+                    Text(tr("Quit")).font(t.font(11.5, .medium)).foregroundStyle(p.l1)
+                        .padding(.horizontal, 11).padding(.vertical, 3)
+                        .background { key }
+                }
+                .buttonStyle(PressStyle())
+                .keyboardShortcut("q", modifiers: .command)
             }
-            .buttonStyle(PressStyle())
-            .keyboardShortcut("q", modifiers: .command)
+            .fixedSize()
         }
         .padding(EdgeInsets(top: 1, leading: 8, bottom: 0, trailing: 4))
+    }
+
+    /// A footer button's ground: a fill on glass, an outline on a page.
+    @ViewBuilder var key: some View {
+        let shape = RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous)
+        if p.style.surface == .glass { shape.fill(p.fill2) } else { shape.strokeBorder(p.cardEdge, lineWidth: 0.75) }
     }
 }
 

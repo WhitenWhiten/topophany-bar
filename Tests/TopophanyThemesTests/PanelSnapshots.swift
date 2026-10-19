@@ -140,6 +140,32 @@ import TopophanySections
         #expect(quiet.minY > s.marks["header"]! && quiet.maxY < s.marks["status"]!)
     }
 
+    /// While the panel scrolls, and only then, the footer has the quick
+    /// scroll's keycap: down, or at the end back up.
+    @Test func terminalLeapKeycap() throws {
+        let tall = previewPanel(.incidents, settings: previewSettings(servers: true, limit: 5))
+        func texts(_ s: CellScene) -> [String] { s.items.compactMap { if case .text(_, _, let t, _, _) = $0 { t } else { nil } } }
+        let fits = CellsPanel.scene(tall, ctx: RenderContext(theme: ThemeStore.terminal, maxHeight: 4000))
+        #expect(fits.regions["leap"] == nil)
+        let short = RenderContext(theme: ThemeStore.terminal, maxHeight: 700)
+        let down = CellsPanel.scene(tall, ctx: short)
+        let r = try #require(down.regions["leap"])
+        #expect(r.minY > down.marks["footer"]! && r.maxY < down.size.height)
+        #expect(texts(down).contains(" ␣ ") && texts(down).contains(" ↓  "))
+        let up = CellsPanel.scene(tall, ctx: short, leapUp: true)
+        #expect(texts(up).contains(" ↑  ") && !texts(up).contains(" ↓  "))
+    }
+
+    /// A leap goes down half the panel, no further than the scroll shows,
+    /// stops at the end, and from there goes back to the top.
+    @Test func leapTargets() {
+        #expect(PanelLeap(offset: 0, content: 2000, visible: 700).target(panel: 1000) == 500)
+        #expect(PanelLeap(offset: 0, content: 2000, visible: 300).target(panel: 1000) == 300)
+        #expect(PanelLeap(offset: 1100, content: 2000, visible: 700).target(panel: 1000) == 1300)
+        #expect(PanelLeap(offset: 1300, content: 2000, visible: 700).atEnd)
+        #expect(PanelLeap(offset: 1300, content: 2000, visible: 700).target(panel: 1000) == 0)
+    }
+
     /// The Quiet button, and the panel once the menu bar's alert is quiet.
     @Test func quietPanels() throws {
         func quieted(_ s: FixtureEngine.Scenario) -> PanelModel {

@@ -96,7 +96,7 @@ Some people can't work beside a red or orange badge they already know about. The
 
 ## 4. The panel
 
-The header shows the mark, the project and view, Open in Terminal (⌘O) and Settings (⌘,). The footer shows the connection and Quit. Sections run in this default order:
+The header shows the mark, the project and view, Open in Terminal (⌘O) and Settings (⌘,). The footer shows the connection and Quit, and while the panel scrolls, the quick scroll. Sections run in this default order:
 
 1. **Status.** Fixed, always first, pinned when the panel scrolls.
    - The verdict.
@@ -120,6 +120,7 @@ Size:
 - **Native:** 344 pt wide, cards 6 pt apart. Rows that open something (attention entries, "*N* more") light faintly under the pointer, as far out as the keyboard's focus.
 - **Terminal:** 48 columns of SF Mono 12 inside 7 pt margins.
 - **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls, with no scroll bar, following the keyboard's focus as little as it must.
+- **Quick scroll:** while the panel scrolls, a chevron beside Quit leaps about half the panel down, never further than the scroll shows at once, so no row passes unseen. At the end it points up and goes back to the top. Space does the same, unless a button has the keyboard (Full Keyboard Access), when Space presses that button.
 
 Motion in the panel is quiet, and says only what happened:
 
@@ -136,7 +137,7 @@ The Terminal theme draws each section as the TUI draws a panel:
 - **The count:** the TUI's big 3×5 digits.
 - **Meters:** colored by `loadColor`.
 - **CPU history:** block sparks.
-- **Footer:** keycaps for Open, Settings and Quit.
+- **Footer:** keycaps for Open, Settings and Quit, and while the panel scrolls, `␣ ↓` for the quick scroll (`␣ ↑` at the end).
 
 ### 4.1 Providers
 
