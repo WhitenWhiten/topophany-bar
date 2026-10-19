@@ -9,6 +9,7 @@ import TopophanyKit
 ///
 ///     settings N            show Settings on tab N, floating
 ///     panel | close         open or close the panel
+///     tui                   open the TUI, as ⌘O does
 ///     key up|down|return    a key in the panel
 ///     clickitem             a click on the menu bar item
 ///     mac off|local|server  This Mac's mode
@@ -42,6 +43,7 @@ enum DebugDriver {
             d.settingsWindow?.orderFrontRegardless()
         case "panel": d.openPanelForSnapshot()
         case "close": d.closePanel()
+        case "tui": d.openTUI(focus: nil)
         case "key": if w.count > 1 { d.panelKey(w[1]) }
         case "clickitem":
             guard let b = d.statusButton, let win = b.window else { return }
