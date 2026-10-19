@@ -31,6 +31,13 @@ import TopophanyWidgets
 ///                           with one
 ///     menu                  the menu bar item's right-click menu, as text
 ///     itemshot              the menu bar item as last drawn, to item.png
+///     views                 the open panel's AppKit views and their frames
+///     scroll [panel|#N] X Y DY [DX]
+///                           a scroll of DY (and DX) points at X Y in
+///                           Settings, the panel or window N (a popover),
+///                           as a trackpad sends one;
+///                           how far the scroll view under it moved, to
+///                           scroll.txt
 ///
 /// A command starting with `@PID` goes to that running copy only.
 @MainActor
@@ -88,6 +95,23 @@ enum DebugDriver {
         case "drag":
             guard let x = num(1), let y = num(2), let dy = num(3), let win = d.settingsWindow else { return }
             Task { await drag(win, from: CGPoint(x: x, y: y), dy: dy, seconds: num(4) ?? 0.6) }
+        case "views":
+            var lines: [String] = []
+            func walk(_ v: NSView, _ depth: Int) {
+                let f = v.convert(v.bounds, to: nil)
+                lines.append(String(repeating: "  ", count: depth) + "\(type(of: v)) \(f)\(v.isHidden ? " hidden" : "")")
+                for c in v.subviews { walk(c, depth + 1) }
+            }
+            if let v = d.panelWindow?.contentView { walk(v, 0) }
+            try? lines.joined(separator: "\n").write(to: out.appending(path: "views.txt"), atomically: true, encoding: .utf8)
+        case "scroll":
+            let panel = w.count > 1 && w[1] == "panel"
+            let number = w.count > 1 && w[1].hasPrefix("#") ? Int(w[1].dropFirst()) : nil
+            let k = panel || number != nil ? 1 : 0
+            let target = number.flatMap { n in NSApp.windows.first { $0.windowNumber == n } }
+            guard let x = num(1 + k), let y = num(2 + k), let dy = num(3 + k),
+                  let win = target ?? (panel ? d.panelWindow : d.settingsWindow) else { return }
+            Task { await scroll(win, at: CGPoint(x: x, y: y), dy: dy, dx: num(4 + k) ?? 0) }
         case "trace":
             guard let win = d.settingsWindow else { return }
             trace(win, model: d.model, seconds: num(1) ?? 2)
@@ -178,6 +202,44 @@ enum DebugDriver {
             if dy != 0 { post(.leftMouseDragged, p.y + dy * Double(i) / Double(steps)) }
         }
         post(.leftMouseUp, p.y + dy)
+    }
+
+    /// Scroll wheel events at `p` (points from the window's top left), in a
+    /// few steps, to the view there; then where the scroll view under `p`
+    /// was before and after.
+    static func scroll(_ win: NSWindow, at p: CGPoint, dy: Double, dx: Double) async {
+        let local = NSPoint(x: p.x, y: win.frame.height - p.y)
+        let screen = win.convertPoint(toScreen: local)
+        let top = NSScreen.screens.first?.frame.maxY ?? 0
+        func scrollView() -> NSScrollView? {
+            var v = win.contentView?.hitTest(local)
+            while let view = v, !(view is NSScrollView) { v = view.superview }
+            return v as? NSScrollView
+        }
+        let before = scrollView()?.contentView.bounds.origin
+        let steps = 6
+        var seen = ""
+        for _ in 0..<steps {
+            guard let cg = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+                                   wheel1: Int32(-dy / Double(steps)), wheel2: Int32(-dx / Double(steps)), wheel3: 0) else { return }
+            cg.location = CGPoint(x: screen.x, y: top - screen.y)
+            cg.setIntegerValueField(.mouseEventWindowUnderMousePointer, value: Int64(win.windowNumber))
+            cg.setIntegerValueField(.mouseEventWindowUnderMousePointerThatCanHandleThisEvent, value: Int64(win.windowNumber))
+            if let e = NSEvent(cgEvent: cg) {
+                // Made from a CGEvent, it has no window, so it goes to the
+                // view under `p` as the window's own hit test would send it.
+                let view = win.contentView?.hitTest(local)
+                seen = "to \(view.map { String(describing: type(of: $0)) } ?? "none") dy \(e.scrollingDeltaY)"
+                view?.scrollWheel(with: e)
+            }
+            try? await Task.sleep(for: .milliseconds(16))
+        }
+        try? await Task.sleep(for: .milliseconds(300))
+        let sv = scrollView()
+        let lines = [seen, "local \(local)", "view \(sv.map { String(describing: type(of: $0)) } ?? "none")",
+                     "before \(before.map { "\($0.x) \($0.y)" } ?? "-")",
+                     "after \(sv.map { "\($0.contentView.bounds.origin.x) \($0.contentView.bounds.origin.y)" } ?? "-")"]
+        try? lines.joined(separator: "\n").write(to: out.appending(path: "scroll.txt"), atomically: true, encoding: .utf8)
     }
 
     /// Writes "t height y preferred mode" lines, t in milliseconds from the start.
