@@ -14,15 +14,19 @@ import TopophanyWidgets
 ///     panel | close         open or close the panel
 ///     tui                   open the TUI, as ⌘O does
 ///     key up|down|return    a key in the panel
+///     type C [cmd]          C typed into the panel, through the app's event queue
 ///     clickitem             a click on the menu bar item
 ///     mac off|local|server  This Mac's mode
 ///     click X Y             a click in Settings, in points from its top left
+///     click panel X Y       a click in the panel
 ///     drag X Y DY [S]       a drag of DY points, over S seconds (default 0.6)
 ///     trace S               Settings' frame and This Mac's mode, for S seconds
 ///     ax                    the open panel's accessibility tree
 ///     windows               each window's number and frame
 ///     handoff               what the widgets were last handed
 ///     login [on|off]        Open at login: set it, and report its status
+///
+/// A command starting with `@PID` goes to that running copy only.
 @MainActor
 enum DebugDriver {
     static let name = Notification.Name("io.github.whitenwhiten.topophany-bar.debug")
@@ -37,7 +41,11 @@ enum DebugDriver {
     }
 
     static func run(_ command: String, _ d: AppDelegate) {
-        let w = command.split(separator: " ").map(String.init)
+        var w = command.split(separator: " ").map(String.init)
+        if let to = w.first, to.hasPrefix("@") {
+            guard to == "@\(getpid())" else { return }
+            w.removeFirst()
+        }
         guard let verb = w.first else { return }
         func num(_ i: Int) -> Double? { i < w.count ? Double(w[i]) : nil }
         switch verb {
@@ -51,6 +59,14 @@ enum DebugDriver {
         case "close": d.closePanel()
         case "tui": d.openTUI(focus: nil)
         case "key": if w.count > 1 { d.panelKey(w[1]) }
+        case "type":
+            let codes: [String: UInt16] = [",": 43, "q": 12, "o": 31]
+            guard w.count > 1, let code = codes[w[1]], let win = d.panelWindow,
+                  let e = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: w.count > 2 ? .command : [],
+                                           timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: win.windowNumber,
+                                           context: nil, characters: w[1], charactersIgnoringModifiers: w[1],
+                                           isARepeat: false, keyCode: code) else { return }
+            NSApp.postEvent(e, atStart: false)
         case "clickitem":
             guard let b = d.statusButton, let win = b.window else { return }
             let at = b.convert(NSPoint(x: b.bounds.midX, y: b.bounds.midY), to: nil)
@@ -60,8 +76,9 @@ enum DebugDriver {
                                               pressure: type == .leftMouseUp ? 0 : 1) { NSApp.postEvent(e, atStart: false) }
             }
         case "click":
-            guard let x = num(1), let y = num(2), let win = d.settingsWindow else { return }
-            Task { await drag(win, from: CGPoint(x: x, y: y), dy: 0, seconds: 0.05) }
+            let panel = w.count > 1 && w[1] == "panel"
+            guard let x = num(panel ? 2 : 1), let y = num(panel ? 3 : 2), let win = panel ? d.panelWindow : d.settingsWindow else { return }
+            Task { await drag(win, from: CGPoint(x: x, y: y), dy: 0, seconds: 0.05, activate: !panel) }
         case "drag":
             guard let x = num(1), let y = num(2), let dy = num(3), let win = d.settingsWindow else { return }
             Task { await drag(win, from: CGPoint(x: x, y: y), dy: dy, seconds: num(4) ?? 0.6) }
@@ -123,11 +140,13 @@ enum DebugDriver {
     }
 
     /// Mouse down, moves and up, posted to the app's own queue.
-    static func drag(_ win: NSWindow, from p: CGPoint, dy: Double, seconds: Double) async {
+    static func drag(_ win: NSWindow, from p: CGPoint, dy: Double, seconds: Double, activate: Bool = true) async {
         let steps = max(1, Int(seconds * 60))
-        NSApp.activate()
-        win.makeKeyAndOrderFront(nil)
-        try? await Task.sleep(for: .milliseconds(200))
+        if activate {
+            NSApp.activate()
+            win.makeKeyAndOrderFront(nil)
+            try? await Task.sleep(for: .milliseconds(200))
+        }
         func post(_ type: NSEvent.EventType, _ y: Double) {
             let at = NSPoint(x: p.x, y: win.frame.height - y)
             guard let e = NSEvent.mouseEvent(with: type, location: at, modifierFlags: [],
