@@ -14,9 +14,10 @@ import TopophanyThemes
 /// on; nothing is drawn for it while the displays sleep or the item can't
 /// be seen.
 ///
-/// It draws as little as it can. Frames go to a layer of the item's own;
+/// It draws as little as it can. Frames go to layers of the item's own;
 /// the button's image only holds the item's size, since handing the system
-/// a new image costs it many times what a layer's contents cost. A turn
+/// a new image costs it many times what a layer's contents cost. This
+/// Mac's readings have a layer of their own, drawn once a sample. A turn
 /// repeats every step, so its frames are kept, and once a step's are all
 /// drawn the system plays them on its own until something changes.
 @MainActor
@@ -25,9 +26,11 @@ final class StatusItemController: NSObject {
     private let model: AppModel
     private let onClick: (NSStatusBarButton) -> Void
     private var appearanceWatch: NSKeyValueObservation?
-    /// One renderer for every frame: it keeps its view graph, so a frame
-    /// redraws only what moved.
+    /// One renderer for every frame, and one for the readings: each keeps
+    /// its view graph, so a frame redraws only what moved.
     private let renderer = ImageRenderer(content: AnyView(EmptyView()))
+    private let readingsRenderer = ImageRenderer(content: AnyView(EmptyView()))
+    private var readingsKey: ReadingsKey?
     private let frameView = FrameView()
     /// The latest frame, for snapshots.
     private(set) var frame: NSImage?
@@ -226,10 +229,24 @@ final class StatusItemController: NSObject {
             StatusItemContext(theme: theme, menuBarIsDark: dark, motion: motion)
         }
 
-        // Between changes, and with no spinner, a frame is its place in the
-        // turn's step alone.
+        // The readings, once a sample.
+        let rk = ReadingsKey(readings: m.readings, theme: theme.id, dark: dark, scale: scale)
+        if rk != readingsKey {
+            readingsKey = rk
+            var readings: CGImage?
+            if let view = renderer.statusItemParts(m, context: context(.still)).readings {
+                readingsRenderer.content = view
+                readingsRenderer.scale = scale
+                readings = readingsRenderer.cgImage
+            }
+            frameView.readings = readings
+        }
+
+        // The rest: between changes, and with no spinner, a frame is its
+        // place in the turn's step alone.
         var drawn = m
         drawn.accessibilityLabel = ""
+        drawn.readings = []
         let k = FrameKey(model: drawn, theme: theme.id, dark: dark, scale: scale)
         if k != key {
             key = k
@@ -247,7 +264,9 @@ final class StatusItemController: NSObject {
             } else {
                 let motion = StatusItemMotion(moves: moves, turn: Double(place) / Double(n), time: now,
                                               change: change.map { .init(from: $0.from, age: now - $0.at) })
-                self.renderer.content = renderer.statusItem(drawn, context: context(motion))
+                let parts = renderer.statusItemParts(drawn, context: context(motion))
+                frameView.spacing = parts.spacing
+                self.renderer.content = parts.item
                 self.renderer.scale = scale
                 guard let fresh = self.renderer.cgImage else { return }
                 cg = fresh
@@ -268,6 +287,14 @@ final class StatusItemController: NSObject {
     }
 }
 
+/// What the readings layer shows.
+private struct ReadingsKey: Equatable {
+    var readings: [MenuBarReading]
+    var theme: String
+    var dark: Bool
+    var scale: CGFloat
+}
+
 /// What a kept frame shows, but for its place in the turn.
 private struct FrameKey: Equatable {
     var model: StatusItemModel
@@ -276,18 +303,29 @@ private struct FrameKey: Equatable {
     var scale: CGFloat
 }
 
-/// Shows the item's frames on a layer, centered as the button would center
-/// its image. It takes no clicks; the button does.
+/// Shows the item's frames: the readings' layer, then the rest's, centered
+/// as the button would center its image. It takes no clicks; the button
+/// does.
 private final class FrameView: NSView {
+    private let readingsLayer = CALayer()
     private let itemLayer = CALayer()
     private var item: CGImage?
     private var scale: CGFloat = 2
 
+    /// This Mac's readings, drawn; `nil` for none.
+    var readings: CGImage? {
+        didSet { if readings !== oldValue { update() } }
+    }
+    /// Between the readings and the rest.
+    var spacing: CGFloat = 0
+
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
-        itemLayer.contentsGravity = .resize
-        layer?.addSublayer(itemLayer)
+        for l in [readingsLayer, itemLayer] {
+            l.contentsGravity = .resize
+            layer?.addSublayer(l)
+        }
     }
 
     required init?(coder: NSCoder) { nil }
@@ -319,12 +357,27 @@ private final class FrameView: NSView {
         itemLayer.removeAnimation(forKey: "turn")
     }
 
-    var size: NSSize {
-        item.map { NSSize(width: CGFloat($0.width) / scale, height: CGFloat($0.height) / scale) } ?? .zero
+    private func points(_ image: CGImage?) -> NSSize {
+        image.map { NSSize(width: CGFloat($0.width) / scale, height: CGFloat($0.height) / scale) } ?? .zero
     }
 
-    /// The frame shown, as an image.
-    var snapshot: NSImage? { item.map { NSImage(cgImage: $0, size: size) } }
+    /// Both parts and the room between them.
+    var size: NSSize {
+        let r = points(readings), i = points(item)
+        return NSSize(width: r.width + (readings == nil ? 0 : spacing) + i.width, height: max(r.height, i.height))
+    }
+
+    /// Both parts in one image, as the menu bar shows them.
+    var snapshot: NSImage? {
+        guard let item else { return nil }
+        let r = points(readings), i = points(item), all = size
+        return NSImage(size: all, flipped: false) { [readings] _ in
+            guard let c = NSGraphicsContext.current?.cgContext else { return false }
+            if let readings { c.draw(readings, in: CGRect(x: 0, y: (all.height - r.height) / 2, width: r.width, height: r.height)) }
+            c.draw(item, in: CGRect(x: all.width - i.width, y: (all.height - i.height) / 2, width: i.width, height: i.height))
+            return true
+        }
+    }
 
     override func layout() {
         super.layout()
@@ -334,13 +387,16 @@ private final class FrameView: NSView {
     private func update() {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        let s = size
+        let r = points(readings), i = points(item), all = size
         // In the middle, on whole pixels.
-        let x = ((bounds.width - s.width) / 2 * scale).rounded() / scale
-        let y = ((bounds.height - s.height) / 2 * scale).rounded() / scale
+        let x = ((bounds.width - all.width) / 2 * scale).rounded() / scale
+        let y = ((bounds.height - all.height) / 2 * scale).rounded() / scale
+        readingsLayer.contents = readings
+        readingsLayer.contentsScale = scale
+        readingsLayer.frame = CGRect(x: x, y: y + (all.height - r.height) / 2, width: r.width, height: r.height)
         itemLayer.contents = item
         itemLayer.contentsScale = scale
-        itemLayer.frame = CGRect(x: x, y: y, width: s.width, height: s.height)
+        itemLayer.frame = CGRect(x: x + all.width - i.width, y: y + (all.height - i.height) / 2, width: i.width, height: i.height)
         CATransaction.commit()
     }
 }

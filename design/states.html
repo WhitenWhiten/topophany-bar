@@ -49,6 +49,10 @@
   <p class="sub">The item moves only to say something. While what it shows is current, the globe turns west to east, a meridian every 2.4 s, and meridians fade toward the rim; when nothing current is known it slows and rests on the still pose. Terminal breathes its glyph toward the glow, as the TUI's live dot does. A change swaps the badge and rolls the count; one that needs more attention sends out one ripple. Motion off, Reduce Motion or Low Power Mode keep everything still.</p>
   <div class="motion" id="motion"></div>
 
+  <h2>This Mac in the menu bar</h2>
+  <p class="sub">CPU, memory and network can stand before the globe. They're local readings: the menu bar's own ink, no health colors, no thresholds. Each holds the width of its widest value, so the item doesn't shift as they change. In Terminal they take a chip of their own.</p>
+  <div class="motion" id="reads"></div>
+
   <h2>The status card</h2>
   <p class="sub">The first card of the panel, in every state. It can't be hidden. The bar under the headline counts every configured check: unknown is hatched, never left out of the denominator. When the engine goes quiet, the card turns <b>CACHED</b> and says what the last snapshot said, rather than leaving an old green on screen.</p>
   <div class="heroes" id="heroes"></div>
@@ -115,6 +119,11 @@
     + bar('dark', D.order.map((k) => TB.statusItem(D.scenarios[k], { theme: 'native', text: 'count', color: 'status' })).join(''), 'Live, Native', 'Only a current verdict turns; offline rests.')
     + bar('light', D.order.map((k) => TB.statusItem(D.scenarios[k], { theme: 'native', text: 'count', color: 'status' })).join(''), 'Live, light bar', '')
     + bar('dark', D.order.map((k) => TB.statusItem(D.scenarios[k], { theme: 'tui', text: 'words' })).join(''), 'Live, Terminal', 'The glyph breathes while current.');
+  const all = ['cpu', 'memory', 'network'];
+  document.getElementById('reads').innerHTML =
+    bar('dark', TB.statusItem(D.scenarios.incidents, { theme: 'native', text: 'count', color: 'status', readings: all }), 'Native, dark bar', 'Bars for CPU, newest brightest; a ring for memory; sent over received.')
+    + bar('light', TB.statusItem(D.scenarios.incidents, { theme: 'native', text: 'count', color: 'status', readings: all }), 'Native, light bar', '')
+    + bar('dark', TB.statusItem(D.scenarios.incidents, { theme: 'tui', text: 'words', readings: all }), 'Terminal', 'A chip of their own, as the TUI writes them.');
   TB.animate(document);
 </script>
 </body>

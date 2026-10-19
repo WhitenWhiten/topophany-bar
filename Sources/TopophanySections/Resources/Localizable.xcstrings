@@ -995,6 +995,22 @@
         }
       }
     },
+    "CPU %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU %@"
+          }
+        }
+      }
+    },
     "Cached": {
       "localizations": {
         "ja": {
@@ -1747,6 +1763,22 @@
         }
       }
     },
+    "This Mac: %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Mac：%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机：%@"
+          }
+        }
+      }
+    },
     "This topo has no monitor stream · upgrade it": {
       "localizations": {
         "ja": {
@@ -2255,6 +2287,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "链路"
+          }
+        }
+      }
+    },
+    "memory %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メモリ %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内存 %@"
+          }
+        }
+      }
+    },
+    "network %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ネットワーク %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络 %@"
+          }
+        }
+      }
+    },
+    "network %@ in, %@ out": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ネットワーク 受信 %1$@、送信 %2$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络 接收 %1$@，发送 %2$@"
           }
         }
       }

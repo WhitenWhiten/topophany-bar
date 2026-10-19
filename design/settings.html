@@ -75,6 +75,8 @@
   .radio { width: 15px; height: 15px; border-radius: 50%; background: rgba(255,255,255,.12); flex: none; position: relative; }
   .radio.on { background: var(--acc); }
   .radio.on::after { content: ""; position: absolute; inset: 4.5px; border-radius: 50%; background: #fff; }
+  .checks3 { display: inline-flex; gap: 14px; }
+  .checks3 > span { display: inline-flex; align-items: center; gap: 6px; }
   .prev { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   .prev .mb-item { padding: 0 5px; height: 22px; border-radius: 6px; background: rgba(255,255,255,.06); color: #fff; font: 500 13px -apple-system, system-ui; }
 
@@ -157,6 +159,7 @@
       ${row('Show', 'The count is what needs attention; nothing when all clear', '<span class="segm"><span>Symbol</span><span class="on">Count</span><span>Words</span></span>')}
       ${row('Status colors', 'Off draws the badge in the menu bar’s own color; its shape still changes', sw(true))}
       ${row('Motion', 'Turns while what it shows is current and rests when it isn’t; a change moves once', sw(true))}
+      ${row('This Mac', 'Local readings beside the item, in the menu bar’s own color', '<span class="checks3"><span><i class="cb"></i>CPU</span><span><i class="cb"></i>Memory</span><span><i class="cb"></i>Network</span></span>')}
       ${row('Preview', '', `<span class="prev mb-dark">${prev}</span>`)}
     </div>
     <p class="foot">Reduce Motion and Low Power Mode keep the item still.</p>`);

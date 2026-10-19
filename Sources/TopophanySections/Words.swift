@@ -117,6 +117,18 @@ public enum Words {
         return String(format: "%.1f GB/s", v / 1e9)
     }
 
+    /// Bytes per second in the menu bar's room: "344 kB/s", "1.4 MB/s".
+    public static func shortRate(_ bytesPerSecond: Double) -> String {
+        let units = ["B/s", "kB/s", "MB/s", "GB/s"]
+        var v = max(0, bytesPerSecond)
+        var i = 0
+        while i < units.count - 1, v >= 999.5 {
+            v /= 1000
+            i += 1
+        }
+        return (i == 0 ? String(format: "%.0f", v) : number(v)) + " " + units[i]
+    }
+
     /// A rate without its unit when the unit is shown beside it: "343.9".
     public static func rateNumber(_ bytesPerSecond: Double) -> String {
         rate(bytesPerSecond).split(separator: " ").first.map(String.init) ?? ""

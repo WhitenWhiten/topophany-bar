@@ -79,6 +79,23 @@ public struct StatusItemContext: Sendable {
     }
 }
 
+/// The menu bar item in its two parts, which the app draws apart: this
+/// Mac's readings change once a sample, the rest whenever it moves.
+public struct StatusItemParts {
+    /// This Mac's readings, before the rest; `nil` when none are shown.
+    public var readings: AnyView?
+    /// Between the readings and the rest.
+    public var spacing: Double
+    /// The verdict: the mark and its count or words.
+    public var item: AnyView
+
+    public init(readings: AnyView?, spacing: Double, item: AnyView) {
+        self.readings = readings
+        self.spacing = spacing
+        self.item = item
+    }
+}
+
 /// What the panel's controls do; supplied by the app shell.
 public struct PanelActions: @unchecked Sendable {
     public var openTerminal: @MainActor () -> Void
@@ -109,7 +126,10 @@ extension EnvironmentValues {
 public protocol Renderer {
     var id: RendererID { get }
     func panel(_ model: PanelModel, context: RenderContext) -> AnyView
+    /// The menu bar item, whole.
     func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView
+    /// The menu bar item in its parts, to draw each only when it changes.
+    func statusItemParts(_ model: StatusItemModel, context: StatusItemContext) -> StatusItemParts
     /// A widget in `size`'s layout, filling `bounds`: the points WidgetKit
     /// gives it, which vary with the display.
     func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView
@@ -118,6 +138,16 @@ public protocol Renderer {
     /// The panel's corner radius: its window is masked to it, so the
     /// window's shadow follows the corners.
     var panelCornerRadius: Double { get }
+}
+
+extension Renderer {
+    public func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView {
+        let parts = statusItemParts(model, context: context)
+        return AnyView(HStack(spacing: parts.spacing) {
+            if let r = parts.readings { r }
+            parts.item
+        })
+    }
 }
 
 @MainActor

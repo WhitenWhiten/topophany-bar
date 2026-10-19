@@ -1097,6 +1097,22 @@
         }
       }
     },
+    "Local readings beside the item, in the menu bar’s own color": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "項目の横にローカル計測を、メニューバー自体の色で表示します"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在项目旁以菜单栏自身的颜色显示本地读数"
+          }
+        }
+      }
+    },
     "Looking for topo…": {
       "localizations": {
         "ja": {

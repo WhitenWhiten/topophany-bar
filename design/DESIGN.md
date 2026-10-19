@@ -50,8 +50,8 @@ Out of scope for v1:
 
 - **Native:** a globe in the menu bar's ink, with the badge cut into its corner.
 - **Terminal:** a chip in the theme's ink.
-- **Settings:** Show = Symbol, Count or Words (default Count). Status colors = on or off; with colors off the badge keeps its shape. Motion = on or off (default on).
-- **VoiceOver:** "Topophany: 5 incidents, updated 4 seconds ago."
+- **Settings:** Show = Symbol, Count or Words (default Count). Status colors = on or off; with colors off the badge keeps its shape. Motion = on or off (default on). This Mac = any of CPU, Memory and Network (default none).
+- **VoiceOver:** "Topophany: 5 incidents, updated 4 seconds ago." With readings shown, a second line: "This Mac: CPU 17%, memory 72%, network 1.4 MB/s in, 344 kB/s out."
 
 ### 3.1 Motion
 
@@ -67,7 +67,19 @@ The item moves only to say something.
 
 - **More attention:** a worse mark (✕ over ▲ over the rest), or more needing attention under the same mark. Nothing else ripples.
 - **Still:** with Motion off, Reduce Motion or Low Power Mode, nothing moves and a change shows at once.
-- **Cost:** frames go to layers of the item's own, never to its image, which the system would lay out again each time. A turn repeats every meridian, so its 36 frames are drawn once and the system plays them; the app draws only while something else moves. Nothing is drawn for motion while the displays sleep or the item can't be seen.
+- **Cost:** frames go to layers of the item's own, never to its image, which the system would lay out again each time. A turn repeats every meridian, so its 36 frames are drawn once and the system plays them; the app draws only while something else moves. Readings have a layer of their own, drawn once a sample. Nothing is drawn for motion while the displays sleep or the item can't be seen.
+
+### 3.2 This Mac in the menu bar
+
+CPU, memory and network can stand before the globe. They are local readings (section 5): drawn in the menu bar's ink, with no health colors and no thresholds, and sampled with the This Mac card's readings at its rate. Each is as wide as its widest value, so the item holds still as they change.
+
+| Reading | Native | Terminal |
+|---|---|---|
+| CPU | the last 10 samples as bars, older ones fainter, and the total: `17%` | `CPU ▂▃▅▂▁▂ 17%` |
+| Memory | used, as a ring from twelve o'clock: `72%` | `MEM ███ 72%` |
+| Network | sent over received, each against its arrow: `344 kB/s ↑` `1.4 MB/s ↓` | `↓1.4M ↑344K` |
+
+Before the first sample a reading shows `–`, never 0. In Terminal the readings take a chip of their own, before the status chip.
 
 ## 4. The panel
 
@@ -246,7 +258,7 @@ The previews include two example user themes, **Aurora** (`cards`) and **Paper**
 | Yours (Settings, Edit Widget) | Fixed (topology + collector) |
 |---|---|
 | Theme; panel appearance; text size | What counts as up, warn, down or unknown |
-| Menu bar: Symbol, Count or Words; status colors; motion | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
+| Menu bar: Symbol, Count or Words; status colors; motion; this Mac's readings | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
 | Sections on or off and their order (Status is fixed) | Freshness, staleness, publisher lease |
 | The time zone of each place | Each server's health in Time zones |
 | Attention rows (3 or 5); which applications; pinned servers | How groups add up (unknown always counted) |
@@ -260,7 +272,8 @@ Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On
 {
   "schema": 1,
   "topo": { "path": "/opt/homebrew/bin/topo", "profile": "home", "observer": "", "interval": "5s" },
-  "appearance": { "theme": "native", "panel": "system", "menuBar": { "show": "count", "statusColors": true, "motion": true } },
+  "appearance": { "theme": "native", "panel": "system",
+                  "menuBar": { "show": "count", "statusColors": true, "motion": true, "readings": [] } },
   "sections": [
     { "id": "status" },
     { "id": "seen" },

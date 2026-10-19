@@ -792,13 +792,57 @@
     return out;
   };
 
-  // The globe with a status badge cut into its corner. `turn` turns the
-  // globe; `motion` lets the page's animator turn it while what it shows is
-  // current.
+  // "343.9 kB/s" in the menu bar's room: "344 kB/s"; "1.4M" in a chip's.
+  const shortRate = (s, chip) => {
+    const m = /([\d.]+)\s*([kMG]?)B\/s/.exec(s || '');
+    if (!m) return '–';
+    const v = +m[1];
+    const n = v >= 100 ? String(Math.round(v)) : String(+v.toFixed(1));
+    return chip ? n + (m[2] ? m[2].toUpperCase() : 'B') : n + ' ' + m[2] + 'B/s';
+  };
+
+  // This Mac's readings before the globe, in the menu bar's ink.
+  function nativeReadings(kinds) {
+    const L = window.TB_DATA.local;
+    const value = (v) => `<span class="rv"><b>100%</b><i>${v}</i></span>`;
+    const parts = kinds.map((k) => {
+      if (k === 'cpu') {
+        const h = L.cpu.spark.slice(-10);
+        const bars = h.map((v, i) => {
+          const bh = Math.max(1.5, Math.min(1, v / 100) * 11.5);
+          const age = (h.length - 1 - i) / 9;
+          return `<rect x="${((10 - h.length + i) * 2.4).toFixed(1)}" y="${(11.5 - bh).toFixed(2)}" width="1.5" height="${bh.toFixed(2)}" rx=".75" opacity="${(1 - 0.6 * age).toFixed(2)}"/>`;
+        }).join('');
+        return `<span class="nr nr-cpu"><svg viewBox="0 0 23.1 11.5" width="23.1" height="11.5" fill="currentColor">${bars}</svg>${value(Math.round(L.cpu.v) + '%')}</span>`;
+      }
+      if (k === 'memory') {
+        const c = 2 * Math.PI * 5.25;
+        return `<span class="nr"><svg viewBox="0 0 12.5 12.5" width="12.5" height="12.5" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6.25" cy="6.25" r="5.25" stroke-opacity=".26"/><circle cx="6.25" cy="6.25" r="5.25" stroke-linecap="round" stroke-dasharray="${(c * L.mem.v / 100).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 6.25 6.25)"/></svg>${value(Math.round(L.mem.v) + '%')}</span>`;
+      }
+      return `<span class="nr nr-net"><span class="nn"><b>88.8 MB/s</b><i>${shortRate(L.net.up)}<br>${shortRate(L.net.down)}</i></span><span class="na">↑<br>↓</span></span>`;
+    });
+    return `<span class="nreads">${parts.join('')}</span>`;
+  }
+
+  // The same, as the TUI writes them, in a chip of their own.
+  function tuiReadings(kinds) {
+    const L = window.TB_DATA.local;
+    const parts = kinds.map((k) => {
+      if (k === 'cpu') return `<span class="m">CPU </span><span class="acc">${sparks(L.cpu.spark, 6, 100)}</span> ${(Math.round(L.cpu.v) + '%').padEnd(4)}`;
+      if (k === 'memory') return `<span class="m">MEM </span><span class="tbar" style="width:3ch"><i style="width:${L.mem.v}%;--c:var(--acc)"></i></span> ${(Math.round(L.mem.v) + '%').padEnd(4)}`;
+      return `<span class="acc">↓</span>${shortRate(L.net.down, true).padEnd(5)}<span class="acc2"> ↑</span>${shortRate(L.net.up, true).padEnd(5)}`;
+    });
+    return `<span class="tchip reads">${parts.join('  ')}</span>`;
+  }
+
+  // The globe with a status badge cut into its corner, after this Mac's
+  // readings when shown. `turn` turns the globe; `motion` lets the page's
+  // animator turn it while what it shows is current.
   TB.statusItem = function (sc, o) {
     const v = sc.verdict;
     const st = v.state === 'offline' ? 'cached' : v.health;
     const live = v.state !== 'offline' && o.motion !== false;
+    const reads = o.readings || [];
     if (o.theme === 'tui') {
       const g = v.state === 'offline' ? '◌' : TB.glyph(v.health);
       const cls = v.state === 'offline' ? 'unk' : TB.cls(v.health);
@@ -806,7 +850,7 @@
         ? (v.count ? ' ' + v.count : '') : ' ' + v.tui.replace('INCOMPLETE EVIDENCE', 'INCOMPLETE');
       const vars = TB.paletteVars(TB.palettes[o.palette || 'terminal']);
       const chip = `<span class="tchip"><span class="g h-${cls}${live ? ' breathe' : ''}" data-g="${g}">${g}</span>${esc(text)}</span>`;
-      return `<span class="mb-item ours titem ${o.pressed ? 'pressed' : ''}" style="${vars}">${chip}</span>`;
+      return `<span class="mb-item ours titem ${o.pressed ? 'pressed' : ''}" style="${vars}">${reads.length ? tuiReadings(reads) : ''}${chip}</span>`;
     }
     const mono = o.color === 'mono';
     const id = 'm' + Math.random().toString(36).slice(2, 8);
@@ -819,7 +863,7 @@
     }[st];
     const words = { clear: 'All clear', degraded: 'Degraded', incidents: v.count + ' incidents', incomplete: 'Incomplete', offline: 'Offline' }[v.state];
     const text = o.text === 'symbol' ? '' : o.text === 'count' ? (v.count ? String(v.count) : '') : words;
-    return `<span class="mb-item ours nitem b-${mono ? 'mono' : TB.cls(st)} ${o.pressed ? 'pressed' : ''}">
+    return `<span class="mb-item ours nitem b-${mono ? 'mono' : TB.cls(st)} ${o.pressed ? 'pressed' : ''}">${reads.length ? nativeReadings(reads) : ''}
       <svg viewBox="0 0 19 19" width="19" height="19"${live ? ' data-live="1"' : ''}><defs><mask id="${id}"><rect width="19" height="19" fill="#fff"/><circle cx="14.6" cy="14.6" r="5.1" fill="#000"/></mask></defs>
         <g mask="url(#${id})" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><path d="M2 9h14"/><g class="mer">${TB.meridians(o.turn || 0)}</g></g>${badge}</svg>${text ? `<span class="nitem-t">${esc(text)}</span>` : ''}</span>`;
   };

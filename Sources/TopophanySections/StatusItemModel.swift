@@ -1,8 +1,9 @@
 import Foundation
+import LocalReadings
 import TopophanyKit
 
-/// The menu bar item: the verdict's mark and words, and what the item is
-/// doing, which is all its motion may say.
+/// The menu bar item: the verdict's mark and words, what the item is doing,
+/// which is all its motion may say, and this Mac's readings beside it.
 public struct StatusItemModel: Sendable, Hashable {
     public enum Activity: Sendable, Hashable {
         /// What it shows is current.
@@ -25,10 +26,13 @@ public struct StatusItemModel: Sendable, Hashable {
     public var activity: Activity
     /// Whether the user lets the item move.
     public var motion: Bool
+    /// This Mac's readings beside the item: local readings, not evidence.
+    public var readings: [MenuBarReading]
     public var accessibilityLabel: String
 
     public init(mark: Mark, show: Settings.Appearance.Show, statusColors: Bool, text: String, tuiText: String,
-                count: Int? = nil, activity: Activity = .resting, motion: Bool = false, accessibilityLabel: String) {
+                count: Int? = nil, activity: Activity = .resting, motion: Bool = false, readings: [MenuBarReading] = [],
+                accessibilityLabel: String) {
         self.mark = mark
         self.show = show
         self.statusColors = statusColors
@@ -37,10 +41,11 @@ public struct StatusItemModel: Sendable, Hashable {
         self.count = count
         self.activity = activity
         self.motion = motion
+        self.readings = readings
         self.accessibilityLabel = accessibilityLabel
     }
 
-    public init(status: StatusSection, appearance: Settings.Appearance.MenuBar) {
+    public init(status: StatusSection, appearance: Settings.Appearance.MenuBar, local: LocalSnapshot? = nil) {
         mark = status.mark
         show = appearance.show
         statusColors = appearance.statusColors
@@ -64,9 +69,11 @@ public struct StatusItemModel: Sendable, Hashable {
         case .blind: activity = .resting
         }
         motion = appearance.motion
+        readings = appearance.readings.map { MenuBarReading($0, local) }
         let updated = status.updatedAt.map { tr("updated \(Words.agoSpoken($0, now: status.now))") }
-        accessibilityLabel = Words.join([tr("Topophany: \(status.shortTitle)"), updated ?? ""])
-            .replacingOccurrences(of: " · ", with: ", ")
+        let verdict = Words.join([tr("Topophany: \(status.shortTitle)"), updated ?? ""]).replacingOccurrences(of: " · ", with: ", ")
+        let mac = readings.map(\.spoken).joined(separator: ", ")
+        accessibilityLabel = readings.isEmpty ? verdict : verdict + "\n" + tr("This Mac: \(mac)")
     }
 
     /// Whether it asks for more attention than `other` did: a worse mark, or
@@ -75,5 +82,63 @@ public struct StatusItemModel: Sendable, Hashable {
         func rank(_ m: Mark) -> Int { m == .down ? 2 : m == .degraded ? 1 : 0 }
         if rank(mark) != rank(other.mark) { return rank(mark) > rank(other.mark) }
         return rank(mark) > 0 && (count ?? 0) > (other.count ?? 0)
+    }
+}
+
+/// One of this Mac's readings beside the menu bar item. They carry no
+/// health, so the item draws them in the menu bar's own ink.
+public struct MenuBarReading: Sendable, Hashable, Identifiable {
+    public typealias Kind = Settings.Appearance.MenuBar.Reading
+
+    public var kind: Kind
+    /// CPU or memory in use, 0 to 1; `nil` before the first sample.
+    public var fraction: Double?
+    /// CPU: the latest samples, 0 to 1, oldest first.
+    public var history: [Double]
+    /// Network: bytes per second; `nil` before the first sample.
+    public var received: Double?
+    public var sent: Double?
+
+    public var id: Kind { kind }
+
+    public init(kind: Kind, fraction: Double? = nil, history: [Double] = [], received: Double? = nil, sent: Double? = nil) {
+        self.kind = kind
+        self.fraction = fraction
+        self.history = history
+        self.received = received
+        self.sent = sent
+    }
+
+    /// The reading in the latest snapshot.
+    public init(_ kind: Kind, _ local: LocalSnapshot?) {
+        func unit(_ percent: Double) -> Double { min(1, max(0, percent / 100)) }
+        switch kind {
+        case .cpu:
+            self.init(kind: kind, fraction: local?.latest.cpu.map { unit($0.total) }, history: (local?.cpuHistory ?? []).map(unit))
+        case .memory:
+            self.init(kind: kind, fraction: local?.latest.memory.map { unit($0.usedPercent) })
+        case .network:
+            self.init(kind: kind, received: local?.latest.network?.receivedPerSecond, sent: local?.latest.network?.sentPerSecond)
+        }
+    }
+
+    /// "17%"; "–" before the first sample.
+    public var value: String { fraction.map { Words.percent($0 * 100, digits: 0) } ?? "–" }
+    /// "1.4 MB/s"; "–" before the first sample.
+    public var receivedText: String { received.map(Words.shortRate) ?? "–" }
+    public var sentText: String { sent.map(Words.shortRate) ?? "–" }
+
+    /// The widest each value can be, so the item holds still as they change.
+    public static let widestPercent = "100%"
+    public static let widestRate = "88.8 MB/s"
+
+    /// "CPU 17%", for VoiceOver and the tooltip.
+    public var spoken: String {
+        switch kind {
+        case .cpu: tr("CPU \(fraction == nil ? tr("no reading") : value)")
+        case .memory: tr("memory \(fraction == nil ? tr("no reading") : value)")
+        case .network:
+            received == nil && sent == nil ? tr("network \(tr("no reading"))") : tr("network \(receivedText) in, \(sentText) out")
+        }
     }
 }

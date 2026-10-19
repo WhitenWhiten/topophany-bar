@@ -443,6 +443,16 @@ struct AppearanceSettings: View {
                 }
                 .toggleStyle(.switch)
                 LabeledContent {
+                    HStack(spacing: 14) {
+                        menuBarReading(.cpu, "CPU")
+                        menuBarReading(.memory, "Memory")
+                        menuBarReading(.network, "Network")
+                    }
+                    .toggleStyle(.checkbox)
+                } label: {
+                    RowLabel("This Mac", "Local readings beside the item, in the menu bar’s own color")
+                }
+                LabeledContent {
                     MenuBarPreview()
                 } label: {
                     RowLabel("Preview")
@@ -453,6 +463,13 @@ struct AppearanceSettings: View {
                 Foot("Reduce Motion and Low Power Mode keep the item still.")
             }
         }
+    }
+}
+
+extension AppearanceSettings {
+    func menuBarReading(_ r: TopophanyKit.Settings.Appearance.MenuBar.Reading, _ title: LocalizedStringKey) -> some View {
+        Toggle(title, isOn: Binding(get: { model.settings.appearance.menuBar.readings.contains(r) },
+                                    set: { on in model.update { $0.appearance.menuBar.setReading(r, on) } }))
     }
 }
 
@@ -558,15 +575,21 @@ struct MenuBarPreview: View {
 
     var body: some View {
         let theme = model.theme
-        let appearance = model.settings.appearance.menuBar
+        var appearance = model.settings.appearance.menuBar
+        let readings = !appearance.readings.isEmpty
+        let _ = appearance.readings = []
         let moves = appearance.motion && !reduceMotion
-        // Drawn as a dark menu bar shows it.
+        // Drawn as a dark menu bar shows it. This Mac's readings go with
+        // the item as it is now.
         TimelineView(.animation(minimumInterval: 1 / 15, paused: !moves)) { t in
             let time = t.date.timeIntervalSinceReferenceDate
             let motion = StatusItemMotion(moves: moves, turn: moves ? time * StatusItemTurn.speed : 0, time: time)
-            TrailingFlow(spacing: 10, lineSpacing: 4, maxWidth: 340) {
-                ForEach(Array(Self.statuses.enumerated()), id: \.offset) { _, st in
-                    item(StatusItemModel(status: st, appearance: appearance), theme, motion)
+            VStack(alignment: .trailing, spacing: 4) {
+                if readings { item(model.statusItem, theme, motion) }
+                TrailingFlow(spacing: 10, lineSpacing: 4, maxWidth: 340) {
+                    ForEach(Array(Self.statuses.enumerated()), id: \.offset) { _, st in
+                        item(StatusItemModel(status: st, appearance: appearance), theme, motion)
+                    }
                 }
             }
         }

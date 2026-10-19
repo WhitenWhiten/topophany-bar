@@ -2,7 +2,8 @@ import SwiftUI
 import TopophanySections
 
 /// The Terminal menu bar item: a chip of the TUI's ink with its glyph and
-/// words, `✖ 5 INCIDENTS`. It paints its own ink on any menu bar.
+/// words, `✖ 5 INCIDENTS`. It paints its own ink on any menu bar. This
+/// Mac's readings, when shown, come before it in a chip of their own.
 ///
 /// It moves as the TUI does. While what it shows is current the glyph
 /// breathes toward the glow, as the TUI's live dot does; while `topo`
@@ -85,5 +86,58 @@ struct CellsChip: View {
             .overlay(shape.strokeBorder(flash, lineWidth: 1))
             .shadow(color: .black.opacity(ctx.menuBarIsDark ? 0.25 : 0.18), radius: 1, y: 1)
             .padding(.horizontal, 1).padding(.vertical, 2)
+    }
+}
+
+/// This Mac's readings in a chip of their own, as the TUI writes them.
+struct CellsReadingsChip: View {
+    var readings: [MenuBarReading]
+    var ctx: StatusItemContext
+
+    var body: some View {
+        CellsChip(segments: Self.readings(readings, CellsPalette(ctx.theme)), ctx: ctx)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(readings.map(\.spoken).joined(separator: ", ")))
+    }
+
+    /// Each as wide as its widest value: `CPU ▂▃▅▂▁▂ 17%  MEM ▰▰▱ 72%
+    /// ↓1.4M ↑344K`.
+    static func readings(_ readings: [MenuBarReading], _ p: CellsPalette) -> [Seg] {
+        var segs: [Seg] = []
+        for (i, r) in readings.enumerated() {
+            if i > 0 { segs.append(.t("  ", p.text)) }
+            switch r.kind {
+            case .cpu:
+                let h = Array(r.history.suffix(6))
+                segs += [.t(tr("CPU") + " ", p.muted), .t(String(repeating: " ", count: 6 - h.count), p.text), .sparks(h, top: 1, p.accent),
+                         .t(" " + pad(r.value, 4), p.text, bold: true)]
+            case .memory:
+                segs += [.t(tr("MEM") + " ", p.muted), .bar(cells: 3, percent: r.fraction.map { $0 * 100 }, limit: nil, color: p.accent,
+                                                     withheld: r.fraction == nil),
+                         .t(" " + pad(r.value, 4), p.text, bold: true)]
+            case .network:
+                segs += [.t("↓", p.accent), .t(pad(rate(r.received), 5), p.text, bold: true),
+                         .t(" ↑", p.accent2), .t(pad(rate(r.sent), 5), p.text, bold: true)]
+            }
+        }
+        return segs
+    }
+
+    /// "344K", "1.4M"; "–" before the first sample.
+    static func rate(_ v: Double?) -> String {
+        guard let v else { return "–" }
+        let units = ["B", "K", "M", "G"]
+        var x = max(0, v)
+        var i = 0
+        while i < units.count - 1, x >= 999.5 {
+            x /= 1000
+            i += 1
+        }
+        return (i == 0 ? String(format: "%.0f", x) : Words.number(x)) + units[i]
+    }
+
+    /// Padded with spaces to `cells` on the right.
+    static func pad(_ s: String, _ cells: Int) -> String {
+        s + String(repeating: " ", count: max(0, cells - CellText.width(s)))
     }
 }

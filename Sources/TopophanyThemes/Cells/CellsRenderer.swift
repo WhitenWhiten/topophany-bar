@@ -11,8 +11,9 @@ public struct CellsRenderer: Renderer {
         AnyView(CellsPanel(model: model, ctx: context))
     }
 
-    public func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView {
-        AnyView(CellsStatusItem(model: model, ctx: context))
+    public func statusItemParts(_ model: StatusItemModel, context: StatusItemContext) -> StatusItemParts {
+        let readings = model.readings.isEmpty ? nil : AnyView(CellsReadingsChip(readings: model.readings, ctx: context))
+        return StatusItemParts(readings: readings, spacing: 4, item: AnyView(CellsStatusItem(model: model, ctx: context)))
     }
 
     public func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView {

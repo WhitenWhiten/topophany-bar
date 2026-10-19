@@ -79,21 +79,35 @@ public struct Settings: Sendable, Hashable, Codable {
         public enum Show: String, Sendable, Hashable, Codable, CaseIterable { case symbol, count, words }
 
         public struct MenuBar: Sendable, Hashable, Codable {
+            /// This Mac's readings the item can show beside its globe.
+            public enum Reading: String, Sendable, Hashable, Codable, CaseIterable { case cpu, memory, network }
+
             public var show: Show = .count
             public var statusColors = true
             /// The item moves: it turns while what it shows is current, and
             /// its changes animate. Reduce Motion keeps it still regardless.
             public var motion = true
+            /// This Mac's local readings beside the item, always in the
+            /// order CPU, memory, network.
+            public var readings: [Reading] = []
 
             public init() {}
 
-            enum CodingKeys: String, CodingKey { case show, statusColors, motion }
+            enum CodingKeys: String, CodingKey { case show, statusColors, motion, readings }
 
             public init(from decoder: Decoder) throws {
                 let c = try decoder.container(keyedBy: CodingKeys.self)
                 show = c.text(.show).flatMap(Show.init(rawValue:)) ?? .count
                 statusColors = (try? c.decodeIfPresent(Bool.self, forKey: .statusColors)) ?? true
                 motion = (try? c.decodeIfPresent(Bool.self, forKey: .motion)) ?? true
+                let r = (try? c.decodeIfPresent([String].self, forKey: .readings)) ?? []
+                readings = Reading.allCases.filter { r.contains($0.rawValue) }
+            }
+
+            /// Shows or hides one reading, keeping their order.
+            public mutating func setReading(_ r: Reading, _ on: Bool) {
+                let set = Set(readings).union(on ? [r] : []).subtracting(on ? [] : [r])
+                readings = Reading.allCases.filter(set.contains)
             }
         }
 

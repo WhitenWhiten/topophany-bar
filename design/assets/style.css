@@ -110,6 +110,16 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .mb-dark .b-up { --b: #32d74b; } .mb-light .b-up { --b: #28b449; }
 .mb-dark .b-warn { --b: #ff9f0a; } .mb-light .b-warn { --b: #f08c00; }
 .mb-dark .b-down { --b: #ff453a; } .mb-light .b-down { --b: #ff3b30; }
+/* this Mac's readings before the globe: local, in the bar's ink */
+.nreads { display: inline-flex; align-items: center; gap: 9px; margin-right: 4px; }
+.nr { display: inline-flex; align-items: center; gap: 4px; }
+.nr-cpu { align-items: baseline; }
+.nr-cpu svg { align-self: baseline; }
+.rv, .nn { display: inline-grid; font-size: 11.5px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.rv > *, .nn > * { grid-area: 1 / 1; font-style: normal; }
+.rv b, .nn b { visibility: hidden; font-weight: 500; }
+.nn { font-size: 8.6px; line-height: 9.4px; text-align: right; }
+.na { font-size: 6.6px; line-height: 9.4px; font-weight: 700; opacity: .55; margin-left: 2px; }
 .b-unk { --b: currentColor; }
 .b-mono { --b: currentColor; }
 .mb-dark .b-mono { --bx: #1b1d24; }
@@ -125,6 +135,9 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 }
 .mb-light .tchip { box-shadow: inset 0 0 0 1px rgba(10, 16, 22, .5), 0 1px 2px rgba(0, 0, 0, .18); }
 .tchip .g { display: inline-block; width: 1ch; text-align: center; }
+.titem { gap: 4px; }
+.tchip.reads { font-weight: 400; }
+.tchip .m { color: var(--muted); } .tchip .acc { color: var(--acc); } .tchip .acc2 { color: var(--acc2); }
 /* the live glyph breathes toward the glow, as the TUI's live dot does */
 .tchip .g { position: relative; }
 .tchip .g.breathe::after { content: attr(data-g); position: absolute; inset: 0; color: var(--glow, #f0fdfa); opacity: 0;

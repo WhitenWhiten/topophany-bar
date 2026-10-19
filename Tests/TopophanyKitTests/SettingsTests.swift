@@ -8,7 +8,8 @@ import Testing
     {
       "schema": 1,
       "topo": { "path": "/opt/homebrew/bin/topo", "profile": "home", "observer": "", "interval": "5s" },
-      "appearance": { "theme": "native", "panel": "system", "menuBar": { "show": "count", "statusColors": true, "motion": true } },
+      "appearance": { "theme": "native", "panel": "system",
+                      "menuBar": { "show": "count", "statusColors": true, "motion": true, "readings": [] } },
       "sections": [
         { "id": "status" },
         { "id": "seen" },
@@ -33,6 +34,7 @@ import Testing
         #expect(s.appearance.theme == "native")
         #expect(s.appearance.menuBar.show == .count)
         #expect(s.appearance.menuBar.motion)
+        #expect(s.appearance.menuBar.readings.isEmpty)
         #expect(s.sections.order == Sections.defaultOrder)
         #expect(s.sections.attentionLimit == 3)
         #expect(s.sections.servers == false)
@@ -45,14 +47,23 @@ import Testing
         #expect(s.language == .system)
     }
 
-    /// Motion is on unless turned off.
-    @Test func menuBarMotion() throws {
+    /// Motion is on unless turned off; readings keep their own order, and
+    /// one this app doesn't know is dropped.
+    @Test func menuBarReadings() throws {
         func menuBar(_ json: String) throws -> Settings.Appearance.MenuBar {
             try JSONDecoder().decode(Settings.self, from: Data(#"{"appearance": {"menuBar": \#(json)}}"#.utf8)).appearance.menuBar
         }
         #expect(try menuBar("{}") == Settings.Appearance.MenuBar())
         #expect(try menuBar("{}").motion)
         #expect(try menuBar(#"{"motion": false}"#).motion == false)
+        #expect(try menuBar(#"{"readings": ["network", "gpu", "cpu", "cpu"]}"#).readings == [.cpu, .network])
+        #expect(try menuBar(#"{"readings": "cpu"}"#).readings.isEmpty)
+        var m = Settings.Appearance.MenuBar()
+        m.setReading(.network, true)
+        m.setReading(.cpu, true)
+        #expect(m.readings == [.cpu, .network])
+        m.setReading(.network, false)
+        #expect(m.readings == [.cpu])
     }
 
     @Test func roundTrips() throws {
@@ -64,6 +75,7 @@ import Testing
         s.sections.mac.node = "macbook"
         s.appearance.theme = "terminal"
         s.appearance.menuBar.motion = false
+        s.appearance.menuBar.readings = [.memory, .network]
         s.language = .zhHans
         let back = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(s))
         #expect(back == s)

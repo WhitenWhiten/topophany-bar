@@ -2,7 +2,8 @@ import SwiftUI
 import TopophanySections
 
 /// The menu bar item: a globe with the status badge cut into its corner,
-/// and the count or words beside it.
+/// and the count or words beside it. This Mac's readings, when shown, come
+/// before it as a part of their own.
 ///
 /// It moves only to say something. The globe turns while what it shows is
 /// current and comes to rest when nothing current is known; the badge's
@@ -216,5 +217,134 @@ struct RollLayout: Layout {
         for v in subviews {
             v.place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(v.sizeThatFits(.unspecified)))
         }
+    }
+}
+
+/// This Mac's readings in the menu bar's ink, as tall as the item.
+struct CardsMenuReadings: View {
+    var readings: [MenuBarReading]
+    var ink: Color
+
+    var body: some View {
+        HStack(spacing: 9) {
+            ForEach(readings) { CardsMenuReading(reading: $0, ink: ink) }
+        }
+        .padding(.horizontal, 1)
+        .frame(height: 22)
+    }
+}
+
+/// One of this Mac's readings in the menu bar's ink, as wide as its widest
+/// value so the item holds still: CPU as bars, the newest brightest; memory
+/// as a ring; network as what goes up over what comes down, each against
+/// its arrow.
+struct CardsMenuReading: View {
+    var reading: MenuBarReading
+    var ink: Color
+
+    static let valueFont = Font.system(size: 11.5, weight: .medium).monospacedDigit()
+    static let rateFont = Font.system(size: 8.6, weight: .medium).monospacedDigit()
+
+    var body: some View {
+        Group {
+            switch reading.kind {
+            case .cpu:
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    MenuBarBars(history: reading.history, ink: ink)
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] }
+                    value
+                }
+            case .memory:
+                HStack(spacing: 4) {
+                    MenuBarRing(fraction: reading.fraction, ink: ink)
+                    value
+                }
+            case .network:
+                HStack(spacing: 2) {
+                    ZStack(alignment: .trailing) {
+                        Text(MenuBarReading.widestRate).hidden()
+                        VStack(alignment: .trailing, spacing: -1) {
+                            Text(reading.sentText)
+                            Text(reading.receivedText)
+                        }
+                    }
+                    .font(Self.rateFont)
+                    .foregroundStyle(ink)
+                    .lineLimit(1)
+                    .fixedSize()
+                    VStack(spacing: 0) {
+                        arrow("arrow.up")
+                        arrow("arrow.down")
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(reading.spoken))
+    }
+
+    var value: some View {
+        ZStack(alignment: .leading) {
+            Text(MenuBarReading.widestPercent).hidden()
+            Text(reading.value).foregroundStyle(ink)
+        }
+        .font(Self.valueFont)
+        .lineLimit(1)
+        .fixedSize()
+    }
+
+    func arrow(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 6.6, weight: .bold))
+            .foregroundStyle(ink.opacity(0.55))
+            .frame(height: 9.4)
+    }
+}
+
+/// CPU over the latest samples, oldest first: one bar each, older ones
+/// fainter. A bar never drops below a dot, so idle reads as a dotted line.
+struct MenuBarBars: View {
+    var history: [Double]
+    var ink: Color
+
+    static let count = 10
+    static let bar = 1.5
+    static let gap = 0.9
+    static let height = 11.5
+
+    var body: some View {
+        Canvas { c, size in
+            let h = history.suffix(Self.count)
+            for (i, v) in h.enumerated() {
+                let x = Double(Self.count - h.count + i) * (Self.bar + Self.gap)
+                let height = max(Self.bar, min(1, max(0, v)) * size.height)
+                let age = Double(h.count - 1 - i) / Double(Self.count - 1)
+                c.fill(Path(roundedRect: CGRect(x: x, y: size.height - height, width: Self.bar, height: height), cornerRadius: Self.bar / 2),
+                       with: .color(ink.opacity(1 - 0.6 * age)))
+            }
+        }
+        .frame(width: Double(Self.count) * (Self.bar + Self.gap) - Self.gap, height: Self.height)
+    }
+}
+
+/// Memory in use as a ring from twelve o'clock; just the track while
+/// nothing is known.
+struct MenuBarRing: View {
+    var fraction: Double?
+    var ink: Color
+
+    var body: some View {
+        Canvas { c, size in
+            let line = 2.0
+            let r = CGRect(origin: .zero, size: size).insetBy(dx: line / 2, dy: line / 2)
+            c.stroke(Path(ellipseIn: r), with: .color(ink.opacity(0.26)), lineWidth: line)
+            if let f = fraction, f > 0 {
+                var arc = Path()
+                arc.addArc(center: CGPoint(x: r.midX, y: r.midY), radius: r.width / 2, startAngle: .degrees(-90),
+                           endAngle: .degrees(-90 + 360 * min(1, f)), clockwise: false)
+                c.stroke(arc, with: .color(ink), style: StrokeStyle(lineWidth: line, lineCap: .round))
+            }
+        }
+        .frame(width: 12.5, height: 12.5)
     }
 }

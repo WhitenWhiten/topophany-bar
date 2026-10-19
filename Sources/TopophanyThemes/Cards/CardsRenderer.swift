@@ -12,8 +12,10 @@ public struct CardsRenderer: Renderer {
         AnyView(CardsPanel(model: model, ctx: context))
     }
 
-    public func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView {
-        AnyView(CardsStatusItem(model: model, ctx: context))
+    public func statusItemParts(_ model: StatusItemModel, context: StatusItemContext) -> StatusItemParts {
+        let item = CardsStatusItem(model: model, ctx: context)
+        let readings = model.readings.isEmpty ? nil : AnyView(CardsMenuReadings(readings: model.readings, ink: item.ink))
+        return StatusItemParts(readings: readings, spacing: 9, item: AnyView(item))
     }
 
     public func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView {

@@ -1,4 +1,5 @@
 import SwiftUI
+import LocalReadings
 import Testing
 import TopophanyEngine
 import TopophanyKit
@@ -11,12 +12,13 @@ import TopophanySections
 @Suite(.serialized) struct StatusItemSnapshots {
     init() { L10n.force("en") }
 
-    func item(_ scenario: FixtureEngine.Scenario, show: TopophanyKit.Settings.Appearance.Show = .count, colors: Bool = true)
-        -> StatusItemModel {
+    func item(_ scenario: FixtureEngine.Scenario, show: TopophanyKit.Settings.Appearance.Show = .count, colors: Bool = true,
+              readings: [TopophanyKit.Settings.Appearance.MenuBar.Reading] = [], local: LocalSnapshot? = sampleLocal) -> StatusItemModel {
         var a = TopophanyKit.Settings.Appearance.MenuBar()
         a.show = show
         a.statusColors = colors
-        return StatusItemModel(status: previewPanel(scenario).status, appearance: a)
+        a.readings = readings
+        return StatusItemModel(status: previewPanel(scenario).status, appearance: a, local: local)
     }
 
     func drawn(_ model: StatusItemModel, theme: Theme, dark: Bool, motion: StatusItemMotion = .still) -> some View {
@@ -48,6 +50,23 @@ import TopophanySections
                     }
                 }
                 try snapshot("item-\(theme.id)-\(dark ? "dark" : "light")", OnDesktop(dark: dark, padding: 12) { rows })
+            }
+        }
+    }
+
+    /// This Mac's readings beside the item: each alone, all three, and all
+    /// three before the first sample.
+    @Test func readings() throws {
+        let all: [TopophanyKit.Settings.Appearance.MenuBar.Reading] = [.cpu, .memory, .network]
+        for theme in [ThemeStore.native, ThemeStore.terminal] {
+            for dark in [true, false] {
+                let rows = VStack(alignment: .trailing, spacing: 0) {
+                    ForEach(all, id: \.self) { r in bar(dark: dark) { drawn(item(.clear, readings: [r]), theme: theme, dark: dark) } }
+                    bar(dark: dark) { drawn(item(.incidents, readings: all), theme: theme, dark: dark) }
+                    bar(dark: dark) { drawn(item(.degraded, colors: false, readings: all), theme: theme, dark: dark) }
+                    bar(dark: dark) { drawn(item(.offline, readings: all, local: nil), theme: theme, dark: dark) }
+                }
+                try snapshot("item-readings-\(theme.id)-\(dark ? "dark" : "light")", OnDesktop(dark: dark, padding: 12) { rows })
             }
         }
     }

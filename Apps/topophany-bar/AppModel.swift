@@ -75,7 +75,7 @@ final class AppModel {
         reading = r
         let p = SectionBuilder.panel(PanelInput(reading: r, engine: .starting, settings: s))
         panel = p
-        statusItem = StatusItemModel(status: p.status, appearance: s.appearance.menuBar)
+        statusItem = StatusItemModel(status: p.status, appearance: s.appearance.menuBar, local: nil)
     }
 
     var theme: Theme { themes.theme(settings.appearance.theme) }
@@ -189,7 +189,8 @@ final class AppModel {
             // `topo preview` names its network in the panel's language.
             send()
         }
-        if old.sections.mac != s.sections.mac || old.sections.order != s.sections.order {
+        if old.sections.mac != s.sections.mac || old.sections.order != s.sections.order
+            || old.appearance.menuBar.readings != s.appearance.menuBar.readings {
             startLocal()
         }
         refresh()
@@ -311,21 +312,32 @@ final class AppModel {
 
     // MARK: this Mac
 
+    /// Samples what This Mac's card and the menu bar item show between
+    /// them, and nothing while neither shows a reading.
     private func startLocal() {
         localTask?.cancel()
         local = nil
         let mac = settings.sections.mac
-        guard mac.mode == .local, settings.sections.isEnabled(.mac) else { return }
         var kinds = Set<LocalReadingKind>()
-        for r in mac.readings {
+        if mac.mode == .local, settings.sections.isEnabled(.mac) {
+            for r in mac.readings {
+                switch r {
+                case .cpu: kinds.insert(.cpu)
+                case .memory: kinds.insert(.memory)
+                case .storage: kinds.insert(.storage)
+                case .network: kinds.insert(.network)
+                case .battery: kinds.insert(.battery)
+                }
+            }
+        }
+        for r in settings.appearance.menuBar.readings {
             switch r {
             case .cpu: kinds.insert(.cpu)
             case .memory: kinds.insert(.memory)
-            case .storage: kinds.insert(.storage)
             case .network: kinds.insert(.network)
-            case .battery: kinds.insert(.battery)
             }
         }
+        guard !kinds.isEmpty else { return }
         let monitor = LocalReadingsMonitor(configuration: .init(
             kinds: kinds, every: Interval(mac.every)?.seconds ?? 2, volumePath: mac.volume, interface: mac.interface))
         localTask = Task { [weak self] in
@@ -344,7 +356,7 @@ final class AppModel {
         reading = r
         panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: settings, local: local,
                                                 machineModel: machine.model))
-        let item = StatusItemModel(status: panel.status, appearance: settings.appearance.menuBar)
+        let item = StatusItemModel(status: panel.status, appearance: settings.appearance.menuBar, local: local)
         if item != statusItem { statusItem = item }
         widgets?.tick(panel: panel, policy: policy, theme: theme, settings: settings)
         onChange?()
