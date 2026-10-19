@@ -9,6 +9,7 @@ The stream reuses the `topo monitor` panel format (template schema 1, panel outp
 ```
 topo monitor stream                 # requests on stdin, frames on stdout
 topo monitor stream --capabilities  # one JSON line describing what this topo supports, then exit 0
+topo monitor stream --profiles      # one JSON line listing the saved client profiles, then exit 0 (new)
 ```
 
 - **stdin:** requests, one JSON object per line (NDJSON, UTF-8). A line may be at most 256 KiB; a longer one is an `invalid_request`, and the stream keeps reading.
@@ -39,10 +40,27 @@ Bad requests, unreachable collectors and credential problems never end the proce
 ```json
 {"protocol":1,"version":"1.3.0","sources":["client","preview"],
  "visuals":["text","bar","status","list","card"],
- "metrics":[{"name":"summary.verdict","type":"object","sources":["client","collector"],"visual":"status"}, …]}
+ "metrics":[{"name":"summary.verdict","type":"object","sources":["client","collector"],"visual":"status"}, …],
+ "profiles":true}
 ```
 
 `metrics` is the catalog `topo monitor metrics` prints, plus each metric's allowed `visual`. A consumer checks `protocol == 1` and the metrics it needs before it starts a stream. A `topo` without this subcommand exits non-zero, and the consumer says that `topo` must be upgraded.
+
+**`profiles` (new):** `true` when this `topo` serves `--profiles`. A consumer runs `--profiles` only then; absent means `false`.
+
+### Profiles (new)
+
+`--profiles` prints one line, for choosing the `profile` a request names:
+
+```json
+{"profiles":[{"name":"home","project":"homelab","active":true},{"name":"work","project":"","active":false}]}
+```
+
+- **One entry per profile `topo login` saved,** in the order `topo` lists them, at most 64.
+- **`name`** is what a request's `profile` takes. **`project`** is the project the profile was saved for, or `""` when it records none. **`active`** is `true` for the profile `""` selects, and for no other.
+- **Names and projects only:** never tokens, server URLs, usernames or file paths.
+- **`--credentials PATH`** reads that credential file instead, as a request's `credentials` does. Otherwise discovery is `topo`'s normal one.
+- **No credential file, or no profiles in it:** `{"profiles":[]}`, exit 0. A credential file that can't be read or parsed is also an empty list and exit 0, with one line on stderr.
 
 ## 2. Requests
 
@@ -90,6 +108,7 @@ The template is `topo monitor`'s schema 1, validated as today, with these additi
 | `attention.list` | `list` | none (`limit`) | client, collector, preview |
 | `applications.list` | `list` | none | client, collector, preview |
 | `server.card` | `card` | `node` (required) | client, collector, preview |
+| `servers.list` (new) | `list` | none | client, collector, preview |
 
 The existing metrics (`summary.status`, `check.status`, `host.*`, …) remain valid in stream requests with their current sources. `preview` behaves as `client` for source checks.
 
@@ -243,6 +262,18 @@ All times are RFC 3339 UTC. Every count is an integer ≥ 0. Every percentage is
 - **`observes`:** the observers on this node, each with its own verdict, as in `observers.verdicts`, plus `valid_until` for the checks and heartbeat behind that verdict. At that deadline, retain identity and `last_seen`, set `state: "cached"`, `health: "unknown"`, `live: false`, and move all check counts into `unknown`. This does not expire the rest of the card. Older frames without this field rely on their row deadline.
 - **An unknown node:** `value: null`, `health: "unknown"`, `reason: "entity_missing"`.
 - **The row's `valid_until`:** the earliest deadline of the source envelope, node state and displayed services, including transitive service dependencies and path dependencies/candidates. Raw resource readings and nested observer verdicts use their own deadlines, not the row deadline. A host check that also supports a service judgment still bounds that judgment.
+
+#### `servers.list` (new)
+
+```json
+[{"id":"oracle-ny","name":"Oracle New York","kind":"host","provider":"Oracle","group":"","where":"New York",
+  "health":"up","note":""}]
+```
+
+- **One entry per node with a card in the Servers tab** (`View.Fleet()`), in that tab's order, at most 256. Every `id` is a valid `server.card` `node`. It's for choosing nodes; a consumer draws a node's card from `server.card`.
+- **`name`, `kind`, `provider`, `group`, `where`, `health` and `note`** are as in `server.card`. In a cached view, every `health` is `unknown`.
+- **The row's `health`:** the worst entry's. **`text`:** for example `"14 servers"`.
+- **The row's `valid_until`:** the earliest deadline of the source envelope and the listed nodes' states, as for `server.card`'s node state.
 
 ## 4. When frames are written
 
