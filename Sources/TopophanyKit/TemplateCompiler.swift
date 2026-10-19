@@ -11,6 +11,7 @@ public struct TemplateCompiler: Sendable {
         public static let attention = "attention"
         public static let applications = "apps"
         public static let mac = "mac"
+        public static let servers = "servers"
         public static func server(_ index: Int) -> String { "server-\(index + 1)" }
         public static func extra(_ index: Int) -> String { "widget-server-\(index + 1)" }
     }
@@ -34,7 +35,10 @@ public struct TemplateCompiler: Sendable {
 
     public init() {}
 
-    public func request(for settings: Settings, revision: Int, widgets: WidgetNeeds = .none, lang: String? = nil) -> Request {
+    /// `listServers` adds `servers.list`, for choosing nodes, when `topo`
+    /// offers it.
+    public func request(for settings: Settings, revision: Int, widgets: WidgetNeeds = .none, lang: String? = nil,
+                        listServers: Bool = false) -> Request {
         let s = settings.sections
         var rows = [TemplateRow(id: RowID.status, metric: "summary.verdict", visual: "status")]
         for id in s.order {
@@ -62,6 +66,7 @@ public struct TemplateCompiler: Sendable {
         for (i, node) in Self.unique(widgets.nodes).filter({ !requested.contains($0) }).enumerated() {
             rows.append(Self.card(RowID.extra(i), node))
         }
+        if listServers { rows.append(TemplateRow(id: RowID.servers, metric: "servers.list", visual: "list")) }
         let t = settings.topo
         let preview = t.source == "preview"
         return Request(

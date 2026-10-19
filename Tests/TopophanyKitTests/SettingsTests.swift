@@ -136,6 +136,16 @@ import Testing
         #expect(r.template.rows[5].select?.node == "macbook")
     }
 
+    @Test func listsServersOnlyWhenAsked() {
+        let s = Settings()
+        #expect(!TemplateCompiler().request(for: s, revision: 1).template.rows.contains { $0.metric == "servers.list" })
+        let r = TemplateCompiler().request(for: s, revision: 1, listServers: true)
+        let row = r.template.rows.last
+        #expect(row?.id == "servers")
+        #expect(row?.metric == "servers.list")
+        #expect(row?.visual == "list")
+    }
+
     @Test func previewSource() {
         var s = Settings()
         s.topo.source = "preview"
@@ -188,5 +198,21 @@ import Testing
         #expect(old.missing() == ["observers.verdicts", "attention.list", "applications.list", "server.card"])
         let both = try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":2,"protocols":[1,2],"metrics":[{"name":"summary.verdict"},{"name":"observers.verdicts"},{"name":"attention.list"},{"name":"applications.list"},{"name":"server.card"}]}"#.utf8))
         #expect(both.isUsable)
+        #expect(!c.profiles)
+        #expect(!c.listsServers)
+        let more = try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"metrics":[{"name":"servers.list","visual":"list"}],"profiles":true}"#.utf8))
+        #expect(more.profiles)
+        #expect(more.listsServers)
+    }
+
+    @Test func profiles() throws {
+        let line = #"{"profiles":[{"name":"home","project":"homelab","active":true},{"name":"work","project":"","active":false}]}"#
+        let p = try JSONDecoder().decode(ProfileList.self, from: Data(line.utf8))
+        #expect(p.profiles.map(\.name) == ["home", "work"])
+        #expect(p.active?.name == "home")
+        #expect(p.profiles[1].project == "")
+        let none = try JSONDecoder().decode(ProfileList.self, from: Data(#"{"profiles":[]}"#.utf8))
+        #expect(none.profiles.isEmpty)
+        #expect(none.active == nil)
     }
 }

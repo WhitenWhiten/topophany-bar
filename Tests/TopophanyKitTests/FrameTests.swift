@@ -127,6 +127,39 @@ import Testing
     }
 }
 
+@Suite struct ServerListTests {
+    @Test func decodesTheList() throws {
+        let line = #"""
+        {"schema":1,"name":"stream","request_id":"r","config_revision":"c","instance":"i","sequence":1,"source":"client",
+         "lifecycle":"running","generated_at":"2026-10-18T13:30:00Z","publisher_expires_at":"2026-10-18T13:30:30Z","rows":[
+         {"id":"servers","metric":"servers.list","visual":"list","value":[
+           {"id":"oracle-ny","name":"Oracle New York","kind":"host","provider":"Oracle","group":"","where":"New York","health":"up","note":""},
+           {"id":"bwh-la","name":"BandwagonHost LA","health":"degraded","note":"affected"}],
+          "text":"2 servers","health":"degraded","freshness":"fresh","valid_until":"2026-10-18T13:30:20Z"}]}
+        """#
+        let f = try JSONDecoder().decode(Frame.self, from: Data(line.utf8))
+        guard case .servers(let list) = f.rows.first?.value else {
+            Issue.record("not a server list: \(String(describing: f.rows.first?.value))")
+            return
+        }
+        #expect(list.map(\.id) == ["oracle-ny", "bwh-la"])
+        #expect(list[0].place == "New York")
+        #expect(list[1].health == .degraded)
+        #expect(list[1].kind == "")
+    }
+
+    @Test func matchesThisMacsName() {
+        let list = [ServerListEntry(id: "oracle-ny", name: "Oracle New York"), ServerListEntry(id: "macbook", name: "MacBook Pro"),
+                    ServerListEntry(id: "studio", name: "Whiten’s Mac Studio")]
+        #expect(ServerListEntry.matching(localHostName: "MacBook", in: list)?.id == "macbook")
+        #expect(ServerListEntry.matching(localHostName: "MacBook-Pro", in: list)?.id == "macbook")
+        #expect(ServerListEntry.matching(localHostName: "Whitens-Mac-Studio", in: list) == nil)
+        #expect(ServerListEntry.matching(localHostName: "Whiten-s-Mac-Studio", in: list)?.id == "studio")
+        #expect(ServerListEntry.matching(localHostName: "", in: list) == nil)
+        #expect(ServerListEntry.matching(localHostName: "Mac", in: list) == nil)
+    }
+}
+
 @Suite struct FrameDecoderTests {
     static let a = #"{"schema":1,"name":"stream","lifecycle":"running","sequence":1,"rows":[]}"#
     static let b = #"{"schema":1,"name":"stream","lifecycle":"running","sequence":2,"rows":[]}"#

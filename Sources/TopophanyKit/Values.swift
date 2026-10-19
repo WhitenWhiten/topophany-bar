@@ -277,6 +277,94 @@ public struct Application: Sendable, Hashable, Decodable, Identifiable {
 }
 
 /// `server.card`.
+/// A node with a card in the Servers tab, for choosing nodes (`servers.list`).
+public struct ServerListEntry: Sendable, Hashable, Decodable, Identifiable {
+    public var id: String
+    public var name: String
+    public var kind: String
+    public var provider: String
+    public var group: String
+    public var place: String
+    public var health: Health
+    public var note: String
+
+    enum CodingKeys: String, CodingKey { case id, name, kind, provider, group, place = "where", health, note }
+
+    public init(id: String, name: String, kind: String = "", provider: String = "", group: String = "", place: String = "",
+                health: Health = .unknown, note: String = "") {
+        self.id = id
+        self.name = name
+        self.kind = kind
+        self.provider = provider
+        self.group = group
+        self.place = place
+        self.health = health
+        self.note = note
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = c.text(.name) ?? id
+        kind = c.text(.kind) ?? ""
+        provider = c.text(.provider) ?? ""
+        group = c.text(.group) ?? ""
+        place = c.text(.place) ?? ""
+        health = (try? c.decode(Health.self, forKey: .health)) ?? .unknown
+        note = c.text(.note) ?? ""
+    }
+
+    /// The node whose ID or name matches a Mac's `LocalHostName`, ignoring
+    /// case and punctuation: what Settings suggests for This Mac.
+    public static func matching(localHostName host: String, in list: [ServerListEntry]) -> ServerListEntry? {
+        func slug(_ s: String) -> String { s.lowercased().split { !$0.isLetter && !$0.isNumber }.joined(separator: "-") }
+        let h = slug(host)
+        guard !h.isEmpty else { return nil }
+        return list.first { slug($0.id) == h || slug($0.name) == h }
+    }
+}
+
+/// `topo monitor stream --profiles`: saved client profiles, by name and
+/// project; never a token.
+public struct ProfileList: Sendable, Hashable, Decodable {
+    public struct Profile: Sendable, Hashable, Decodable, Identifiable {
+        public var name: String
+        public var project: String
+        public var active: Bool
+
+        public var id: String { name }
+
+        enum CodingKeys: String, CodingKey { case name, project, active }
+
+        public init(name: String, project: String = "", active: Bool = false) {
+            self.name = name
+            self.project = project
+            self.active = active
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            name = try c.decode(String.self, forKey: .name)
+            project = c.text(.project) ?? ""
+            active = (try? c.decodeIfPresent(Bool.self, forKey: .active)) ?? false
+        }
+    }
+
+    public var profiles: [Profile]
+
+    public init(profiles: [Profile]) { self.profiles = profiles }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        profiles = (try? c.decodeIfPresent([Profile].self, forKey: .profiles)) ?? []
+    }
+
+    enum CodingKeys: String, CodingKey { case profiles }
+
+    /// The profile a request's empty `profile` selects.
+    public var active: Profile? { profiles.first { $0.active } }
+}
+
 public struct ServerCard: Sendable, Hashable, Decodable, Identifiable {
     public var id: String
     public var name: String

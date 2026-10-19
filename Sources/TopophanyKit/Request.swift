@@ -108,8 +108,10 @@ public struct Capabilities: Sendable, Hashable, Decodable {
     public var sources: [String]
     public var visuals: [String]
     public var metrics: [Metric]
+    /// Whether `--profiles` is served.
+    public var profiles: Bool
 
-    enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics }
+    enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -119,7 +121,11 @@ public struct Capabilities: Sendable, Hashable, Decodable {
         sources = (try? c.decodeIfPresent([String].self, forKey: .sources)) ?? []
         visuals = (try? c.decodeIfPresent([String].self, forKey: .visuals)) ?? []
         metrics = (try? c.decodeIfPresent([Metric].self, forKey: .metrics)) ?? []
+        profiles = (try? c.decodeIfPresent(Bool.self, forKey: .profiles)) ?? false
     }
+
+    /// Whether `servers.list` is offered, for choosing nodes.
+    public var listsServers: Bool { metrics.contains { $0.name == "servers.list" } }
 
     /// The metrics the panel draws.
     public static let required = ["summary.verdict", "observers.verdicts", "attention.list", "applications.list", "server.card"]
