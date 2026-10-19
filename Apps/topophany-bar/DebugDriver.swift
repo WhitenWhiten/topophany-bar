@@ -15,7 +15,8 @@ import TopophanyWidgets
 ///     panel | close         open or close the panel
 ///     tui                   open the TUI, as ⌘O does
 ///     key up|down|return    a key in the panel
-///     type C [cmd]          C typed into the panel, through the app's event queue
+///     type C [cmd]          C typed into the panel, through the app's event queue;
+///                           `space` for a space
 ///     clickitem             a click on the menu bar item
 ///     mac off|local|server  This Mac's mode
 ///     click X Y             a click in Settings, in points from its top left
@@ -31,7 +32,8 @@ import TopophanyWidgets
 ///                           with one
 ///     menu                  the menu bar item's right-click menu, as text
 ///     itemshot              the menu bar item as last drawn, to item.png
-///     views                 the open panel's AppKit views and their frames
+///     views                 the open panel's AppKit views and their frames,
+///                           and its first responder
 ///     scroll [panel|#N] X Y DY [DX]
 ///                           a scroll of DY (and DX) points at X Y in
 ///                           Settings, the panel or window N (a popover),
@@ -73,11 +75,12 @@ enum DebugDriver {
         case "tui": d.openTUI(focus: nil)
         case "key": if w.count > 1 { d.panelKey(w[1]) }
         case "type":
-            let codes: [String: UInt16] = [",": 43, "q": 12, "o": 31, "m": 46]
-            guard w.count > 1, let code = codes[w[1]], let win = d.panelWindow,
-                  let e = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: w.count > 2 ? .command : [],
+            let codes: [String: UInt16] = [",": 43, "q": 12, "o": 31, "m": 46, "space": 49]
+            guard w.count > 1, let code = codes[w[1]], let win = d.panelWindow else { return }
+            let c = w[1] == "space" ? " " : w[1]
+            guard let e = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: w.count > 2 ? .command : [],
                                            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: win.windowNumber,
-                                           context: nil, characters: w[1], charactersIgnoringModifiers: w[1],
+                                           context: nil, characters: c, charactersIgnoringModifiers: c,
                                            isARepeat: false, keyCode: code) else { return }
             NSApp.postEvent(e, atStart: false)
         case "clickitem":
@@ -103,6 +106,7 @@ enum DebugDriver {
                 for c in v.subviews { walk(c, depth + 1) }
             }
             if let v = d.panelWindow?.contentView { walk(v, 0) }
+            lines.append("first responder: " + (d.panelWindow?.firstResponder.map { "\(type(of: $0))" } ?? "none"))
             try? lines.joined(separator: "\n").write(to: out.appending(path: "views.txt"), atomically: true, encoding: .utf8)
         case "scroll":
             let panel = w.count > 1 && w[1] == "panel"
