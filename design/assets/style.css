@@ -462,7 +462,8 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .w-status .w-top { display: flex; align-items: flex-start; justify-content: space-between; }
 .wd-s .nv-sym, .wd-m .nv-sym { width: 34px; height: 34px; border-radius: 10px; }
 .wd-s .nv-sym svg, .wd-m .nv-sym svg { width: 34px; height: 34px; }
-.w-mark { width: 18px; height: 18px; }
+/* The brand mark: small and a little muted, so it doesn't compete with the verdict. */
+.w-mark { width: 16px; height: 16px; margin: 1px; filter: saturate(.75); opacity: .9; }
 .w-title { margin: 10px 0 9px; min-width: 0; }
 .w-title b { display: block; font-size: 16px; font-weight: 650; letter-spacing: -.015em; line-height: 1.15; }
 .w-title span { display: block; font-size: 11px; color: var(--l2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -483,6 +484,9 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .wdg h4 em { font-style: normal; font-weight: 500; color: var(--l3); margin-left: auto; }
 .wdg h4.w-gap { margin-top: 12px; }
 .w-sec { margin-top: 12px; }
+.w-col.spread .w-sec { margin-top: 0; }
+.w-flex { display: block; flex: 1 1 0; min-height: 12px; max-height: 24px; }
+.w-flex.last { min-height: 8px; max-height: none; }
 .w-row { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 8px; align-items: start; padding: 4px 0; border-top: .5px solid var(--sep); }
 .w-row:first-of-type { border-top: 0; padding-top: 1px; }
 .w-row .mk { margin-top: 2px; }

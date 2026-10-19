@@ -76,13 +76,20 @@ struct CardsWidget: View {
         VStack(alignment: .leading, spacing: 0) {
             w.big
             if let seen = model.panel.seen {
-                WidgetSeen(seen: seen, p: p, t: t).padding(.top, 12)
+                gap
+                WidgetSeen(seen: seen, p: p, t: t)
             }
-            right(p, attentionRows: 3, appRows: appRows).padding(.top, 12)
-            Spacer(minLength: 0)
+            gap
+            right(p, attentionRows: 3, appRows: appRows)
+            Spacer(minLength: 8)
             w.foot(wide: true)
         }
     }
+
+    /// Between blocks: 12 pt, and up to twice that when the widget has room
+    /// to spare, so what's left spreads out instead of pooling above the
+    /// foot.
+    var gap: some View { Spacer(minLength: 12).frame(maxHeight: 24) }
 
     /// Needs attention, or Applications when nothing needs attention, as
     /// the medium widget's Right choice says.
@@ -146,6 +153,14 @@ struct Age: View {
     }
 }
 
+/// The brand mark in a widget's corner: small and a little muted, so it
+/// says whose widget it is without competing with the verdict.
+struct WidgetMark: View {
+    var body: some View {
+        BrandMark().frame(width: 16, height: 16).saturation(0.75).opacity(0.9).padding(1)
+    }
+}
+
 /// The verdict block, small and large.
 @MainActor
 struct WidgetStatus {
@@ -159,7 +174,7 @@ struct WidgetStatus {
             HStack(alignment: .top) {
                 HeroSymbol(status: status, size: 34, palette: p)
                 Spacer(minLength: 0)
-                BrandMark().frame(width: 18, height: 18)
+                WidgetMark()
             }
             Text(status.shortTitle).font(t.font(16, .semibold)).tracking(-0.24).lineLimit(1)
                 .padding(.top, 10)
@@ -192,7 +207,7 @@ struct WidgetStatus {
                         .font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                BrandMark().frame(width: 18, height: 18)
+                WidgetMark()
             }
             .accessibilityElement(children: .combine)
             bar.padding(.top, 12).padding(.bottom, 7)

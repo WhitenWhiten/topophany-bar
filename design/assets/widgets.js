@@ -87,13 +87,15 @@
     if (kind === 'status') {
       if (size === 's') body = `<div class="w-col">${nStatusBlock(sc, false, 's')}${foot(sc)}</div>`;
       if (size === 'm') body = `<div class="w-split"><div class="w-col w-left">${nStatusBlock(sc, false, 'm')}${foot(sc)}</div><div class="w-col w-right">${right}</div></div>`;
-      if (size === 'l') body = `<div class="w-col">${nStatusBlock(sc, true, 'l')}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${right}</div>${foot(sc, true)}</div>`;
+      // Between blocks, 12 px that grow to 24 when there's room, so what's left spreads out.
+      const gap = '<i class="w-flex"></i>';
+      if (size === 'l') body = `<div class="w-col spread">${nStatusBlock(sc, true, 'l')}${gap}<div class="w-sec">${nSeen(sc)}</div>${gap}<div class="w-sec">${right}</div><i class="w-flex last"></i>${foot(sc, true)}</div>`;
       if (size === 'xl') {
         const F = TB.fleet(sc);
         const G = TB._fleet.fleetGrid;
         const fleet = `<h4 class="${sc.attention.length ? 'w-gap' : ''}">${C.I.fleet}Fleet<em>${F.nodes} servers · ${F.providers} providers</em></h4>` +
           `${G(F, F.edges, 5)}${F.edges.length && F.servers.length ? '<div class="nv-sep fl-sep"></div>' : ''}${G(F, F.servers, 5)}`;
-        body = `<div class="w-split xl"><div class="w-col">${nStatusBlock(sc, true, 'xl')}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${sc.attention.length ? nAttention(sc, 3) : nApps(sc, 6)}</div>${foot(sc, true)}</div>
+        body = `<div class="w-split xl"><div class="w-col spread">${nStatusBlock(sc, true, 'xl')}${gap}<div class="w-sec">${nSeen(sc)}</div>${gap}<div class="w-sec">${sc.attention.length ? nAttention(sc, 3) : nApps(sc, 6)}</div><i class="w-flex last"></i>${foot(sc, true)}</div>
           <div class="w-col w-right">${sc.attention.length ? nApps(sc, 6) : ''}${fleet}</div></div>`;
       }
     }
