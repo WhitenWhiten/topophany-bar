@@ -527,12 +527,14 @@ struct MenuBarPreview: View {
     var body: some View {
         let theme = model.theme
         let appearance = model.settings.appearance.menuBar
-        let template = theme.renderer == .cards && !appearance.statusColors
+        // Drawn as a dark menu bar shows it. With status colors off the item
+        // is a template image, which the menu bar tints white; nothing
+        // tints it here, so it is drawn in white rather than as a template.
         HStack(spacing: 10) {
             ForEach(Array(Self.statuses.enumerated()), id: \.offset) { _, st in
                 Renderers.renderer(for: theme)
                     .statusItem(StatusItemModel(status: st, appearance: appearance),
-                                context: StatusItemContext(theme: theme, menuBarIsDark: true, template: template))
+                                context: StatusItemContext(theme: theme, menuBarIsDark: true, template: false))
                     .foregroundStyle(.white)
             }
         }
