@@ -31,8 +31,10 @@ struct WidgetZones: View {
 
     var compact: Bool { size == .small }
     /// The least a row takes; with room to spare, rows spread up to half as
-    /// much again, rather than pooling above the foot.
-    var minRow: Double { compact ? 25.5 : size == .medium ? 24 : 30 }
+    /// much again, rather than pooling above the foot. A small row is as
+    /// tall as its clock over its period, and a little more, so one row's
+    /// period never meets the next row's time.
+    var minRow: Double { compact ? 29.5 : size == .medium ? 24 : 30 }
     static let heading = 19.0
     static let foot = 17.0
 
@@ -47,7 +49,7 @@ struct WidgetZones: View {
             return (zones.zones, [], foot, min(minRow * 1.5, (room - (foot ? Self.foot : 0)) / Double(max(1, n))))
         }
         let (shown, rest) = zones.cut(keeping: max(1, Int((room - Self.foot) / minRow)))
-        return (shown, rest, true, minRow)
+        return (shown, rest, true, min(minRow * 1.5, (room - Self.foot) / Double(max(1, shown.count))))
     }
 
     var body: some View {
