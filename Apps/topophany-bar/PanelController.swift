@@ -23,12 +23,14 @@ final class PanelController: NSObject {
     private var hosting: NSHostingView<PanelRoot>?
     private var monitors: [Any] = []
     private weak var anchor: NSStatusBarButton?
+    /// Open, or opening: a closing panel fades out still visible.
+    private(set) var isOpen = false
+    /// Counts each open and close, so a fade that finishes late does nothing.
+    private var turn = 0
 
     init(model: AppModel) {
         self.model = model
     }
-
-    var isOpen: Bool { panel?.isVisible == true }
 
     var window: NSWindow? { panel }
 
@@ -46,25 +48,55 @@ final class PanelController: NSObject {
         if isOpen { close() } else { open(from: button) }
     }
 
+    /// The panel fades in as it settles a few points down from the menu
+    /// bar; under Reduce Motion it only fades.
     func open(from button: NSStatusBarButton) {
         anchor = button
         let p = panel ?? makePanel()
         panel = p
+        isOpen = true
+        turn += 1
         model.focus = nil
         model.refresh()
         layout()
         onOpenChange?(true)
+        let end = p.frame.origin
+        let still = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if !p.isVisible {
+            p.alphaValue = 0
+            if !still { p.setFrameOrigin(NSPoint(x: end.x, y: end.y + 4)) }
+        }
         p.orderFrontRegardless()
         p.makeKey()
         installMonitors()
+        NSAnimationContext.runAnimationGroup { c in
+            c.duration = still ? 0.12 : 0.2
+            c.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.8, 0.2, 1)
+            p.animator().alphaValue = 1
+            if !still { p.animator().setFrame(NSRect(origin: end, size: p.frame.size), display: true) }
+        }
     }
 
+    /// The panel fades out, quicker than it came.
     func close() {
-        guard let p = panel, p.isVisible else { return }
-        p.orderOut(nil)
+        guard let p = panel, isOpen else { return }
+        isOpen = false
+        turn += 1
+        let closing = turn
         onOpenChange?(false)
         model.focus = nil
         removeMonitors()
+        NSAnimationContext.runAnimationGroup { c in
+            c.duration = 0.12
+            c.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            p.animator().alphaValue = 0
+        }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(140))
+            guard let self, self.turn == closing, let p = self.panel else { return }
+            p.orderOut(nil)
+            p.alphaValue = 1
+        }
     }
 
     func update() {
@@ -82,7 +114,8 @@ final class PanelController: NSObject {
         p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
         p.isMovable = false
         p.hidesOnDeactivate = false
-        p.animationBehavior = .utilityWindow
+        // It fades in and out on its own.
+        p.animationBehavior = .none
         p.isReleasedWhenClosed = false
         let root = PanelRoot(model: model, actions: panelActions, maxHeight: { [weak self] in self?.maxHeight ?? 800 })
         let h = NSHostingView(rootView: root)
