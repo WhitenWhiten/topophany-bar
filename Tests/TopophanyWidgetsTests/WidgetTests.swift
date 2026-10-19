@@ -208,10 +208,10 @@ func temporaryStore() -> HandoffStore {
         #expect(z.isCurrent)
     }
 
-    /// An entry each quarter hour, so the ribbons and days move: current
-    /// until the next heartbeat plus the grace, history after it, the clocks
-    /// going on; past a day, the clocks alone.
-    @Test func entriesEachQuarterHour() throws {
+    /// An entry each hour and at each zone's midnight, so the ribbons and
+    /// days move: current until the next heartbeat plus the grace, history
+    /// after it, the clocks going on; past a day, the clocks alone.
+    @Test func entriesEachHourAndMidnight() throws {
         let h = listed()
         let now = h.writtenAt
         let entries = WidgetSchedule.zonesEntries(h, at: now, here: here)
@@ -229,6 +229,18 @@ func temporaryStore() -> HandoffStore {
         // The clocks read at each entry's time.
         let a = try #require(zones(entries[1])), b = try #require(zones(entries[5]))
         #expect(a.zones[0].hour != b.zones[0].hour)
+        // A day turns at each zone's own midnight, half hours too.
+        let zs = try #require(zones(entries[0])).zones
+        for zone in zs {
+            #expect(entries.contains { e in
+                var c = Calendar(identifier: .gregorian)
+                c.timeZone = zone.timeZone
+                let t = c.dateComponents([.hour, .minute], from: e.date)
+                return t.hour == 0 && t.minute == 0
+            }, "\(zone.timeZone.identifier)")
+        }
+        // A day's entries, not a quarter hour's.
+        #expect(entries.count <= 24 + zs.count + 3)
         let last = try #require(entries.last)
         #expect(last.date == now.addingTimeInterval(WidgetSchedule.zonesSpan))
         #expect(zones(last)?.clocksOnly == true)

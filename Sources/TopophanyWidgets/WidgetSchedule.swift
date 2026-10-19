@@ -15,16 +15,17 @@ public enum WidgetSchedule {
         h.writtenAt.addingTimeInterval(h.heartbeat + grace)
     }
 
-    /// A Time zones widget's clocks read live; its day ribbons and its
-    /// days move a step this often.
-    public static let zonesStep: TimeInterval = 15 * 60
+    /// A Time zones widget's clocks read live; its day ribbons move a step
+    /// this often. WidgetKit draws every entry ahead, so each one costs.
+    public static let zonesStep: TimeInterval = 3600
     /// How far ahead its entries reach. Without a reload in that time, the
     /// last entry draws the clocks alone.
     public static let zonesSpan: TimeInterval = 24 * 3600
 
-    /// A Time zones widget's entries: one at each quarter hour, current
-    /// until the next heartbeat plus the grace and history after it, the
-    /// clocks going on. Past the span, the clocks alone.
+    /// A Time zones widget's entries: one each hour, and one at each zone's
+    /// midnight, when its day turns; current until the next heartbeat plus
+    /// the grace and history after it, the clocks going on. Past the span,
+    /// the clocks alone.
     public static func zonesEntries(_ h: Handoff?, at now: Date, here: TimeZone = .autoupdatingCurrent)
         -> [(date: Date, panel: PanelModel, isCurrent: Bool)] {
         guard let h else {
@@ -33,16 +34,24 @@ public enum WidgetSchedule {
             return [(now, empty.withheld(at: now), false)]
         }
         let stale = notCurrent(after: h)
+        let end = now.addingTimeInterval(zonesSpan)
         let first = (now.timeIntervalSinceReferenceDate / zonesStep).rounded(.down) * zonesStep + zonesStep
-        var dates = [now] + stride(from: first, to: now.timeIntervalSinceReferenceDate + zonesSpan, by: zonesStep)
-            .map { Date(timeIntervalSinceReferenceDate: $0) }
-        if stale > now, !dates.contains(stale) { dates.append(stale) }
-        dates.sort()
-        var out = dates.map { d -> (date: Date, panel: PanelModel, isCurrent: Bool) in
+        var dates = Set([now] + stride(from: first, to: end.timeIntervalSinceReferenceDate, by: zonesStep)
+            .map { Date(timeIntervalSinceReferenceDate: $0) })
+        let zones = WidgetModel(kind: .zones, panel: h.panel(zonesAt: now, here: here)).zones?.zones ?? []
+        for zone in zones {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = zone.timeZone
+            if let midnight = calendar.nextDate(after: now, matching: DateComponents(hour: 0, minute: 0), matchingPolicy: .nextTime),
+               midnight < end {
+                dates.insert(midnight)
+            }
+        }
+        if stale > now, stale < end { dates.insert(stale) }
+        var out = dates.sorted().map { d -> (date: Date, panel: PanelModel, isCurrent: Bool) in
             let p = h.panel(zonesAt: d, here: here)
             return d < stale ? (d, p, true) : (d, p.withheld(at: d), false)
         }
-        let end = now.addingTimeInterval(zonesSpan)
         var last = h.panel(zonesAt: end, here: here).withheld(at: end)
         last.sections = last.sections.map { s in
             guard case .zones(var z) = s else { return s }
