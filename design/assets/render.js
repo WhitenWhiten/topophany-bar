@@ -58,6 +58,7 @@
     chevron: sv('<path d="M8 5.5 12.5 10 8 14.5"/>'),
     bolt: sv('<path d="M11 2.8 5.6 11h4l-1 6.2 5.8-8.4h-4.1Z" fill="currentColor" stroke-width="1"/>'),
     info: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 9v4.6"/><circle cx="10" cy="6.4" r=".5" fill="currentColor"/>'),
+    clock: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 5.8V10l2.8 1.8"/>'),
   };
   TB.icons = I;
 
@@ -193,6 +194,82 @@
     <div class="nv-batt"><span class="nv-batt-i">${battery(L.battery.v, true)}</span><b>${L.battery.v}%</b><span>${L.battery.state} · ${L.battery.remain}</span></div>`;
   }
 
+  // ------------------------------------------------------------ time zones
+  // Listed servers by the zone their place suggests, west to east, and This
+  // Mac's own zone marked here. The clock is this Mac's; every mark is topo's.
+  function zoneParts(zone, now) {
+    const o = {};
+    new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', minute: '2-digit', hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', timeZoneName: 'short' })
+      .formatToParts(now).forEach((p) => (o[p.type] = p.value));
+    const off = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'longOffset' }).formatToParts(now).find((p) => p.type === 'timeZoneName').value;
+    const m = off.match(/GMT([+-])(\d+)(?::(\d+))?/);
+    const offset = m ? (m[1] === '-' ? -1 : 1) * (+m[2] * 60 + +(m[3] || 0)) : 0;
+    const h24 = new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(now);
+    const hour = +h24.find((p) => p.type === 'hour').value + +h24.find((p) => p.type === 'minute').value / 60;
+    return { time: o.hour + ':' + o.minute, period: o.dayPeriod, abbr: o.timeZoneName, offset, hour, day: +o.year * 1e4 + +o.month * 100 + +o.day };
+  }
+  TB.zones = function (sc) {
+    const D = window.TB_DATA;
+    const here = zoneParts(D.here, D.now);
+    const zones = [];
+    let unplaced = 0;
+    sc.listed.forEach((s) => {
+      const zone = D.placeZones[s.place];
+      if (!zone) { unplaced++; return; }
+      let z = zones.find((x) => x.zone === zone);
+      if (!z) zones.push((z = Object.assign({ zone, places: [], servers: [], here: zone === D.here }, zoneParts(zone, D.now))));
+      if (!z.places.includes(s.place)) z.places.push(s.place);
+      z.servers.push(s);
+    });
+    if (!zones.some((z) => z.here)) zones.push(Object.assign({ zone: D.here, places: ['This Mac'], servers: [], here: true }, here));
+    zones.sort((a, b) => a.offset - b.offset);
+    zones.forEach((z) => {
+      const d = (z.offset - here.offset) / 60;
+      const hm = Math.abs(d) % 1 ? Math.trunc(Math.abs(d)) + ':' + String(Math.round((Math.abs(d) % 1) * 60)).padStart(2, '0') : String(Math.abs(d));
+      z.rel = z.here ? 'here' : (d >= 0 ? '+' : '−') + hm + 'h';
+      z.dayNote = z.day > here.day ? 'tomorrow' : z.day < here.day ? 'yesterday' : '';
+    });
+    return { zones, servers: sc.listed.length, unplaced };
+  };
+
+  // How light the local hour is drawn: night from 20:00 to 4:00, day from
+  // 8:00 to 16:00, soft between. A clock's hour, not the sun's.
+  const daylight = (h) => {
+    const t = Math.min(1, Math.max(0, ((1 - Math.cos((2 * Math.PI * h) / 24)) / 2 - 0.25) / 0.5));
+    return t * t * (3 - 2 * t);
+  };
+  // The zone's day from 12 hours before now to 12 hours after; now is the
+  // middle, so every row's now lines up.
+  function ribbon(z, dark) {
+    const stops = [];
+    for (let i = 0; i <= 48; i++) {
+      const b = daylight((((z.hour - 12 + i / 2) % 24) + 24) % 24);
+      const c = dark ? `rgba(255,246,232,${(0.07 + 0.55 * b).toFixed(3)})` : `rgba(40,36,30,${(0.42 - 0.36 * b).toFixed(3)})`;
+      stops.push(`${c} ${((i / 48) * 100).toFixed(2)}%`);
+    }
+    let mids = '';
+    for (let k = 0; k <= 1; k++) {
+      const x = (24 * k - z.hour + 12) / 24;
+      if (x > 0 && x < 1) mids += `<i style="left:${(x * 100).toFixed(2)}%"></i>`;
+    }
+    return `<div class="z-rib"><div class="z-day" style="background:linear-gradient(90deg,${stops.join(',')})">${mids}</div><b></b></div>`;
+  }
+
+  // This Mac's location: the system's arrow for "where you are".
+  const pin = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M16.6 3.4 3.6 9.1a.5.5 0 0 0 .1.95l5.6 1.1 1.1 5.6a.5.5 0 0 0 .95.1Z"/></svg>';
+  function nvZones(sc, dark) {
+    const Z = TB.zones(sc);
+    const rows = Z.zones.map((z, i) => {
+      const marks = z.servers.slice(0, 8).map((s) => mark(s.health, 8)).join('') + (z.servers.length > 8 ? `<em>+${z.servers.length - 8}</em>` : '');
+      const sep = i ? ' z-sep' : '';
+      return `<div class="z-t${sep}"><b>${z.time}</b><span>${z.period} · ${z.abbr}</span></div>
+        <div class="z-m${sep}"><div class="z-n">${z.here ? `<span class="z-here">${pin}</span>` : ''}<span class="pl">${esc(z.places.join(' · '))}</span><span class="z-marks">${marks}</span></div>${ribbon(z, dark)}</div>
+        <div class="z-o${sep}"><b class="${z.here ? 'here' : ''}">${z.rel}</b>${z.dayNote ? `<span>${z.dayNote}</span>` : ''}</div>`;
+    }).join('');
+    const foot = Z.unplaced ? `<div class="z-foot">${Z.unplaced} without a time zone</div>` : '';
+    return `<section class="nv-card"><h3>${I.clock}Time zones<em>${Z.zones.length} zones · ${Z.servers} servers</em></h3><div class="nv-zones">${rows}</div>${foot}</section>`;
+  }
+
   // Token sets for the cards renderer. Native is the system's own; Aurora is an
   // example user theme that only overrides tokens.
   const TOKENS = {
@@ -272,6 +349,8 @@
     if (on.servers) {
       out.push(`<section class="nv-card"><h3>${I.server}Servers<em>2 pinned</em></h3>${sc.servers.map((s) => nvServer(s)).join('<div class="nv-sep"></div>')}</section>`);
     }
+
+    if (on.zones) out.push(nvZones(sc, o.appearance === 'dark'));
 
     if (on.mac && o.mac !== 'off') {
       if (o.mac === 'server') {
@@ -458,6 +537,42 @@
     return [S(' ' + t + ' ', 'pill pill-' + (s.withheld ? 'unk' : TB.cls(s.health)))];
   };
 
+  // Time zones as the TUI would draw them: two lines a zone, the ribbon one
+  // cell per 24/n hours in the palette's own tones, now the middle cell.
+  const isDark = (p) => parseInt(p.ink.slice(1, 3), 16) < 128;
+  function tRibbon(z, n, p) {
+    const [night, day] = isDark(p) ? [p.track, p.muted] : [p.faint, p.track];
+    const stops = [];
+    for (let i = 0; i < n; i++) {
+      const c = mix(night, day, daylight((((z.hour - 12 + ((i + 0.5) / n) * 24) % 24) + 24) % 24));
+      stops.push(`${c} ${((i / n) * 100).toFixed(3)}% ${(((i + 1) / n) * 100).toFixed(3)}%`);
+    }
+    let mids = '';
+    for (let k = 0; k <= 1; k++) {
+      const x = (24 * k - z.hour + 12) / 24;
+      if (x > 0 && x < 1) mids += `<i style="left:${(x * 100).toFixed(2)}%"></i>`;
+    }
+    return { html: `<span class="trib" style="width:${n}ch;background:linear-gradient(90deg,${stops.join(',')})">${mids}<b></b></span>`, w: n };
+  }
+  function tZonesBody(sc, p, w) {
+    const Z = TB.zones(sc);
+    const tw = Math.max(...Z.zones.map((z) => len(z.time + ' ' + z.period)));
+    const rw = Math.max(...Z.zones.map((z) => Math.max(len(z.rel), len(z.dayNote))));
+    const ribbonW = w - tw - 2 - 1 - rw;
+    const out = [];
+    Z.zones.forEach((z) => {
+      const marks = [];
+      z.servers.slice(0, 8).forEach((s) => marks.push(tglyph(s.health)));
+      if (z.servers.length > 8) marks.push(S('+' + (z.servers.length - 8), 'faint'));
+      const room = w - tw - 2 - marks.length - 1 - rw - 1;
+      out.push(tl([S((z.time + ' ' + z.period).padEnd(tw), 'b'), S('  '), S(trunc(z.places.join(' · '), room))],
+        [...marks, S(' '), S(z.rel.padStart(rw), z.here ? 'acc' : 'muted')], '', w));
+      out.push(tl([S(trunc(z.abbr, tw).padEnd(tw), 'faint'), S('  '), tRibbon(z, ribbonW, p)], [S(z.dayNote.padStart(rw), 'faint')], '', w));
+    });
+    if (Z.unplaced) out.push(tl([S(Z.unplaced + ' without a time zone', 'faint')], [], '', w));
+    return { body: out.join(''), zones: Z.zones.length, servers: Z.servers };
+  }
+
   TB.tuiPanel = function (sc, o) {
     const p = pal(o);
     const L = window.TB_DATA.local;
@@ -477,6 +592,10 @@
     }
     if (o.sections.apps) out.push(box(title('SERVICES', '23 in 6 apps'), null, tAppsBody(sc, IW)));
     if (o.sections.servers) sc.servers.forEach((s) => out.push(box(serverTitle(s), serverPill(s), tServerBody(s, p, IW))));
+    if (o.sections.zones) {
+      const z = tZonesBody(sc, p, IW);
+      out.push(box(title('TIME ZONES', String(z.zones)), [S(' ' + z.servers + ' servers ', 'muted')], z.body));
+    }
 
     if (o.sections.mac && o.mac !== 'off') {
       if (o.mac === 'server') {
@@ -504,7 +623,7 @@
 
   // Shared with the widgets, which draw the same sections at other sizes.
   TB._cells = { S, tl, draw, box, title, trunc, tglyph, bigDigits, tBar, sparks, pal, paletteVars, statusTint, tone,
-    tStatusBody, tSeenBody, tAttentionBody, tAppsBody, tServerBody, serverTitle, serverPill };
+    tStatusBody, tSeenBody, tAttentionBody, tAppsBody, tServerBody, serverTitle, serverPill, tZonesBody };
 
   // -------------------------------------------------------- status item
   // The template globe with a status badge cut into its corner.
@@ -571,6 +690,6 @@
 
   TB.defaults = () => ({
     theme: 'native', appearance: 'dark', text: 'count', color: 'status', mac: 'local', limit: 3,
-    sections: { seen: true, attention: true, apps: true, servers: false, mac: true },
+    sections: { seen: true, attention: true, apps: true, servers: false, zones: true, mac: true },
   });
 })();

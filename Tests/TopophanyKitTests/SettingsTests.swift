@@ -15,6 +15,7 @@ import Testing
         { "id": "attention", "limit": 3 },
         { "id": "applications", "only": [] },
         { "id": "servers", "enabled": false, "nodes": ["oracle-ny", "bwh-la"] },
+        { "id": "zones", "enabled": true, "places": { "Seattle": "America/Los_Angeles" } },
         { "id": "mac", "mode": "local", "readings": ["cpu", "memory", "storage", "network", "battery"], "every": "2s" }
       ],
       "openAtLogin": true,
@@ -33,6 +34,8 @@ import Testing
         #expect(s.sections.attentionLimit == 3)
         #expect(s.sections.servers == false)
         #expect(s.sections.serverNodes == ["oracle-ny", "bwh-la"])
+        #expect(s.sections.zones)
+        #expect(s.sections.placeZones == ["Seattle": "America/Los_Angeles"])
         #expect(s.sections.mac.mode == .local)
         #expect(s.sections.mac.readings == Sections.Reading.allCases)
         #expect(s.terminal == "com.mitchellh.ghostty")
@@ -55,7 +58,7 @@ import Testing
     @Test func missingAndUnknownFields() throws {
         let s = try JSONDecoder().decode(Settings.self, from: Data(#"{"future":1,"topo":{"interval":"90m"},"sections":[{"id":"mac","mode":"off"},{"id":"bogus"},{"id":"status"}]}"#.utf8))
         #expect(s.topo.interval == "1h")
-        #expect(s.sections.order == [.status, .seen, .attention, .applications, .servers, .mac])
+        #expect(s.sections.order == [.status, .seen, .attention, .applications, .servers, .zones, .mac])
         #expect(s.sections.mac.mode == .off)
         #expect(s.sections.isEnabled(.mac) == false)
         #expect(s.appearance == Settings.Appearance())
@@ -67,7 +70,20 @@ import Testing
     @Test func missingSectionsTakeTheirPlace() throws {
         let old = #"{"sections":[{"id":"status"},{"id":"mac"},{"id":"seen"},{"id":"attention"},{"id":"servers"}]}"#
         let s = try JSONDecoder().decode(Settings.self, from: Data(old.utf8))
-        #expect(s.sections.order == [.status, .mac, .seen, .attention, .applications, .servers])
+        #expect(s.sections.order == [.status, .mac, .seen, .attention, .applications, .servers, .zones])
+        // Time zones, newer than such a file, is on.
+        #expect(s.sections.zones)
+        #expect(s.sections.placeZones.isEmpty)
+    }
+
+    @Test func zonesRoundTrip() throws {
+        var s = Settings()
+        s.sections.zones = false
+        s.sections.placeZones = ["Seattle": "America/Vancouver", "anycast": ""]
+        let data = try JSONEncoder().encode(s)
+        let back = try JSONDecoder().decode(Settings.self, from: data)
+        #expect(back == s)
+        #expect(String(decoding: data, as: UTF8.self).contains(#""id":"zones""#))
     }
 
     @Test func statusCantMove() {

@@ -105,14 +105,14 @@ public struct Settings: Sendable, Hashable, Codable {
 // MARK: sections
 
 public enum SectionID: String, Sendable, Hashable, Codable, CaseIterable {
-    case status, seen, attention, applications, servers, mac
+    case status, seen, attention, applications, servers, zones, mac
 }
 
 /// The panel's sections: their order, and each one's choices. Status is
 /// always first. Stored as an ordered array of objects, as DESIGN.md §9
 /// shows.
 public struct Sections: Sendable, Hashable, Codable {
-    public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .applications, .servers, .mac]
+    public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .applications, .servers, .zones, .mac]
 
     public enum MacMode: String, Sendable, Hashable, Codable, CaseIterable { case local, server, off }
     public enum Reading: String, Sendable, Hashable, Codable, CaseIterable { case cpu, memory, storage, network, battery }
@@ -149,6 +149,12 @@ public struct Sections: Sendable, Hashable, Codable {
     public var servers = false
     /// Pinned servers by node ID.
     public var serverNodes: [String] = []
+    /// Time zones: listed servers by the time zone of their place.
+    public var zones = true
+    /// A place (as `topo` names it) → the time zone chosen for it, an IANA
+    /// identifier, or "" for none. Places not here take the zone their name
+    /// suggests.
+    public var placeZones: [String: String] = [:]
     public var mac = Mac()
 
     public init() {}
@@ -160,6 +166,7 @@ public struct Sections: Sendable, Hashable, Codable {
         case .attention: attention
         case .applications: applications
         case .servers: servers
+        case .zones: zones
         case .mac: mac.mode != .off
         }
     }
@@ -171,6 +178,7 @@ public struct Sections: Sendable, Hashable, Codable {
         case .attention: attention = on
         case .applications: applications = on
         case .servers: servers = on
+        case .zones: zones = on
         case .mac: if !on { mac.mode = .off } else if mac.mode == .off { mac.mode = .local }
         }
     }
@@ -189,6 +197,7 @@ public struct Sections: Sendable, Hashable, Codable {
         var limit: Int?
         var only: [String]?
         var nodes: [String]?
+        var places: [String: String]?
         var mode: String?
         var readings: [String]?
         var every: String?
@@ -222,6 +231,9 @@ public struct Sections: Sendable, Hashable, Codable {
             case .servers:
                 servers = e.enabled ?? false
                 serverNodes = e.nodes ?? []
+            case .zones:
+                zones = e.enabled ?? true
+                placeZones = e.places ?? [:]
             case .mac:
                 mac.mode = e.mode.flatMap(MacMode.init(rawValue:)) ?? (e.enabled == false ? .off : .local)
                 if let r = e.readings { mac.readings = r.compactMap(Reading.init(rawValue:)) }
@@ -260,6 +272,9 @@ public struct Sections: Sendable, Hashable, Codable {
             case .servers:
                 e.enabled = servers
                 e.nodes = serverNodes
+            case .zones:
+                e.enabled = zones
+                e.places = placeZones
             case .mac:
                 e.mode = mac.mode.rawValue
                 e.readings = mac.readings.map(\.rawValue)

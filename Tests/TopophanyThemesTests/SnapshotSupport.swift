@@ -115,11 +115,14 @@ let sampleLocal: LocalSnapshot = {
                          sentHistory: series(7, 40, 30, 22, 2, 90))
 }()
 
+/// This Mac's zone in every snapshot: Seattle's, where data.js puts it.
+let snapshotHere = TimeZone(identifier: "America/Los_Angeles")!
+
 func previewPanel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings: TopophanyKit.Settings = previewSettings(),
                   engine: EngineCondition = .running) -> PanelModel {
-    let request = TemplateCompiler().request(for: settings, revision: 1)
+    let request = TemplateCompiler().request(for: settings, revision: 1, listServers: true)
     let reading = FixtureEngine.reading(scenario, request: request, origin: snapshotOrigin, after: after)
-    return SectionBuilder.panel(PanelInput(reading: reading, engine: engine, settings: settings, local: sampleLocal))
+    return SectionBuilder.panel(PanelInput(reading: reading, engine: engine, settings: settings, local: sampleLocal, here: snapshotHere))
 }
 
 let panelScenarios: [FixtureEngine.Scenario] = [.clear, .degraded, .incidents, .incomplete, .offline]

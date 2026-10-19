@@ -51,6 +51,37 @@ public enum Words {
         }
     }
 
+    /// A time of day in `zone`, its day period apart so the digits can be
+    /// set large: ("6:30", "AM"), or ("18:30", "") on a 24-hour clock.
+    public static func time(_ date: Date, in zone: TimeZone) -> (time: String, period: String) {
+        let locale = L10n.locale
+        let pattern = DateFormatter.dateFormat(fromTemplate: "jmm", options: 0, locale: locale) ?? "HH:mm"
+        let f = DateFormatter()
+        f.locale = locale
+        f.timeZone = zone
+        guard pattern.contains("a") else {
+            f.dateFormat = pattern
+            return (f.string(from: date), "")
+        }
+        f.dateFormat = pattern.replacingOccurrences(of: "a", with: "").trimmingCharacters(in: .whitespaces)
+        let time = f.string(from: date)
+        f.dateFormat = "a"
+        return (time, f.string(from: date))
+    }
+
+    /// The zone's short name at `date`: "PDT", "GMT+2".
+    public static func zoneName(_ zone: TimeZone, at date: Date) -> String {
+        let style: NSTimeZone.NameStyle = zone.isDaylightSavingTime(for: date) ? .shortDaylightSaving : .shortStandard
+        return zone.localizedName(for: style, locale: L10n.locale) ?? zone.abbreviation(for: date) ?? zone.identifier
+    }
+
+    /// A difference between zones: "+3h", "−10h", "+5:30h".
+    public static func offset(seconds: Int) -> String {
+        let m = abs(seconds) / 60
+        let hours = m % 60 == 0 ? "\(m / 60)" : String(format: "%d:%02d", m / 60, m % 60)
+        return tr("\(seconds < 0 ? "−" : "+")\(hours)h")
+    }
+
     /// Minutes as "1:12".
     public static func clock(minutes: Int) -> String {
         String(format: "%d:%02d", minutes / 60, minutes % 60)

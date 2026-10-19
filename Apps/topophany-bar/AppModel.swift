@@ -107,6 +107,18 @@ final class AppModel {
         return list
     }
 
+    /// The places `topo` names for its servers, in its order, with how many
+    /// servers each has; then places given a zone that it no longer names.
+    var knownPlaces: [(place: String, servers: Int)] {
+        let listed = knownServers.isEmpty ? panel.servers.filter { !$0.isMissing }.map(\.place) : knownServers.map(\.place)
+        var out: [(place: String, servers: Int)] = []
+        for p in listed where !p.isEmpty {
+            if let i = out.firstIndex(where: { $0.place == p }) { out[i].servers += 1 } else { out.append((p, 1)) }
+        }
+        for p in settings.sections.placeZones.keys.sorted() where !out.contains(where: { $0.place == p }) { out.append((p, 0)) }
+        return out
+    }
+
     /// Whether to ask for `servers.list`: when this `topo` offers it.
     private var listServers: Bool { fixture != nil || capabilities?.listsServers == true }
 

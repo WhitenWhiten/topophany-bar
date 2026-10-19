@@ -384,6 +384,40 @@
         }
       }
     },
+    "%lld servers": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld server"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld servers"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバー %lld 台"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 台服务器"
+          }
+        }
+      }
+    },
     "%lld services in %lld": {
       "localizations": {
         "en": {
@@ -440,6 +474,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "正常 %lld，警告 %lld，故障 %lld，未知 %lld"
+          }
+        }
+      }
+    },
+    "%lld without a time zone": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイムゾーンなし %lld 台"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 台无时区"
+          }
+        }
+      }
+    },
+    "%lld zones": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld zone"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld zones"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ゾーン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个时区"
           }
         }
       }
@@ -1345,6 +1429,22 @@
         }
       }
     },
+    "TIME ZONES": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイムゾーン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时区"
+          }
+        }
+      }
+    },
     "This Mac": {
       "localizations": {
         "ja": {
@@ -1357,6 +1457,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "本机"
+          }
+        }
+      }
+    },
+    "Time zones": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイムゾーン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时区"
           }
         }
       }

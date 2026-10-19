@@ -310,6 +310,8 @@ struct CardsSection: View {
                     CardsServer(card: c, symbol: "server.rack", p: p, t: t, focused: ctx.focus == "server:" + c.id)
                 }
             }
+        case .zones(let z):
+            CardsZones(zones: z, p: p, t: t)
         case .mac(.server(let c, let node)):
             Card(p: p) {
                 CardTitle(symbol: macSymbol(c.name), title: tr("This Mac"), meta: tr("as a server · \(node)"), p: p, t: t)
@@ -545,6 +547,125 @@ struct CardsServer: View {
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(m.percent.map { "\(label) \(Words.percent($0, digits: 0))" } ?? "\(label) \(tr("unknown"))")
+    }
+}
+
+// MARK: time zones
+
+struct CardsZones: View {
+    var zones: ZonesSection
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        Card(p: p) {
+            CardTitle(symbol: "clock", title: tr("Time zones"),
+                      meta: Words.join([tr("\(zones.zones.count) zones"), tr("\(zones.serverCount) servers")]), p: p, t: t)
+            // One grid, so every ribbon is as wide as the others and the now
+            // ticks line up.
+            Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
+                ForEach(Array(zones.zones.enumerated()), id: \.element.id) { i, z in
+                    if i > 0 { Rectangle().fill(p.sep).frame(height: 0.5).gridCellUnsizedAxes(.horizontal) }
+                    GridRow {
+                        time(z)
+                        middle(z).padding(.horizontal, 10)
+                        right(z).gridColumnAlignment(.trailing)
+                    }
+                    .padding(.top, i == 0 ? 1 : 5).padding(.bottom, 5)
+                }
+            }
+            if zones.unplaced > 0 {
+                VStack(alignment: .leading, spacing: 0) {
+                    Rectangle().fill(p.sep).frame(height: 0.5).padding(.top, 2)
+                    Text(tr("\(zones.unplaced) without a time zone")).font(t.font(10.5)).foregroundStyle(p.l3).padding(.top, 6)
+                }
+            }
+        }
+    }
+
+    func time(_ z: ZonesSection.Zone) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(z.time).font(t.mono(15, .semibold)).tracking(-0.15).foregroundStyle(p.l1)
+            Text(Words.join([z.period, z.zoneName])).font(t.font(10, .medium)).foregroundStyle(p.l3).lineLimit(1)
+        }
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Words.join([z.title, z.clock, z.zoneName, z.relative, z.day, tr("\(z.servers.count) servers")]))
+    }
+
+    func middle(_ z: ZonesSection.Zone) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 5) {
+                if z.isHere {
+                    Image(systemName: "location.fill").font(.system(size: 9 * t.scale)).foregroundStyle(p.accent)
+                }
+                Text(z.title).font(t.font(12)).foregroundStyle(p.l1).lineLimit(1).truncationMode(.tail)
+                Spacer(minLength: 4)
+                HStack(spacing: 2.5) {
+                    ForEach(Array(z.servers.prefix(8).enumerated()), id: \.offset) { _, s in
+                        CardMark(mark: s.mark, size: 8, color: p.color(s.mark))
+                    }
+                    if z.servers.count > 8 {
+                        Text("+\(z.servers.count - 8)").font(t.font(10)).foregroundStyle(p.l3).padding(.leading, 2)
+                    }
+                }
+                .fixedSize()
+            }
+            DayRibbon(zone: z, dark: p.isDark, now: p.l1, contrast: p.increaseContrast)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityHidden(true)
+    }
+
+    func right(_ z: ZonesSection.Zone) -> some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            Text(z.relative).font(t.mono(11, .medium)).foregroundStyle(z.isHere ? p.l2 : p.l3)
+            if !z.day.isEmpty { Text(z.day).font(t.font(10)).foregroundStyle(p.l3) }
+        }
+        .lineLimit(1)
+        .fixedSize()
+        .frame(minWidth: 28, alignment: .trailing)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A zone's day from 12 hours before now to 12 hours after: dark around
+/// its midnight, light around its noon, a gap at midnight, and now a tick
+/// in the middle, where every zone's now lines up.
+struct DayRibbon: View {
+    var zone: ZonesSection.Zone
+    var dark: Bool
+    var now: Color
+    var contrast = false
+    var band = 6.0
+
+    var body: some View {
+        Canvas { ctx, s in
+            let y = (s.height - band) / 2
+            let shape = Path(roundedRect: CGRect(x: 0, y: y, width: s.width, height: band), cornerRadius: band / 2)
+            let stops = (0...48).map { i -> Gradient.Stop in
+                let b = ZonesSection.daylight(ZonesSection.hour(zone, at: Double(i) / 48))
+                let c = dark ? Color(.sRGB, red: 1, green: 246 / 255, blue: 232 / 255, opacity: 0.07 + (contrast ? 0.65 : 0.55) * b)
+                    : Color(.sRGB, red: 40 / 255, green: 36 / 255, blue: 30 / 255, opacity: (contrast ? 0.52 : 0.42) - 0.36 * b)
+                return .init(color: c, location: Double(i) / 48)
+            }
+            var day = ctx
+            day.clipToLayer { mask in
+                mask.fill(shape, with: .color(.white))
+                mask.blendMode = .clear
+                for m in ZonesSection.midnights(zone) {
+                    mask.fill(Path(CGRect(x: s.width * m - 0.5, y: 0, width: 1, height: s.height)), with: .color(.white))
+                }
+            }
+            day.fill(Path(CGRect(origin: .zero, size: s)),
+                     with: .linearGradient(Gradient(stops: stops), startPoint: .zero, endPoint: CGPoint(x: s.width, y: 0)))
+            let tick = Path(roundedRect: CGRect(x: s.width / 2 - 1, y: 0, width: 2, height: s.height), cornerRadius: 1)
+            ctx.stroke(tick, with: .color(dark ? Color.black.opacity(0.35) : Color.white.opacity(0.85)), lineWidth: 2)
+            ctx.fill(tick, with: .color(now))
+        }
+        // The tick overhangs the band; only the band takes room.
+        .frame(height: band + 4)
+        .padding(.vertical, -2)
     }
 }
 

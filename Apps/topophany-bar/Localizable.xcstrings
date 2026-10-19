@@ -55,6 +55,22 @@
         }
       }
     },
+    "%@ (suggested)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（推定）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（建议）"
+          }
+        }
+      }
+    },
     "%@ lacks %@": {
       "localizations": {
         "ja": {
@@ -119,6 +135,40 @@
         }
       }
     },
+    "%lld servers": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld server"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld servers"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバー %lld 台"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 台服务器"
+          }
+        }
+      }
+    },
     "3 rows": {
       "localizations": {
         "ja": {
@@ -167,6 +217,22 @@
         }
       }
     },
+    "A place takes the zone its name suggests. Choose another when that’s wrong, or None to leave its servers out.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "場所には名前から推定したタイムゾーンが使われます。違う場合は別のゾーンを、そのサーバーを外すには「なし」を選んでください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地点使用其名称所对应的时区。若不正确，请选择其他时区；选择“无”可将其服务器排除。"
+          }
+        }
+      }
+    },
     "Active profile": {
       "localizations": {
         "ja": {
@@ -195,6 +261,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "当前：%@"
+          }
+        }
+      }
+    },
+    "Africa": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アフリカ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非洲"
           }
         }
       }
@@ -263,6 +345,38 @@
         }
       }
     },
+    "Americas": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "南北アメリカ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "美洲"
+          }
+        }
+      }
+    },
+    "Antarctica": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "南極"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "南极洲"
+          }
+        }
+      }
+    },
     "Appearance": {
       "localizations": {
         "ja": {
@@ -307,6 +421,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "作为服务器"
+          }
+        }
+      }
+    },
+    "Asia": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アジア"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "亚洲"
+          }
+        }
+      }
+    },
+    "Atlantic": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大西洋"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大西洋"
+          }
+        }
+      }
+    },
+    "Australia": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オーストラリア"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "澳大利亚"
           }
         }
       }
@@ -599,6 +761,22 @@
         }
       }
     },
+    "Europe": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヨーロッパ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "欧洲"
+          }
+        }
+      }
+    },
     "Every %lld h": {
       "localizations": {
         "ja": {
@@ -739,6 +917,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "topo 读取采集器的频率；无论如何，期限都会每秒检查一次"
+          }
+        }
+      }
+    },
+    "Indian Ocean": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インド洋"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "印度洋"
           }
         }
       }
@@ -1063,6 +1257,22 @@
         }
       }
     },
+    "None": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "なし"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无"
+          }
+        }
+      }
+    },
     "None yet": {
       "localizations": {
         "ja": {
@@ -1107,6 +1317,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "不在拓扑中"
+          }
+        }
+      }
+    },
+    "Not listed now": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在は一覧にありません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前未列出"
           }
         }
       }
@@ -1223,6 +1449,22 @@
         }
       }
     },
+    "Pacific": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太平洋"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太平洋"
+          }
+        }
+      }
+    },
     "Panel": {
       "localizations": {
         "ja": {
@@ -1283,6 +1525,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "已固定的服务器"
+          }
+        }
+      }
+    },
+    "Places appear once topo lists its servers.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo がサーバーを一覧にすると場所が表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 列出服务器后，这里会显示地点。"
+          }
+        }
+      }
+    },
+    "Places…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "場所…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地点…"
           }
         }
       }
@@ -1767,6 +2041,22 @@
         }
       }
     },
+    "Suggested: %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推定: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建议：%@"
+          }
+        }
+      }
+    },
     "Suggested: %@, which matches this Mac’s name": {
       "localizations": {
         "ja": {
@@ -1927,6 +2217,22 @@
         }
       }
     },
+    "The time where your servers are, and each one’s health": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーのある場所の時刻と、それぞれの状態"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器所在地的时间，以及各自的状态"
+          }
+        }
+      }
+    },
     "The verdict, checks by health, observers live": {
       "localizations": {
         "ja": {
@@ -2035,6 +2341,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "吞吐量和地址"
+          }
+        }
+      }
+    },
+    "Time zones": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイムゾーン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时区"
+          }
+        }
+      }
+    },
+    "Time zones by place": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "場所ごとのタイムゾーン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "各地点的时区"
           }
         }
       }

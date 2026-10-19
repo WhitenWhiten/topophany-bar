@@ -68,6 +68,9 @@ enum Seg {
     case rule([(Int, RGBA)])
     /// ╌
     case dashes(Int, RGBA)
+    /// A day ribbon: one color per cell, gaps at `midnights` (fractions of
+    /// its width) and a tick at its middle.
+    case ribbon([RGBA], midnights: [Double], now: RGBA)
 
     var width: Int {
         switch self {
@@ -77,6 +80,7 @@ enum Seg {
         case .sparks(let v, _, _): v.count
         case .rule(let parts): parts.reduce(0) { $0 + $1.0 }
         case .dashes(let n, _): n
+        case .ribbon(let cells, _, _): cells.count
         }
     }
 
@@ -193,6 +197,16 @@ struct CellWriter {
         case .dashes(let n, let c):
             items.append(.line(from: CGPoint(x: x + cell * 0.1, y: y + lineHeight / 2), to: CGPoint(x: x + Double(n) * cell, y: y + lineHeight / 2),
                                c, width: 1, dash: [cell * 0.4, cell * 0.1]))
+        case .ribbon(let cells, let midnights, let now):
+            let h = 6 * metrics.fontSize / 12
+            let top = y + lineHeight / 2 - h / 2
+            for (i, c) in cells.enumerated() {
+                items.append(.fill(CGRect(x: x + Double(i) * cell, y: top, width: cell + 0.05, height: h), c, radius: 0))
+            }
+            for m in midnights {
+                items.append(.fill(CGRect(x: x + w * m - 0.5, y: top, width: 1, height: h), p.ink, radius: 0))
+            }
+            items.append(.fill(CGRect(x: x + w / 2 - 1, y: top - 4, width: 2, height: h + 8), now, radius: 0))
         }
     }
 

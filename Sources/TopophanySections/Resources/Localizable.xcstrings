@@ -49,6 +49,22 @@
         }
       }
     },
+    "%@%@h": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@%2$@時間"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@%2$@小时"
+          }
+        }
+      }
+    },
     "%lld CPUs": {
       "localizations": {
         "en": {
@@ -1715,6 +1731,22 @@
         }
       }
     },
+    "This Mac": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Mac"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机"
+          }
+        }
+      }
+    },
     "This topo has no monitor stream · upgrade it": {
       "localizations": {
         "ja": {
@@ -2115,6 +2147,22 @@
         }
       }
     },
+    "here": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在地"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地"
+          }
+        }
+      }
+    },
     "incident": {
       "localizations": {
         "ja": {
@@ -2467,6 +2515,22 @@
         }
       }
     },
+    "tomorrow": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "明日"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "明天"
+          }
+        }
+      }
+    },
     "topo needs an upgrade": {
       "localizations": {
         "ja": {
@@ -2655,6 +2719,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "警告"
+          }
+        }
+      }
+    },
+    "yesterday": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "昨日"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "昨天"
           }
         }
       }

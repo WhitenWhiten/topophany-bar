@@ -480,6 +480,7 @@ struct ThemeThumbnail: View {
     static let model: PanelModel = {
         var s = TopophanyKit.Settings()
         s.sections.applications = false
+        s.sections.zones = false
         s.sections.mac.mode = .off
         s.sections.attentionLimit = 3
         let now = Date()
@@ -605,6 +606,7 @@ struct SectionLabel: View {
         case .attention: "exclamationmark.triangle.fill"
         case .applications: "square.stack.3d.up.fill"
         case .servers: "server.rack"
+        case .zones: "clock.fill"
         case .mac: "laptopcomputer"
         }
     }
@@ -616,6 +618,7 @@ struct SectionLabel: View {
         case .attention: Color(red: 1, green: 0.62, blue: 0.04)
         case .applications: Color(red: 0.04, green: 0.52, blue: 1)
         case .servers: Color(red: 0.56, green: 0.56, blue: 0.58)
+        case .zones: Color(red: 0.19, green: 0.69, blue: 0.78)
         case .mac: Color(red: 0.39, green: 0.82, blue: 1)
         }
     }
@@ -627,6 +630,7 @@ struct SectionLabel: View {
         case .attention: RowLabel("Needs attention", "Open incidents first, then anything else that needs a look")
         case .applications: RowLabel("Applications", "Services folded into the applications you declare")
         case .servers: RowLabel("Servers", "The Servers-tab card of each server you pin")
+        case .zones: RowLabel("Time zones", "The time where your servers are, and each one’s health")
         case .mac: RowLabel("This Mac", "Set up under This Mac")
         }
     }
@@ -658,6 +662,8 @@ struct SectionControls: View {
             ApplicationsMenu()
         case .servers:
             ServersButton()
+        case .zones:
+            ZonesButton()
         default:
             EmptyView()
         }
@@ -815,6 +821,120 @@ struct ServersPicker: View {
             s.sections.servers = true
         }
         draft = ""
+    }
+}
+
+/// The time zone of each place, for Time zones.
+struct ZonesButton: View {
+    @Environment(AppModel.self) private var model
+    @State private var open = false
+
+    var body: some View {
+        Button("Places…") { open = true }
+            .popover(isPresented: $open, arrowEdge: .bottom) { ZonesPicker().environment(model) }
+    }
+}
+
+/// Every place `topo` names, and the zone its clock is read in: the one its
+/// name suggests, until another is chosen.
+struct ZonesPicker: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let places = model.knownPlaces
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Time zones by place").font(.headline)
+            if places.isEmpty {
+                Text("Places appear once topo lists its servers.").foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
+                        ForEach(places, id: \.place) { p in
+                            GridRow {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(verbatim: p.place).lineLimit(1)
+                                    Text(p.servers == 0 ? String(localized: "Not listed now") : String(localized: "\(p.servers) servers"))
+                                        .font(.callout).foregroundStyle(.secondary)
+                                }
+                                ZoneMenu(place: p.place).gridColumnAlignment(.trailing)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 360)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            Foot("A place takes the zone its name suggests. Choose another when that’s wrong, or None to leave its servers out.")
+        }
+        // A popover takes its row's trailing alignment otherwise.
+        .multilineTextAlignment(.leading)
+        .padding(14)
+        .frame(width: 380)
+    }
+}
+
+/// One place's zone: the suggested one, none, or any zone by region.
+struct ZoneMenu: View {
+    @Environment(AppModel.self) private var model
+    var place: String
+
+    var body: some View {
+        let chosen = model.settings.sections.placeZones[place]
+        let suggested = PlaceZones.suggestion(for: place)
+        Menu {
+            if let suggested {
+                Button { choose(nil) } label: {
+                    item(chosen == nil, String(localized: "Suggested: \(PlaceZones.city(suggested))"))
+                }
+            }
+            Button { choose("") } label: { item(chosen == "" || (chosen == nil && suggested == nil), String(localized: "None")) }
+            Divider()
+            ForEach(PlaceZones.regions, id: \.region) { r in
+                Menu(Self.regionName(r.region)) {
+                    ForEach(r.zones, id: \.self) { z in
+                        Button { choose(z) } label: { item(chosen == z, PlaceZones.city(z)) }
+                    }
+                }
+            }
+        } label: {
+            Text(verbatim: label(chosen: chosen, suggested: suggested))
+        }
+        .fixedSize()
+    }
+
+    func label(chosen: String?, suggested: String?) -> String {
+        switch chosen {
+        case ""?: String(localized: "None")
+        case let z?: PlaceZones.city(z)
+        case nil: suggested.map { String(localized: "\(PlaceZones.city($0)) (suggested)") } ?? String(localized: "None")
+        }
+    }
+
+    @ViewBuilder func item(_ on: Bool, _ title: String) -> some View {
+        if on { Label(title, systemImage: "checkmark") } else { Text(verbatim: title) }
+    }
+
+    /// nil goes back to the suggestion; "" is none.
+    func choose(_ zone: String?) {
+        model.update { s in
+            if let zone { s.sections.placeZones[place] = zone } else { s.sections.placeZones.removeValue(forKey: place) }
+        }
+    }
+
+    static func regionName(_ r: String) -> String {
+        switch r {
+        case "Africa": String(localized: "Africa")
+        case "America": String(localized: "Americas")
+        case "Antarctica": String(localized: "Antarctica")
+        case "Asia": String(localized: "Asia")
+        case "Atlantic": String(localized: "Atlantic")
+        case "Australia": String(localized: "Australia")
+        case "Europe": String(localized: "Europe")
+        case "Indian": String(localized: "Indian Ocean")
+        case "Pacific": String(localized: "Pacific")
+        default: r
+        }
     }
 }
 

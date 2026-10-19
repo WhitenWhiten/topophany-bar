@@ -67,7 +67,8 @@ The header shows the mark, the project and view, Open in Terminal (⌘O) and Set
 3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty.
 4. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
 5. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld.
-6. **This Mac.** See section 5.
+6. **Time zones.** The local time where the servers are. See section 5.1.
+7. **This Mac.** See section 5.
 
 Size:
 
@@ -106,6 +107,22 @@ Local readings never pass through `topo`, and nothing runs `top`. The `topo` cli
 ### As a server
 
 A `server.card` row for the chosen node: the card the Servers tab draws, read from the collector. It adds "From here", the verdict of the observer on that node. Settings suggests the node whose ID or name matches the Mac's `LocalHostName`. Without a host check on the node, resources read unknown.
+
+### 5.1 Time zones
+
+Servers sit in different places, and an incident at 3 AM in one place is 6 PM in another. This section shows the time where each server is, with that server's health.
+
+- **Rows:** one per time zone, west to east. Each row holds the places `topo` names (`servers.list`'s `where`) that share the zone, and one mark per server in them, its health as `topo` sent it. This Mac's zone is always a row, marked by the location arrow and "here"; with no servers in it, the row is titled This Mac.
+- **Each row shows:** the local time, the zone's short name, its offset from here ("+3h"), and "tomorrow" or "yesterday" when its date isn't this Mac's.
+- **The day ribbon:** the zone's 24 hours, from 12 hours before now to 12 hours after, so every row's now lines up in one column. It is dark from 20:00 to 4:00, light from 8:00 to 16:00, and soft between, with a gap at midnight. That is a clock's hour, not the sun's.
+- **Where a zone comes from:**
+  - A place's name suggests one: the system's city for every zone, in English, Japanese and Chinese, and the cities of `topo`'s gazetteer that no zone is named for (San Jose, Frankfurt, 成都). A label that only starts with a city counts ("Tokyo 2").
+  - In Settings, Places… lets the user choose another zone for any place, or none.
+  - Places without a zone (`anycast`, coordinates, unmatched names) are counted at the foot of the section: "2 without a time zone".
+- **Health:** the marks are `topo`'s and nothing else. A zone row has no health of its own. When the list isn't current, the clocks go on and every mark is withheld (◌).
+- **Without `servers.list`:** the pinned servers' cards stand in.
+- **Widgets:** not offered; the section is the panel's.
+- **Terminal:** two lines per zone. The ribbon is one cell per stretch of hours, in the palette's own night and day tones, and now is the accent.
 
 ## 6. Themes in v1
 
@@ -199,6 +216,7 @@ The previews include two example user themes, **Aurora** (`cards`) and **Paper**
 | Theme; panel appearance; text size | What counts as up, warn, down or unknown |
 | Menu bar: Symbol, Count or Words; status colors | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
 | Sections on or off and their order (Status is fixed) | Freshness, staleness, publisher lease |
+| The time zone of each place | Each server's health in Time zones |
 | Attention rows (3 or 5); which applications; pinned servers | How groups add up (unknown always counted) |
 | What each widget shows and its theme | Status glyphs and their meaning |
 | This Mac mode, readings, volume, interface, sample rate | No expressions or formulas |
@@ -217,6 +235,7 @@ Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On
     { "id": "attention", "limit": 3 },
     { "id": "applications", "only": [] },
     { "id": "servers", "enabled": false, "nodes": ["oracle-ny", "bwh-la"] },
+    { "id": "zones", "enabled": true, "places": { "Seattle": "America/Los_Angeles" } },
     { "id": "mac", "mode": "local", "readings": ["cpu", "memory", "storage", "network", "battery"], "every": "2s" }
   ],
   "openAtLogin": true,
@@ -245,7 +264,7 @@ topophany-bar/
                         Settings, Engine protocol
     TopophanyEngine/    ProcessEngine; later EmbeddedEngine
     TopophanySections/  one model per section, built from frames: Status, SeenFrom, Attention, Applications,
-                        ServerCard, Local
+                        ServerCard, Zones, Local; PlaceZones (a place's suggested time zone)
     TopophanyThemes/    Theme, Tokens, ThemeStore, ThemeValidator, Renderer protocol;
                         Cards/ (SwiftUI) and Cells/ (CellCanvas)
     TopophanyWidgets/   TimelineProvider (current and not-current entries), widget views per family

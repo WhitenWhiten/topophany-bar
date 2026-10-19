@@ -72,6 +72,21 @@
 
   const seen = (bad) => OBSERVERS.map((name) => Object.assign({ name, health: 'up' }, bad[name] || {}));
 
+  // Every server `topo` lists (servers.list) and the place it names. Time
+  // zones groups them by the zone each place suggests.
+  const LISTED = [
+    ['macbook', 'MacBook Pro', 'Seattle'], ['seattle-pc', 'Windows Desktop', 'Seattle'], ['router', 'Home Router', 'Seattle'],
+    ['sj-vultr', 'Vultr San Jose', 'San Jose'], ['bwh-la', 'BandwagonHost LA', 'Los Angeles'], ['oracle-la', 'Oracle LA', 'Los Angeles'],
+    ['hnl-vultr', 'Vultr Honolulu', 'Honolulu'], ['oracle-ny', 'Oracle New York', 'New York'], ['azure-ny', 'Azure New York', 'New York'],
+    ['fra-hetzner', 'Hetzner Frankfurt', 'Frankfurt'], ['tokyo-vps', 'GCP Tokyo', 'Tokyo'],
+  ];
+  const listed = (over) => LISTED.map(([id, name, place]) => ({ id, name, place, health: (over || {})[id] || 'up' }));
+  // The zone each place's name suggests; Settings can change any of them.
+  const PLACE_ZONES = {
+    Seattle: 'America/Los_Angeles', 'San Jose': 'America/Los_Angeles', 'Los Angeles': 'America/Los_Angeles',
+    Honolulu: 'Pacific/Honolulu', 'New York': 'America/New_York', Frankfurt: 'Europe/Berlin', Tokyo: 'Asia/Tokyo',
+  };
+
   const S = {};
 
   S.clear = {
@@ -85,6 +100,7 @@
     apps: APPS(),
     servers: SERVERS(),
     mac: MAC_SERVER(),
+    listed: listed(),
   };
 
   S.degraded = {
@@ -101,6 +117,7 @@
     apps: APPS({ 'Proxy chain': { services: ['degraded', 'degraded', 'up', 'up', 'up', 'up'], note: '2 attention', tuiNote: '2 attention', health: 'degraded' } }),
     servers: SERVERS(),
     mac: MAC_SERVER({ observes: { name: 'Seattle MacBook', health: 'degraded', text: '14 checks · 1 warn', ago: '5s ago' } }),
+    listed: listed(),
   };
 
   S.incidents = {
@@ -125,6 +142,7 @@
     servers: SERVERS({ 'BandwagonHost LA': { health: 'degraded', pill: 'AFFECTED',
       svc: [{ name: 'VLESS+Reality Entry', health: 'degraded', note: 'affected' }, { name: 'Exit Candidate A', health: 'degraded', note: 'affected' }, { name: 'Exit Candidate B', health: 'up' }, { name: 'Relay contrast', health: 'degraded', note: 'affected' }] } }),
     mac: MAC_SERVER({ observes: { name: 'Seattle MacBook', health: 'down', text: '14 checks · 1 down', ago: '5s ago' } }),
+    listed: listed({ 'bwh-la': 'degraded' }),
   };
 
   S.incomplete = {
@@ -141,6 +159,7 @@
     apps: APPS({ 'Proxy chain': { services: ['up', 'up', 'up', 'up', 'unknown', 'unknown'], note: '2 unknown', tuiNote: '2 unknown' } }),
     servers: SERVERS(),
     mac: MAC_SERVER(),
+    listed: listed(),
   };
 
   S.offline = {
@@ -156,6 +175,7 @@
     servers: SERVERS().map((s) => Object.assign(s, { withheld: true, health: 'unknown', updated: '3 min ago' })),
     mac: MAC_SERVER({ withheld: true, health: 'unknown', updated: '3 min ago',
       observes: { name: 'Seattle MacBook', health: 'unknown', text: 'not known while offline', ago: '3 min ago' } }),
+    listed: listed().map((x) => Object.assign(x, { health: 'cached' })),
   };
 
   const SHORT = { clear: '68 of 68 checks pass', degraded: '2 warn · 66 of 68 up', incidents: '5 down · 63 of 68 up', incomplete: '7 unknown · 61 of 68 up', offline: 'Last known: all clear' };
@@ -169,7 +189,10 @@
       sub: 'topophany-bar stopped · 47 min ago', bigTop: 'not current', bigBottom: 'last known 47 min ago', big: '--' },
     short: 'Last known: 5 incidents', counts: { up: 0, warn: 0, down: 0, unknown: 68 }, incidents: 0, observers: { live: 0, total: 11 },
     attention: [], more: 0, seen: S.offline.seen, apps: S.offline.apps, servers: S.offline.servers, mac: S.offline.mac,
+    listed: S.offline.listed,
   });
 
-  window.TB_DATA = { scenarios: S, order: ['clear', 'degraded', 'incidents', 'incomplete', 'offline'], local: LOCAL };
+  // The fixtures' moment, and This Mac's zone: Seattle, at 6:30 AM.
+  window.TB_DATA = { scenarios: S, order: ['clear', 'degraded', 'incidents', 'incomplete', 'offline'], local: LOCAL,
+    now: Date.UTC(2026, 9, 18, 13, 30, 4), here: 'America/Los_Angeles', placeZones: PLACE_ZONES };
 })();

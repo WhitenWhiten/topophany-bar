@@ -21,6 +21,8 @@ struct CardsPalette {
     var accent: Color
     var accent2: Color
     var on = Color.white
+    /// Increase Contrast: drawn things take more ink.
+    var increaseContrast = false
 
     static func resolve(_ ctx: RenderContext) -> CardsPalette {
         let dark = ctx.effectiveScheme == .dark
@@ -47,6 +49,7 @@ struct CardsPalette {
                            fill2: Color(.sRGB, red: 120 / 255, green: 120 / 255, blue: 128 / 255, opacity: 0.1),
                            panel: Color(.sRGB, red: 250 / 255, green: 250 / 255, blue: 253 / 255, opacity: 0.6),
                            up: .green, warn: .orange, down: .red, unknown: .gray, accent: .accentColor, accent2: .cyan)
+        p.increaseContrast = hc
         if ctx.reduceTransparency {
             p.panel = dark ? Color(.sRGB, red: 0.13, green: 0.13, blue: 0.15) : Color(.sRGB, red: 0.96, green: 0.96, blue: 0.97)
             p.card = dark ? Color(white: 1, opacity: 0.09) : Color(white: 1, opacity: 1)

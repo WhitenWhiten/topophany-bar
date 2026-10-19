@@ -143,6 +143,7 @@ public enum Renderers {
             case .seen(let s): ids += (s.problems ?? []).map { "seen:" + $0.id }
             case .applications(let a): ids += a.rows.map { "app:" + $0.id }
             case .servers(let cards): ids += cards.map { "server:" + $0.id }
+            case .zones: break
             case .mac(.server(let c, _)): ids.append("server:" + c.id)
             case .mac(.local): break
             }

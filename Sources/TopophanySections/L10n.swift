@@ -26,6 +26,19 @@ public enum L10n {
         chosen ?? Bundle.module.preferredLocalizations.first ?? "en"
     }
 
+    /// The locale clock times are written in: the panel's language, with
+    /// this Mac's region and its 12- or 24-hour choice. A forced
+    /// localization takes its language's own, so snapshots don't depend on
+    /// the Mac that draws them.
+    public static var locale: Locale {
+        let base = Locale(identifier: localization)
+        guard chosen == nil else { return base }
+        var c = Locale.Components(locale: base)
+        c.region = Locale.current.region
+        c.hourCycle = Locale.current.hourCycle
+        return Locale(components: c)
+    }
+
     /// The language to ask `topo preview` for: `en`, `ja` or `zh`.
     public static var previewLanguage: String {
         let l = localization

@@ -21,14 +21,17 @@ public struct PanelInput: Sendable {
     public var settings: Settings
     public var local: LocalSnapshot?
     public var machineModel: String
+    /// This Mac's time zone, which Time zones marks as here.
+    public var here: TimeZone
 
     public init(reading: Reading, engine: EngineCondition, settings: Settings, local: LocalSnapshot? = nil,
-                machineModel: String = "Mac") {
+                machineModel: String = "Mac", here: TimeZone = .autoupdatingCurrent) {
         self.reading = reading
         self.engine = engine
         self.settings = settings
         self.local = local
         self.machineModel = machineModel
+        self.here = here
     }
 }
 
@@ -55,6 +58,8 @@ public enum SectionBuilder {
             case .servers where s.servers:
                 let cards = servers(r, nodes: s.serverNodes)
                 if !cards.isEmpty { sections.append(.servers(cards)) }
+            case .zones where s.zones:
+                sections.append(.zones(zones(r, chosen: s.placeZones, pinned: s.serverNodes, here: input.here)))
             case .mac:
                 switch s.mac.mode {
                 case .off:
@@ -320,6 +325,75 @@ public enum SectionBuilder {
         if c.warning > 0 { return Words.join([tr("\(n) checks"), tr("\(c.warning) warn")]) }
         if c.unknown > 0 { return Words.join([tr("\(n) checks"), tr("\(c.unknown) unknown")]) }
         return Words.join([tr("\(n) checks"), tr("all pass")])
+    }
+
+    // MARK: time zones
+
+    /// Listed servers by the zone of their place, west to east, and This
+    /// Mac's zone. Without a list from `topo`, the pinned servers' cards.
+    public static func zones(_ r: Reading, chosen: [String: String], pinned: [String], here: TimeZone) -> ZonesSection {
+        let now = r.now
+        var current = true
+        var listed: [(id: String, name: String, place: String, mark: Mark)] = []
+        if let row = r.row(RowID.servers), case .servers(let l) = row.value {
+            listed = l.map { ($0.id, $0.name, $0.place, Mark($0.health)) }
+        } else if let row = r.row(RowID.servers), case .servers(let l) = r.lastValue(of: row) {
+            current = false
+            listed = l.map { ($0.id, $0.name, $0.place, .offline) }
+        } else {
+            let cards = servers(r, nodes: pinned).filter { !$0.isMissing }
+            current = !cards.contains { $0.isWithheld }
+            listed = cards.map { ($0.id, $0.name, $0.place, $0.mark) }
+        }
+
+        // Places that share a zone share a row, in the order topo lists them.
+        var groups: [(zone: TimeZone, places: [String], servers: [ZonesSection.Server])] = []
+        var unplaced = 0
+        for s in listed {
+            guard let tz = PlaceZones.zone(for: s.place, chosen: chosen) else {
+                unplaced += 1
+                continue
+            }
+            let server = ZonesSection.Server(id: s.id, name: s.name, mark: s.mark)
+            if let i = groups.firstIndex(where: { $0.zone.identifier == tz.identifier }) {
+                if !groups[i].places.contains(s.place) { groups[i].places.append(s.place) }
+                groups[i].servers.append(server)
+            } else {
+                groups.append((tz, [s.place], [server]))
+            }
+        }
+        // This Mac's zone may go by another name ("US/Pacific"): the same
+        // offset and the same next change is the same clock.
+        func same(_ a: TimeZone, _ b: TimeZone) -> Bool {
+            a.identifier == b.identifier || (a.secondsFromGMT(for: now) == b.secondsFromGMT(for: now)
+                && a.nextDaylightSavingTimeTransition(after: now) == b.nextDaylightSavingTimeTransition(after: now))
+        }
+        if !groups.contains(where: { same($0.zone, here) }) { groups.append((here, [tr("This Mac")], [])) }
+
+        var calendar = Calendar(identifier: .gregorian)
+        func day(_ tz: TimeZone) -> DateComponents {
+            calendar.timeZone = tz
+            return calendar.dateComponents([.year, .month, .day], from: now)
+        }
+        let hereOffset = here.secondsFromGMT(for: now)
+        let hereDay = day(here)
+        let zones = groups.enumerated().map { i, g -> (Int, ZonesSection.Zone) in
+            let offset = g.zone.secondsFromGMT(for: now)
+            let isHere = same(g.zone, here)
+            let t = Words.time(now, in: g.zone)
+            calendar.timeZone = g.zone
+            let parts = calendar.dateComponents([.hour, .minute], from: now)
+            let d = day(g.zone)
+            let dayNote = d == hereDay ? "" : (calendar.date(from: d) ?? now) > (calendar.date(from: hereDay) ?? now)
+                ? tr("tomorrow") : tr("yesterday")
+            return (i, ZonesSection.Zone(
+                timeZone: g.zone, places: g.places, servers: g.servers, isHere: isHere, offset: offset,
+                hour: Double(parts.hour ?? 0) + Double(parts.minute ?? 0) / 60, time: t.time, period: t.period,
+                zoneName: Words.zoneName(g.zone, at: now),
+                relative: isHere ? tr("here") : Words.offset(seconds: offset - hereOffset), day: dayNote))
+        }
+        let sorted = zones.sorted { ($0.1.offset, $0.0) < ($1.1.offset, $1.0) }.map(\.1)
+        return ZonesSection(zones: sorted, serverCount: listed.count, unplaced: unplaced, isCurrent: current, now: now)
     }
 
     // MARK: chrome

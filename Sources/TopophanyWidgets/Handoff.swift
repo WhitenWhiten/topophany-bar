@@ -71,6 +71,8 @@ public struct Handoff: Sendable, Codable {
         widgetSettings.sections.attentionLimit = max(3, s.sections.attentionLimit)
         widgetSettings.sections.applications = true
         widgetSettings.sections.servers = true
+        // Widgets draw neither Time zones nor local readings.
+        widgetSettings.sections.zones = false
         if widgetSettings.sections.mac.mode == .local { widgetSettings.sections.mac.mode = .off }
         return SectionBuilder.panel(PanelInput(reading: reading(), engine: engineRunning ? .running : .stopped,
                                                settings: widgetSettings))

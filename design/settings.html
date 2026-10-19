@@ -161,6 +161,7 @@
       ${row('Needs attention', 'Open incidents first, then anything else that needs a look', pop('3 rows') + sw(true), handle + gi(I.alert, '#ff9f0a'))}
       ${row('Applications', 'Services folded into the applications you declare', pop('All 6') + sw(true), handle + gi(I.apps, '#0a84ff'))}
       ${row('Servers', 'The Servers-tab card of each server you pin', '<span class="btn">Choose…</span>' + sw(false), handle + gi(I.server, '#8e8e93'))}
+      ${row('Time zones', 'The time where your servers are, and each one’s health', '<span class="btn">Places…</span>' + sw(true), handle + gi(I.clock, '#30b0c7'))}
       ${row('This Mac', 'Set up under This Mac', sw(true), handle + gi(I.laptop, '#64d2ff'))}
     </div>
     <p class="foot">Each section is a row set in the template the app sends to <code>topo monitor stream</code>. What makes an entry up, warn or down is set in <code>topology.json</code> (for example <code>max_disk_percent</code>), not here.</p>

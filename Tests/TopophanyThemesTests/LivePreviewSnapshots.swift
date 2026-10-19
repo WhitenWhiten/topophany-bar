@@ -27,12 +27,12 @@ import TopophanySections
     @Test(arguments: [0, 1, 6, 13, 14])
     func scenario(_ n: Int) async throws {
         let s = settings(n)
-        let frame = try #require(await LivePreview.frame(TemplateCompiler().request(for: s, revision: 1, lang: "en")))
+        let frame = try #require(await LivePreview.frame(TemplateCompiler().request(for: s, revision: 1, lang: "en", listServers: true)))
         var policy = ReaderPolicy()
         policy.sourceStarted()
         let now = Date()
         policy.receive(frame, at: now)
-        let model = SectionBuilder.panel(PanelInput(reading: policy.evaluate(at: now), engine: .running, settings: s))
+        let model = SectionBuilder.panel(PanelInput(reading: policy.evaluate(at: now), engine: .running, settings: s, here: snapshotHere))
         for dark in [true, false] {
             let ctx = RenderContext(theme: ThemeStore.native, colorScheme: dark ? .dark : .light)
             try snapshot("live-native-\(dark ? "dark" : "light")-\(n)",

@@ -262,6 +262,36 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .nv-observes > svg { width: 13px; height: 13px; }
 .nv-observes b { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-weight: 500; color: var(--l1); }
 
+/* Time zones: one grid, so every row's ribbon has the same width and its
+   now tick lines up with the others. */
+.nv-zones { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
+.nv-zones > div { padding: 5px 0; }
+.nv-zones > .z-m { padding-left: 10px; padding-right: 10px; }
+.nv-zones > .z-sep { border-top: .5px solid var(--sep); }
+.nv-zones > div:nth-child(-n+3) { padding-top: 1px; }
+.z-t { display: flex; flex-direction: column; justify-content: center; line-height: 1.22; }
+.z-t b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.z-t span { font-size: 10px; color: var(--l3); font-weight: 500; margin-top: 1px; white-space: nowrap; }
+.z-m { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+.z-n { display: flex; align-items: center; gap: 5px; font-size: 12px; min-width: 0; }
+.z-n .pl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-here { color: var(--acc); flex: none; display: grid; }
+.z-here svg { width: 11px; height: 11px; }
+.z-marks { display: flex; align-items: center; gap: 2.5px; flex: none; margin-left: auto; padding-left: 4px; }
+.z-marks em { font-style: normal; font-size: 10px; color: var(--l3); margin-left: 2px; }
+.z-rib { position: relative; height: 6px; }
+.z-day { position: absolute; inset: 0; border-radius: 3px; overflow: hidden; }
+.z-day i { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: var(--card-solid, rgba(30, 30, 36, .9)); }
+.light .z-day i { --card-solid: rgba(255, 255, 255, .95); }
+.z-rib b { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--l1);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); }
+.light .z-rib b { box-shadow: 0 0 0 1px rgba(255, 255, 255, .85); }
+.z-o { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; line-height: 1.2; min-width: 28px; }
+.z-o b { font-size: 11px; font-weight: 500; color: var(--l3); font-variant-numeric: tabular-nums; }
+.z-o b.here { color: var(--l2); }
+.z-o span { font-size: 10px; color: var(--l3); }
+.z-foot { font-size: 10.5px; color: var(--l3); padding-top: 6px; margin-top: 2px; border-top: .5px solid var(--sep); }
+
 .nv-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .nv-tile { background: var(--fill2); border-radius: 9px; padding: 7px 8px 6px; min-width: 0; }
 .nv-tile-h { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--l2); }
@@ -335,6 +365,9 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .tbar { display: inline-block; position: relative; height: 10px; vertical-align: -1px; background: var(--track); }
 .tbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--c), #ffffff 26%), var(--c) 45%, color-mix(in srgb, var(--c), #000000 18%)); }
 .tbar b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: color-mix(in srgb, var(--warn) 65%, transparent); }
+.trib { display: inline-block; position: relative; height: 6px; vertical-align: 2px; }
+.trib i { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: var(--ink); }
+.trib b { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--acc); }
 .tbar.withheld { background: repeating-linear-gradient(90deg, var(--track) 0 .5ch, transparent .5ch 1ch); }
 
 .nv-iface { font-size: 11px !important; font-weight: 500 !important; color: var(--l2) !important; }

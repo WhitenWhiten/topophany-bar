@@ -194,6 +194,36 @@ struct CellsBodies {
         }
     }
 
+    // MARK: time zones
+
+    /// Two lines a zone: its time, places, marks and offset, then its zone
+    /// name and its day ribbon, every ribbon as wide as the others so the
+    /// now ticks line up.
+    func zones(_ w: inout CellWriter, _ z: ZonesSection) {
+        let n = w.frame.columns
+        let tw = z.zones.map { CellText.width($0.clock) }.max() ?? 0
+        let rw = z.zones.map { max(CellText.width($0.relative), CellText.width($0.day)) }.max() ?? 0
+        let ribbon = max(8, n - tw - 2 - 1 - rw)
+        // Night is the darker of the palette's quiet tones, day the lighter.
+        let dark = p.ink.r + p.ink.g + p.ink.b < 1.5
+        let (night, day) = dark ? (p.track, p.muted) : (p.faint, p.track)
+        for zone in z.zones {
+            var marks: [Seg] = zone.servers.prefix(8).map { .mark($0.mark, p) }
+            if zone.servers.count > 8 { marks.append(.t("+\(zone.servers.count - 8)", p.faint)) }
+            let room = n - tw - 2 - marks.reduce(0) { $0 + $1.width } - 1 - rw - 1
+            w.line([.t(CellText.pad(zone.clock, tw), p.text, bold: true), .t("  ", p.text),
+                    .t(CellText.truncate(zone.title, max(1, room)), p.text)],
+                   marks + [.t(" ", p.text), .t(CellText.padLeft(zone.relative, rw), zone.isHere ? p.accent : p.muted)])
+            let cells = (0..<ribbon).map { i in
+                night.mix(day, ZonesSection.daylight(ZonesSection.hour(zone, at: (Double(i) + 0.5) / Double(ribbon))))
+            }
+            w.line([.t(CellText.pad(CellText.truncate(zone.zoneName, tw), tw), p.faint), .t("  ", p.text),
+                    .ribbon(cells, midnights: ZonesSection.midnights(zone), now: p.accent)],
+                   [.t(CellText.padLeft(zone.day, rw), p.faint)])
+        }
+        if z.unplaced > 0 { w.line([.t(tr("\(z.unplaced) without a time zone"), p.faint)]) }
+    }
+
     // MARK: this Mac
 
     func local(_ w: inout CellWriter, _ l: LocalSection) {
@@ -338,6 +368,9 @@ struct CellsPanel: View {
                 for c in cards {
                     w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: .panel) { b.server(&$0, c) }
                 }
+            case .zones(let z):
+                w.box(title(tr("TIME ZONES"), "\(z.zones.count)"), [.t(" " + tr("\(z.serverCount) servers") + " ", p.muted)],
+                      x0: x0, x1: x1, style: .panel) { b.zones(&$0, z) }
             case .mac(.server(let c, _)):
                 w.box(b.serverTitle(c, prefix: title(tr("THIS MAC")).dropLast()), b.serverPill(c), x0: x0, x1: x1, style: .panel) {
                     b.server(&$0, c, observes: true)
