@@ -52,21 +52,39 @@ public enum Words {
     }
 
     /// A time of day in `zone`, its day period apart so the digits can be
-    /// set large: ("6:30", "AM"), or ("18:30", "") on a 24-hour clock.
-    public static func time(_ date: Date, in zone: TimeZone) -> (time: String, period: String) {
-        let locale = L10n.locale
+    /// set large: ("6:30", "AM"), ("12:13", "中午"), or ("18:30", "") on a
+    /// 24-hour clock.
+    public static func time(_ date: Date, in zone: TimeZone, locale: Locale = L10n.locale) -> (time: String, period: String) {
         let pattern = DateFormatter.dateFormat(fromTemplate: "jmm", options: 0, locale: locale) ?? "HH:mm"
         let f = DateFormatter()
         f.locale = locale
         f.timeZone = zone
-        guard pattern.contains("a") else {
+        // AM and PM, or a period of the day: "中午", "凌晨".
+        guard let r = pattern.range(of: "[abB]+", options: .regularExpression) else {
             f.dateFormat = pattern
             return (f.string(from: date), "")
         }
-        f.dateFormat = pattern.replacingOccurrences(of: "a", with: "").trimmingCharacters(in: .whitespaces)
+        var rest = pattern
+        rest.removeSubrange(r)
+        f.dateFormat = rest.trimmingCharacters(in: .whitespaces)
         let time = f.string(from: date)
-        f.dateFormat = "a"
+        f.dateFormat = String(pattern[r])
         return (time, f.string(from: date))
+    }
+
+    /// A time and its period as the language sets them: "6:30 AM",
+    /// "午後6:30", "中午12:13".
+    public static func clock(_ time: String, _ period: String, locale: Locale = L10n.locale) -> String {
+        guard !period.isEmpty else { return time }
+        let pattern = DateFormatter.dateFormat(fromTemplate: "jmm", options: 0, locale: locale) ?? "HH:mm"
+        guard let r = pattern.range(of: "[abB]+", options: .regularExpression), let h = pattern.range(of: "[hHkK]", options: .regularExpression),
+              r.lowerBound < h.lowerBound else { return "\(time) \(period)" }
+        return pattern[r.upperBound..<h.lowerBound].contains(" ") ? "\(period) \(time)" : period + time
+    }
+
+    /// Whether the language sets the period before the time.
+    public static func periodFirst(locale: Locale = L10n.locale) -> Bool {
+        clock("1", "2", locale: locale).hasPrefix("2")
     }
 
     /// The zone's short name at `date`: "PDT", "GMT+2".

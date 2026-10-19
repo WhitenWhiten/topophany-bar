@@ -57,8 +57,8 @@ public struct ZonesSection: Sendable, Hashable {
         /// "Seattle · San Jose · Los Angeles".
         public var title: String { Words.join(places) }
 
-        /// "6:30 AM".
-        public var clock: String { period.isEmpty ? time : "\(time) \(period)" }
+        /// "6:30 AM", "午後6:30".
+        public var clock: String { Words.clock(time, period) }
     }
 
     public var zones: [Zone]

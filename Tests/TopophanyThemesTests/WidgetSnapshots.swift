@@ -189,7 +189,7 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
     }
 
     @Test func zonesJapanese() throws {
-        for (l, name, twelve) in [("ja", "ja", false)] {
+        for (l, name, twelve) in [("ja", "ja", false), ("zh-Hans-CN-u-hc-h12", "zh12", true)] {
             try L10n.with(l) {
                 for theme in [ThemeStore.paper, ThemeStore.native] {
                     for (size, n) in Self.sizes where size != .extraLarge {

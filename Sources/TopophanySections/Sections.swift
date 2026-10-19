@@ -227,7 +227,7 @@ public struct ServerCardModel: Sendable, Hashable, Identifiable {
     public var localTime: String? {
         timeZone.map { z in
             let t = Words.time(now, in: z)
-            return t.period.isEmpty ? t.time : "\(t.time) \(t.period)"
+            return Words.clock(t.time, t.period)
         }
     }
 

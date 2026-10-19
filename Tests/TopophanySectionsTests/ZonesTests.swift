@@ -178,6 +178,16 @@ func zonesPanel(_ scenario: FixtureEngine.Scenario, here: String = "America/Los_
         L10n.with("en") { #expect(Words.time(d, in: la) == ("1:00", "AM")) }
         L10n.with("ja") { #expect(Words.time(d, in: la) == ("1:00", "")) }
         L10n.with("zh-Hans") { #expect(Words.time(d, in: la) == ("01:00", "")) }
+        // On a 12-hour clock: AM and PM, or a period of the day, set apart
+        // from the digits and put back where the language puts it.
+        let zh12 = Locale(identifier: "zh-Hans-CN-u-hc-h12"), ja12 = Locale(identifier: "ja-JP-u-hc-h12")
+        let noon = d.addingTimeInterval(11 * 3600 + 13 * 60)
+        #expect(Words.time(noon, in: la, locale: zh12) == ("12:13", "中午"))
+        #expect(Words.clock("12:13", "中午", locale: zh12) == "中午12:13")
+        #expect(Words.time(noon, in: la, locale: ja12) == ("12:13", "午後"))
+        #expect(Words.clock("12:13", "午後", locale: ja12) == "午後12:13")
+        #expect(Words.clock("12:13", "PM", locale: Locale(identifier: "en_US")) == "12:13 PM")
+        #expect(Words.periodFirst(locale: zh12) && !Words.periodFirst(locale: Locale(identifier: "en_US")))
         L10n.with("ja") { #expect(Words.offset(seconds: 3 * 3600) == "+3時間") }
         #expect(Words.offset(seconds: 19800) == "+5:30h")
         #expect(Words.offset(seconds: -36000) == "−10h")

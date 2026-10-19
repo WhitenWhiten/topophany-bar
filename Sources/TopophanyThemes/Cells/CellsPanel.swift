@@ -293,8 +293,8 @@ struct CellsBodies {
         case two
         /// Time, places, marks, a ribbon where it fits and the offset.
         case one(ribbon: Bool)
-        /// Its time, marks and offset; then its places, a step in, for
-        /// a column too narrow to hold them beside the time.
+        /// Its time and marks; then its places, a step in, and its offset,
+        /// for a column too narrow to hold them beside the time.
         case stacked
     }
 
@@ -331,8 +331,9 @@ struct CellsBodies {
         // the rest, trouble first, so trouble left out still shows.
         func marks(_ servers: [ZonesSection.Server], room: Int) -> [Seg] {
             guard servers.count > room else { return servers.map { .mark($0.mark, p) } }
-            var shown = max(1, room - 2)
-            if servers.count - shown >= 10 { shown = max(1, room - 3) }
+            var shown = room - 2
+            while shown > 0, shown + 1 + String(servers.count - shown).count > room { shown -= 1 }
+            guard shown > 0 else { return [.t("+\(servers.count)", p.faint)] }
             let first = Mark.troubleFirst(servers, by: \.mark)
             return first.prefix(shown).map { .mark($0.mark, p) } + [.t("+\(servers.count - shown)", p.faint)]
         }
@@ -367,8 +368,8 @@ struct CellsBodies {
             }
         case .stacked:
             for zone in shown {
-                w.line([clock(zone)], marks(zone.servers, room: max(1, n - tw - 1 - rw - 1)) + [.t(" ", p.text), relative(zone)])
-                w.line([.t("  " + CellText.truncate(zone.title, max(1, n - 2)), p.text)])
+                w.line([clock(zone)], marks(zone.servers, room: max(1, n - tw - 1)))
+                w.line([.t("  " + CellText.truncate(zone.title, max(1, n - 2 - 1 - rw)), p.text)], [relative(zone)])
             }
         }
         guard foot else { return }

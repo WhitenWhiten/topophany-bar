@@ -152,9 +152,13 @@ struct WidgetZones: View {
 
     /// The time and its period on one line, for rows a line tall.
     func inlineTime(_ z: ZonesSection.Zone) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 2.5) {
+        // The period where the language sets it: "6:30 AM", "午後6:30".
+        let first = Words.periodFirst()
+        let period = clock(z, .period).font(t.font(9, .medium)).foregroundStyle(p.l3)
+        return HStack(alignment: .firstTextBaseline, spacing: 2.5) {
+            if first, !z.period.isEmpty { period }
             clock(z, .time).font(t.mono(14.5, .semibold)).tracking(-0.15).foregroundStyle(p.l1)
-            if !z.period.isEmpty { clock(z, .period).font(t.font(9, .medium)).foregroundStyle(p.l3) }
+            if !first, !z.period.isEmpty { period }
         }
         .fixedSize()
     }
