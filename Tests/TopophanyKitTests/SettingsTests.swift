@@ -55,10 +55,19 @@ import Testing
     @Test func missingAndUnknownFields() throws {
         let s = try JSONDecoder().decode(Settings.self, from: Data(#"{"future":1,"topo":{"interval":"90m"},"sections":[{"id":"mac","mode":"off"},{"id":"bogus"},{"id":"status"}]}"#.utf8))
         #expect(s.topo.interval == "1h")
-        #expect(s.sections.order == [.status, .mac, .seen, .attention, .applications, .servers])
+        #expect(s.sections.order == [.status, .seen, .attention, .applications, .servers, .mac])
         #expect(s.sections.mac.mode == .off)
         #expect(s.sections.isEnabled(.mac) == false)
         #expect(s.appearance == Settings.Appearance())
+    }
+
+    /// A file that lacks a section, as one from before it existed would,
+    /// gets it after the section that precedes it by default, and keeps
+    /// its own order.
+    @Test func missingSectionsTakeTheirPlace() throws {
+        let old = #"{"sections":[{"id":"status"},{"id":"mac"},{"id":"seen"},{"id":"attention"},{"id":"servers"}]}"#
+        let s = try JSONDecoder().decode(Settings.self, from: Data(old.utf8))
+        #expect(s.sections.order == [.status, .mac, .seen, .attention, .applications, .servers])
     }
 
     @Test func statusCantMove() {

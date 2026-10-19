@@ -235,7 +235,12 @@ public struct Sections: Sendable, Hashable, Codable {
             }
         }
         var o = [SectionID.status] + seenOrder.filter { $0 != .status }
-        for id in Self.defaultOrder where !o.contains(id) { o.append(id) }
+        // A section the file doesn't list, such as one added since it was
+        // written, goes after the section that precedes it by default.
+        for (i, id) in Self.defaultOrder.enumerated() where !o.contains(id) {
+            let previous = Self.defaultOrder[..<i].last { o.contains($0) }
+            o.insert(id, at: previous.flatMap { o.firstIndex(of: $0) }.map { $0 + 1 } ?? o.count)
+        }
         order = o
     }
 
