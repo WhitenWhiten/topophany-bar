@@ -221,6 +221,7 @@ struct CardsStatusCard: View {
                 HeroSymbol(status: status, size: 44, palette: p)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(1)
+                        .contentTransition(.numericText()).settles(on: status.title)
                     Text(status.subtitle).font(t.font(12)).foregroundStyle(p.l2).lineLimit(2)
                 }
             }
@@ -261,6 +262,7 @@ struct CardsStatusCard: View {
         HStack(spacing: 4) {
             CardMark(mark: m, size: 9, color: p.color(m)).opacity(n == 0 ? 0.45 : 1)
             Text("\(n)").font(t.mono(11, .semibold)).foregroundStyle(n == 0 ? p.l3 : p.l1)
+                .contentTransition(.numericText(value: Double(n))).settles(on: n)
             Text(word).foregroundStyle(n == 0 ? p.l3 : p.l2)
         }
     }
@@ -546,6 +548,7 @@ struct CardsServer: View {
                     if m.isOverLimit { CardMark(mark: .degraded, size: 9, color: p.warn) }
                     Text(m.percent.map { Words.percent($0, digits: 0) } ?? "—")
                         .font(t.mono(12, .semibold)).foregroundStyle(p.l1)
+                        .contentTransition(.numericText(value: m.percent ?? 0)).settles(on: m.percent)
                 }
             }
             Meter(percent: m.percent, limit: m.limit, palette: p)
@@ -592,6 +595,7 @@ struct CardsZones: View {
     func time(_ z: ZonesSection.Zone) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(z.time).font(t.mono(15, .semibold)).tracking(-0.15).foregroundStyle(p.l1)
+                .contentTransition(.numericText()).settles(on: z.time)
             Text(Words.join([z.period, z.zoneName])).font(t.font(10, .medium)).foregroundStyle(p.l3).lineLimit(1)
         }
         .fixedSize()

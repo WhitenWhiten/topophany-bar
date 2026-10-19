@@ -86,6 +86,21 @@ struct CardsPalette {
     }
 }
 
+/// Eases a change in `value` into place, as a new frame changes it; still
+/// under Reduce Motion.
+struct Settle<V: Equatable>: ViewModifier {
+    var value: V
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content.animation(reduceMotion ? nil : .smooth(duration: 0.45), value: value)
+    }
+}
+
+extension View {
+    func settles<V: Equatable>(on value: V) -> some View { modifier(Settle(value: value)) }
+}
+
 /// The text sizes of the cards renderer, scaled by the Text size setting.
 struct CardsType {
     var scale: Double
@@ -187,6 +202,7 @@ struct HeroSymbol: View {
             .overlay { glyphView }
             .frame(width: size, height: size)
             .shadow(color: .black.opacity(palette.isDark ? 0.3 : 0.14), radius: 1, y: 0.5)
+            .settles(on: status.mark)
             .accessibilityHidden(true)
     }
 
@@ -374,6 +390,7 @@ struct Meter: View {
                 }
             }
             .frame(height: g.size.height)
+            .settles(on: percent)
         }
         .frame(height: height)
     }
