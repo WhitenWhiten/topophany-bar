@@ -237,7 +237,8 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .nv-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .nv-legend b { color: var(--l1); font-weight: 600; font-variant-numeric: tabular-nums; }
 .nv-legend .zero, .nv-legend .zero b { color: var(--l3); }
-.nv-legend .zero .mk { opacity: .45; }
+/* A count of none takes no color: its shape says which it is. */
+.nv-legend .zero .mk { color: var(--l3); }
 .nv-meta { display: flex; justify-content: space-between; margin-top: 9px; padding-top: 8px; border-top: .5px solid var(--sep); font-size: 11px; color: var(--l3); }
 .nv-meta span { display: inline-flex; align-items: center; gap: 5px; }
 .nv-meta svg { width: 12px; height: 12px; }

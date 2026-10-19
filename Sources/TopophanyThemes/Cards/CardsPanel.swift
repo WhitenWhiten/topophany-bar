@@ -416,7 +416,8 @@ struct CardsStatusCard: View {
 
     func item(_ n: Int, _ m: Mark, _ word: String) -> some View {
         HStack(spacing: 4) {
-            CardMark(mark: m, size: 9, color: p.listColor(m)).opacity(n == 0 ? 0.45 : 1)
+            // A count of none takes no color: its shape says which it is.
+            CardMark(mark: m, size: 9, color: n == 0 ? p.l3 : p.listColor(m))
             Text("\(n)").font(t.mono(11, .semibold)).foregroundStyle(n == 0 ? p.l3 : p.l1)
                 .contentTransition(.numericText(value: Double(n))).settles(on: n)
             Text(word).foregroundStyle(n == 0 ? p.l3 : p.l2)
