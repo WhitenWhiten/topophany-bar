@@ -57,13 +57,37 @@ import Testing
     /// is measured in.
     @Test func typeFamilies() {
         #expect(CardsType(scale: 1, theme: ThemeStore.native).design == .default)
-        #expect(CardsType(scale: 1, theme: ThemeStore.aurora).design == .default)
+        #expect(CardsType(scale: 1, theme: ThemeStore.aurora).design == .rounded)
         #expect(CardsType(scale: 1, theme: ThemeStore.linen).design == .serif)
         var rounded = ThemeStore.native
         rounded.font = Theme.Font(family: "SF Pro Rounded", size: 13)
         #expect(CardsType(scale: 1, theme: rounded).design == .rounded)
         rounded.font = Theme.Font(family: "Comic Sans", size: 13)
         #expect(CardsType(scale: 1, theme: rounded).design == .default)
+    }
+
+    /// A style slot takes the names its renderer knows; one left out, or a
+    /// theme file's unknown name, is the renderer's first.
+    @Test func styles() {
+        func refusals(_ json: String) -> [String] {
+            guard case .failure(.refused(let p)) = ThemeStore.load(Data(json.utf8)) else { return [] }
+            return p.map(\.description)
+        }
+        #expect(refusals(##"{"schema":1,"id":"x","renderer":"cards","style":{"meter":"rule","surface":"paper"}}"##)
+            == ["style surface is glass, matte, night, not paper"])
+        #expect(refusals(##"{"schema":1,"id":"x","renderer":"cards","style":{"box":"rules"}}"##) == ["cards has no style box"])
+        #expect(ThemeStore.native.style("surface") == "glass")
+        #expect(ThemeStore.linen.style("meter") == "rule")
+        #expect(ThemeStore.terminal.style("box") == "rounded")
+        #expect(ThemeStore.dusk.style("meter") == "braille")
+        // Every built-in theme looks its own: no two share a renderer and
+        // all their styles.
+        let looks = ThemeStore.builtIn.map { t in
+            t.renderer.rawValue + StyleSlots.slots(t.renderer).keys.sorted().map { t.style($0) }.joined(separator: ",")
+        }
+        #expect(Set(looks).count == ThemeStore.builtIn.count, "\(looks)")
+        let back = try? JSONDecoder().decode(Theme.self, from: JSONEncoder().encode(ThemeStore.paper))
+        #expect(back == ThemeStore.paper)
     }
 
     /// Paper's first draft, once DESIGN.md §8's example. Its warning is too

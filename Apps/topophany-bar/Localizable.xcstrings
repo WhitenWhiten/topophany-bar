@@ -201,6 +201,22 @@
         }
       }
     },
+    "A matte, woven page set in New York: ruled sections, small capitals, meters as scales.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New York で組んだ、織り目のあるマットな紙面：罫線で区切る欄、スモールキャップス、目盛りのメーター。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以 New York 排版的哑光织纹纸面：细线分隔的栏目、小型大写标题、刻度式仪表。"
+          }
+        }
+      }
+    },
     "A node that isn't in the topology shows as such.": {
       "localizations": {
         "ja": {
@@ -213,6 +229,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "不在拓扑中的节点会如实标明。"
+          }
+        }
+      }
+    },
+    "A northern sky at night: teal deepening to violet, round shapes, meters of dots.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜の北の空：深まる青緑から紫へ、丸い形とドットのメーター。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "北方夜空：青绿渐入紫色，圆润的形状与点阵仪表。"
           }
         }
       }
@@ -981,22 +1013,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "通用"
-          }
-        }
-      }
-    },
-    "Glass tinted the teal of a northern sky, with a violet second accent.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "北の空の青緑に染まったガラスに、紫の第二アクセント。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "染上北方夜空青绿色的玻璃，配以紫色的第二强调色。"
           }
         }
       }
@@ -2665,34 +2681,34 @@
         }
       }
     },
-    "Topophany’s TUI at nightfall: pastels on deep indigo.": {
+    "Topophany’s TUI at nightfall: pastels on deep indigo, boxes held by their corners, meters in braille.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "日暮れの Topophany の TUI：深い藍色にパステルカラー。"
+            "value": "日暮れの Topophany の TUI：深い藍色にパステルカラー、四隅で囲む枠、点字のメーター。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "黄昏时分的 Topophany TUI：深靛蓝上的柔和色彩。"
+            "value": "黄昏时分的 Topophany TUI：深靛蓝上的柔和色彩，四角定框，点字仪表。"
           }
         }
       }
     },
-    "Topophany’s TUI printed on warm paper.": {
+    "Topophany’s TUI printed on warm paper: grain, rules and halftone meters.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "温かみのある紙に刷った Topophany の TUI。"
+            "value": "温かみのある紙に刷った Topophany の TUI：紙の粒子、罫線、網点のメーター。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "印在暖色纸上的 Topophany TUI。"
+            "value": "印在暖色纸上的 Topophany TUI：纸纹、细线与网点仪表。"
           }
         }
       }
@@ -2789,22 +2805,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "视角"
-          }
-        }
-      }
-    },
-    "Warm, matte cards set in New York, with an ink-blue accent.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "New York 書体で組んだ、温かみのあるマットなカード。アクセントはインクブルーです。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "以 New York 字体排印的温暖哑光卡片，配以墨蓝色强调色。"
           }
         }
       }

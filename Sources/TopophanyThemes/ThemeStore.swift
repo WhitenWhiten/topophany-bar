@@ -31,47 +31,58 @@ public struct ThemeStore: Sendable {
      "font": {"family": "SF Mono", "size": 12}}
     """#
 
-    /// Glass tinted the green-blue of a northern sky, a violet second
-    /// accent; light or dark, as the system is.
+    /// A northern sky at night: an opaque ground that deepens from teal to
+    /// violet, hairline-outlined cards, meters as dots, set in SF Pro
+    /// Rounded; light or dark, as the system is.
     public static let auroraJSON = #"""
     {"schema": 1, "id": "aurora", "name": "Aurora", "renderer": "cards", "appearance": "system",
+     "style": {"surface": "night", "meter": "dots"},
      "tokens": {},
      "dark": {
-       "accent": "#2DD4BF", "accent2": "#A78BFA", "card": "rgba(45, 212, 191, .07)", "cardEdge": "rgba(94, 234, 212, .14)",
-       "panelMaterial": "rgba(12, 28, 34, .62)", "fill": "rgba(94, 234, 212, .2)", "fill2": "rgba(94, 234, 212, .09)"},
+       "accent": "#2DD4BF", "accent2": "#A78BFA", "card": "rgba(94, 234, 212, .02)", "cardEdge": "rgba(94, 234, 212, .2)",
+       "panelMaterial": "#0A2329", "panelMaterial2": "#18133F", "fill": "rgba(94, 234, 212, .2)", "fill2": "rgba(94, 234, 212, .075)"},
      "light": {
-       "accent": "#0D9488", "accent2": "#7C3AED", "card": "rgba(240, 253, 250, .7)", "cardEdge": "rgba(13, 148, 136, .14)",
-       "panelMaterial": "rgba(236, 253, 248, .62)", "fill": "rgba(13, 148, 136, .18)", "fill2": "rgba(13, 148, 136, .08)"},
-     "font": {"family": "SF Pro", "size": 13}}
+       "accent": "#0D9488", "accent2": "#7C3AED", "card": "rgba(255, 255, 255, .28)", "cardEdge": "rgba(13, 148, 136, .26)",
+       "panelMaterial": "#DCF2EC", "panelMaterial2": "#E9E3FA", "fill": "rgba(13, 148, 136, .17)", "fill2": "rgba(13, 148, 136, .07)"},
+     "font": {"family": "SF Pro Rounded", "size": 13}}
     """#
 
-    /// Matte, warm cards set in New York, an ink-blue accent; light or
-    /// dark, as the system is.
+    /// Linen: matte, woven, set in New York. Sections are ruled, not
+    /// carded, their titles in small capitals, and meters read as a
+    /// scale; an ink-blue accent; light or dark, as the system is.
     public static let linenJSON = #"""
     {"schema": 1, "id": "linen", "name": "Linen", "renderer": "cards", "appearance": "system",
+     "style": {"surface": "matte", "meter": "rule", "titles": "caps", "texture": "weave"},
      "tokens": {},
      "dark": {
-       "accent": "#9DB0E8", "accent2": "#BCA7DE", "card": "rgba(255, 236, 212, .065)", "cardEdge": "rgba(255, 230, 200, .1)",
-       "panelMaterial": "rgba(42, 35, 28, .86)", "fill": "rgba(222, 200, 170, .24)", "fill2": "rgba(222, 200, 170, .11)"},
+       "accent": "#A9B8EA", "accent2": "#C4AEE2", "card": "rgba(255, 236, 212, 0)", "cardEdge": "rgba(255, 230, 200, .14)",
+       "panelMaterial": "#28221C", "fill": "rgba(222, 200, 170, .24)", "fill2": "rgba(222, 200, 170, .09)",
+       "grain": "rgba(255, 238, 214, .05)"},
      "light": {
-       "accent": "#34509A", "accent2": "#7A5BA8", "card": "rgba(255, 253, 248, .84)", "cardEdge": "rgba(110, 88, 60, .13)",
-       "panelMaterial": "rgba(241, 237, 229, .88)", "fill": "rgba(120, 100, 74, .2)", "fill2": "rgba(120, 100, 74, .09)"},
+       "accent": "#34509A", "accent2": "#7A5BA8", "card": "rgba(255, 253, 248, 0)", "cardEdge": "rgba(96, 74, 46, .2)",
+       "panelMaterial": "#F3EEE4", "fill": "rgba(120, 100, 74, .2)", "fill2": "rgba(120, 100, 74, .08)",
+       "grain": "rgba(96, 74, 46, .06)"},
      "font": {"family": "New York", "size": 13}}
     """#
 
-    /// The TUI printed on warm paper.
+    /// The TUI printed on warm paper: grain, a rule over each section, and
+    /// meters in halftone.
     public static let paperJSON = #"""
     {"schema": 1, "id": "paper", "name": "Paper", "renderer": "cells", "appearance": "light",
+     "style": {"box": "rules", "meter": "shade", "texture": "grain"},
      "tokens": {
-       "ink": "#F5F0E6", "inkHigh": "#ECE5D7", "selection": "#E4DDCC", "key": "#E3DBCA", "line": "#D3C9B5", "track": "#E6DFD0",
+       "ink": "#F5F0E6", "inkHigh": "#ECE5D7", "selection": "#E4DDCC", "key": "#E3DBCA", "line": "#BFB39C", "track": "#E2DACA",
        "text": "#2A2925", "muted": "#6E695D", "faint": "#A29C8E", "glow": "#FFFFFF", "accent": "#0F766E", "accent2": "#1D4ED8",
-       "kind": "#BE185D", "up": "#15803D", "warning": "#B8720A", "down": "#B91C1C", "unknown": "#87929B"},
+       "kind": "#BE185D", "up": "#15803D", "warning": "#B8720A", "down": "#B91C1C", "unknown": "#87929B",
+       "grain": "rgba(80, 62, 30, .09)"},
      "font": {"family": "SF Mono", "size": 12}}
     """#
 
-    /// The TUI at nightfall: pastels on deep indigo.
+    /// The TUI at nightfall: pastels on deep indigo, each section held by
+    /// its corners, meters and history in braille.
     public static let duskJSON = #"""
     {"schema": 1, "id": "dusk", "name": "Dusk", "renderer": "cells", "appearance": "dark",
+     "style": {"box": "corners", "meter": "braille"},
      "tokens": {
        "ink": "#1A1735", "inkHigh": "#201C3F", "selection": "#2E2959", "key": "#2A2650", "line": "#3D3869", "track": "#252147",
        "text": "#E6E2F8", "muted": "#A49ECB", "faint": "#68629A", "glow": "#FFF4FA", "accent": "#B4A7FA", "accent2": "#8BD3F7",

@@ -185,14 +185,18 @@ Servers sit in different places, and an incident at 3 AM in one place is 6 PM in
 
 ## 6. Themes in v1
 
-| Theme | Renderer | Tokens |
-|---|---|---|
-| **Native** | `cards` | System materials and colors. Glass, SF Pro, SF Symbols, system green, orange, red and gray, and the accent color for capacity. Light, dark or Match System. |
-| **Aurora** | `cards` | Glass tinted the green-blue of a northern sky: accent `#2DD4BF` / `#0D9488`, a violet second accent, teal-tinted cards and fills. System status colors. Light or dark, as Native. |
-| **Linen** | `cards` | Matte, warm cards set in New York: an ink-blue accent (`#9DB0E8` / `#34509A`), walnut or linen ground, more opaque than glass. System status colors. Light or dark, as Native. |
-| **Terminal** | `cells` | The TUI's palette from `internal/tui/theme.go`: ink `#0A1016`, accent `#5EEAD4`, sky `#7DD3FC`, up `#4ADE80`, warn `#FBBF24`, down `#F87171`, unknown `#6B7A8C`, line `#243443`. It always paints its ink. |
-| **Paper** | `cells` | The TUI printed on warm paper: ink `#F5F0E6`, text `#2A2925`, accent `#0F766E`, up `#15803D`, warn `#B8720A`, down `#B91C1C`, unknown `#87929B`. Always light. |
-| **Dusk** | `cells` | The TUI at nightfall: ink `#1A1735`, text `#E6E2F8`, accent `#B4A7FA`, sky `#8BD3F7`, up `#6EE7B0`, warn `#F7B96B`, down `#F7768E`, unknown `#7A759F`. Always dark. |
+Each theme looks its own, not only in its colors: its style (section 8) chooses its surface, how its sections are edged, the texture of its meters, and its grain.
+
+| Theme | Renderer | Style | Tokens |
+|---|---|---|---|
+| **Native** | `cards` | Glass cards. Meters of fine graduated ticks. | System materials and colors. Glass, SF Pro, SF Symbols, system green, orange, red and gray, and the accent color for capacity. Light, dark or Match System. |
+| **Aurora** | `cards` | A northern sky at night: an opaque ground deepening from teal to violet (mint to lavender in light), hairline-outlined cards, round shapes (a disc for the verdict, chips round at the ends), meters as a matrix of dots, SF Pro Rounded. | Accent `#2DD4BF` / `#0D9488`, a violet second accent, teal-edged cards and fills. System status colors. Light or dark, as Native. |
+| **Linen** | `cards` | A matte page with a fine weave, set in New York: sections ruled rather than carded, titled in letterspaced small capitals, crisp corners, meters as a scale with its graduations and the limit a notch. | An ink-blue accent (`#A9B8EA` / `#34509A`), walnut or linen ground. System status colors. Light or dark, as Native. |
+| **Terminal** | `cells` | The TUI's rounded boxes. Meters of solid cells, a hairline apart. | The TUI's palette from `internal/tui/theme.go`: ink `#0A1016`, accent `#5EEAD4`, sky `#7DD3FC`, up `#4ADE80`, warn `#FBBF24`, down `#F87171`, unknown `#6B7A8C`, line `#243443`. It always paints its ink. |
+| **Paper** | `cells` | The TUI printed: paper grain, a masthead over a double rule, a rule over each section instead of a box, meters as a halftone on a dotted track, history drawn as a pen's hairlines. | Ink `#F5F0E6`, text `#2A2925`, accent `#0F766E`, up `#15803D`, warn `#B8720A`, down `#B91C1C`, unknown `#87929B`. Always light. |
+| **Dusk** | `cells` | The TUI at nightfall: each section held by its four corners, meters and history in braille dots. | Ink `#1A1735`, text `#E6E2F8`, accent `#B4A7FA`, sky `#8BD3F7`, up `#6EE7B0`, warn `#F7B96B`, down `#F7768E`, unknown `#7A759F`. Always dark. |
+
+Meters never shine: no gloss, no gradient lit from above. A reading past its check's limit reads in the warning color, and unknown is hatched (or a dashed rule), never empty.
 
 The theme applies to the panel, the menu bar item and every widget. Settings shows each theme as a chip of its colors, in one line that scrolls when more than fit: its ground, then accent, second accent, up, warning, down and unknown, as the panel would draw it now. Each renderer says what those colors are (`Renderer.colors`). In Edit Widget, a widget can take any built-in theme, or the menu bar's.
 
@@ -250,10 +254,12 @@ Themes must be able to grow: more built-in themes, and user themes later. So a t
   "name": "Paper",
   "renderer": "cells",
   "appearance": "light",
+  "style": { "box": "rules", "meter": "shade", "texture": "grain" },
   "tokens": {
-    "ink": "#F5F0E6", "inkHigh": "#ECE5D7", "selection": "#E4DDCC", "key": "#E3DBCA", "line": "#D3C9B5", "track": "#E6DFD0",
+    "ink": "#F5F0E6", "inkHigh": "#ECE5D7", "selection": "#E4DDCC", "key": "#E3DBCA", "line": "#BFB39C", "track": "#E2DACA",
     "text": "#2A2925", "muted": "#6E695D", "faint": "#A29C8E", "glow": "#FFFFFF", "accent": "#0F766E", "accent2": "#1D4ED8",
-    "kind": "#BE185D", "up": "#15803D", "warning": "#B8720A", "down": "#B91C1C", "unknown": "#87929B"
+    "kind": "#BE185D", "up": "#15803D", "warning": "#B8720A", "down": "#B91C1C", "unknown": "#87929B",
+    "grain": "rgba(80, 62, 30, .09)"
   },
   "font": { "family": "SF Mono", "size": 12 }
 }
@@ -272,22 +278,36 @@ A `cards` theme that follows the system gives its slots per appearance. `dark` a
 ```
 
 - **Token slots:**
-  - `cells` takes the slots above.
-  - `cards` takes `accent`, `accent2`, `card`, `cardEdge`, `panelMaterial`, `fill`, `fill2`, and optionally the status colors. Missing slots fall back to the system's. When it follows the system, `dark` and `light` may give any slot per appearance.
+  - `cells` takes the slots above, and optionally `grain`, its texture's ink.
+  - `cards` takes `accent`, `accent2`, `card`, `cardEdge`, `panelMaterial`, `panelMaterial2` (where a night surface deepens to), `fill`, `fill2`, `grain`, and optionally the status colors. Missing slots fall back to the system's. When it follows the system, `dark` and `light` may give any slot per appearance.
+- **Style slots:** a theme's `style` names how its renderer draws beyond its colors. Each renderer declares its slots and the names each takes; one left out is the renderer's first.
+
+  | Slot | `cards` | `cells` |
+  |---|---|---|
+  | `surface` | `glass`, `matte` (opaque, sections ruled), `night` (opaque, deepening, cards outlined) | n/a |
+  | `box` | n/a | `rounded`, `rules` (a rule over each section), `corners` |
+  | `meter` | `ticks`, `rule` (a scale), `dots` | `blocks`, `shade` (halftone), `braille` |
+  | `titles` | `plain`, `caps` | n/a |
+  | `texture` | `none`, `weave`, `grain` | `none`, `weave`, `grain` |
+
+  ```json
+  "style": { "surface": "matte", "meter": "rule", "titles": "caps", "texture": "weave" }
+  ```
 - **Type:** `font.family` is SF Pro, SF Pro Rounded or New York for `cards`, which draws SF Pro for any other. `cells` always draws SF Mono, which its grid is measured in. The size is the renderer's, scaled by the Text size setting.
 - **Validation:** a theme is refused, with the reason, unless all of these hold:
   - text on ink is at least 4.5:1;
   - every pair of status colors differs by at least ΔE 15 (OKLab ×100) to normal vision, in each appearance it draws in. Under simulated color-blindness, pairs under ΔE 8 are reported as advisories: no green, orange and red palette keeps that margin, and every status has its own shape;
   - every required slot is present;
-  - only a `cards` theme that follows the system gives `dark` and `light` sets.
-- **What a theme can't change:** glyphs, layout and meaning.
+  - only a `cards` theme that follows the system gives `dark` and `light` sets;
+  - every style slot is one its renderer has, set to a name it takes.
+- **What a theme can't change:** glyphs, layout and meaning. A style changes how a surface is drawn; a mark is the same shape in every theme.
 - **Where themes live:**
   - Built-in themes are compiled in.
   - User themes will be read from `~/Library/Application Support/topophany-bar/Themes/*.json`, then validated and copied into the App Group so widgets draw them too.
   - v1 ships the loader disabled, but every built-in theme goes through the same `Theme` type and validator, so the path is already exercised.
 - **Swift types:** `Theme { id, renderer: RendererID, tokens: Tokens }`. `Renderer` is a protocol with `panel(_:)`, `statusItem(_:)` and `widget(_:family:)`, each taking section models and tokens.
 
-**Aurora** and **Linen** (`cards`) and **Paper** and **Dusk** (`cells`) are built in, and each is only a token set: proof that a token file is a whole theme.
+**Aurora** and **Linen** (`cards`) and **Paper** and **Dusk** (`cells`) are built in, and each is only tokens and a style: proof that a theme file can look its own.
 
 ## 9. Configuration
 

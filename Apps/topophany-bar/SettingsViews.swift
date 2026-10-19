@@ -546,11 +546,11 @@ extension Theme {
     var blurb: String? {
         switch id {
         case "native": tr("macOS glass, SF Pro and system colors, like the apps beside it.")
-        case "aurora": tr("Glass tinted the teal of a northern sky, with a violet second accent.")
-        case "linen": tr("Warm, matte cards set in New York, with an ink-blue accent.")
+        case "aurora": tr("A northern sky at night: teal deepening to violet, round shapes, meters of dots.")
+        case "linen": tr("A matte, woven page set in New York: ruled sections, small capitals, meters as scales.")
         case "terminal": tr("Topophany’s TUI: ink, phosphor and monospace, the same glyphs as topo.")
-        case "paper": tr("Topophany’s TUI printed on warm paper.")
-        case "dusk": tr("Topophany’s TUI at nightfall: pastels on deep indigo.")
+        case "paper": tr("Topophany’s TUI printed on warm paper: grain, rules and halftone meters.")
+        case "dusk": tr("Topophany’s TUI at nightfall: pastels on deep indigo, boxes held by their corners, meters in braille.")
         default: nil
         }
     }
