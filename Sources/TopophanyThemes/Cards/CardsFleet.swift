@@ -135,8 +135,8 @@ struct FleetCell: View {
     }
 }
 
-/// Who runs a group, small: the provider's logo, its initials on a tile
-/// where there's no logo, or a lone node's kind.
+/// Who runs a group, small: the provider's logo, its kind's glyph where
+/// there's no logo, or a lone node's kind.
 struct FleetGlyph: View {
     var group: FleetSection.Group
     var p: CardsPalette
@@ -144,17 +144,8 @@ struct FleetGlyph: View {
 
     var body: some View {
         Group {
-            if let known = Provider.known(group.provider), known.hasLogo {
-                ProviderGlyph(key: known.key, color: p.l2)
-            } else if !group.provider.isEmpty {
-                let letters = NodeAvatar.initials(group.title)
-                RoundedRectangle(cornerRadius: size * 0.28, style: .continuous).fill(p.fill)
-                    .overlay {
-                        Text(verbatim: letters)
-                            .font(.system(size: size * (letters.count > 1 ? 0.46 : 0.6), weight: .bold, design: .rounded))
-                            .foregroundStyle(p.l1.opacity(0.8))
-                            .minimumScaleFactor(0.5)
-                    }
+            if let key = ProviderLogo.key(provider: group.provider, kind: group.kind) {
+                ProviderGlyph(key: key, color: p.l2)
             } else {
                 Image(systemName: NodeAvatar.symbol(group.kind)).font(.system(size: size * 0.78)).foregroundStyle(p.l2)
             }

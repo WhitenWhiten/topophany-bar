@@ -12,14 +12,34 @@ enum ProviderLogo {
         /// How large it is drawn, its longer side against the box's: a solid
         /// or a squat logo looks larger or smaller than its extent.
         var optical: Double
+        /// What is filled: a glyph's lines are made outlines here, once.
         var path: Path
     }
 
-    static let parsed: [String: Outline] = outlines.mapValues { w, h, k, d in
-        Outline(size: CGSize(width: w, height: h), optical: k, path: parse(d))
+    static let parsed: [String: Outline] = outlines.mapValues { w, h, k, line, d in
+        let path = parse(d)
+        return Outline(size: CGSize(width: w, height: h), optical: k,
+                       path: line > 0 ? path.strokedPath(StrokeStyle(lineWidth: line, lineCap: .round, lineJoin: .round)) : path)
     }
 
     static func outline(_ key: String) -> Outline? { parsed[key] }
+
+    /// What stands for a node where its provider has no logo, or it names
+    /// one the app doesn't know: a glyph for its kind.
+    static func glyph(kind: String) -> String {
+        switch kind.lowercased() {
+        case "edge", "cdn": "glyph.edge"
+        case "platform", "paas", "serverless": "glyph.platform"
+        default: "glyph.server"
+        }
+    }
+
+    /// The outline for a provider: its logo, or its node's kind's glyph;
+    /// nil when it names none.
+    static func key(provider: String, kind: String) -> String? {
+        if let known = Provider.known(provider), known.hasLogo { return known.key }
+        return provider.trimmingCharacters(in: .whitespaces).isEmpty ? nil : glyph(kind: kind)
+    }
 
     /// The logo centered in `rect`, its longer side the shorter of `rect`'s
     /// sides at the logo's optical size.
@@ -91,9 +111,9 @@ struct ProviderGlyph: View {
     }
 }
 
-/// What stands for a node on its card: its provider's logo, the provider's
-/// initials where the app has no logo for it, or its kind's symbol where it
-/// names no provider.
+/// What stands for a node on its card: its provider's logo, its kind's
+/// glyph where the app has no logo for its provider, or its kind's symbol
+/// where it names no provider.
 struct NodeAvatar: View {
     var provider: String
     var kind: String
@@ -113,36 +133,11 @@ struct NodeAvatar: View {
     @ViewBuilder var face: some View {
         if let symbol {
             Image(systemName: symbol).font(.system(size: size * 13 / 28)).foregroundStyle(p.l2)
-        } else if let known = Provider.known(provider), known.hasLogo {
-            ProviderGlyph(key: known.key, color: p.l2).frame(width: size * 0.56, height: size * 0.56)
-        } else if !provider.isEmpty {
-            let letters = Self.initials(Provider.name(provider))
-            Text(verbatim: letters)
-                .font(.system(size: size * (letters.count > 1 ? 0.36 : 0.44), weight: .semibold, design: .rounded))
-                .foregroundStyle(p.l2)
-                .minimumScaleFactor(0.6)
+        } else if let key = ProviderLogo.key(provider: provider, kind: kind) {
+            ProviderGlyph(key: key, color: p.l2).frame(width: size * 0.56, height: size * 0.56)
         } else {
             Image(systemName: Self.symbol(kind)).font(.system(size: size * 13 / 28)).foregroundStyle(p.l2)
         }
-    }
-
-    /// The first letter of a name's first two words, or of its two humps:
-    /// "BandwagonHost" is BH, "home" H.
-    static func initials(_ name: String) -> String {
-        var words: [String] = []
-        var word = ""
-        var previous: Character?
-        for c in name {
-            let split = !(c.isLetter || c.isNumber) || (c.isUppercase && (previous?.isLowercase ?? false))
-            if split, !word.isEmpty {
-                words.append(word)
-                word = ""
-            }
-            if c.isLetter || c.isNumber { word.append(c) }
-            previous = c
-        }
-        if !word.isEmpty { words.append(word) }
-        return words.prefix(2).compactMap(\.first).map { String($0).uppercased() }.joined()
     }
 
     /// A symbol for what a node is, where it names no provider.
@@ -165,9 +160,10 @@ struct NodeAvatar: View {
 
 extension CellsPalette {
     /// A logo's color: its brand's, 12% toward the text as the TUI mixes it,
-    /// and further while it is too dark to read on the ink.
-    func logo(_ provider: Provider) -> RGBA {
-        guard let c = provider.color else { return muted }
+    /// and further while it is too dark to read on the ink. A glyph, which
+    /// has no brand, is muted.
+    func logo(_ provider: Provider?) -> RGBA {
+        guard let c = provider?.color else { return muted }
         let brand = RGBA(Double((c >> 16) & 255) / 255, Double((c >> 8) & 255) / 255, Double(c & 255) / 255)
         var t = 0.12
         var out = brand.mix(text, t)

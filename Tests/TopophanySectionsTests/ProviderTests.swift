@@ -18,8 +18,12 @@ import Testing
         #expect(Provider.known("bandwagon")?.key == "bandwagonhost")
         #expect(Provider.known("阿里云")?.key == "alibaba")
         #expect(Provider.known("") == nil)
-        #expect(Provider.known("Home") == nil)
         #expect(Provider.known("--") == nil)
+        #expect(Provider.known("my own rack") == nil)
+        // Places are known too, as places: their glyph, not a company's logo.
+        #expect(Provider.known("Home")?.isGeneric == true)
+        #expect(Provider.known("on-prem")?.key == "office")
+        #expect(Provider.known("Cloudflare")?.isGeneric == false)
     }
 
     @Test func spelledTheProvidersWay() {
@@ -27,6 +31,7 @@ import Testing
         #expect(Provider.name("digitalocean") == "DigitalOcean")
         #expect(Provider.name("bandwagon") == "BandwagonHost")
         #expect(Provider.name("Home") == "Home")
+        #expect(Provider.name("homelab") == "homelab")
         #expect(Provider.name("my own rack") == "my own rack")
     }
 

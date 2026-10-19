@@ -81,36 +81,44 @@
     }
     return null;
   };
-  TB.providerName = (name) => (TB.provider(name) || { name }).name;
-  // The logo fit in a square, its longer side `optical` of it.
+  // A place, such as "homelab", keeps the topology's spelling.
+  TB.providerName = (name) => { const p = TB.provider(name); return p && !p.generic ? p.name : name; };
+  // The logo fit in a square, its longer side `optical` of it. A glyph is
+  // drawn as lines.
   TB.logo = (key, cls = '') => {
     const l = (window.TB_LOGOS || {})[key];
     if (!l) return '';
-    const [w, h, k, d] = l;
-    return `<svg class="logo ${cls}" viewBox="0 0 1 1"><path transform="translate(${((1 - w * k) / 2).toFixed(4)} ${((1 - h * k) / 2).toFixed(4)}) scale(${k})" d="${d}"/></svg>`;
+    const [w, h, k, line, d] = l;
+    const paint = line > 0 ? ` fill="none" stroke="currentColor" stroke-width="${line}" stroke-linecap="round" stroke-linejoin="round"` : '';
+    return `<svg class="logo ${cls}" viewBox="0 0 1 1"><path transform="translate(${((1 - w * k) / 2).toFixed(4)} ${((1 - h * k) / 2).toFixed(4)}) scale(${k})"${paint} d="${d}"/></svg>`;
   };
-  // "BandwagonHost" is BH, "home" H.
-  const initials = (name) => {
-    const words = String(name).replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, '$1 $2').split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-    return words.slice(0, 2).map((w) => [...w][0].toUpperCase()).join('');
+  // Where a provider has no logo, or the app doesn't know it, a glyph for
+  // its node's kind; nothing where it names none.
+  TB.logoKey = (provider, kind) => {
+    const p = TB.provider(provider);
+    if (p && window.TB_LOGOS[p.key]) return p.key;
+    if (!String(provider || '').trim()) return null;
+    const k = String(kind || '').toLowerCase();
+    return k === 'edge' || k === 'cdn' ? 'glyph.edge' : k === 'platform' || k === 'paas' || k === 'serverless' ? 'glyph.platform' : 'glyph.server';
   };
   const KIND_ICON = { laptop: 'laptop', desktop: 'desktop', router: 'router', edge: 'edge', platform: 'platform' };
-  // What stands for a node on its card: its provider's logo, the provider's
-  // initials where there is no logo, or its kind's symbol.
+  // What stands for a node on its card: its provider's logo, its kind's
+  // glyph where there is no logo, or its kind's symbol where it names no
+  // provider.
   TB.avatar = (s, icon) => {
-    const p = TB.provider(s.provider);
+    const key = TB.logoKey(s.provider, s.kind);
     let face;
     if (icon) face = icon;
-    else if (p && window.TB_LOGOS[p.key]) face = TB.logo(p.key, 'av-logo');
-    else if (s.provider) face = `<span class="av-ini ${initials(TB.providerName(s.provider)).length > 1 ? 'two' : ''}">${esc(initials(TB.providerName(s.provider)))}</span>`;
+    else if (key) face = TB.logo(key, 'av-logo');
     else face = I[KIND_ICON[s.kind] || 'server'] || I.server;
     return `<span class="nv-ico2">${face}</span>`;
   };
   // The TUI's logo before a name: two cells, in the brand's color 12% toward
-  // the text, further while too dark to read on the ink.
-  TB.tlogo = (provider, p) => {
-    const k = TB.provider(provider);
-    if (!k || !window.TB_LOGOS[k.key]) return [];
+  // the text, further while too dark to read on the ink; a glyph is muted.
+  TB.tlogo = (provider, p, kind) => {
+    const key = TB.logoKey(provider, kind);
+    if (!key) return [];
+    const k = TB.provider(provider) || {};
     let t = 0.12, c = k.color ? mix(k.color.toLowerCase(), p.text, t) : p.muted;
     const lum = (hex) => {
       const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
@@ -118,7 +126,7 @@
     };
     const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
     while (k.color && contrast(c, p.ink) < 3 && t < 1) { t += 0.08; c = mix(k.color.toLowerCase(), p.text, Math.min(1, t)); }
-    return [{ html: `<span class="tlogo" style="color:${c}">${TB.logo(k.key)}</span>`, w: 2 }];
+    return [{ html: `<span class="tlogo" style="color:${c}">${TB.logo(key)}</span>`, w: 2 }];
   };
 
   function battery(pct, charging) {
@@ -417,14 +425,11 @@
     const keys = new Set([...edges, ...servers].filter((g) => g.provider).map((g) => (TB.provider(g.provider) || {}).key || norm(g.provider)));
     return { edges, servers, nodes: sc.listed.length, providers: keys.size, current: sc.verdict.state !== 'offline' };
   };
-  // Who runs a group, small: the logo, the initials on a tile, or a kind.
+  // Who runs a group, small: the logo, its kind's glyph, or a lone node's
+  // kind.
   function fleetGlyph(g) {
-    const p = TB.provider(g.provider);
-    if (p && window.TB_LOGOS[p.key]) return `<span class="fl-g">${TB.logo(p.key)}</span>`;
-    if (g.provider) {
-      const ini = initials(g.title);
-      return `<span class="fl-g fl-ini ${ini.length > 1 ? 'two' : ''}">${esc(ini)}</span>`;
-    }
+    const key = TB.logoKey(g.provider, g.kind);
+    if (key) return `<span class="fl-g">${TB.logo(key)}</span>`;
     return `<span class="fl-g fl-sym">${I[KIND_ICON[g.kind] || 'server'] || I.server}</span>`;
   }
   // The nodes of groups left out for room, trouble first.
@@ -757,7 +762,7 @@
     return out.join('');
   }
   const serverTitle = (s, p) => [S(' '), S(TB.glyph(s.withheld ? 'cached' : s.health), 'h-' + (s.withheld ? 'unk' : TB.cls(s.health))), S(' '),
-    ...TB.tlogo(s.provider, p || PALETTES.terminal), S(s.name + ' ', 'b')];
+    ...TB.tlogo(s.provider, p || PALETTES.terminal, s.kind), S(s.name + ' ', 'b')];
   const serverPill = (s) => {
     const t = s.withheld ? 'CACHED' : s.pill || { up: 'UP', degraded: 'WARN', down: 'DOWN' }[s.health] || 'UNKNOWN';
     return [S(' ' + t + ' ', 'pill pill-' + (s.withheld ? 'unk' : TB.cls(s.health)))];
@@ -816,7 +821,7 @@
       return [...segs, S(' '.repeat(Math.max(1, cw - width(segs) - width(tail)))), ...tail];
     };
     const group = (g) => {
-      const logo = TB.tlogo(g.provider, p);
+      const logo = TB.tlogo(g.provider, p, g.kind);
       return entry(logo.length ? logo : [S('  ')], g.title, '', g.edge ? ' ' + g.kind : '', g.nodes);
     };
     const all = F.edges.length + F.servers.length;

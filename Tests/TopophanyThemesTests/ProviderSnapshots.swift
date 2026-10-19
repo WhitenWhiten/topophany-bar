@@ -18,35 +18,46 @@ import TopophanySections
                         "\(p.key) \(b)")
             }
         }
-        #expect(ProviderLogo.outlines.count == Provider.all.count { $0.hasLogo })
+        #expect(ProviderLogo.outlines.keys.count { !$0.hasPrefix("glyph.") } == Provider.all.count { $0.hasLogo })
+        for kind in ["host", "edge", "platform", "laptop"] {
+            let key = ProviderLogo.glyph(kind: kind)
+            let b = ProviderLogo.outline(key)?.path.boundingRect ?? .zero
+            #expect(b.width > 0.5 && b.minX > 0 && b.maxX < 1 && b.minY > 0 && b.maxY < 1, "\(key) \(b)")
+        }
     }
 
-    @Test func initials() {
-        #expect(NodeAvatar.initials("BandwagonHost") == "BH")
-        #expect(NodeAvatar.initials("bandwagon") == "B")
-        #expect(NodeAvatar.initials("my own rack") == "MO")
-        #expect(NodeAvatar.initials("搬瓦工") == "搬")
+    /// A provider the app doesn't know takes its node's kind's glyph; a
+    /// node naming none, its kind's symbol; a place keeps its own spelling.
+    @Test func defaults() {
+        #expect(ProviderLogo.key(provider: "BandwagonHost", kind: "host") == "glyph.server")
+        #expect(ProviderLogo.key(provider: "Some Edge Co", kind: "edge") == "glyph.edge")
+        #expect(ProviderLogo.key(provider: "", kind: "host") == nil)
+        #expect(ProviderLogo.key(provider: "fly-io", kind: "platform") == "fly")
+        #expect(ProviderLogo.key(provider: "Homelab", kind: "host") == "home")
+        #expect(Provider.name("homelab") == "homelab")
+        #expect(Provider.name("cloudcone") == "CloudCone")
+        #expect(Provider.name("gitlab-pages") == "GitLab")
     }
 
     @Test func sheet() throws {
         for dark in [true, false] {
             let ctx = RenderContext(theme: ThemeStore.native, colorScheme: dark ? .dark : .light)
             let p = CardsPalette.resolve(ctx)
-            let names = Provider.all.map(\.name) + ["Home", "my own rack"]
+            let names = Provider.all.map(\.name) + ["my own rack"]
             let rows = VStack(alignment: .leading, spacing: 6) {
                 ForEach(names, id: \.self) { name in
                     HStack(spacing: 12) {
                         Text(name).font(.system(size: 11)).foregroundStyle(p.l2).frame(width: 96, alignment: .leading)
-                        if let k = Provider.known(name), k.hasLogo {
+                        if let key = ProviderLogo.key(provider: name, kind: "host") {
                             ForEach([12.0, 14, 16, 20], id: \.self) { s in
-                                ProviderGlyph(key: k.key, color: p.l2).frame(width: s, height: s)
+                                ProviderGlyph(key: key, color: p.l2).frame(width: s, height: s)
                                     .background(Rectangle().stroke(p.sep, lineWidth: 0.5))
                             }
                         } else {
                             Color.clear.frame(width: 104, height: 12)
                         }
-                        NodeAvatar(provider: name == "Home" ? "" : name, kind: "host", size: 28, p: p)
-                        NodeAvatar(provider: name == "Home" ? "" : name, kind: "host", size: 22, p: p)
+                        NodeAvatar(provider: name, kind: "host", size: 28, p: p)
+                        NodeAvatar(provider: "", kind: "host", size: 22, p: p)
                     }
                     .frame(height: 28)
                 }

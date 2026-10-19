@@ -17,16 +17,20 @@ public struct Provider: Sendable, Hashable, Identifiable {
     /// The few letters `topo` stands in for its name with, or "".
     public var mark: String
     public var hasLogo: Bool
+    /// A place rather than a company, such as home or an office: its logo
+    /// is a glyph of the app's own, and its name is the topology's.
+    public var isGeneric: Bool
 
     public var id: String { key }
 
-    init(key: String, name: String, names: [String], color: UInt32?, mark: String, hasLogo: Bool) {
+    init(key: String, name: String, names: [String], color: UInt32?, mark: String, hasLogo: Bool, isGeneric: Bool = false) {
         self.key = key
         self.name = name
         self.names = names
         self.color = color
         self.mark = mark
         self.hasLogo = hasLogo
+        self.isGeneric = isGeneric
     }
 
     /// The provider a topology names, by any of its names, or nil.
@@ -36,8 +40,12 @@ public struct Provider: Sendable, Hashable, Identifiable {
     }
 
     /// A provider as the app writes it: in its own spelling where the app
-    /// knows it, otherwise as the topology wrote it.
-    public static func name(_ raw: String) -> String { known(raw)?.name ?? raw }
+    /// knows it, otherwise (and for a place, such as "homelab") as the
+    /// topology wrote it.
+    public static func name(_ raw: String) -> String {
+        guard let p = known(raw), !p.isGeneric else { return raw }
+        return p.name
+    }
 
     /// A name in lowercase, with everything but letters and digits removed:
     /// "Fly.io" and "fly-io" are both "flyio".

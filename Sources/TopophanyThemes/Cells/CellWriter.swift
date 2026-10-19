@@ -91,10 +91,11 @@ enum Seg {
     static func mark(_ m: Mark, _ p: CellsPalette) -> Seg { .glyph(.mark(m), p.tone(m)) }
 
     /// A provider's logo where the app has one, as the TUI leads a name with
-    /// it; nothing otherwise.
-    static func logo(_ provider: String, _ p: CellsPalette) -> [Seg] {
-        guard let known = Provider.known(provider), known.hasLogo else { return [] }
-        return [.logo(known.key, p.logo(known))]
+    /// it; its node's kind's glyph for a provider the app doesn't know;
+    /// nothing where it names none.
+    static func logo(_ provider: String, kind: String = "", _ p: CellsPalette) -> [Seg] {
+        guard let key = ProviderLogo.key(provider: provider, kind: kind) else { return [] }
+        return [.logo(key, p.logo(Provider.known(provider)))]
     }
 }
 

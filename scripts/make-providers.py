@@ -4,7 +4,8 @@
 Sources/TopophanySections/ProviderTable.swift gets each provider's name,
 the names a topology may give it, its color and its mark.
 Sources/TopophanyThemes/ProviderLogoData.swift gets each logo as one
-outline in a box as wide and tall as the logo, its longer side 1, in
+outline in a box as wide and tall as the logo, its longer side 1, and each
+glyph (drawn as lines, not filled) in its 24 by 24 box, its side 1; both in
 absolute M, L, Q, C and Z only: arcs become curves, relative and smooth
 commands absolute, and topo's outlines, y up, are turned y down. Swift then
 reads each outline in one pass. design/assets/provider-logos.js gets the
@@ -23,18 +24,24 @@ TABLE = os.path.join(ROOT, "Sources", "TopophanySections", "ProviderTable.swift"
 LOGOS = os.path.join(ROOT, "Sources", "TopophanyThemes", "ProviderLogoData.swift")
 PREVIEW = os.path.join(ROOT, "design", "assets", "provider-logos.js")
 OPTICAL = 0.92
+# A glyph's box already holds its margin, as a symbol's does.
+GLYPH_OPTICAL = 1.08
 
 NUMBER = re.compile(r"[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?")
 ARITY = {"M": 2, "L": 2, "H": 1, "V": 1, "C": 6, "S": 4, "Q": 4, "T": 2, "A": 7, "Z": 0}
 
 
-def read_source():
-    js = open(SOURCE, encoding="utf-8").read()
-    start = js.index("window.TB_PROVIDERS = {") + len("window.TB_PROVIDERS = ")
+def read_object(js, name):
+    start = js.index(f"window.{name} = {{") + len(f"window.{name} = ")
     end = js.index("\n};", start) + 2
-    body = js[start:end]
-    # The file is JSON but for the trailing comma after the last entry.
-    return json.loads(re.sub(r",\n}$", "\n}", body))
+    # Each object is JSON but for the trailing comma after its last entry.
+    return json.loads(re.sub(r",\n}$", "\n}", js[start:end]))
+
+
+def read_source():
+    """The providers, and the glyphs that stand in where no logo does."""
+    js = open(SOURCE, encoding="utf-8").read()
+    return read_object(js, "TB_PROVIDERS"), read_object(js, "TB_GLYPHS")
 
 
 def normalized(name):
@@ -249,15 +256,25 @@ def outline(logo):
     return (x1 - x0) * k, (y1 - y0) * k, "".join(out)
 
 
+def glyph_outline(glyph):
+    """A glyph in its 24 by 24 box, the box's side 1, and its line width."""
+    out = []
+    for seg in absolute(glyph["d"]):
+        out.append(seg[0] + " ".join(fmt(v / 24) for v in seg[1:]))
+    return 1, 1, glyph["stroke"] / 24, "".join(out)
+
+
 def swift_string(s):
     return json.dumps(s, ensure_ascii=False)
 
 
 def main():
-    providers = read_source()
+    providers, glyphs = read_source()
     seen = {}
     for key, p in providers.items():
         assert re.fullmatch(r"[a-z0-9]+", key), key
+        assert not ("logo" in p and "glyph" in p), f"{key}: a logo or a glyph, not both"
+        assert "glyph" not in p or (p["glyph"] in glyphs and p.get("generic")), f"{key}: only generic places take a glyph"
         for n in p["names"]:
             assert n == normalized(n), f"{key}: {n!r} isn't normalized"
             assert n not in seen, f"{n!r} names both {seen.get(n)} and {key}"
@@ -271,9 +288,11 @@ def main():
         names = set(p["names"]) | {normalized(p["name"])}
         names = [n for n in p["names"]] + sorted(names - set(p["names"]))
         color = "0x" + p["color"][1:] if p["color"] else "nil"
+        logo = "logo" in p or "glyph" in p
         rows.append(f"        Provider(key: {swift_string(key)}, name: {swift_string(p['name'])}, "
                     f"names: [{', '.join(swift_string(n) for n in names)}], color: {color}, "
-                    f"mark: {swift_string(p['mark'])}, hasLogo: {'true' if 'logo' in p else 'false'}),")
+                    f"mark: {swift_string(p['mark'])}, hasLogo: {'true' if logo else 'false'}"
+                    f"{', isGeneric: true' if p.get('generic') else ''}),")
     with open(TABLE, "w", encoding="utf-8") as f:
         f.write(head + "extension Provider {\n"
                 "    /// Every provider topophany-bar knows: the ones topo knows, in its\n"
@@ -281,25 +300,34 @@ def main():
                 "    static let table: [Provider] = [\n" + "\n".join(rows) + "\n    ]\n}\n")
 
     rows, js = [], []
-    for key, p in providers.items():
-        if "logo" not in p:
-            continue
-        w, h, d = outline(p["logo"])
-        k = p.get("optical", OPTICAL)
+
+    def add(key, w, h, k, line, d):
         assert 0.5 < k < 1.2, (key, k)
-        rows.append(f"        {swift_string(key)}: ({fmt(w)}, {fmt(h)}, {fmt(k)}, {swift_string(d)}),")
-        js.append(f"  {swift_string(key)}: [{fmt(w)}, {fmt(h)}, {fmt(k)}, {swift_string(d)}],")
+        rows.append(f"        {swift_string(key)}: ({fmt(w)}, {fmt(h)}, {fmt(k)}, {fmt(line)}, {swift_string(d)}),")
+        js.append(f"  {swift_string(key)}: [{fmt(w)}, {fmt(h)}, {fmt(k)}, {fmt(line)}, {swift_string(d)}],")
+
+    for key, p in providers.items():
+        if "logo" in p:
+            w, h, d = outline(p["logo"])
+            add(key, w, h, p.get("optical", OPTICAL), 0, d)
+        elif "glyph" in p:
+            g = glyphs[p["glyph"]]
+            add(key, *glyph_outline(g)[:2], g.get("optical", GLYPH_OPTICAL), *glyph_outline(g)[2:])
+    for name, g in glyphs.items():
+        add("glyph." + name, *glyph_outline(g)[:2], g.get("optical", GLYPH_OPTICAL), *glyph_outline(g)[2:])
     with open(LOGOS, "w", encoding="utf-8") as f:
         f.write(head + "extension ProviderLogo {\n"
                 "    /// Each logo's width and height, its longer side 1; how large it is\n"
-                "    /// drawn against the box it fits; and its outline.\n"
-                "    static let outlines: [String: (Double, Double, Double, String)] = [\n" + "\n".join(rows) + "\n    ]\n}\n")
+                "    /// drawn against the box it fits; the width of its lines, or 0 when\n"
+                "    /// it is filled; and its outline. Glyphs are `glyph.` and their name.\n"
+                "    static let outlines: [String: (Double, Double, Double, Double, String)] = [\n" + "\n".join(rows) + "\n    ]\n}\n")
     with open(PREVIEW, "w", encoding="utf-8") as f:
         f.write("// Generated by scripts/make-providers.py from providers.js. Don't edit.\n"
                 "// Each logo's width and height, its longer side 1; how large it is drawn\n"
-                "// against the box it fits; and its outline.\n"
+                "// against the box it fits; the width of its lines, or 0 when it is\n"
+                "// filled; and its outline. Glyphs are `glyph.` and their name.\n"
                 "window.TB_LOGOS = {\n" + "\n".join(js) + "\n};\n")
-    print(f"{len(providers)} providers, {len(rows)} logos")
+    print(f"{len(providers)} providers, {len(rows) - len(glyphs)} logos, {len(glyphs)} glyphs")
 
 
 if __name__ == "__main__":

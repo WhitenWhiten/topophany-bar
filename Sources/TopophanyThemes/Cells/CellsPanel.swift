@@ -187,7 +187,7 @@ struct CellsBodies {
             return segs + [.t(String(repeating: " ", count: max(1, cw - used)), p.text)] + tail
         }
         func entry(_ g: FleetSection.Group) -> [Seg] {
-            let logo = Seg.logo(g.provider, p)
+            let logo = Seg.logo(g.provider, kind: g.kind, p)
             return entry(logo.isEmpty ? [.t("  ", p.text)] : logo, g.title, p.text, tag: g.isEdge ? " " + Words.kind(g.kind) : "",
                          nodes: g.nodes)
         }
@@ -223,7 +223,7 @@ struct CellsBodies {
     /// "● [logo] Oracle New York": the TUI leads a node's name with its
     /// provider's logo.
     func serverTitle(_ c: ServerCardModel, prefix: [Seg] = []) -> [Seg] {
-        prefix + [.t(" ", p.text), .mark(c.mark, p), .t(" ", p.text)] + Seg.logo(c.isMissing ? "" : c.provider, p)
+        prefix + [.t(" ", p.text), .mark(c.mark, p), .t(" ", p.text)] + Seg.logo(c.isMissing ? "" : c.provider, kind: c.kind, p)
             + [.t(c.name + " ", p.text, bold: true)]
     }
 

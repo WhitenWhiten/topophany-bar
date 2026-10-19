@@ -135,13 +135,14 @@ The Terminal theme draws each section as the TUI draws a panel:
 
 A node's provider is who runs it: a company that rents servers, or an edge or a platform that services are deployed to. `topo` sends it as the topology writes it, in the provider's own spelling where `topo` knows the provider.
 
-- **Who:** the app knows the sixteen providers `topo` knows, by every name `topo` accepts, and more beyond them. A provider is matched with case and everything but letters and digits removed, so "Fly.io", "fly-io" and "flyio" are one. A known provider is written its own way.
-- **Logos:** the ten that `topo` draws are its own outlines, from Nerd Fonts (Devicons, MIT; Linode's from Font Awesome, CC BY 4.0; Oracle's ring from Material Design Icons, Apache 2.0). Others come from Simple Icons (CC0). Each is its owner's trademark, shown only to say who runs a node. Wordmarks and hairline logos that turn to mush at panel sizes are left out.
-- **Where:** a server card's tile, before its name. A provider without a logo gets its initials; a node without a provider, its kind's symbol.
+- **Who:** the app knows the sixteen providers `topo` knows, by every name `topo` accepts, and about seventy beyond them: clouds, VPS hosts, edges and platforms. A provider is matched with case and everything but letters and digits removed, so "Fly.io", "fly-io" and "flyio" are one. A known provider is written its own way.
+- **Places:** "Home" (or "homelab") and "Office" (or "on-prem") are known as places, not companies. They take a glyph of the app's own, a house or a building, and keep the topology's spelling.
+- **Logos:** the ten that `topo` draws are its own outlines, from Nerd Fonts (Devicons, MIT; Linode's from Font Awesome, CC BY 4.0; Oracle's ring from Material Design Icons, Apache 2.0). Others come from Simple Icons (CC0). Each is its owner's trademark, shown only to say who runs a node. Left out: wordmarks and hairline logos that turn to mush at panel sizes, and logos that are a ring or a cross, which would read as a status mark.
+- **Where:** a server card's tile, before its name. A provider without a logo, or one the app doesn't know, gets its node's kind's glyph: a server, an edge's cloud, a platform's stack. These are drawn as lines, as a symbol is, so they never pass for a brand. A node without a provider gets its kind's symbol.
 - **Color:** in Native, a logo is drawn in the text's color. Brand colors would compete with health: an orange logo reads as warn, a green one as up, a red one as down. In Terminal, a logo takes its brand's color 12% toward the text, as the TUI draws it, and more where it would be too dark to read on the ink.
 - **Meaning:** none. A logo never says how a node is doing.
 
-`design/assets/providers.js` holds the names, colors and outlines. `scripts/make-providers.py` turns it into Swift, and the outlines into `provider-logos.js` for the previews, so both draw the same shapes.
+`design/assets/providers.js` holds the names, colors, outlines and glyphs. `scripts/make-providers.py` turns it into Swift, and the outlines into `provider-logos.js` for the previews, so both draw the same shapes.
 
 ## 5. This Mac
 
