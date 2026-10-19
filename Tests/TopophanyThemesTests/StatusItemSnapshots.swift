@@ -13,12 +13,14 @@ import TopophanySections
     init() { L10n.force("en") }
 
     func item(_ scenario: FixtureEngine.Scenario, show: TopophanyKit.Settings.Appearance.Show = .count, colors: Bool = true,
-              readings: [TopophanyKit.Settings.Appearance.MenuBar.Reading] = [], local: LocalSnapshot? = sampleLocal) -> StatusItemModel {
+              readings: [TopophanyKit.Settings.Appearance.MenuBar.Reading] = [], local: LocalSnapshot? = sampleLocal,
+              quiet: Bool = false) -> StatusItemModel {
         var a = TopophanyKit.Settings.Appearance.MenuBar()
         a.show = show
         a.statusColors = colors
         a.readings = readings
-        return StatusItemModel(status: previewPanel(scenario).status, appearance: a, local: local)
+        let status = previewPanel(scenario).status
+        return StatusItemModel(status: status, appearance: a, local: local, quiet: quiet ? QuietAlert(status) : nil)
     }
 
     func drawn(_ model: StatusItemModel, theme: Theme, dark: Bool, motion: StatusItemMotion = .still) -> some View {
@@ -50,6 +52,26 @@ import TopophanySections
                     }
                 }
                 try snapshot("item-\(theme.id)-\(dark ? "dark" : "light")", OnDesktop(dark: dark, padding: 12) { rows })
+            }
+        }
+    }
+
+    /// Quieted until it gets worse: the alerts' badges in the menu bar's
+    /// ink, beside the same in color.
+    @Test func quiet() throws {
+        for theme in [ThemeStore.native, ThemeStore.terminal] {
+            for dark in [true, false] {
+                let rows = VStack(alignment: .leading, spacing: 0) {
+                    ForEach([FixtureEngine.Scenario.degraded, .incidents], id: \.self) { s in
+                        bar(dark: dark) {
+                            ForEach(TopophanyKit.Settings.Appearance.Show.allCases, id: \.self) { show in
+                                drawn(item(s, show: show), theme: theme, dark: dark)
+                                drawn(item(s, show: show, quiet: true), theme: theme, dark: dark)
+                            }
+                        }
+                    }
+                }
+                try snapshot("item-quiet-\(theme.id)-\(dark ? "dark" : "light")", OnDesktop(dark: dark, padding: 12) { rows })
             }
         }
     }

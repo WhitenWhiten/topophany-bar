@@ -103,16 +103,21 @@ public struct PanelActions: @unchecked Sendable {
     public var quit: @MainActor () -> Void
     public var openAttention: @MainActor (AttentionSection.Item?) -> Void
     public var focus: @MainActor (String?) -> Void
+    /// Quiets the menu bar's alert until it gets worse, or shows it again:
+    /// whichever the alert is ready for when it's called.
+    public var toggleQuiet: @MainActor () -> Void
 
     public init(openTerminal: @escaping @MainActor () -> Void = {}, openSettings: @escaping @MainActor () -> Void = {},
                 quit: @escaping @MainActor () -> Void = {},
                 openAttention: @escaping @MainActor (AttentionSection.Item?) -> Void = { _ in },
-                focus: @escaping @MainActor (String?) -> Void = { _ in }) {
+                focus: @escaping @MainActor (String?) -> Void = { _ in },
+                toggleQuiet: @escaping @MainActor () -> Void = {}) {
         self.openTerminal = openTerminal
         self.openSettings = openSettings
         self.quit = quit
         self.openAttention = openAttention
         self.focus = focus
+        self.toggleQuiet = toggleQuiet
     }
 }
 

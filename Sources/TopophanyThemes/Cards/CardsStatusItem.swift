@@ -31,7 +31,7 @@ struct CardsStatusItem: View {
     var ink: Color { ctx.menuBarIsDark ? .white : Color(white: 0.08) }
 
     func color(_ mark: Mark) -> Color {
-        guard model.statusColors else { return ink }
+        guard model.tinted else { return ink }
         switch mark {
         case .up: return ctx.menuBarIsDark ? Color(rgb: 0x32D74B) : Color(rgb: 0x28B449)
         case .degraded: return ctx.menuBarIsDark ? Color(rgb: 0xFF9F0A) : Color(rgb: 0xF08C00)

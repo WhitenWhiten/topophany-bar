@@ -97,13 +97,35 @@ import TopophanySections
         #expect(live.size.height - live.marks["footer"]! == 28)
     }
 
-    /// The keycaps are buttons, within the footer.
-    @Test func terminalKeycaps() {
+    /// The keycaps are buttons, within the footer; while there's an alert,
+    /// Status's `m` too.
+    @Test func terminalKeycaps() throws {
         let ctx = RenderContext(theme: ThemeStore.terminal)
         for model in [previewPanel(.clear), previewPanel(.offline), waitingPanel(.tooOld)] {
             let s = CellsPanel.scene(model, ctx: ctx)
             #expect(Set(s.regions.keys) == ["open", "settings", "quit"])
             for r in s.regions.values { #expect(r.minY > s.marks["footer"]! && r.maxY < s.size.height) }
         }
+        let s = CellsPanel.scene(previewPanel(.incidents), ctx: ctx)
+        let quiet = try #require(s.regions["quiet"])
+        #expect(Set(s.regions.keys) == ["open", "settings", "quit", "quiet"])
+        #expect(quiet.minY > s.marks["header"]! && quiet.maxY < s.marks["status"]!)
+    }
+
+    /// The Quiet button, and the panel once the menu bar's alert is quiet.
+    @Test func quietPanels() throws {
+        func quieted(_ s: FixtureEngine.Scenario) -> PanelModel {
+            var m = previewPanel(s)
+            m.alert = .quiet
+            return m
+        }
+        for dark in [true, false] {
+            let a = dark ? "dark" : "light"
+            try snapshot("panel-native-\(a)-quiet", panel(quieted(.incidents), theme: ThemeStore.native, dark: dark))
+            try snapshot("panel-native-\(a)-quiet-degraded", panel(quieted(.degraded), theme: ThemeStore.native, dark: dark))
+        }
+        try snapshot("panel-terminal-quiet", OnDesktop(dark: true) {
+            CellsPanel(model: quieted(.incidents), ctx: RenderContext(theme: ThemeStore.terminal))
+        })
     }
 }

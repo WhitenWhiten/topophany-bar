@@ -37,7 +37,7 @@ struct CellsStatusItem: View {
             let frame = Int((ctx.motion.time / 0.09).rounded(.down)) % Self.spinner.count
             return .glyph(.braille(Self.spinner[max(0, frame)]), p.accent2)
         }
-        let tone = model.statusColors ? p.tone(model.mark) : p.muted
+        let tone = model.tinted ? p.tone(model.mark) : p.muted
         // Whole steps of the turn are the tone itself.
         let breath = (1 - cos(2 * .pi * ctx.motion.turn)) / 4
         return .glyph(.mark(model.mark), tone.mix(p.glow, breath))

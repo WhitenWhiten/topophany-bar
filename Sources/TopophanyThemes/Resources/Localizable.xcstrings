@@ -1303,6 +1303,54 @@
         }
       }
     },
+    "Quiet": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミュート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "静音"
+          }
+        }
+      }
+    },
+    "Quiet the menu bar until this gets worse": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悪化するまでメニューバーをミュート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在情况变糟之前，将菜单栏静音"
+          }
+        }
+      }
+    },
+    "Quieted": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミュート中"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已静音"
+          }
+        }
+      }
+    },
     "Quit": {
       "localizations": {
         "ja": {
@@ -1431,6 +1479,22 @@
         }
       }
     },
+    "Show the menu bar’s colors again": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メニューバーの色を戻す"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复菜单栏的颜色"
+          }
+        }
+      }
+    },
     "Storage": {
       "localizations": {
         "ja": {
@@ -1491,6 +1555,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "时区"
+          }
+        }
+      }
+    },
+    "The menu bar stays quiet until this gets worse. Click to show its colors again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悪化するまでメニューバーはミュートされます。クリックすると色が戻ります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在情况变糟之前，菜单栏保持静音。点按以恢复其颜色。"
           }
         }
       }
@@ -1753,6 +1833,22 @@
         }
       }
     },
+    "menu bar quiet until it gets worse · undo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悪化するまでミュート中 · 元に戻す"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已静音，直到情况变糟 · 撤销"
+          }
+        }
+      }
+    },
     "no server chosen": {
       "localizations": {
         "ja": {
@@ -1845,6 +1941,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "压力 %@"
+          }
+        }
+      }
+    },
+    "quiet the menu bar until it gets worse": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悪化するまでメニューバーをミュート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在情况变糟之前将菜单栏静音"
           }
         }
       }

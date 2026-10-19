@@ -19,10 +19,10 @@ struct CardsPanel: View {
         VStack(spacing: 7) {
             CardsHeader(chrome: model.chrome, p: p, t: t)
             if model.pinStatus, ctx.maxHeight != nil {
-                CardsStatusCard(status: model.status, p: p, t: t)
+                CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t)
                 scrolling(p)
             } else {
-                CardsStatusCard(status: model.status, p: p, t: t)
+                CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t)
                 sections(p)
             }
             CardsFooter(chrome: model.chrome, p: p, t: t)
@@ -125,6 +125,37 @@ struct HeaderButton: View {
     }
 }
 
+/// Quiets the menu bar's alert until it gets worse, and shows that it is
+/// quiet: pressed, in the accent, until clicked again.
+struct QuietButton: View {
+    var quiet: Bool
+    var p: CardsPalette
+    var t: CardsType
+    @Environment(\.panelActions) private var actions
+    @State private var hover = false
+
+    var body: some View {
+        Button { actions.toggleQuiet() } label: {
+            HStack(spacing: 4) {
+                Image(systemName: quiet ? "bell.slash.fill" : "bell.slash").font(.system(size: 10 * t.scale, weight: .medium))
+                Text(quiet ? tr("Quieted") : tr("Quiet"))
+            }
+            .font(t.font(11, .medium))
+            .foregroundStyle(quiet ? p.accent : hover ? p.l1 : p.l2)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 8).padding(.vertical, 3.5)
+            .background(Capsule().fill(quiet ? p.accent.opacity(hover ? 0.24 : 0.16) : hover ? p.fill : p.fill2))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hover = $0 }
+        .help(quiet ? tr("The menu bar stays quiet until this gets worse. Click to show its colors again.")
+                    : tr("Quiet the menu bar until this gets worse"))
+        .accessibilityLabel(quiet ? tr("Show the menu bar’s colors again") : tr("Quiet the menu bar until this gets worse"))
+    }
+}
+
 struct CardsFooter: View {
     var chrome: PanelChrome
     var p: CardsPalette
@@ -203,6 +234,7 @@ struct CardTitle: View {
 
 struct CardsStatusCard: View {
     var status: StatusSection
+    var alert: MenuBarAlert = .unavailable
     var p: CardsPalette
     var t: CardsType
 
@@ -220,13 +252,20 @@ struct CardsStatusCard: View {
             HStack(spacing: 12) {
                 HeroSymbol(status: status, size: 44, palette: p)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(1)
-                        .contentTransition(.numericText()).settles(on: status.title)
+                    HStack(spacing: 8) {
+                        Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(1)
+                            .contentTransition(.numericText()).settles(on: status.title)
+                        if alert != .unavailable {
+                            Spacer(minLength: 0)
+                            QuietButton(quiet: alert == .quiet, p: p, t: t)
+                        }
+                    }
                     Text(status.subtitle).font(t.font(12)).foregroundStyle(p.l2).lineLimit(2)
                 }
             }
             .padding(.bottom, 12)
-            .accessibilityElement(children: .combine)
+            // The words read as one; the Quiet button stays a button.
+            .accessibilityElement(children: alert == .unavailable ? .combine : .contain)
             if status.isBlind {
                 cached
             } else if let c = status.counts?.complete {

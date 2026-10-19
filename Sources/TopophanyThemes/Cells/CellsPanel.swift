@@ -365,10 +365,11 @@ struct CellsPanel: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(CellsAccessibility.panel(model))
             .overlay(alignment: .bottomLeading) { keys(scene) }
+            .overlay(alignment: .topLeading) { quietKey(scene) }
     }
 
-    /// The footer's keycaps are buttons too, and `,` and `q` work alone, as
-    /// the footer shows them. The footer is always at the bottom.
+    /// The keycaps are buttons too, and `,`, `q` and `m` work alone, as the
+    /// panel shows them. The footer is always at the bottom.
     func keys(_ scene: CellScene) -> some View {
         ZStack(alignment: .bottomLeading) {
             key(scene, "open", tr("Open in Terminal"), nil) { actions.openTerminal() }
@@ -377,8 +378,16 @@ struct CellsPanel: View {
         }
     }
 
+    /// Status's keycap, from the top: Status stays put while the rest
+    /// scrolls. A shortcut keeps the action it was first given, so the
+    /// action asks the app which way to turn.
+    func quietKey(_ scene: CellScene) -> some View {
+        key(scene, "quiet", model.alert == .quiet ? tr("Show the menu bar’s colors again") : tr("Quiet the menu bar until this gets worse"),
+            KeyboardShortcut("m", modifiers: []), fromTop: true) { actions.toggleQuiet() }
+    }
+
     @ViewBuilder
-    func key(_ scene: CellScene, _ id: String, _ label: String, _ shortcut: KeyboardShortcut?,
+    func key(_ scene: CellScene, _ id: String, _ label: String, _ shortcut: KeyboardShortcut?, fromTop: Bool = false,
              action: @escaping @MainActor () -> Void) -> some View {
         if let r = scene.regions[id] {
             Button(action: action) { Color.clear.contentShape(Rectangle()) }
@@ -389,7 +398,7 @@ struct CellsPanel: View {
                 }
                 .keyboardShortcut(shortcut)
                 .accessibilityLabel(label)
-                .offset(x: r.minX, y: r.maxY - scene.size.height)
+                .offset(x: r.minX, y: fromTop ? r.minY : r.maxY - scene.size.height)
         }
     }
 
@@ -452,9 +461,19 @@ struct CellsPanel: View {
         // With nothing ever received there is no age, and "cached" stands
         // alone: Japanese and Chinese put the age before it.
         let age = st.isBlind ? (updated.isEmpty ? tr("cached") : tr("cached \(updated)")) : tr("updated \(updated)")
+        // Below the verdict, `m` quiets the menu bar's alert, or shows it again.
+        var quietRegion: CGRect?
         w.box(title(tr("STATUS")), [.t(" " + age + " ", p.muted)],
               x0: x0, x1: x1, style: .panel, tint: b.statusTint(st)) { w in
             b.status(&w, st, blockHeight: 54)
+            guard model.alert != .unavailable else { return }
+            let words = model.alert == .quiet ? tr("menu bar quiet until it gets worse · undo")
+                : tr("quiet the menu bar until it gets worse")
+            let text = " " + CellText.truncate(words, w.frame.columns - 4)
+            w.y += 4
+            quietRegion = CGRect(x: w.frame.x - 2, y: w.y - 4, width: Double(3 + CellText.width(text)) * w.cell + 4,
+                                 height: w.lineHeight + 8)
+            w.line([.key(" m "), .t(text, hover == "quiet" ? p.text : p.muted)])
         }
         marks["status"] = w.y + 2
         for s in model.sections {
@@ -522,6 +541,7 @@ struct CellsPanel: View {
         }
         // Each keycap and its label is a button.
         var regions: [String: CGRect] = [:]
+        regions["quiet"] = quietRegion
         var col = 0
         for k in keys {
             let n = k.segs.reduce(0) { $0 + $1.width }
