@@ -81,12 +81,24 @@ public struct LiveAge: Sendable {
     public var background: RGBA?
 }
 
+/// A zone's clock that turns on its own, as a widget's must between
+/// reloads: set as live text over the scene, from `x`, on the line at `y`.
+public struct LiveClock: Sendable {
+    public var x: Double
+    public var y: Double
+    public var timeZone: TimeZone
+    /// "AM" after the time, on a 12-hour clock.
+    public var period: Bool
+    public var color: RGBA
+}
+
 /// A drawn grid of styled cells and the TUI's vector pieces.
 public struct CellScene: Sendable {
     public var size: CGSize
     public var metrics: CellMetrics
     public var items: [CellItem] = []
     public var live: [LiveAge] = []
+    public var clocks: [LiveClock] = []
     /// Named y positions, such as where a pinned part ends.
     public var marks: [String: Double] = [:]
     /// Named areas, such as a keycap and its label.
@@ -161,6 +173,23 @@ public struct CellCanvas: View {
             }
         }
         .frame(width: scene.size.width, height: scene.size.height)
+        .overlay(alignment: .topLeading) {
+            ForEach(Array(scene.clocks.enumerated()), id: \.offset) { _, c in
+                HStack(spacing: 0) {
+                    Text(.currentDate, format: ZoneClock.time(c.timeZone))
+                    if c.period {
+                        Text(verbatim: " ")
+                        Text(.currentDate, format: ZoneClock.period(c.timeZone))
+                    }
+                }
+                .font(Self.font(scene.metrics, bold: true))
+                    .foregroundStyle(Color(c.color))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .frame(height: scene.metrics.line)
+                    .offset(x: c.x, y: c.y)
+            }
+        }
         .overlay(alignment: .topLeading) {
             ForEach(Array(scene.live.enumerated()), id: \.offset) { _, a in
                 Text(.currentDate, format: .reference(to: a.date, allowedFields: [.minute, .hour, .day], maxFieldCount: 1))

@@ -1447,6 +1447,22 @@
         }
       }
     },
+    "Servers not known now": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーは現在不明"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器当前未知"
+          }
+        }
+      }
+    },
     "Services": {
       "localizations": {
         "ja": {
@@ -1957,6 +1973,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "在情况变糟之前将菜单栏静音"
+          }
+        }
+      }
+    },
+    "servers not known now": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーは現在不明"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器当前未知"
           }
         }
       }

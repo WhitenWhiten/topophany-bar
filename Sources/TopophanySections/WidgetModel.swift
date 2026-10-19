@@ -25,6 +25,8 @@ public struct WidgetModel: Sendable, Hashable {
         case status
         /// One server's card; `isMac` when it is this Mac's node.
         case server(node: String, isMac: Bool)
+        /// The time where the servers are, with each one's mark.
+        case zones
     }
 
     /// The medium Status widget's right side.
@@ -56,6 +58,11 @@ public struct WidgetModel: Sendable, Hashable {
         guard case .server(let node, _) = kind else { return nil }
         if case .server(let c, _)? = panel.mac, c.id == node { return c }
         return panel.servers.first { $0.id == node }
+    }
+
+    /// What a Time zones widget shows.
+    public var zones: ZonesSection? {
+        panel.sections.lazy.compactMap { if case .zones(let z) = $0 { z } else { nil } }.first
     }
 
     public var isMac: Bool {

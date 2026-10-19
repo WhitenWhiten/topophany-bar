@@ -138,6 +138,52 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
         }
     }
 
+    /// Time zones, from the servers topo lists, This Mac in Seattle.
+    func zones(_ s: FixtureEngine.Scenario = .incidents) -> WidgetModel {
+        var panel = previewPanel(s, settings: previewSettings(mac: .off))
+        panel.sections = panel.sections.filter { if case .zones = $0 { true } else { false } }
+        return WidgetModel(kind: .zones, panel: panel)
+    }
+
+    @Test func zonesSizes() throws {
+        let sizes = Self.sizes.filter { $0.0 != .extraLarge }
+        for theme in ThemeStore.builtIn {
+            for dark in theme.appearance == .system ? [true, false] : [theme.appearance == .dark] {
+                let a = theme.appearance == .system ? (dark ? "-dark" : "-light") : ""
+                for (size, n) in sizes {
+                    try snapshot("widget-zones-\(theme.id)\(a)-\(n)", onDesktop(zones(), size, theme: theme, dark: dark))
+                    try snapshot("widget-zones-\(theme.id)\(a)-\(n)-1080",
+                                 onDesktop(zones(), size, bounds: Self.smaller[size], theme: theme, dark: dark))
+                }
+            }
+        }
+        let stale = zones().notCurrent(at: snapshotOrigin.addingTimeInterval(47 * 60))
+        try snapshot("widget-zones-native-dark-m-not-current", onDesktop(stale, .medium, theme: ThemeStore.native, dark: true))
+        try snapshot("widget-zones-terminal-m-not-current", onDesktop(stale, .medium, theme: ThemeStore.terminal, dark: true))
+    }
+
+    /// Every zone row stays inside the widget, with the rest counted.
+    @Test func zonesFit() throws {
+        for (size, _) in Self.sizes where size != .extraLarge {
+            for bounds in [CGSize(width: size.width, height: size.height), try #require(Self.smaller[size])] {
+                let scene = CellsWidget.scene(zones(), size: size, bounds: bounds, ctx: RenderContext(theme: ThemeStore.terminal))
+                let bottom = scene.items.compactMap { item -> Double? in
+                    if case .box(let r, _, _, _, _) = item { r.maxY } else { nil }
+                }.max() ?? 0
+                #expect(bottom <= bounds.height - 6, "\(size) \(bounds): \(bottom)")
+                // This Mac's zone holds a warning: cut short or not, it shows.
+                #expect(scene.items.contains { if case .glyph(_, _, .mark(.degraded), _) = $0 { true } else { false } },
+                        "\(size) \(bounds)")
+            }
+        }
+        // Live, the clocks are left to live text, one a zone.
+        var ctx = RenderContext(theme: ThemeStore.terminal)
+        ctx.liveDates = true
+        let live = CellsWidget.scene(zones(), size: .large, bounds: CGSize(width: 364, height: 364), ctx: ctx)
+        #expect(live.clocks.count == 5)
+        #expect(!live.items.contains { if case .text(_, _, let t, _, _) = $0 { t.contains("AM") || t.contains("PM") } else { false } })
+    }
+
     @Test func monochrome() throws {
         for theme in [ThemeStore.native, ThemeStore.terminal] {
             for (size, n) in [(WidgetSize.small, "s"), (.medium, "m")] {

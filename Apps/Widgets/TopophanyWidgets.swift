@@ -13,6 +13,7 @@ struct TopophanyWidgetBundle: WidgetBundle {
     var body: some Widget {
         StatusWidget()
         ServerWidget()
+        ZonesWidget()
     }
 }
 
@@ -121,6 +122,14 @@ struct ServerWidgetIntent: WidgetConfigurationIntent {
     var theme: ThemeChoice
 }
 
+struct ZonesWidgetIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Time Zones"
+    static let description = IntentDescription("The time where your servers are, and each one’s health.")
+
+    @Parameter(title: "Theme", default: .bar)
+    var theme: ThemeChoice
+}
+
 // MARK: timeline
 
 struct Entry: TimelineEntry {
@@ -154,6 +163,19 @@ enum Timelines {
         let theme = theme(choice, h)
         return WidgetSchedule.entries(h, at: now, server: node).map { e in
             Entry(date: e.date, model: WidgetModel(kind: kind, right: right, panel: e.panel, isCurrent: e.isCurrent), theme: theme)
+        }
+    }
+
+    /// A Time zones widget's: a quarter hour apart for a day, its clocks
+    /// live between them.
+    static func zones(theme choice: ThemeChoice, family: WidgetFamily, key: String) -> [Entry] {
+        let now = Date()
+        let h = store.read()
+        L10n.prefer(h?.decodedSettings.language.localization)
+        needs.record(key, .init(lists: false, node: nil, zones: true, at: now))
+        let theme = theme(choice, h)
+        return WidgetSchedule.zonesEntries(h, at: now).map { e in
+            Entry(date: e.date, model: WidgetModel(kind: .zones, panel: e.panel, isCurrent: e.isCurrent), theme: theme)
         }
     }
 }
@@ -195,6 +217,24 @@ struct ServerProvider: AppIntentTimelineProvider {
         let node = c.node ?? NodeQuery.known().first
         return Timelines.entries(kind: .server(node: node?.id ?? "", isMac: node?.isMac ?? false), right: .automatic,
                                  theme: c.theme, family: context.family, key: "server-\(context.family)-\(node?.id ?? "")")
+    }
+}
+
+struct ZonesProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> Entry {
+        Timelines.zones(theme: .bar, family: context.family, key: "placeholder-zones")[0]
+    }
+
+    func snapshot(for configuration: ZonesWidgetIntent, in context: Context) async -> Entry {
+        timeline(configuration, context)[0]
+    }
+
+    func timeline(for configuration: ZonesWidgetIntent, in context: Context) async -> Timeline<Entry> {
+        Timeline(entries: timeline(configuration, context), policy: .never)
+    }
+
+    func timeline(_ c: ZonesWidgetIntent, _ context: Context) -> [Entry] {
+        Timelines.zones(theme: c.theme, family: context.family, key: "zones-\(context.family)")
     }
 }
 
@@ -254,6 +294,18 @@ struct ServerWidget: Widget {
         .configurationDisplayName("Server")
         .description("One server's card, as in the Servers tab.")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
+    }
+}
+
+struct ZonesWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: "zones", intent: ZonesWidgetIntent.self, provider: ZonesProvider()) { entry in
+            WidgetView(entry: entry)
+        }
+        .configurationDisplayName("Time Zones")
+        .description("The time where your servers are, and each one’s health.")
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .contentMarginsDisabled()
     }
 }

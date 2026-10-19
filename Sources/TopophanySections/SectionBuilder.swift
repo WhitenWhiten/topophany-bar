@@ -367,8 +367,11 @@ public enum SectionBuilder {
 
     /// Listed servers by the zone of their place, west to east, and This
     /// Mac's zone. Without a list from `topo`, the pinned servers' cards.
-    public static func zones(_ r: Reading, chosen: [String: String], pinned: [String], here: TimeZone) -> ZonesSection {
-        let now = r.now
+    /// The clocks read `at`, by default the reading's own time; the marks
+    /// are the reading's.
+    public static func zones(_ r: Reading, chosen: [String: String], pinned: [String], here: TimeZone,
+                             at time: Date? = nil) -> ZonesSection {
+        let now = time ?? r.now
         var current = true
         var listed: [(id: String, name: String, place: String, mark: Mark)] = []
         if let row = r.row(RowID.servers), case .servers(let l) = row.value {

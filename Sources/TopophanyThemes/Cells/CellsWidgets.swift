@@ -31,8 +31,11 @@ struct CellsWidget: View {
         switch model.kind {
         case .status: l.status(size)
         case .server: l.server(size)
+        case .zones: l.zones(size)
         }
-        return CellScene(size: bounds, metrics: m, items: l.w.items, live: l.w.live)
+        var scene = CellScene(size: bounds, metrics: m, items: l.w.items, live: l.w.live)
+        scene.clocks = l.w.clocks
+        return scene
     }
 
     /// Lays out one widget, top to bottom.
@@ -197,6 +200,36 @@ struct CellsWidget: View {
                     servicesBox(apps, x0: split + cell, x1: x1, narrow: false)
                 }
                 if let f = model.panel.fleet { fleetBox(f, x0: split + cell, x1: x1) }
+            }
+        }
+
+        // MARK: Time zones
+
+        /// As many zones as fit: a line each, with a ribbon, in the medium
+        /// size; two each in the large, as the panel draws them, and in the
+        /// small, its places under its time. Those left out are counted on
+        /// a last line.
+        mutating func zones(_ size: WidgetSize) {
+            guard let z = model.zones else { return }
+            let x0 = pad.side, x1 = pad.side + Double(cols) * cell
+            head(cols)
+            let per = size == .medium ? 1 : 2
+            let room = linesLeft
+            // The small size has no line to say what isn't placed.
+            let extra = size != .small && (!z.isCurrent || z.unplaced > 0) ? 1 : 0
+            let fits = z.zones.count * per + extra <= room
+            let (shown, rest) = fits ? (z.zones, []) : z.cut(keeping: max(1, (room - 1) / per))
+            let b = self.b
+            let live = ctx.liveDates
+            let lines: CellsBodies.ZoneLines = switch size {
+            case .small: .stacked
+            case .medium: .one(ribbon: true)
+            default: .two
+            }
+            w.box(title(tr("TIME ZONES"), "\(z.zones.count)"), size == .small ? [] : [.t(" " + tr("\(z.serverCount) servers") + " ", p.muted)],
+                  x0: x0, x1: x1, style: style) { w in
+                b.zones(&w, z, shown: shown, rest: rest, lines: lines, live: live,
+                        foot: !rest.isEmpty || (extra > 0 && shown.count * per + 1 <= room))
             }
         }
 

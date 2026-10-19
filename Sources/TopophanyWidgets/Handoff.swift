@@ -79,6 +79,15 @@ public struct Handoff: Sendable, Codable {
                                                settings: widgetSettings))
     }
 
+    /// The panel for a Time zones widget: the zones as the clocks read at
+    /// `date`, the marks as they were when this was written.
+    public func panel(zonesAt date: Date, here: TimeZone = .autoupdatingCurrent) -> PanelModel {
+        var p = panel()
+        let s = decodedSettings.sections
+        p.sections = [.zones(SectionBuilder.zones(reading(), chosen: s.placeZones, pinned: s.serverNodes, here: here, at: date))]
+        return p
+    }
+
     /// The servers `topo` last listed, for choosing a Server widget's node.
     public func servers() -> [ServerListEntry] {
         let r = reading()

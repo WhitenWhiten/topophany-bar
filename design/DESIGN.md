@@ -179,8 +179,8 @@ Servers sit in different places, and an incident at 3 AM in one place is 6 PM in
   - Places without a zone (`anycast`, coordinates, unmatched names) are counted at the foot of the section: "2 without a time zone".
 - **Health:** the marks are `topo`'s and nothing else. A zone row has no health of its own. When the list isn't current, the clocks go on and every mark is withheld (◌).
 - **Without `servers.list`:** the pinned servers' cards stand in.
-- **Server cards** (Servers, and This Mac as a server) add the time where the server is after its place, by the same zones. It never truncates; the provider gives way first. Widgets leave it out, because they redraw too seldom to keep a clock.
-- **Widgets:** not offered; the section is the panel's.
+- **Server cards** (Servers, and This Mac as a server) add the time where the server is after its place, by the same zones. It never truncates; the provider gives way first. The Server widget leaves it out; the Time zones widget keeps the clocks.
+- **The widget:** Time zones, small, medium and large (section 7.1), shows the section whether the panel does or not. Its clocks are the system's live dates, so they turn each minute without a reload; its ribbons and days move a quarter hour at a time. As many zones as fit are drawn, This Mac's always among them, and the rest are counted at the foot ("+2 more") with their servers' marks, trouble first.
 - **Terminal:** two lines per zone. The ribbon is one cell per stretch of hours, in the palette's own night and day tones, and now is the accent.
 
 ## 6. Themes in v1
@@ -210,6 +210,7 @@ Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary
 |---|---|---|---|---|
 | **Status** | verdict, a mark per check, observers, age | Status, plus Needs attention (or Applications when nothing needs attention) | Status with legend, Seen from, Needs attention | Large, plus Applications and Fleet |
 | **Server** | one node: CPU, memory and disk against limits, state, age | plus its services and what it observes from there | n/a | n/a |
+| **Time zones** | each zone's time, its places and marks | plus each zone's day ribbon, offset and name | each zone on a taller row, with its day | n/a |
 
 - **A mark per check.** In a narrow column (the small widget, and the medium widget's left), the bar's ticks wrap into a grid: every check as its mark, filled a column at a time in the bar's order, so trouble gathers at the right as it does on the bar. Up is quieter than trouble. Past what can be read, the stacked bar.
 - **Room to spare** spreads between the blocks, up to twice their usual gap, instead of pooling above the foot.
@@ -222,7 +223,7 @@ Every widget is built from the same section models and the same renderer as the 
 
 A widget extension runs in its own process and can't attach to the app's pipe. The app is the only reader of `topo`. After each frame it keeps the latest frame and the theme in its App Group container, and asks WidgetKit to reload:
 
-- **At once** when the verdict state changes, or a widget-visible row changes health.
+- **At once** when the verdict state changes, or a widget-visible row changes health. With a Time zones widget on the desktop, that is every listed server.
 - **On a heartbeat** of 30 min while nothing changes.
 
 Local readings are not offered in widgets, because a widget can't refresh often enough to show them live.
@@ -235,6 +236,8 @@ Each reload gives WidgetKit two timeline entries:
 - **Not current:** dated at the next heartbeat plus 15 min.
 
 If the app quits, crashes or the Mac sleeps through a renewal, the widget switches itself to **Not current**. It shows the last verdict as history ("Last known: 5 incidents · 47 min ago"), never as now. The widget's age line uses WidgetKit's relative date, which counts up without reloads.
+
+A Time zones widget's timeline is longer: an entry each quarter hour for a day, so the ribbons keep moving. Its marks are current until the same moment, then withheld (◌), and the clocks go on. Past the day, the last entry draws the clocks alone, without ribbons or days.
 
 ### 7.4 Rendering modes
 

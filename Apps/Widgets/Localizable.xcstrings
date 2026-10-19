@@ -244,6 +244,22 @@
         }
       }
     },
+    "The time where your servers are, and each one’s health.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーのある場所の時刻と、それぞれの状態。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器所在地的时间，以及各自的状态。"
+          }
+        }
+      }
+    },
     "The verdict, and more of the panel as the size allows.": {
       "localizations": {
         "ja": {
@@ -288,6 +304,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "本机 · %@"
+          }
+        }
+      }
+    },
+    "Time Zones": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイムゾーン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时区"
           }
         }
       }

@@ -19,6 +19,11 @@ struct CardsWidget: View {
             switch model.kind {
             case .status: status(p)
             case .server: server(p)
+            case .zones:
+                if let z = model.zones {
+                    WidgetZones(zones: z, size: size, room: CGSize(width: bounds.width - 28, height: bounds.height - 28),
+                                p: p, t: t, live: ctx.liveDates)
+                }
             }
         }
         .padding(14)

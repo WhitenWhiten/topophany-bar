@@ -21,6 +21,7 @@ enum WidgetNeedsWatcher {
     private static func check(_ model: AppModel, _ store: WidgetNeedsStore) {
         let needs = store.needs()
         model.widgets?.needs = needs
+        model.widgets?.zones = store.zones()
         model.setWidgetNeeds(needs)
     }
 }

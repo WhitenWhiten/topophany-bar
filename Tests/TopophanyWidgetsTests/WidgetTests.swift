@@ -180,3 +180,64 @@ func temporaryStore() -> HandoffStore {
         #expect(count.n == 0)
     }
 }
+
+@Suite struct ZonesWidgetTests {
+    init() { L10n.force("en") }
+
+    let here = TimeZone(identifier: "America/Los_Angeles")!
+
+    func listed() -> Handoff {
+        var s = settings()
+        s.sections.zones = false
+        let p = FixtureEngine.policy(.incidents, request: TemplateCompiler().request(for: s, revision: 1, listServers: true),
+                                     origin: origin, after: 4)
+        return Handoff(policy: p, theme: ThemeStore.native, settings: s, engineRunning: true, at: origin.addingTimeInterval(4))
+    }
+
+    func zones(_ e: (date: Date, panel: PanelModel, isCurrent: Bool)) -> ZonesSection? {
+        WidgetModel(kind: .zones, panel: e.panel).zones
+    }
+
+    /// The widget draws Time zones whatever the panel shows, from the
+    /// servers topo lists, with This Mac's zone among them.
+    @Test func drawsZonesThePanelHides() throws {
+        let z = try #require(zones((origin, listed().panel(zonesAt: origin, here: here), true)))
+        #expect(z.zones.count == 5)
+        #expect(z.zones.contains { $0.isHere })
+        #expect(z.serverCount == 14)
+        #expect(z.isCurrent)
+    }
+
+    /// An entry each quarter hour, so the ribbons and days move: current
+    /// until the next heartbeat plus the grace, history after it, the clocks
+    /// going on; past a day, the clocks alone.
+    @Test func entriesEachQuarterHour() throws {
+        let h = listed()
+        let now = h.writtenAt
+        let entries = WidgetSchedule.zonesEntries(h, at: now, here: here)
+        #expect(entries.first?.date == now)
+        let stale = WidgetSchedule.notCurrent(after: h)
+        #expect(entries.contains { $0.date == stale && !$0.isCurrent })
+        for e in entries {
+            #expect(e.isCurrent == (e.date < stale))
+            let z = try #require(zones(e))
+            let marks = z.zones.flatMap(\.servers).map(\.mark)
+            if e.isCurrent { #expect(marks.contains(.up)) } else { #expect(marks.allSatisfy { $0 == .offline }) }
+        }
+        let steps = zip(entries.dropFirst(), entries.dropFirst(2)).map { $1.date.timeIntervalSince($0.date) }
+        #expect(steps.allSatisfy { $0 <= WidgetSchedule.zonesStep + 0.5 })
+        // The clocks read at each entry's time.
+        let a = try #require(zones(entries[1])), b = try #require(zones(entries[5]))
+        #expect(a.zones[0].hour != b.zones[0].hour)
+        let last = try #require(entries.last)
+        #expect(last.date == now.addingTimeInterval(WidgetSchedule.zonesSpan))
+        #expect(zones(last)?.clocksOnly == true)
+        #expect(entries.dropLast().allSatisfy { zones($0)?.clocksOnly == false })
+    }
+
+    /// Without a hand-off there's nothing to draw but history.
+    @Test func withoutAHandoff() {
+        let e = WidgetSchedule.zonesEntries(nil, at: origin, here: here)
+        #expect(e.count == 1 && !e[0].isCurrent)
+    }
+}

@@ -287,33 +287,92 @@ struct CellsBodies {
 
     // MARK: time zones
 
-    /// Two lines a zone: its time, places, marks and offset, then its zone
-    /// name and its day ribbon, every ribbon as wide as the others so the
-    /// now ticks line up.
-    func zones(_ w: inout CellWriter, _ z: ZonesSection) {
+    enum ZoneLines {
+        /// Its time, places, marks and offset; then its zone name and its
+        /// day ribbon.
+        case two
+        /// Time, places, marks, a ribbon where it fits and the offset.
+        case one(ribbon: Bool)
+        /// Its time, marks and offset; then its places, a step in, for
+        /// a column too narrow to hold them beside the time.
+        case stacked
+    }
+
+    /// Each zone in `lines`, every ribbon as wide as the others so the now
+    /// ticks line up. `shown` are the zones that fit, `rest` those left
+    /// out, counted on a last line with their servers' marks, trouble
+    /// first. Live, the clocks are left to the scene's live text.
+    func zones(_ w: inout CellWriter, _ z: ZonesSection, shown: [ZonesSection.Zone]? = nil, rest: [ZonesSection.Zone] = [],
+               lines: ZoneLines = .two, live: Bool = false, foot: Bool = true) {
         let n = w.frame.columns
+        let shown = shown ?? z.zones
         // As wide as the widest clock or zone name: "GMT-10", "GMT+5:30".
-        let tw = z.zones.map { max(CellText.width($0.clock), min(CellText.width($0.zoneName), 9)) }.max() ?? 0
-        let rw = z.zones.map { max(CellText.width($0.relative), CellText.width($0.day)) }.max() ?? 0
-        let ribbon = max(8, n - tw - 2 - 1 - rw)
+        let tw = shown.map { max(CellText.width($0.clock), min(CellText.width($0.zoneName), 9)) }.max() ?? 0
+        let rw = shown.map { max(CellText.width($0.relative), z.clocksOnly ? 0 : CellText.width($0.day)) }.max() ?? 0
         // Night is the darker of the palette's quiet tones, day the lighter.
         let dark = p.ink.r + p.ink.g + p.ink.b < 1.5
         let (night, day) = dark ? (p.track, p.muted) : (p.faint, p.track)
-        for zone in z.zones {
-            var marks: [Seg] = zone.servers.prefix(8).map { .mark($0.mark, p) }
-            if zone.servers.count > 8 { marks.append(.t("+\(zone.servers.count - 8)", p.faint)) }
-            let room = n - tw - 2 - marks.reduce(0) { $0 + $1.width } - 1 - rw - 1
-            w.line([.t(CellText.pad(zone.clock, tw), p.text, bold: true), .t("  ", p.text),
-                    .t(CellText.truncate(zone.title, max(1, room)), p.text)],
-                   marks + [.t(" ", p.text), .t(CellText.padLeft(zone.relative, rw), zone.isHere ? p.accent : p.muted)])
-            let cells = (0..<ribbon).map { i in
-                night.mix(day, ZonesSection.daylight(ZonesSection.hour(zone, at: (Double(i) + 0.5) / Double(ribbon))))
+        func ribbon(_ zone: ZonesSection.Zone, _ width: Int) -> Seg {
+            let cells = (0..<width).map { i in
+                night.mix(day, ZonesSection.daylight(ZonesSection.hour(zone, at: (Double(i) + 0.5) / Double(width))))
             }
-            w.line([.t(CellText.pad(CellText.truncate(zone.zoneName, tw), tw), p.faint), .t("  ", p.text),
-                    .ribbon(cells, midnights: ZonesSection.midnights(zone), now: p.accent)],
-                   [.t(CellText.padLeft(zone.day, rw), p.faint)])
+            return .ribbon(cells, midnights: ZonesSection.midnights(zone), now: p.accent)
         }
-        if z.unplaced > 0 { w.line([.t(tr("\(z.unplaced) without a time zone"), p.faint)]) }
+        func clock(_ zone: ZonesSection.Zone, _ w: inout CellWriter) -> Seg {
+            guard live else { return .t(CellText.pad(zone.clock, tw), p.text, bold: true) }
+            w.clocks.append(LiveClock(x: w.frame.x, y: w.y, timeZone: zone.timeZone, period: !zone.period.isEmpty, color: p.text))
+            return .t(String(repeating: " ", count: tw), p.text)
+        }
+        // Cut short, trouble first, so trouble left out still shows.
+        func marks(_ servers: [ZonesSection.Server], _ max: Int) -> [Seg] {
+            let servers = servers.count > max ? Mark.troubleFirst(servers, by: \.mark) : servers
+            var marks: [Seg] = servers.prefix(max).map { .mark($0.mark, p) }
+            if servers.count > max { marks.append(.t("+\(servers.count - max)", p.faint)) }
+            return marks
+        }
+        let relative = { (zone: ZonesSection.Zone) -> Seg in .t(CellText.padLeft(zone.relative, rw), zone.isHere ? p.accent : p.muted) }
+        switch lines {
+        case .two:
+            let width = max(8, n - tw - 2 - 1 - rw)
+            for zone in shown {
+                let m = marks(zone.servers, 8)
+                let room = n - tw - 2 - m.reduce(0) { $0 + $1.width } - 1 - rw - 1
+                w.line([clock(zone, &w), .t("  ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)],
+                       m + [.t(" ", p.text), relative(zone)])
+                // Long past a reload, its now would be an hour gone by.
+                w.line([.t(CellText.pad(CellText.truncate(zone.zoneName, tw), tw), p.faint), .t("  ", p.text)]
+                       + (z.clocksOnly ? [] : [ribbon(zone, width)]),
+                       z.clocksOnly ? [] : [.t(CellText.padLeft(zone.day, rw), p.faint)])
+            }
+        case .one(let withRibbon):
+            // Places get at least ten cells; the ribbon takes what's left.
+            let title = 10
+            let markCells = shown.map { marks($0.servers, 6).reduce(0) { $0 + $1.width } }.max() ?? 0
+            let ribbonCells = withRibbon && !z.clocksOnly ? n - tw - 1 - title - 1 - markCells - 1 - 1 - rw : 0
+            for zone in shown {
+                let m = marks(zone.servers, 6)
+                var right: [Seg] = m + [.t(String(repeating: " ", count: markCells - m.reduce(0) { $0 + $1.width }), p.text)]
+                if ribbonCells >= 6 { right += [.t(" ", p.text), ribbon(zone, ribbonCells)] }
+                if withRibbon { right += [.t(" ", p.text), relative(zone)] }
+                let room = n - tw - 1 - right.reduce(0) { $0 + $1.width } - 1
+                w.line([clock(zone, &w), .t(" ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)], right)
+            }
+        case .stacked:
+            // Room for the marks, and for a count of those that don't fit.
+            let most = max(1, n - tw - 1 - rw - 4)
+            for zone in shown {
+                w.line([clock(zone, &w)], marks(zone.servers, most) + [.t(" ", p.text), relative(zone)])
+                w.line([.t("  " + CellText.truncate(zone.title, max(1, n - 2)), p.text)])
+            }
+        }
+        guard foot else { return }
+        if !rest.isEmpty {
+            w.line([.t(tr("+\(rest.count) more"), p.muted)], marks(ZonesSection.servers(rest), 10))
+        } else if !z.isCurrent, shown.count < z.zones.count + 1 {
+            w.line([.mark(.offline, p), .t(" " + tr("servers not known now"), p.muted)])
+        } else if z.unplaced > 0 {
+            w.line([.t(tr("\(z.unplaced) without a time zone"), p.faint)])
+        }
     }
 
     // MARK: this Mac

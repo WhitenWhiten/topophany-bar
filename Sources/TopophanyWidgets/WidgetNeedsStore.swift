@@ -10,11 +10,14 @@ public struct WidgetNeedsStore: Sendable {
         public var lists: Bool
         /// A Server widget's node.
         public var node: String?
+        /// A Time zones widget, which draws every listed server's mark.
+        public var zones: Bool?
         public var at: Date
 
-        public init(lists: Bool, node: String?, at: Date) {
+        public init(lists: Bool, node: String?, zones: Bool = false, at: Date) {
             self.lists = lists
             self.node = node
+            self.zones = zones ? true : nil
             self.at = at
         }
     }
@@ -40,7 +43,8 @@ public struct WidgetNeedsStore: Sendable {
     public func record(_ key: String, _ entry: Entry) {
         guard let url else { return }
         var all = entries().filter { entry.at.timeIntervalSince($0.value.at) < Self.forgetAfter }
-        guard all[key].map({ $0.lists != entry.lists || $0.node != entry.node || entry.at.timeIntervalSince($0.at) > 60 }) ?? true
+        guard all[key].map({ $0.lists != entry.lists || $0.node != entry.node || $0.zones != entry.zones
+            || entry.at.timeIntervalSince($0.at) > 60 }) ?? true
         else { return }
         all[key] = entry
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -52,5 +56,10 @@ public struct WidgetNeedsStore: Sendable {
         let live = entries().values.filter { now.timeIntervalSince($0.at) < Self.forgetAfter }
         let nodes = Set(live.compactMap(\.node)).sorted()
         return TemplateCompiler.WidgetNeeds(lists: live.contains { $0.lists }, nodes: nodes)
+    }
+
+    /// A Time zones widget was drawn lately.
+    public func zones(at now: Date = Date()) -> Bool {
+        entries().values.contains { now.timeIntervalSince($0.at) < Self.forgetAfter && $0.zones == true }
     }
 }

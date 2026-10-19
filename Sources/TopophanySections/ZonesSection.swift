@@ -70,6 +70,9 @@ public struct ZonesSection: Sendable, Hashable {
     /// The marks are from the last list, every one withheld.
     public var isCurrent: Bool
     public var now: Date
+    /// Long past its last reload, a widget's ribbons and days are of an
+    /// hour gone by: only its live clocks, offsets and places are drawn.
+    public var clocksOnly = false
 
     public init(zones: [Zone], serverCount: Int, unplaced: Int, isCurrent: Bool, now: Date) {
         self.zones = zones
@@ -97,6 +100,21 @@ public struct ZonesSection: Sendable, Hashable {
     /// Where local midnight falls on that ribbon, 0 ... 1.
     public static func midnights(_ zone: Zone) -> [Double] {
         [0.0, 1.0].map { (24 * $0 - zone.hour + 12) / 24 }.filter { $0 > 0 && $0 < 1 }
+    }
+
+    /// `count` zones, west to east, This Mac's always among them, and the
+    /// ones left out: none when all of them fit.
+    public func cut(keeping count: Int) -> (shown: [Zone], rest: [Zone]) {
+        guard zones.count > count else { return (zones, []) }
+        var keep = Set<String>()
+        if let here = zones.first(where: \.isHere) { keep.insert(here.id) }
+        for z in zones where keep.count < max(1, count) { keep.insert(z.id) }
+        return (zones.filter { keep.contains($0.id) }, zones.filter { !keep.contains($0.id) })
+    }
+
+    /// Every server in `zones`, trouble first.
+    public static func servers(_ zones: [Zone]) -> [Server] {
+        Mark.troubleFirst(zones.flatMap(\.servers), by: \.mark)
     }
 
     /// Everything as history: the clocks stay, every mark is withheld.
