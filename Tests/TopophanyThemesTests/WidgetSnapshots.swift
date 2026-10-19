@@ -20,6 +20,9 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
             .background(r.widgetBackground(context: ctx))
             .clipShape(shape)
             .overlay(shape.strokeBorder(Color.white.opacity(dark ? 0.18 : 0.7), lineWidth: 0.5))
+            // One shadow, the widget's: uncomposited, each glyph inside
+            // would cast its own onto the widget's face.
+            .compositingGroup()
             .shadow(color: .black.opacity(0.3), radius: 16, y: 12)
     }
 }
