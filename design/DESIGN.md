@@ -119,7 +119,14 @@ Size:
 
 - **Native:** 344 pt wide, cards 6 pt apart. Rows that open something (attention entries, "*N* more") light faintly under the pointer, as far out as the keyboard's focus.
 - **Terminal:** 48 columns of SF Mono 12 inside 7 pt margins.
-- **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls.
+- **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls, following the keyboard's focus as little as it must.
+
+Motion in the panel is quiet, and says only what happened:
+
+- **Opening:** the panel fades in over a fifth of a second as it settles 4 pt down from the menu bar, and fades out quicker than it came.
+- **Highlights:** under the pointer or the keyboard, a highlight fades in quickly and out a little slower, as a menu's does. A pressed button dims while held. Nothing bounces or shines.
+- **A new frame:** numbers roll to their new value, meters ease to it and the verdict's tile settles into its new color.
+- **Reduce Motion:** nothing slides or glides; fades stay.
 
 The Terminal theme draws each section as the TUI draws a panel:
 
