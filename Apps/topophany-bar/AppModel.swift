@@ -40,7 +40,8 @@ final class AppModel {
     @ObservationIgnored let machine = MachineInfo.current()
     /// Replays a fixture instead of running `topo`, for development:
     /// `-fixture incidents`.
-    @ObservationIgnored let fixture = UserDefaults.standard.string(forKey: "fixture").flatMap(FixtureEngine.Scenario.init(rawValue:))
+    @ObservationIgnored private(set) var fixture = UserDefaults.standard.string(forKey: "fixture")
+        .flatMap(FixtureEngine.Scenario.init(rawValue:))
     /// Reads `topo`'s synthetic preview network for this launch, without
     /// saving it: `-preview 1` for scenario 1.
     @ObservationIgnored let previewScenario: Int? = UserDefaults.standard.object(forKey: "preview") != nil
@@ -218,6 +219,15 @@ final class AppModel {
         let r = currentRequest()
         Task { try? await engine.update(r) }
     }
+
+    #if DEBUG
+    /// Replays another fixture from its start, as if `topo` had moved on.
+    func replay(_ scenario: FixtureEngine.Scenario) {
+        guard fixture != nil else { return }
+        fixture = scenario
+        restartEngine()
+    }
+    #endif
 
     func restartEngine() {
         let old = engine

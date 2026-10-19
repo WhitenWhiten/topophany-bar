@@ -2,6 +2,7 @@
 import AppKit
 import ApplicationServices
 import ServiceManagement
+import TopophanyEngine
 import TopophanyKit
 import TopophanyWidgets
 
@@ -26,6 +27,8 @@ import TopophanyWidgets
 ///     handoff               what the widgets were last handed
 ///     login [on|off]        Open at login: set it, and report its status
 ///     language L            the language: system, en, ja or zh-Hans
+///     fixture NAME          replay another fixture, in a copy launched
+///                           with one
 ///
 /// A command starting with `@PID` goes to that running copy only.
 @MainActor
@@ -96,6 +99,8 @@ enum DebugDriver {
             @unknown default: "unknown"
             }
             try? "\(status) (setting \(d.model.settings.openAtLogin))".write(to: out.appending(path: "login.txt"), atomically: true, encoding: .utf8)
+        case "fixture":
+            if w.count > 1, let s = FixtureEngine.Scenario(rawValue: w[1]) { d.model.replay(s) }
         case "language":
             if w.count > 1, let l = TopophanyKit.Settings.Language(rawValue: w[1]) { d.model.update { $0.language = l } }
         case "handoff":
