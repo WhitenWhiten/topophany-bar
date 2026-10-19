@@ -19,13 +19,24 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     SWIFT_EMIT_LOC_STRINGS: YES
-    # Local builds are ad hoc signed and need no team. Signing with a team,
-    # and the App Group the widgets need, are added only when one is chosen.
+    # Builds sign with the team, with the App Group the widgets share with
+    # the app. TOPOPHANY_SIGN=NO builds ad hoc with no team and no
+    # entitlements: the app runs, and macOS ignores the widgets.
+    TOPOPHANY_SIGN: YES
+    TOPOPHANY_TEAM: G4Y2R7586K
     CODE_SIGN_STYLE: Manual
-    CODE_SIGN_IDENTITY: "-"
-    DEVELOPMENT_TEAM: ""
     ENABLE_HARDENED_RUNTIME: YES
-    TOPOPHANY_APP_GROUP: ""
+    DEVELOPMENT_TEAM: $(TOPOPHANY_TEAM_$(TOPOPHANY_SIGN))
+    TOPOPHANY_TEAM_YES: $(TOPOPHANY_TEAM)
+    TOPOPHANY_TEAM_NO: ""
+    CODE_SIGN_IDENTITY: $(TOPOPHANY_IDENTITY_$(TOPOPHANY_SIGN))
+    TOPOPHANY_IDENTITY_YES: Apple Development
+    TOPOPHANY_IDENTITY_NO: "-"
+    TOPOPHANY_APP_GROUP: $(TOPOPHANY_APP_GROUP_$(TOPOPHANY_SIGN))
+    TOPOPHANY_APP_GROUP_YES: $(TOPOPHANY_TEAM).io.github.whitenwhiten.topophany-bar
+    TOPOPHANY_APP_GROUP_NO: ""
+    CODE_SIGN_ENTITLEMENTS: $(TOPOPHANY_ENTITLEMENTS_$(TOPOPHANY_SIGN))
+    TOPOPHANY_ENTITLEMENTS_NO: ""
 targets:
   topophany-bar:
     type: application
@@ -69,8 +80,9 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_APP_SANDBOX: NO
         GENERATE_INFOPLIST_FILE: NO
+        TOPOPHANY_ENTITLEMENTS_YES: Apps/topophany-bar/topophany-bar.entitlements
   # Widgets load only when signed with a team, the App Group and the App
-  # Sandbox; until then this builds ad hoc and macOS ignores it.
+  # Sandbox.
   TopophanyWidgetsExtension:
     type: app-extension
     platform: macOS
@@ -103,6 +115,7 @@ targets:
         PRODUCT_NAME: TopophanyWidgetsExtension
         GENERATE_INFOPLIST_FILE: NO
         SKIP_INSTALL: YES
+        TOPOPHANY_ENTITLEMENTS_YES: Apps/Widgets/Widgets.entitlements
 schemes:
   topophany-bar:
     build:

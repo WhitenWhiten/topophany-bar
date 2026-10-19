@@ -4,7 +4,7 @@ A native macOS menu bar app and desktop widgets for [Topophany](https://github.c
 
 It shows what `topo` concludes and never decides anything itself. Every state, count and health comes from `topo monitor stream`, which the app runs as a child process.
 
-**Status:** designed, not yet implemented. macOS 26 or later.
+**Status:** v1, not yet released. macOS 26 or later.
 
 ## Read first
 
@@ -21,3 +21,16 @@ It shows what `topo` concludes and never decides anything itself. Every state, c
 - macOS 26 or later.
 - `topo` with `monitor stream` (`topo monitor stream --capabilities` must print `"protocol":1`).
 - A saved client profile (`topo login`). The app never reads or stores a token; `topo` does.
+
+## Building
+
+The packages build and test with SwiftPM; the app and the widget extension build with the Xcode project, which XcodeGen generates from `project.yml`.
+
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+swift test
+xcodegen generate
+xcodebuild -project topophany-bar.xcodeproj -scheme topophany-bar -configuration Debug -derivedDataPath build/DerivedData build
+```
+
+Builds sign with the team in `project.yml` (`TOPOPHANY_TEAM`), with an App Group the app and the widgets share. Add `TOPOPHANY_SIGN=NO` to build ad hoc with no team or entitlements: the app runs, and macOS ignores the widgets. `scripts/release.sh` signs with Developer ID and notarizes.
