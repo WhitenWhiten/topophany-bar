@@ -480,10 +480,8 @@ struct WidgetServerCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Image(systemName: isMac ? "laptopcomputer" : "server.rack")
-                    .font(.system(size: 12)).foregroundStyle(p.l2)
-                    .frame(width: 26, height: 26)
-                    .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(p.fill2))
+                NodeAvatar(provider: card.isMissing ? "" : card.provider, kind: card.kind, size: 26, p: p,
+                           symbol: isMac ? "laptopcomputer" : nil)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(card.name).font(t.font(12.5, .semibold)).lineLimit(1).minimumScaleFactor(0.85)
                     Text(card.isMissing ? card.place : Words.join([card.place, card.provider]))

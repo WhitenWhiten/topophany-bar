@@ -149,8 +149,11 @@ struct CellsBodies {
 
     // MARK: servers
 
+    /// "● [logo] Oracle New York": the TUI leads a node's name with its
+    /// provider's logo.
     func serverTitle(_ c: ServerCardModel, prefix: [Seg] = []) -> [Seg] {
-        prefix + [.t(" ", p.text), .mark(c.mark, p), .t(" " + c.name + " ", p.text, bold: true)]
+        prefix + [.t(" ", p.text), .mark(c.mark, p), .t(" ", p.text)] + Seg.logo(c.isMissing ? "" : c.provider, p)
+            + [.t(c.name + " ", p.text, bold: true)]
     }
 
     func serverPill(_ c: ServerCardModel) -> [Seg] {

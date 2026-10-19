@@ -66,7 +66,7 @@ The header shows the mark, the project and view, Open in Terminal (⌘O) and Set
 2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
 3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty.
 4. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
-5. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld.
+5. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1).
 6. **Time zones.** The local time where the servers are. See section 5.1.
 7. **This Mac.** See section 5.
 
@@ -85,6 +85,18 @@ The Terminal theme draws each section as the TUI draws a panel:
 - **Meters:** colored by `loadColor`.
 - **CPU history:** block sparks.
 - **Footer:** keycaps for Open, Settings and Quit.
+
+### 4.1 Providers
+
+A node's provider is who runs it: a company that rents servers, or an edge or a platform that services are deployed to. `topo` sends it as the topology writes it, in the provider's own spelling where `topo` knows the provider.
+
+- **Who:** the app knows the sixteen providers `topo` knows, by every name `topo` accepts, and more beyond them. A provider is matched with case and everything but letters and digits removed, so "Fly.io", "fly-io" and "flyio" are one. A known provider is written its own way.
+- **Logos:** the ten that `topo` draws are its own outlines, from Nerd Fonts (Devicons, MIT; Linode's from Font Awesome, CC BY 4.0; Oracle's ring from Material Design Icons, Apache 2.0). Others come from Simple Icons (CC0). Each is its owner's trademark, shown only to say who runs a node. Wordmarks and hairline logos that turn to mush at panel sizes are left out.
+- **Where:** a server card's tile, before its name. A provider without a logo gets its initials; a node without a provider, its kind's symbol.
+- **Color:** in Native, a logo is drawn in the text's color. Brand colors would compete with health: an orange logo reads as warn, a green one as up, a red one as down. In Terminal, a logo takes its brand's color 12% toward the text, as the TUI draws it, and more where it would be too dark to read on the ink.
+- **Meaning:** none. A logo never says how a node is doing.
+
+`design/assets/providers.js` holds the names, colors and outlines. `scripts/make-providers.py` turns it into Swift, and the outlines into `provider-logos.js` for the previews, so both draw the same shapes.
 
 ## 5. This Mac
 

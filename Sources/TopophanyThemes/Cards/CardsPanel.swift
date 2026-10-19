@@ -309,7 +309,7 @@ struct CardsSection: View {
                 CardTitle(symbol: "server.rack", title: tr("Servers"), meta: tr("\(cards.count) pinned"), p: p, t: t)
                 ForEach(Array(cards.enumerated()), id: \.element.id) { i, c in
                     if i > 0 { Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 10) }
-                    CardsServer(card: c, symbol: "server.rack", p: p, t: t, focused: ctx.focus == "server:" + c.id)
+                    CardsServer(card: c, p: p, t: t, focused: ctx.focus == "server:" + c.id)
                 }
             }
         case .zones(let z):
@@ -498,7 +498,9 @@ struct CardsApplications: View {
 
 struct CardsServer: View {
     var card: ServerCardModel
-    var symbol: String
+    /// A symbol of its own, such as This Mac's model; otherwise its
+    /// provider's logo stands for it.
+    var symbol: String?
     var p: CardsPalette
     var t: CardsType
     var focused = false
@@ -506,9 +508,7 @@ struct CardsServer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 9) {
-                Image(systemName: symbol).font(.system(size: 13 * t.scale)).foregroundStyle(p.l2)
-                    .frame(width: 28, height: 28)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.fill2))
+                NodeAvatar(provider: card.provider, kind: card.kind, size: 28, p: p, symbol: symbol)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1)
                     // The time where it is never gives way; the provider, in

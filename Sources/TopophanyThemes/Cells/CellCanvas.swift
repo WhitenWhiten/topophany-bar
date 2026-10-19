@@ -31,6 +31,8 @@ public enum CellGlyph: Sendable, Hashable {
     case flag
     /// ↵
     case enter
+    /// A provider's logo, by its key: it reaches into the cell after it.
+    case provider(String)
 }
 
 /// One thing a cell scene draws, positioned in points.
@@ -247,6 +249,8 @@ public struct CellCanvas: View {
             p.addLine(to: CGPoint(x: cx - 0.27 * fs, y: cy + 0.08 * fs))
             p.addLine(to: CGPoint(x: cx - 0.1 * fs, y: cy + 0.24 * fs))
             ctx.stroke(p, with: color, style: StrokeStyle(lineWidth: 0.09 * fs, lineCap: .round, lineJoin: .round))
+        case .provider(let key):
+            drawLogo(&ctx, key, x: x, y: y, color: c, metrics: m)
         }
     }
 }

@@ -245,6 +245,13 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .nv-server-head { display: flex; align-items: center; gap: 9px; }
 .nv-ico2 { width: 28px; height: 28px; border-radius: 8px; background: var(--fill2); display: grid; place-items: center; color: var(--l2); flex: none; }
 .nv-ico2 svg { width: 17px; height: 17px; }
+/* Providers: a logo says who runs a node, in the text's color. */
+svg.logo { fill: currentColor; stroke: none; overflow: visible; }
+.nv-ico2 svg.av-logo { width: 15.7px; height: 15.7px; }
+.av-ini { font: 600 12.3px/1 ui-rounded, -apple-system, system-ui, sans-serif; letter-spacing: .01em; }
+.av-ini.two { font-size: 10.1px; }
+.tlogo { display: inline-block; width: 2ch; height: 18px; vertical-align: top; position: relative; }
+.tlogo svg.logo { position: absolute; left: .06ch; top: calc(50% - .43em + .36px); width: .86em; height: .86em; }
 .nv-server-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
 .nv-server-name b { font-size: 12.5px; font-weight: 600; }
 .nv-server-name span { font-size: 11px; color: var(--l2); }

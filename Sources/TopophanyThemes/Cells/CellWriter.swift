@@ -58,6 +58,8 @@ struct CellsPalette {
 enum Seg {
     case text(String, RGBA, bold: Bool = false)
     case glyph(CellGlyph, RGBA)
+    /// A provider's logo by its key, and the space after it it reaches into.
+    case logo(String, RGBA)
     /// A meter: the reading against its limit; `nil` when unknown.
     case bar(cells: Int, percent: Double?, limit: Double?, color: RGBA, withheld: Bool)
     /// The TUI's sparks: one block per reading.
@@ -76,6 +78,7 @@ enum Seg {
         switch self {
         case .text(let s, _, _), .pill(let s, _, _), .key(let s): CellText.width(s)
         case .glyph: 1
+        case .logo: 2
         case .bar(let n, _, _, _, _): n
         case .sparks(let v, _, _): v.count
         case .rule(let parts): parts.reduce(0) { $0 + $1.0 }
@@ -86,6 +89,13 @@ enum Seg {
 
     static func t(_ s: String, _ c: RGBA, bold: Bool = false) -> Seg { .text(s, c, bold: bold) }
     static func mark(_ m: Mark, _ p: CellsPalette) -> Seg { .glyph(.mark(m), p.tone(m)) }
+
+    /// A provider's logo where the app has one, as the TUI leads a name with
+    /// it; nothing otherwise.
+    static func logo(_ provider: String, _ p: CellsPalette) -> [Seg] {
+        guard let known = Provider.known(provider), known.hasLogo else { return [] }
+        return [.logo(known.key, p.logo(known))]
+    }
 }
 
 /// Lays lines and boxes onto a cell scene, top to bottom.
@@ -159,6 +169,8 @@ struct CellWriter {
             items.append(.text(x: x, y: y, str, c, bold: bold))
         case .glyph(let g, let c):
             items.append(.glyph(x: x, y: y, g, c))
+        case .logo(let key, let c):
+            items.append(.glyph(x: x, y: y, .provider(key), c))
         case .bar(_, let percent, let limit, let c, let withheld):
             let h = 10 * metrics.fontSize / 12
             let r = CGRect(x: x, y: y + lineHeight / 2 - h / 2 + 0.5, width: w, height: h)

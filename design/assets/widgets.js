@@ -73,7 +73,7 @@
     if (kind === 'server') {
       const s = o.node === 'mac' ? sc.mac : sc.servers[0];
       const x = nServerMini(s);
-      const head = `<div class="w-srv-top"><span class="nv-ico2">${o.node === 'mac' ? C.I.laptop : C.I.server}</span><div class="nv-server-name"><b>${esc(s.name)}</b><span>${esc(s.place)} · ${esc(s.provider)}</span></div></div>`;
+      const head = `<div class="w-srv-top">${TB.avatar(s, o.node === 'mac' ? C.I.laptop : null)}<div class="nv-server-name"><b>${esc(s.name)}</b><span>${esc(s.place)} · ${esc(TB.providerName(s.provider))}</span></div></div>`;
       const left = `<div class="w-col">${head}<div class="w-res-col">${x.meters}</div><div class="w-foot">${x.pill}<span>${s.withheld ? 'last ' : ''}${esc(s.updated)}</span></div></div>`;
       if (size === 's') body = left;
       else {
@@ -106,7 +106,7 @@
       if (size === 'xl') {
         const lw = 54, rw = cols - lw - 1;
         const services = box(T.title('SERVICES', String(sc.apps.length) + ' apps'), null, T.tAppsBody(sc, rw - 2));
-        body = head(cols) + `<div class="tcols"><div style="width:${lw}ch">${statusBox(lw - 2)}${box(T.title('SEEN FROM', String(sc.seen.length)), null, T.tSeenBody(sc, lw - 2, 2))}${sc.servers.slice(0, 1).map((s) => box(T.serverTitle(s), T.serverPill(s), T.tServerBody(s, p, lw - 2))).join('')}</div>
+        body = head(cols) + `<div class="tcols"><div style="width:${lw}ch">${statusBox(lw - 2)}${box(T.title('SEEN FROM', String(sc.seen.length)), null, T.tSeenBody(sc, lw - 2, 2))}${sc.servers.slice(0, 1).map((s) => box(T.serverTitle(s, p), T.serverPill(s), T.tServerBody(s, p, lw - 2))).join('')}</div>
           <div style="width:${rw}ch">${right(rw - 2)}${sc.attention.length ? services : ''}</div></div>`;
       }
     }
@@ -120,7 +120,7 @@
         const name = T.tl([S(TB.glyph(s.withheld ? 'cached' : s.health), 'h-' + (s.withheld ? 'unk' : TB.cls(s.health))), S(' ' + T.trunc(s.name, cols - 2), 'b')], [], 'whead', cols);
         body = name + box(T.title(s.kind.toUpperCase()), T.serverPill(s), bodyLines);
       } else {
-        body = head(cols) + box(T.serverTitle(s), T.serverPill(s), T.tServerBody(s, p, cols - 2, { observes: true, bar: 22 }));
+        body = head(cols) + box(T.serverTitle(s, p), T.serverPill(s), T.tServerBody(s, p, cols - 2, { observes: true, bar: 22 }));
       }
     }
     return `<div class="wdg tv wd-${size} ${o.mode || ''}" style="${T.paletteVars(p)};width:${SIZE[size][0]}px;height:${SIZE[size][1]}px">${body}</div>`;

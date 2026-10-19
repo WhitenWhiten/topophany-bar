@@ -50,6 +50,10 @@
     apps: sv('<path d="M10 2.8 17 6.4 10 10 3 6.4Z"/><path d="M3 10.1l7 3.6 7-3.6"/><path d="M3 13.7l7 3.6 7-3.6"/>'),
     server: sv('<rect x="3" y="3.4" width="14" height="5.6" rx="1.8"/><rect x="3" y="11" width="14" height="5.6" rx="1.8"/><circle cx="6.1" cy="6.2" r=".55" fill="currentColor"/><circle cx="6.1" cy="13.8" r=".55" fill="currentColor"/>'),
     laptop: sv('<rect x="4" y="4.2" width="12" height="8.4" rx="1.4"/><path d="M2.2 15.6h15.6"/>'),
+    desktop: sv('<rect x="2.8" y="3.4" width="14.4" height="9.8" rx="1.6"/><path d="M10 13.2v3.2M6.8 16.6h6.4"/>'),
+    router: sv('<rect x="2.8" y="10.6" width="14.4" height="5.6" rx="1.8"/><path d="M6.4 13.4h.01M9.2 13.4h.01M10 10.6V7M6.9 5.6a4.4 4.4 0 0 1 6.2 0M5 3.7a7.1 7.1 0 0 1 10 0"/>'),
+    edge: sv('<circle cx="10" cy="10" r="7.2"/><ellipse cx="10" cy="10" rx="3.1" ry="7.2"/><path d="M2.8 10h14.4"/>'),
+    platform: sv('<path d="M10 2.8 17 6.4 10 10 3 6.4Z"/><path d="M3 10.1l7 3.6 7-3.6"/><path d="M3 13.7l7 3.6 7-3.6"/>'),
     cpu: sv('<rect x="5" y="5" width="10" height="10" rx="2.2"/><rect x="8" y="8" width="4" height="4" rx=".9"/><path d="M8 2.6v2.4M12 2.6v2.4M8 15v2.4M12 15v2.4M2.6 8h2.4M2.6 12h2.4M15 8h2.4M15 12h2.4"/>'),
     memory: sv('<rect x="2.6" y="5.6" width="14.8" height="8" rx="1.8"/><path d="M5.6 13.6v2.6M8.6 13.6v2.6M11.4 13.6v2.6M14.4 13.6v2.6M6 8.6h2.4M11.6 8.6h2.4"/>'),
     drive: sv('<rect x="2.6" y="5.8" width="14.8" height="8.4" rx="2.6"/><path d="M5.8 10h4.4"/><circle cx="14" cy="10" r=".7" fill="currentColor"/>'),
@@ -61,6 +65,59 @@
     clock: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 5.8V10l2.8 1.8"/>'),
   };
   TB.icons = I;
+
+  // ------------------------------------------------------------ providers
+  // Who runs a node, by any of the names a topology gives it (providers.js).
+  // A logo only says who; Native draws it in the text's color, Terminal in
+  // the brand's, as the TUI does.
+  const norm = (s) => [...String(s || '').toLowerCase()].filter((c) => /[\p{L}\p{N}]/u.test(c)).join('');
+  TB.provider = (name) => {
+    const n = norm(name);
+    if (!n) return null;
+    for (const [key, p] of Object.entries(window.TB_PROVIDERS || {})) {
+      if (p.names.includes(n) || norm(p.name) === n) return Object.assign({ key }, p);
+    }
+    return null;
+  };
+  TB.providerName = (name) => (TB.provider(name) || { name }).name;
+  // The logo fit in a square, its longer side `optical` of it.
+  TB.logo = (key, cls = '') => {
+    const l = (window.TB_LOGOS || {})[key];
+    if (!l) return '';
+    const [w, h, k, d] = l;
+    return `<svg class="logo ${cls}" viewBox="0 0 1 1"><path transform="translate(${((1 - w * k) / 2).toFixed(4)} ${((1 - h * k) / 2).toFixed(4)}) scale(${k})" d="${d}"/></svg>`;
+  };
+  // "BandwagonHost" is BH, "home" H.
+  const initials = (name) => {
+    const words = String(name).replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, '$1 $2').split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    return words.slice(0, 2).map((w) => [...w][0].toUpperCase()).join('');
+  };
+  const KIND_ICON = { laptop: 'laptop', desktop: 'desktop', router: 'router', edge: 'edge', platform: 'platform' };
+  // What stands for a node on its card: its provider's logo, the provider's
+  // initials where there is no logo, or its kind's symbol.
+  TB.avatar = (s, icon) => {
+    const p = TB.provider(s.provider);
+    let face;
+    if (icon) face = icon;
+    else if (p && window.TB_LOGOS[p.key]) face = TB.logo(p.key, 'av-logo');
+    else if (s.provider) face = `<span class="av-ini ${initials(TB.providerName(s.provider)).length > 1 ? 'two' : ''}">${esc(initials(TB.providerName(s.provider)))}</span>`;
+    else face = I[KIND_ICON[s.kind] || 'server'] || I.server;
+    return `<span class="nv-ico2">${face}</span>`;
+  };
+  // The TUI's logo before a name: two cells, in the brand's color 12% toward
+  // the text, further while too dark to read on the ink.
+  TB.tlogo = (provider, p) => {
+    const k = TB.provider(provider);
+    if (!k || !window.TB_LOGOS[k.key]) return [];
+    let t = 0.12, c = k.color ? mix(k.color.toLowerCase(), p.text, t) : p.muted;
+    const lum = (hex) => {
+      const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+    };
+    const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    while (k.color && contrast(c, p.ink) < 3 && t < 1) { t += 0.08; c = mix(k.color.toLowerCase(), p.text, Math.min(1, t)); }
+    return [{ html: `<span class="tlogo" style="color:${c}">${TB.logo(k.key)}</span>`, w: 2 }];
+  };
 
   function battery(pct, charging) {
     const w = Math.max(1.5, (10.2 * pct) / 100);
@@ -143,8 +200,8 @@
       : `<span class="pill p-${TB.cls(s.health)}">${s.pill || { up: 'UP', degraded: 'WARN', down: 'DOWN' }[s.health] || 'UNKNOWN'}</span>`;
     const m = (label, r) => `<div class="nv-res"><div class="nv-res-top"><span>${label}</span><b>${!s.withheld && r.v > r.limit ? mark('degraded', 9) : ''}${s.withheld ? '—' : r.v.toFixed(0) + '%'}</b></div>${nvMeter(r.v, r.limit, s.withheld)}</div>`;
     return `<div class="nv-server">
-      <div class="nv-server-head"><span class="nv-ico2">${opts.icon || I.server}</span>
-        <div class="nv-server-name"><b>${esc(s.name)}</b><span class="nv-sub"><em>${esc([s.kind, s.provider].join(' · '))}</em><i> · ${esc([s.place, localTime(s.place)].filter(Boolean).join(' · '))}</i></span></div>${pill}</div>
+      <div class="nv-server-head">${TB.avatar(s, opts.icon)}
+        <div class="nv-server-name"><b>${esc(s.name)}</b><span class="nv-sub"><em>${esc([s.kind, TB.providerName(s.provider)].join(' · '))}</em><i> · ${esc([s.place, localTime(s.place)].filter(Boolean).join(' · '))}</i></span></div>${pill}</div>
       <div class="nv-res3">${m('CPU', s.cpu)}${m('Memory', s.mem)}${m('Disk', s.disk)}</div>
       <div class="nv-server-foot"><span>${esc(s.services)}</span><span>${s.withheld ? 'last reading ' : ''}${esc(s.updated)}</span></div>
     </div>`;
@@ -531,7 +588,7 @@
     const t = opt.clock ? localTime(s.place) : '';
     const head = (provider) => [S(s.kind, 'kind'), ...(provider ? [S(' · ', 'faint'), S(provider, 'muted')] : []), S(' · ', 'faint'), S(s.place, 'muted'),
       ...(t ? [S(' · ', 'faint'), S(t)] : [])];
-    let first = head(s.provider);
+    let first = head(TB.providerName(s.provider));
     if (width(first) > w - len(age) - 1) first = head('');
     out.push(tl(first, [S(age, 'faint')], '', w));
     const barN = opt.bar || 20;
@@ -547,7 +604,8 @@
     }
     return out.join('');
   }
-  const serverTitle = (s) => [S(' '), S(TB.glyph(s.withheld ? 'cached' : s.health), 'h-' + (s.withheld ? 'unk' : TB.cls(s.health))), S(' ' + s.name + ' ', 'b')];
+  const serverTitle = (s, p) => [S(' '), S(TB.glyph(s.withheld ? 'cached' : s.health), 'h-' + (s.withheld ? 'unk' : TB.cls(s.health))), S(' '),
+    ...TB.tlogo(s.provider, p || PALETTES.terminal), S(s.name + ' ', 'b')];
   const serverPill = (s) => {
     const t = s.withheld ? 'CACHED' : s.pill || { up: 'UP', degraded: 'WARN', down: 'DOWN' }[s.health] || 'UNKNOWN';
     return [S(' ' + t + ' ', 'pill pill-' + (s.withheld ? 'unk' : TB.cls(s.health)))];
@@ -607,7 +665,7 @@
       out.push(box(title('NEEDS ATTENTION', String(sc.attention.length + sc.more)), null, tAttentionBody(sc, IW, o.limit, { focus: true })));
     }
     if (o.sections.apps) out.push(box(title('SERVICES', '23 in 6 apps'), null, tAppsBody(sc, IW)));
-    if (o.sections.servers) sc.servers.forEach((s) => out.push(box(serverTitle(s), serverPill(s), tServerBody(s, p, IW, { clock: true }))));
+    if (o.sections.servers) sc.servers.forEach((s) => out.push(box(serverTitle(s, p), serverPill(s), tServerBody(s, p, IW, { clock: true }))));
     if (o.sections.zones) {
       const z = tZonesBody(sc, p, IW);
       out.push(box(title('TIME ZONES', String(z.zones)), [S(' ' + z.servers + ' servers ', 'muted')], z.body));

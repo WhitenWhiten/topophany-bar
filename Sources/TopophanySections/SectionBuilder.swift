@@ -298,7 +298,7 @@ public enum SectionBuilder {
         } else {
             pill = Pill.state(c.note, health: c.health)
         }
-        return ServerCardModel(id: c.id, name: c.name, kind: c.kind, provider: c.provider, place: c.place,
+        return ServerCardModel(id: c.id, name: c.name, kind: c.kind, provider: Provider.name(c.provider), place: c.place,
                                mark: withheld ? .offline : Mark(c.health), pill: pill, isWithheld: withheld,
                                cpu: cpu, memory: memory, disk: disk, services: services,
                                servicesSummary: servicesSummary(c.services), observes: observes,
