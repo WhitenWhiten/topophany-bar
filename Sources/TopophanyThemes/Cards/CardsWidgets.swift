@@ -22,7 +22,7 @@ struct CardsWidget: View {
             case .zones:
                 if let z = model.zones {
                     WidgetZones(zones: z, size: size, room: CGSize(width: bounds.width - 28, height: bounds.height - 28),
-                                p: p, t: t)
+                                p: p, t: t, rendering: ctx.widgetRendering)
                 }
             }
         }
@@ -159,10 +159,39 @@ struct Age: View {
 }
 
 /// The brand mark in a widget's corner: small and a little muted, so it
-/// says whose widget it is without competing with the verdict.
+/// says whose widget it is without competing with the verdict. Where the
+/// desktop draws widgets in one tone, it would flatten the mark into a
+/// disc that reads as a status mark, so there the globe is its lines.
 struct WidgetMark: View {
+    var palette: CardsPalette
+    var rendering = RenderContext.WidgetRendering.fullColor
+
     var body: some View {
-        BrandMark().frame(width: 16, height: 16).saturation(0.75).opacity(0.9).padding(1)
+        if rendering == .fullColor {
+            BrandMark().frame(width: 16, height: 16).saturation(0.75).opacity(0.9).padding(1)
+        } else {
+            GlobeLines().stroke(palette.l2, style: StrokeStyle(lineWidth: 1.25, lineCap: .round))
+                .frame(width: 14, height: 14).padding(2)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+/// The menu bar item's globe at rest, as lines: its rim, its equator, and
+/// the two meridians either side of the middle.
+struct GlobeLines: Shape {
+    func path(in rect: CGRect) -> Path {
+        let r = min(rect.width, rect.height) / 2
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        var p = Path()
+        p.addEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r))
+        p.move(to: CGPoint(x: c.x - r, y: c.y))
+        p.addLine(to: CGPoint(x: c.x + r, y: c.y))
+        // At rest the item's two meridians stand half a seventh of a turn
+        // either side of the middle: sin(π / 7) of the radius out.
+        let w = r * sin(.pi / 7)
+        p.addEllipse(in: CGRect(x: c.x - w, y: c.y - r, width: 2 * w, height: 2 * r))
+        return p
     }
 }
 
@@ -179,7 +208,7 @@ struct WidgetStatus {
             HStack(alignment: .top) {
                 HeroSymbol(status: status, size: 34, palette: p)
                 Spacer(minLength: 0)
-                WidgetMark()
+                WidgetMark(palette: p, rendering: ctx.widgetRendering)
             }
             Text(status.shortTitle).font(t.font(16, .semibold)).tracking(-0.24).lineLimit(1)
                 .padding(.top, 10)
@@ -212,7 +241,7 @@ struct WidgetStatus {
                         .font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                WidgetMark()
+                WidgetMark(palette: p, rendering: ctx.widgetRendering)
             }
             .accessibilityElement(children: .combine)
             bar.padding(.top, 12).padding(.bottom, 7)

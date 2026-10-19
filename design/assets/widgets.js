@@ -13,6 +13,10 @@
   const COLS = { s: 22, m: 51, l: 51, xl: 108 };
 
   // ------------------------------------------------------------- native
+  // The mark where the desktop draws widgets in one tone: the menu bar's
+  // globe at rest, as lines. Flattened, the colored globe would be a disc,
+  // and a disc is up's mark.
+  const globeLines = '<svg class="w-mark-lines" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><path d="M2 9h14"/><ellipse cx="9" cy="9" rx="3.04" ry="7"/></svg>';
   const legend = (c) => {
     const leg = (n, h, word) => `<span class="${n ? '' : 'zero'}">${C.mark(h, 9)}<b>${n}</b>${word}</span>`;
     return `<div class="nv-legend">${leg(c.up, 'up', 'up')}${leg(c.warn, 'degraded', 'warn')}${leg(c.down, 'down', 'down')}${leg(c.unknown, 'unknown', 'unknown')}</div>`;
@@ -52,7 +56,7 @@
   function nStatusBlock(sc, big, size) {
     const checks = offline(sc) ? C.stackWithheld() : big ? C.stack(sc.counts, BAR[size]) : checkGrid(sc.counts, BAR[size]);
     return `<div class="w-status ${big ? 'big' : ''}">
-      <div class="w-top">${C.heroSymbol(sc.verdict.state)}${big ? `<div class="w-title"><b>${esc(sc.verdict.title)}</b><span>${esc(sc.verdict.sub)}</span></div>` : ''}<img class="w-mark" src="assets/mark.svg" alt=""></div>
+      <div class="w-top">${C.heroSymbol(sc.verdict.state)}${big ? `<div class="w-title"><b>${esc(sc.verdict.title)}</b><span>${esc(sc.verdict.sub)}</span></div>` : ''}<img class="w-mark" src="assets/mark.svg" alt="">${globeLines}</div>
       ${big ? '' : `<div class="w-title"><b>${esc(sc.verdict.title.replace('Evidence incomplete', 'Incomplete'))}</b><span>${esc(sc.short)}</span></div>`}
       ${checks}
       ${big && !offline(sc) ? legend(sc.counts) : ''}

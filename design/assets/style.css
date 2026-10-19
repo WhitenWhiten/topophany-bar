@@ -467,6 +467,9 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .wd-s .nv-sym svg, .wd-m .nv-sym svg { width: 34px; height: 34px; }
 /* The brand mark: small and a little muted, so it doesn't compete with the verdict. */
 .w-mark { width: 16px; height: 16px; margin: 1px; filter: saturate(.75); opacity: .9; }
+.wdg .w-mark-lines { display: none; width: 18px; height: 18px; flex: none; color: var(--l2); }
+.wdg.vibrant .w-mark { display: none; }
+.wdg.vibrant .w-mark-lines { display: block; }
 .w-title { margin: 10px 0 9px; min-width: 0; }
 .w-title b { display: block; font-size: 16px; font-weight: 650; letter-spacing: -.015em; line-height: 1.15; }
 .w-title span { display: block; font-size: 11px; color: var(--l2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

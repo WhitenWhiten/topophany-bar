@@ -27,6 +27,7 @@ struct WidgetZones: View {
     var room: CGSize
     var p: CardsPalette
     var t: CardsType
+    var rendering = RenderContext.WidgetRendering.fullColor
 
     var compact: Bool { size == .small }
     /// The least a row takes; with room to spare, rows spread up to half as
@@ -55,7 +56,7 @@ struct WidgetZones: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 WidgetHeading(symbol: "clock", title: tr("Time zones"), meta: compact ? "" : meta, p: p, t: t)
-                WidgetMark().padding(.leading, compact ? 0 : 8).alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
+                WidgetMark(palette: p, rendering: rendering).padding(.leading, compact ? 0 : 8).alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
             }
             .frame(height: Self.heading, alignment: .top)
             if compact {
