@@ -572,7 +572,7 @@
   }
   function tZonesBody(sc, p, w) {
     const Z = TB.zones(sc);
-    const tw = Math.max(...Z.zones.map((z) => len(z.time + ' ' + z.period)));
+    const tw = Math.max(...Z.zones.map((z) => Math.max(len(z.time + ' ' + z.period), Math.min(len(z.abbr), 9))));
     const rw = Math.max(...Z.zones.map((z) => Math.max(len(z.rel), len(z.dayNote))));
     const ribbonW = w - tw - 2 - 1 - rw;
     const out = [];

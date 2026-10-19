@@ -218,7 +218,8 @@ struct CellsBodies {
     /// now ticks line up.
     func zones(_ w: inout CellWriter, _ z: ZonesSection) {
         let n = w.frame.columns
-        let tw = z.zones.map { CellText.width($0.clock) }.max() ?? 0
+        // As wide as the widest clock or zone name: "GMT-10", "GMT+5:30".
+        let tw = z.zones.map { max(CellText.width($0.clock), min(CellText.width($0.zoneName), 9)) }.max() ?? 0
         let rw = z.zones.map { max(CellText.width($0.relative), CellText.width($0.day)) }.max() ?? 0
         let ribbon = max(8, n - tw - 2 - 1 - rw)
         // Night is the darker of the palette's quiet tones, day the lighter.
