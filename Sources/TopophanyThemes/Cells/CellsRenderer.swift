@@ -25,4 +25,11 @@ public struct CellsRenderer: Renderer {
     }
 
     public var panelCornerRadius: Double { CellsPanel.radius }
+
+    /// The ink inside a box's line.
+    public func colors(context: RenderContext) -> ThemeColors {
+        let p = CellsPalette(context.theme)
+        return ThemeColors(ground: [Color(p.ink)], edge: Color(p.line),
+                           swatches: [p.accent, p.accent2, p.up, p.warn, p.down, p.unknown].map { Color($0) })
+    }
 }

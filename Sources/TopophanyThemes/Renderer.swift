@@ -138,6 +138,43 @@ public protocol Renderer {
     /// The panel's corner radius: its window is masked to it, so the
     /// window's shadow follows the corners.
     var panelCornerRadius: Double { get }
+    /// The theme's colors, as this renderer resolves its slots.
+    func colors(context: RenderContext) -> ThemeColors
+}
+
+/// A theme's colors, for choosing one: what its panel sits on, its edge,
+/// and its two accents and four status colors.
+public struct ThemeColors {
+    /// Layers, from the bottom.
+    public var ground: [Color]
+    public var edge: Color
+    /// Accent, second accent, then up, warning, down and unknown.
+    public var swatches: [Color]
+}
+
+/// A theme as a chip of its colors: its ground, and a dot for each
+/// swatch.
+public struct ThemeSwatch: View {
+    var theme: Theme
+    var colorScheme: ColorScheme
+
+    public init(theme: Theme, colorScheme: ColorScheme) {
+        self.theme = theme
+        self.colorScheme = colorScheme
+    }
+
+    public var body: some View {
+        let c = Renderers.renderer(for: theme).colors(context: RenderContext(theme: theme, colorScheme: colorScheme))
+        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+        ZStack {
+            ForEach(Array(c.ground.enumerated()), id: \.offset) { _, g in shape.fill(g) }
+            HStack(spacing: 3.5) {
+                ForEach(Array(c.swatches.enumerated()), id: \.offset) { _, s in Circle().fill(s).frame(width: 7, height: 7) }
+            }
+        }
+        .overlay(shape.strokeBorder(c.edge, lineWidth: 1))
+        .accessibilityHidden(true)
+    }
 }
 
 extension Renderer {

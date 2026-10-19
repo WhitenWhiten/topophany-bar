@@ -79,6 +79,24 @@ import TopophanySections
         }
     }
 
+    /// Every built-in theme as Settings offers it: a chip of its colors,
+    /// with the panel light and dark.
+    @Test func swatches() throws {
+        let rows = VStack(alignment: .leading, spacing: 10) {
+            ForEach([ColorScheme.light, .dark], id: \.self) { scheme in
+                HStack(spacing: 8) {
+                    ForEach(ThemeStore.builtIn, id: \.id) { t in
+                        ThemeSwatch(theme: t, colorScheme: scheme).frame(width: 68, height: 40)
+                    }
+                }
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 12).fill(scheme == .dark ? Color(white: 0.17) : Color(white: 0.96)))
+            }
+        }
+        let size = try snapshot("themes-swatches", OnDesktop(dark: true, padding: 12) { rows })
+        #expect(abs(size.width - (6 * 68 + 5 * 8 + 20 + 24)) < 0.5, "\(size)")
+    }
+
     /// Every built-in theme's panel in one row, in each appearance.
     @Test func gallery() throws {
         for dark in [true, false] {

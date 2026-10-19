@@ -27,4 +27,12 @@ public struct CardsRenderer: Renderer {
     }
 
     public var panelCornerRadius: Double { CardsPanel.radius }
+
+    /// The panel's tint and a card's over an opaque stand-in for the glass.
+    public func colors(context: RenderContext) -> ThemeColors {
+        let p = CardsPalette.resolve(context)
+        return ThemeColors(ground: [p.isDark ? Color(rgb: 0x1E1E23) : Color(rgb: 0xF4F4F6), p.panel, p.card],
+                           edge: p.isDark ? Color.white.opacity(0.14) : Color.black.opacity(0.1),
+                           swatches: [p.accent, p.accent2, p.up, p.warn, p.down, p.unknown])
+    }
 }
