@@ -776,32 +776,40 @@ struct DayRibbon: View {
     }
 
     var body: some View {
-        Canvas { ctx, s in
-            let y = (s.height - band) / 2
-            let shape = Path(roundedRect: CGRect(x: 0, y: y, width: s.width, height: band), cornerRadius: band / 2)
-            let (night, noon) = tones
-            let stops = (0...48).map { i -> Gradient.Stop in
-                let b = ZonesSection.daylight(ZonesSection.hour(zone, at: Double(i) / 48))
-                let c = zip(night, noon).map { $0 + ($1 - $0) * b }
-                return .init(color: Color(.sRGB, red: c[0], green: c[1], blue: c[2], opacity: c[3]), location: Double(i) / 48)
-            }
-            var day = ctx
-            day.clipToLayer { mask in
-                mask.fill(shape, with: .color(.white))
-                mask.blendMode = .clear
-                for m in ZonesSection.midnights(zone) {
-                    mask.fill(Path(CGRect(x: s.width * m - 0.75, y: 0, width: 1.5, height: s.height)), with: .color(.white))
-                }
-            }
-            day.fill(Path(CGRect(origin: .zero, size: s)),
-                     with: .linearGradient(Gradient(stops: stops), startPoint: .zero, endPoint: CGPoint(x: s.width, y: 0)))
-            let tick = Path(roundedRect: CGRect(x: s.width / 2 - 1, y: 0, width: 2, height: s.height), cornerRadius: 1)
-            ctx.stroke(tick, with: .color(dark ? Color.black.opacity(0.4) : Color.white.opacity(0.9)), lineWidth: 2)
-            ctx.fill(tick, with: .color(now))
+        let (night, noon) = tones
+        let stops = (0...48).map { i -> Gradient.Stop in
+            let b = ZonesSection.daylight(ZonesSection.hour(zone, at: Double(i) / 48))
+            let c = zip(night, noon).map { $0 + ($1 - $0) * b }
+            return .init(color: Color(.sRGB, red: c[0], green: c[1], blue: c[2], opacity: c[3]), location: Double(i) / 48)
         }
-        // The tick overhangs the band; only the band takes room.
-        .frame(height: band + 6)
-        .padding(.vertical, -3)
+        let tick = RoundedRectangle(cornerRadius: 1)
+        // Shapes and fills only: a widget's drawing is kept as views, and
+        // a layer clipped inside a canvas doesn't survive it.
+        RibbonBand(band: band, midnights: ZonesSection.midnights(zone))
+            .fill(LinearGradient(stops: stops, startPoint: .leading, endPoint: .trailing))
+            .overlay {
+                tick.fill(now)
+                    .background(RoundedRectangle(cornerRadius: 2).fill(dark ? Color.black.opacity(0.4) : Color.white.opacity(0.9))
+                        .padding(-1))
+                    .frame(width: 2)
+            }
+            // The tick overhangs the band; only the band takes room.
+            .frame(height: band + 6)
+            .padding(.vertical, -3)
+    }
+}
+
+/// The ribbon's band: as tall as `band`, centred, its ends round, with a
+/// gap where midnight falls.
+struct RibbonBand: Shape {
+    var band: Double
+    var midnights: [Double]
+
+    func path(in r: CGRect) -> Path {
+        let b = CGRect(x: r.minX, y: r.midY - band / 2, width: r.width, height: band)
+        var gaps = Path()
+        for m in midnights { gaps.addRect(CGRect(x: r.minX + r.width * m - 0.75, y: r.minY, width: 1.5, height: r.height)) }
+        return Path(roundedRect: b, cornerRadius: band / 2).subtracting(gaps)
     }
 }
 
