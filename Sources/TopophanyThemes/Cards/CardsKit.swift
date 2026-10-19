@@ -111,6 +111,22 @@ extension View {
     func settles<V: Equatable>(on value: V) -> some View { modifier(Settle(value: value)) }
 }
 
+/// How a highlight comes and goes: in quickly, under the pointer or the
+/// keyboard, and out a little slower, as a menu's does. A fade, so it
+/// stays under Reduce Motion.
+enum Highlight {
+    static func easing(_ on: Bool) -> Animation { .easeOut(duration: on ? 0.1 : 0.22) }
+}
+
+/// A button that dims while pressed: no bounce, no shine.
+struct PressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.6 : 1)
+            .animation(.easeOut(duration: configuration.isPressed ? 0.05 : 0.18), value: configuration.isPressed)
+    }
+}
+
 /// The text sizes of the cards renderer, scaled by the Text size setting,
 /// in the theme's family.
 struct CardsType {

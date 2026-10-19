@@ -133,10 +133,11 @@ struct HeaderButton: View {
                 .font(.system(size: 14, weight: .regular))
                 .foregroundStyle(hover ? p.l1 : p.l2)
                 .frame(width: 26, height: 26)
-                .background(Circle().fill(hover ? p.fill2 : .clear))
+                .background(Circle().fill(p.fill2).opacity(hover ? 1 : 0))
                 .contentShape(Circle())
+                .animation(Highlight.easing(hover), value: hover)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressStyle())
         .onHover { hover = $0 }
         .help(label)
         .accessibilityLabel(label)
@@ -157,6 +158,7 @@ struct QuietButton: View {
         Button { actions.toggleQuiet() } label: {
             HStack(spacing: 4) {
                 Image(systemName: quiet ? "bell.slash.fill" : "bell.slash").font(.system(size: 10 * t.scale, weight: .medium))
+                    .contentTransition(.symbolEffect(.replace))
                 Text(quiet ? tr("Quieted") : tr("Quiet"))
             }
             .font(t.font(11, .medium))
@@ -166,8 +168,10 @@ struct QuietButton: View {
             .padding(.horizontal, 8).padding(.vertical, 3.5)
             .background(Capsule().fill(quiet ? p.accent.opacity(hover ? 0.24 : 0.16) : hover ? p.fill : p.fill2))
             .contentShape(Capsule())
+            .animation(Highlight.easing(hover), value: hover)
+            .animation(.easeOut(duration: 0.2), value: quiet)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressStyle())
         .onHover { hover = $0 }
         .help(quiet ? tr("The menu bar stays quiet until this gets worse. Click to show its colors again.")
                     : tr("Quiet the menu bar until this gets worse"))
@@ -200,7 +204,7 @@ struct CardsFooter: View {
                         if p.style.surface == .glass { shape.fill(p.fill2) } else { shape.strokeBorder(p.cardEdge, lineWidth: 0.75) }
                     }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressStyle())
             .keyboardShortcut("q", modifiers: .command)
         }
         .padding(EdgeInsets(top: 1, leading: 8, bottom: 0, trailing: 4))
@@ -426,9 +430,9 @@ struct FocusRing: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background {
-                if on {
-                    RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous).fill(p.accent.opacity(0.16)).padding(.horizontal, -5)
-                }
+                RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous).fill(p.accent.opacity(0.16)).padding(.horizontal, -5)
+                    .opacity(on ? 1 : 0)
+                    .animation(Highlight.easing(on), value: on)
             }
     }
 }
@@ -442,9 +446,9 @@ struct HoverRow: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background {
-                if hover {
-                    RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous).fill(p.fill2).padding(.horizontal, -5)
-                }
+                RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous).fill(p.fill2).padding(.horizontal, -5)
+                    .opacity(hover ? 1 : 0)
+                    .animation(Highlight.easing(hover), value: hover)
             }
             .onHover { hover = $0 }
     }
@@ -490,7 +494,7 @@ struct CardsSeen: View {
             } else {
                 shape.fill(m == .unknown || m == .offline ? p.unknown.opacity(0.18) : p.color(m).opacity(0.15))
             }
-            if focused { shape.strokeBorder(p.accent, lineWidth: 1.5) }
+            shape.strokeBorder(p.accent, lineWidth: 1.5).opacity(focused ? 1 : 0).animation(Highlight.easing(focused), value: focused)
         }
         .accessibilityElement(children: .combine)
     }
@@ -525,7 +529,7 @@ struct CardsAttention: View {
                     .padding(.vertical, 3)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressStyle())
                 .modifier(HoverRow(p: p))
                 .modifier(FocusRing(on: focus == "attention:more", p: p))
                 .padding(.top, 4)
@@ -546,7 +550,7 @@ struct CardsAttention: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressStyle())
         .accessibilityElement(children: .combine)
     }
 
