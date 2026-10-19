@@ -28,6 +28,19 @@ import TopophanySections
         try snapshot("panel-native-light-clear-server", panel(previewPanel(.clear, settings: previewSettings(mac: .server)), theme: ThemeStore.native, dark: false))
     }
 
+    /// Taller than the screen allows: Status stays and the rest scrolls,
+    /// within the height given. A snapshot doesn't draw a scroll view's
+    /// rows, so their edges are checked in the running app.
+    @Test func nativeScrolling() throws {
+        let tall = previewPanel(.incidents, settings: previewSettings(servers: true, limit: 5))
+        for dark in [true, false] {
+            let ctx = RenderContext(theme: ThemeStore.native, colorScheme: dark ? .dark : .light, maxHeight: 700)
+            let size = try snapshot("panel-native-\(dark ? "dark" : "light")-incidents-scrolling",
+                                    OnDesktop(dark: dark) { CardsRenderer().panel(tall, context: ctx) })
+            #expect(size.height <= 700 + 48 + 0.5, "\(size)")
+        }
+    }
+
     /// A zone with more servers than its row holds: the one in trouble is
     /// among those drawn.
     @Test func crowdedZone() throws {

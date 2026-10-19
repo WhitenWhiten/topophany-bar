@@ -119,7 +119,7 @@ Size:
 
 - **Native:** 344 pt wide, cards 6 pt apart. Rows that open something (attention entries, "*N* more") light faintly under the pointer, as far out as the keyboard's focus.
 - **Terminal:** 48 columns of SF Mono 12 inside 7 pt margins.
-- **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls, with no scroll bar, following the keyboard's focus as little as it must.
+- **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls, with no scroll bar, following the keyboard's focus as little as it must. In Native, where more lies beyond the scroll's top or bottom, the rows fade into the panel there.
 - **Quick scroll:** while the panel scrolls, a chevron beside Quit leaps about half the panel down, never further than the scroll shows at once, so no row passes unseen. At the end it points up and goes back to the top. Space does the same, unless a button has the keyboard (Full Keyboard Access), when Space presses that button.
 
 Motion in the panel is quiet, and says only what happened:

@@ -63,6 +63,7 @@ struct CardsPanel: View {
             .scrollPosition($position)
             .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState = new }
             .frame(height: min(scrollHeight, scrollLimit))
+            .mask { ScrollEdgeFade(top: scrolls && !leapState.atTop, bottom: scrolls && !leapState.atEnd) }
             .onChange(of: ctx.focus) { _, focus in
                 guard let focus else { return }
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { proxy.scrollTo(focus) }
@@ -76,6 +77,27 @@ struct CardsPanel: View {
         guard scrolls, let panel = ctx.maxHeight else { return }
         let y = leapState.target(panel: panel)
         withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { position.scrollTo(y: y) }
+    }
+}
+
+/// The scroll's edges: where more lies beyond one, the rows fade into the
+/// panel there, so a row cut at the edge reads as going on.
+struct ScrollEdgeFade: View {
+    var top: Bool
+    var bottom: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            fade([.clear, .black.opacity(0.55), .black]).frame(height: top ? 12 : 0)
+            Color.black
+            fade([.black, .black.opacity(0.55), .clear]).frame(height: bottom ? 20 : 0)
+        }
+        .animation(.easeOut(duration: 0.2), value: top)
+        .animation(.easeOut(duration: 0.2), value: bottom)
+    }
+
+    func fade(_ colors: [Color]) -> LinearGradient {
+        LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
     }
 }
 

@@ -22,6 +22,9 @@ struct PanelLeap: Equatable {
     /// Nothing further down: the next leap goes back up.
     var atEnd: Bool { offset >= content - visible - 1 }
 
+    /// Nothing further up.
+    var atTop: Bool { offset <= 1 }
+
     /// Where the next leap lands, as the scroll's offset from the top, in a
     /// panel `panel` points tall.
     func target(panel: Double) -> Double {
