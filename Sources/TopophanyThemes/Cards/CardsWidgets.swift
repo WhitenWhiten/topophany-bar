@@ -251,7 +251,7 @@ struct WidgetStatus {
 
     @ViewBuilder var bar: some View {
         if !status.isBlind, let c = status.counts?.complete {
-            StackBar(counts: c, palette: p)
+            StackBar(counts: c, palette: p, vibrant: ctx.widgetRendering == .vibrant)
         } else {
             Hatch(color: p.fill, line: 3, gap: 3)
                 .frame(height: 6)
@@ -353,7 +353,7 @@ struct CheckGrid: View {
             if let c = Self.cells(total, in: g.size) {
                 grid(c).frame(width: c.size.width, height: c.size.height)
             } else {
-                StackBar(counts: counts, palette: palette)
+                StackBar(counts: counts, palette: palette, vibrant: vibrant)
             }
         }
     }

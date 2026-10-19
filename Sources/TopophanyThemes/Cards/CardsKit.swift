@@ -336,6 +336,10 @@ struct StackBar: View {
     var counts: (up: Int, warning: Int, down: Int, unknown: Int)
     var palette: CardsPalette
     var height = 6.0
+    /// Drawn in one tone, as the desktop draws a widget while another app
+    /// is in front. A tick has no shape to tell up from trouble, so weight
+    /// does: trouble in the full ink, up faint.
+    var vibrant = false
     /// The height it takes: ticks are taller than the runs they replace.
     nonisolated static let tickHeight = 9.0
 
@@ -363,9 +367,15 @@ struct StackBar: View {
         .frame(height: Self.tickHeight)
     }
 
+    /// Up, warning and down, as the bar draws them.
+    var colors: (up: Color, warn: Color, down: Color) {
+        vibrant ? (palette.l1.opacity(0.3), palette.l1, palette.l1) : (palette.calmUp, palette.warn, palette.down)
+    }
+
     func tickView(_ t: (tick: Double, gap: Double)) -> some View {
         let p = palette
         let c = counts
+        let (up, warn, down) = colors
         return Canvas { ctx, s in
             var x = 0.0
             func draw(_ n: Int, _ body: (CGRect) -> Void) {
@@ -376,9 +386,9 @@ struct StackBar: View {
             }
             let r = min(1, t.tick / 3)
             // Up is quieter than trouble, so what needs a look stands out.
-            draw(c.up) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.calmUp)) }
-            draw(c.warning) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.warn)) }
-            draw(c.down) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.down)) }
+            draw(c.up) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(up)) }
+            draw(c.warning) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(warn)) }
+            draw(c.down) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(down)) }
             draw(c.unknown) {
                 ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.unknown.opacity(0.14)))
                 ctx.stroke(Path(roundedRect: $0.insetBy(dx: 0.5, dy: 0.5), cornerRadius: max(0, r - 0.5)),
@@ -388,9 +398,10 @@ struct StackBar: View {
     }
 
     var runs: some View {
-        GeometryReader { g in
-            let parts: [(Int, Color?, Bool)] = [(counts.up, palette.up, false), (counts.warning, palette.warn, false),
-                                                (counts.down, palette.down, false), (counts.unknown, nil, true)]
+        let (up, warn, down) = vibrant ? colors : (palette.up, palette.warn, palette.down)
+        return GeometryReader { g in
+            let parts: [(Int, Color?, Bool)] = [(counts.up, up, false), (counts.warning, warn, false),
+                                                (counts.down, down, false), (counts.unknown, nil, true)]
             let shown = parts.filter { $0.0 > 0 }
             let total = Double(shown.reduce(0) { $0 + $1.0 })
             let gaps = Double(max(0, shown.count - 1)) * 2

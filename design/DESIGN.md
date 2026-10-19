@@ -249,7 +249,7 @@ A Time zones widget's timeline is longer: an entry each minute for an hour, twic
 
 ### 7.4 Rendering modes
 
-macOS draws desktop widgets without background or color while another app is in front. Shape-first glyphs keep every state readable there. In that mode, the cells renderer drops its box borders for plain headings, and the mark in a cards widget's corner is the globe's lines, as the menu bar item draws it at rest: flattened to one tone, the colored globe would be a disc, and a disc is up's mark.
+macOS draws desktop widgets without background or color while another app is in front. Shape-first glyphs keep every state readable there. In that mode, the cells renderer drops its box borders for plain headings, and the mark in a cards widget's corner is the globe's lines, as the menu bar item draws it at rest: flattened to one tone, the colored globe would be a disc, and a disc is up's mark. A tick on the check bar has no shape of its own, so there weight tells them apart: trouble in the full ink, up faint.
 
 ## 8. Theme architecture
 
