@@ -120,7 +120,7 @@ The theme applies to the panel, the menu bar item and every widget.
 
 ### 7.1 Kinds and sizes
 
-Sizes in points sit on a 170 pt grid with 24 pt gaps.
+Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary with the display (on a 1920×1080 pt display, a 164 pt grid with 16 pt gaps), so renderers lay out each size in the bounds WidgetKit gives, never the table's.
 
 | Kind | Small 170×170 | Medium 364×170 | Large 364×364 | Extra large 752×364 |
 |---|---|---|---|---|

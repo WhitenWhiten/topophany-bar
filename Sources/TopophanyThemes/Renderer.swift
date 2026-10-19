@@ -110,7 +110,9 @@ public protocol Renderer {
     var id: RendererID { get }
     func panel(_ model: PanelModel, context: RenderContext) -> AnyView
     func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView
-    func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView
+    /// A widget in `size`'s layout, filling `bounds`: the points WidgetKit
+    /// gives it, which vary with the display.
+    func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView
     /// What a widget sits on: WidgetKit's container background.
     func widgetBackground(context: RenderContext) -> AnyView
     /// The panel's corner radius: its window is masked to it, so the

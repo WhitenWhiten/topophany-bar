@@ -1,7 +1,9 @@
 import Foundation
 import TopophanyKit
 
-/// Widget sizes, in points, on a 170 pt grid with 24 pt gaps.
+/// A widget's size: which layout it gets. `width` and `height` are the
+/// design's, on a 170 pt grid with 24 pt gaps. WidgetKit's vary with the
+/// display, so a renderer fills the bounds it is given.
 public enum WidgetSize: String, Sendable, Hashable, CaseIterable {
     case small, medium, large, extraLarge
 

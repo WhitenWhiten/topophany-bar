@@ -6,15 +6,16 @@ import TopophanySections
 @testable import TopophanyThemes
 
 /// A widget on the desktop, as WidgetKit would place it: the renderer's
-/// background under its content, in a 22 pt rounded square.
+/// background under its content, in a 22 pt rounded square. `bounds` is
+/// the design's size unless given.
 @MainActor
-func onDesktop(_ model: WidgetModel, _ size: WidgetSize, theme: Theme, dark: Bool,
+func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, theme: Theme, dark: Bool,
                rendering: RenderContext.WidgetRendering = .fullColor) -> some View {
     let ctx = RenderContext(theme: theme, colorScheme: dark ? .dark : .light, widgetRendering: rendering)
     let r = Renderers.renderer(for: theme)
     let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
     return OnDesktop(dark: dark || theme.renderer == .cells) {
-        r.widget(model, size: size, context: ctx)
+        r.widget(model, size: size, bounds: bounds ?? CGSize(width: size.width, height: size.height), context: ctx)
             .background(r.widgetBackground(context: ctx))
             .clipShape(shape)
             .overlay(shape.strokeBorder(Color.white.opacity(dark ? 0.18 : 0.7), lineWidth: 0.5))
@@ -27,6 +28,13 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, theme: Theme, dark: Boo
     init() { L10n.force("en") }
 
     static let sizes: [(WidgetSize, String)] = [(.small, "s"), (.medium, "m"), (.large, "l"), (.extraLarge, "xl")]
+
+    /// WidgetKit's sizes on a 1920×1080 pt display: a 164 pt grid with
+    /// 16 pt gaps, smaller than the design's.
+    static let smaller: [WidgetSize: CGSize] = [
+        .small: CGSize(width: 164, height: 164), .medium: CGSize(width: 344, height: 164),
+        .large: CGSize(width: 344, height: 344), .extraLarge: CGSize(width: 704, height: 344),
+    ]
 
     func status(_ s: FixtureEngine.Scenario, servers: Bool = true) -> WidgetModel {
         WidgetModel(kind: .status, panel: previewPanel(s, settings: previewSettings(mac: .off, servers: servers)))
@@ -64,6 +72,24 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, theme: Theme, dark: Boo
         }
         let stale = status(.incidents).notCurrent(at: snapshotOrigin.addingTimeInterval(47 * 60))
         try snapshot("widget-terminal-state-not-current", onDesktop(stale, .small, theme: ThemeStore.terminal, dark: true))
+    }
+
+    @Test func smallerSizes() throws {
+        for theme in [ThemeStore.native, ThemeStore.terminal] {
+            for dark in theme.renderer == .cells ? [true] : [true, false] {
+                let a = theme.renderer == .cells ? "" : dark ? "-dark" : "-light"
+                for (size, n) in Self.sizes {
+                    let b = try #require(Self.smaller[size])
+                    let s = try snapshot("widget-\(theme.id)\(a)-status-\(n)-1080",
+                                         onDesktop(status(.incidents), size, bounds: b, theme: theme, dark: dark))
+                    #expect(abs(s.width - (b.width + 48)) < 0.5 && abs(s.height - (b.height + 48)) < 0.5, "\(n): \(s)")
+                }
+                for (size, n) in [(WidgetSize.small, "s"), (.medium, "m")] {
+                    try snapshot("widget-\(theme.id)\(a)-server-\(n)-1080",
+                                 onDesktop(server("oracle-ny", isMac: false), size, bounds: Self.smaller[size], theme: theme, dark: dark))
+                }
+            }
+        }
     }
 
     @Test func monochrome() throws {

@@ -16,8 +16,8 @@ public struct CardsRenderer: Renderer {
         AnyView(CardsStatusItem(model: model, ctx: context))
     }
 
-    public func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView {
-        AnyView(CardsWidget(model: model, size: size, ctx: context))
+    public func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView {
+        AnyView(CardsWidget(model: model, size: size, bounds: bounds, ctx: context))
     }
 
     public func widgetBackground(context: RenderContext) -> AnyView {

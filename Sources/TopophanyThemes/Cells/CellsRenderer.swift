@@ -15,8 +15,8 @@ public struct CellsRenderer: Renderer {
         AnyView(CellsStatusItem(model: model, ctx: context))
     }
 
-    public func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView {
-        AnyView(CellsWidget(model: model, size: size, ctx: context))
+    public func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView {
+        AnyView(CellsWidget(model: model, size: size, bounds: bounds, ctx: context))
     }
 
     public func widgetBackground(context: RenderContext) -> AnyView {

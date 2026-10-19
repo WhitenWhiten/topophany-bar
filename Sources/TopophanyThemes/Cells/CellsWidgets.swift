@@ -8,22 +8,23 @@ import TopophanySections
 struct CellsWidget: View {
     var model: WidgetModel
     var size: WidgetSize
+    var bounds: CGSize
     var ctx: RenderContext
 
     var body: some View {
-        CellCanvas(scene: Self.scene(model, size: size, ctx: ctx))
-            .frame(width: size.width, height: size.height, alignment: .topLeading)
+        CellCanvas(scene: Self.scene(model, size: size, bounds: bounds, ctx: ctx))
+            .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(CellsAccessibility.panel(model.panel)))
     }
 
     nonisolated static let pad = (top: 8.0, side: 10.0)
 
-    static func scene(_ model: WidgetModel, size: WidgetSize, ctx: RenderContext) -> CellScene {
+    static func scene(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, ctx: RenderContext) -> CellScene {
         let m = CellMetrics.widget
         let p = CellsPalette(ctx.theme)
-        let cols = Int(((size.width - 2 * pad.side) / m.cell).rounded(.down))
-        var w = CellWriter(metrics: m, palette: p, width: size.width, frame: .init(x: pad.side, columns: cols))
+        let cols = Int(((bounds.width - 2 * pad.side) / m.cell).rounded(.down))
+        var w = CellWriter(metrics: m, palette: p, width: bounds.width, frame: .init(x: pad.side, columns: cols))
         w.plain = ctx.widgetRendering == .vibrant
         w.y = pad.top
         var l = Layout(w: w, b: CellsBodies(p: p, focus: nil), p: p, model: model, ctx: ctx, cols: cols)
@@ -31,7 +32,7 @@ struct CellsWidget: View {
         case .status: l.status(size)
         case .server: l.server(size)
         }
-        return CellScene(size: CGSize(width: size.width, height: size.height), metrics: m, items: l.w.items, live: l.w.live)
+        return CellScene(size: bounds, metrics: m, items: l.w.items, live: l.w.live)
     }
 
     /// Lays out one widget, top to bottom.

@@ -217,9 +217,13 @@ struct WidgetView: View {
                                 increaseContrast: contrast == .increased, widgetRendering: rendering)
         let _ = ctx.liveDates = true
         let r = Renderers.renderer(for: entry.theme)
-        r.widget(entry.model, size: size, context: ctx)
-            .containerBackground(for: .widget) { r.widgetBackground(context: ctx) }
-            .widgetURL(WidgetLinks.panel)
+        let model = entry.model, size = size, context = ctx
+        // WidgetKit's sizes vary with the display, so lay out in the one given.
+        GeometryReader { g in
+            r.widget(model, size: size, bounds: g.size, context: context)
+        }
+        .containerBackground(for: .widget) { r.widgetBackground(context: context) }
+        .widgetURL(WidgetLinks.panel)
     }
 }
 

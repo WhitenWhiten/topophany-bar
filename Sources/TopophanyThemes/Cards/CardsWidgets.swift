@@ -7,6 +7,7 @@ import TopophanySections
 struct CardsWidget: View {
     var model: WidgetModel
     var size: WidgetSize
+    var bounds: CGSize
     var ctx: RenderContext
 
     var p: CardsPalette { CardsPalette.resolve(ctx) }
@@ -21,7 +22,7 @@ struct CardsWidget: View {
             }
         }
         .padding(14)
-        .frame(width: size.width, height: size.height, alignment: .topLeading)
+        .frame(width: bounds.width, height: bounds.height, alignment: .topLeading)
         .foregroundStyle(p.l1)
         .environment(\.colorScheme, ctx.effectiveScheme)
     }
