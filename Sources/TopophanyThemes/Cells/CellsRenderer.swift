@@ -22,4 +22,6 @@ public struct CellsRenderer: Renderer {
     public func widgetBackground(context: RenderContext) -> AnyView {
         AnyView(Rectangle().fill(Color(CellsPalette(context.theme).ink)))
     }
+
+    public var panelCornerRadius: Double { CellsPanel.radius }
 }

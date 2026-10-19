@@ -113,6 +113,9 @@ public protocol Renderer {
     func widget(_ model: WidgetModel, size: WidgetSize, context: RenderContext) -> AnyView
     /// What a widget sits on: WidgetKit's container background.
     func widgetBackground(context: RenderContext) -> AnyView
+    /// The panel's corner radius: its window is masked to it, so the
+    /// window's shadow follows the corners.
+    var panelCornerRadius: Double { get }
 }
 
 @MainActor

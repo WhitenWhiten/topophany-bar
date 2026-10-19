@@ -12,6 +12,8 @@ struct CardsPanel: View {
     var p: CardsPalette { CardsPalette.resolve(ctx) }
     var t: CardsType { CardsType(scale: ctx.scale) }
 
+    nonisolated static let radius = 18.0
+
     var body: some View {
         let p = self.p
         VStack(spacing: 7) {
@@ -27,7 +29,7 @@ struct CardsPanel: View {
         }
         .padding(8)
         .frame(width: 344 * ctx.scale)
-        .background { CardsPanelBackground(ctx: ctx, p: p, radius: 18) }
+        .background { CardsPanelBackground(ctx: ctx, p: p, radius: Self.radius) }
         .environment(\.colorScheme, ctx.effectiveScheme)
     }
 

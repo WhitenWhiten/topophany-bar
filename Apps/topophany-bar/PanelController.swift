@@ -110,6 +110,12 @@ final class PanelController: NSObject {
         h.layoutSubtreeIfNeeded()
         let size = h.fittingSize
         guard let s = screen else { return }
+        // The glass alone gives the window a square shadow, edged in black
+        // past the corners; masked, the shadow follows the panel's shape.
+        h.wantsLayer = true
+        h.layer?.cornerRadius = Renderers.renderer(for: model.theme).panelCornerRadius
+        h.layer?.cornerCurve = .continuous
+        h.layer?.masksToBounds = true
         let bf = anchor?.window?.frame ?? NSRect(x: s.frame.midX, y: s.visibleFrame.maxY, width: 0, height: 0)
         var x = bf.midX - size.width / 2
         x = min(max(x, s.visibleFrame.minX + 8), s.visibleFrame.maxX - size.width - 8)

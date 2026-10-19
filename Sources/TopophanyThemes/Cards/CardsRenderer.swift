@@ -23,6 +23,8 @@ public struct CardsRenderer: Renderer {
     public func widgetBackground(context: RenderContext) -> AnyView {
         AnyView(CardsWidgetBackground(ctx: context))
     }
+
+    public var panelCornerRadius: Double { CardsPanel.radius }
 }
 
 /// The menu bar item: a globe with the status badge cut into its corner,

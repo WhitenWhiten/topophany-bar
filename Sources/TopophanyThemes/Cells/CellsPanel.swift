@@ -247,10 +247,11 @@ struct CellsPanel: View {
     var focusFirstAttention = false
 
     static let columns = 48
+    nonisolated static let radius = 12.0
 
     var body: some View {
         let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention)
-        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
         fitted(scene)
             .background(shape.fill(Color(CellsPalette(ctx.theme).ink)))
             .clipShape(shape)
