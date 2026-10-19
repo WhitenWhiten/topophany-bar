@@ -27,8 +27,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openTerminal: { [weak self] in self?.openTUI(focus: nil) },
             openSettings: { [weak self] in self?.showSettings() },
             quit: { NSApp.terminate(nil) },
-            openAttention: { [weak self] item in self?.openTUI(focus: item) })
+            openAttention: { [weak self] item in self?.openTUI(focus: item) },
+            toggleQuiet: { [weak self] in self?.model.toggleQuiet() })
         panel.onOpenChange = { [weak item] open in item?.pressed = open }
+        item.contextMenu = { [weak self] in self?.itemMenu() }
         self.panel = panel
         statusItem = item
         model.onChange = { [weak item, weak panel] in
@@ -71,6 +73,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // stdin closes and topo exits; it writes its last frame first.
         model.stopNow()
     }
+
+    /// The menu bar item's right-click menu: quiet its alert, open the TUI
+    /// or Settings, quit.
+    func itemMenu() -> NSMenu {
+        panel?.close()
+        let menu = NSMenu()
+        let alert = model.panel.alert
+        let quiet = NSMenuItem(title: tr("Quiet Until It Gets Worse"), action: #selector(toggleQuiet), keyEquivalent: "")
+        quiet.target = self
+        quiet.state = alert == .quiet ? .on : .off
+        quiet.isEnabled = alert != .unavailable
+        quiet.toolTip = tr("The menu bar item keeps its badge’s shape, in its own color, until this gets worse.")
+        menu.addItem(quiet)
+        menu.addItem(.separator())
+        let open = NSMenuItem(title: tr("Open in Terminal"), action: #selector(openTUIFromMenu), keyEquivalent: "")
+        open.target = self
+        menu.addItem(open)
+        let settings = NSMenuItem(title: tr("Settings…"), action: #selector(showSettingsFromMenu), keyEquivalent: "")
+        settings.target = self
+        menu.addItem(settings)
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: tr("Quit Topophany"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: ""))
+        // The menu checks items by their target; quitting needs none.
+        menu.autoenablesItems = false
+        return menu
+    }
+
+    @objc private func toggleQuiet() { model.toggleQuiet() }
+    @objc private func openTUIFromMenu() { openTUI(focus: nil) }
+    @objc private func showSettingsFromMenu() { showSettings() }
 
     func showSettings() {
         panel?.close()

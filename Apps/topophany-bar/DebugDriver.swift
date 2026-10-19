@@ -29,6 +29,8 @@ import TopophanyWidgets
 ///     language L            the language: system, en, ja or zh-Hans
 ///     fixture NAME          replay another fixture, in a copy launched
 ///                           with one
+///     menu                  the menu bar item's right-click menu, as text
+///     itemshot              the menu bar item as last drawn, to item.png
 ///
 /// A command starting with `@PID` goes to that running copy only.
 @MainActor
@@ -64,7 +66,7 @@ enum DebugDriver {
         case "tui": d.openTUI(focus: nil)
         case "key": if w.count > 1 { d.panelKey(w[1]) }
         case "type":
-            let codes: [String: UInt16] = [",": 43, "q": 12, "o": 31]
+            let codes: [String: UInt16] = [",": 43, "q": 12, "o": 31, "m": 46]
             guard w.count > 1, let code = codes[w[1]], let win = d.panelWindow,
                   let e = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: w.count > 2 ? .command : [],
                                            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: win.windowNumber,
@@ -101,6 +103,13 @@ enum DebugDriver {
             try? "\(status) (setting \(d.model.settings.openAtLogin))".write(to: out.appending(path: "login.txt"), atomically: true, encoding: .utf8)
         case "fixture":
             if w.count > 1, let s = FixtureEngine.Scenario(rawValue: w[1]) { d.model.replay(s) }
+        case "menu":
+            let lines = d.itemMenu().items.map { i in
+                i.isSeparatorItem ? "—" : "\(i.state == .on ? "✓" : " ") \(i.title)\(i.isEnabled ? "" : " (disabled)")"
+            }
+            try? lines.joined(separator: "\n").write(to: out.appending(path: "menu.txt"), atomically: true, encoding: .utf8)
+        case "itemshot":
+            if let image = d.statusItemImage { DebugSnapshots.write(image, out.appending(path: "item.png")) }
         case "language":
             if w.count > 1, let l = TopophanyKit.Settings.Language(rawValue: w[1]) { d.model.update { $0.language = l } }
         case "handoff":

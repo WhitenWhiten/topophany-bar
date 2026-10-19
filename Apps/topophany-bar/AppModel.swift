@@ -25,6 +25,9 @@ final class AppModel {
     private(set) var lastFrameAt: Date?
     /// The keyboard's place in the panel.
     var focus: String?
+    /// The menu bar's alert, quieted until it gets worse. Kept for this
+    /// launch only.
+    private(set) var quiet: QuietAlert?
 
     let themes = ThemeStore()
     @ObservationIgnored private let store: SettingsStore
@@ -351,12 +354,23 @@ final class AppModel {
 
     // MARK: every second
 
+    /// Quiets the menu bar's alert until it gets worse, or shows it again.
+    func toggleQuiet() {
+        switch panel.alert {
+        case .shown: quiet = QuietAlert(panel.status)
+        case .quiet: quiet = nil
+        case .unavailable: return
+        }
+        refresh()
+    }
+
     func refresh() {
         let r = policy.evaluate(at: Date())
         reading = r
+        quiet = quiet?.after(SectionBuilder.status(r, engine: engineCondition))
         panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: settings, local: local,
-                                                machineModel: machine.model))
-        let item = StatusItemModel(status: panel.status, appearance: settings.appearance.menuBar, local: local)
+                                                machineModel: machine.model, quiet: quiet))
+        let item = StatusItemModel(status: panel.status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)
         if item != statusItem { statusItem = item }
         widgets?.tick(panel: panel, policy: policy, theme: theme, settings: settings)
         onChange?()

@@ -1577,6 +1577,22 @@
         }
       }
     },
+    "Open in Terminal": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ターミナルで開く"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在终端中打开"
+          }
+        }
+      }
+    },
     "Open incidents first, then anything else that needs a look": {
       "localizations": {
         "ja": {
@@ -1781,6 +1797,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "配置"
+          }
+        }
+      }
+    },
+    "Quiet Until It Gets Worse": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悪化するまでミュート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "静音，直到情况变糟"
+          }
+        }
+      }
+    },
+    "Quit Topophany": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Topophany を終了"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出 Topophany"
           }
         }
       }
@@ -2073,6 +2121,22 @@
         }
       }
     },
+    "Settings…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置…"
+          }
+        }
+      }
+    },
     "Show": {
       "localizations": {
         "ja": {
@@ -2341,6 +2405,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "计数为需要处理的数量；全部正常时不显示"
+          }
+        }
+      }
+    },
+    "The menu bar item keeps its badge’s shape, in its own color, until this gets worse.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悪化するまで、メニューバー項目のバッジは形を保ったまま、メニューバー自体の色で描かれます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在情况变糟之前，菜单栏项的徽标保留形状，以菜单栏自身的颜色绘制。"
           }
         }
       }

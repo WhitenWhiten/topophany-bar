@@ -12,6 +12,7 @@ final class PanelController: NSObject {
         var openSettings: () -> Void
         var quit: () -> Void
         var openAttention: (AttentionSection.Item?) -> Void
+        var toggleQuiet: () -> Void
     }
 
     var actions: Actions?
@@ -96,7 +97,8 @@ final class PanelController: NSObject {
                      openSettings: { [weak self] in self?.actions?.openSettings() },
                      quit: { [weak self] in self?.actions?.quit() },
                      openAttention: { [weak self] item in self?.actions?.openAttention(item) },
-                     focus: { [weak self] id in self?.model.focus = id })
+                     focus: { [weak self] id in self?.model.focus = id },
+                     toggleQuiet: { [weak self] in self?.actions?.toggleQuiet() })
     }
 
     private var screen: NSScreen? { anchor?.window?.screen ?? NSScreen.main }

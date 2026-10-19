@@ -74,8 +74,20 @@ final class StatusItemController: NSObject {
         update()
     }
 
+    /// Built on each right-click: what the item's menu offers now.
+    var contextMenu: (() -> NSMenu?)?
+
     @objc private func clicked() {
-        if let b = item.button { onClick(b) }
+        guard let b = item.button else { return }
+        if NSApp.currentEvent?.type == .rightMouseUp, let menu = contextMenu?() {
+            // Only the item's own menu is placed under it and drawn pressed
+            // by the system, so it holds this one while it's open.
+            item.menu = menu
+            b.performClick(nil)
+            item.menu = nil
+        } else {
+            onClick(b)
+        }
     }
 
     var button: NSStatusBarButton? { item.button }
