@@ -83,9 +83,12 @@ struct CommitField: View {
     }
 }
 
-/// Settings forms: grouped, fixed width, as tall as their content.
+/// Settings forms: grouped, fixed width, as tall as their content. The
+/// window fits itself to that size (`fitSettings`), and the form stays at
+/// the top while it does.
 struct SettingsForm<Content: View>: View {
     @ViewBuilder var content: Content
+    @Environment(\.fitSettings) private var fit
 
     var body: some View {
         Form { content }
@@ -93,7 +96,25 @@ struct SettingsForm<Content: View>: View {
             .scrollDisabled(true)
             .frame(width: settingsWidth)
             .fixedSize(horizontal: false, vertical: true)
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { fit($0) }
+            // While the window is still shorter than the form, the form
+            // overflows at the bottom rather than being centered.
+            .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
     }
+}
+
+/// Where a tab's form reports its size.
+struct SettingsFitter: Equatable {
+    var tab = 0
+    weak var tabs: SettingsTabs?
+
+    @MainActor func callAsFunction(_ size: CGSize) { tabs?.fit(size, tab: tab) }
+
+    static func == (a: Self, b: Self) -> Bool { a.tab == b.tab && a.tabs === b.tabs }
+}
+
+extension EnvironmentValues {
+    @Entry var fitSettings = SettingsFitter()
 }
 
 /// "How often" choices, as `topo` durations.
@@ -720,7 +741,7 @@ struct ModeCard: View {
     var body: some View {
         let on = model.settings.sections.mac.mode == mode
         Button {
-            model.update { $0.sections.mac.mode = mode }
+            withAnimation(.easeInOut(duration: 0.2)) { model.update { $0.sections.mac.mode = mode } }
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 Image(systemName: symbol)
