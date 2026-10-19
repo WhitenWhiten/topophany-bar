@@ -72,7 +72,7 @@ struct FleetMore: View {
             Text(tr("+\(groups.count) more")).font(t.font(12)).foregroundStyle(p.l2).lineLimit(1)
             Spacer(minLength: 3)
             HStack(spacing: 2.5) {
-                ForEach(nodes.prefix(marks)) { n in CardMark(mark: n.mark, size: 8, color: p.color(n.mark)) }
+                ForEach(nodes.prefix(marks)) { n in CardMark(mark: n.mark, size: 8, color: p.listColor(n.mark)) }
                 if nodes.count > marks {
                     Text(verbatim: "+\(nodes.count - marks)").font(t.font(10)).foregroundStyle(p.l3).padding(.leading, 1)
                 }
@@ -110,7 +110,7 @@ struct FleetCell: View {
             }
             Spacer(minLength: 3)
             HStack(spacing: 2.5) {
-                ForEach(group.nodes.prefix(marks)) { n in CardMark(mark: n.mark, size: 8, color: p.color(n.mark)) }
+                ForEach(group.nodes.prefix(marks)) { n in CardMark(mark: n.mark, size: 8, color: p.listColor(n.mark)) }
                 if group.nodes.count > marks {
                     Text(verbatim: "+\(group.nodes.count - marks)").font(t.font(10)).foregroundStyle(p.l3).padding(.leading, 1)
                 }

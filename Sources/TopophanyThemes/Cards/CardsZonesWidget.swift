@@ -100,7 +100,7 @@ struct WidgetZones: View {
     func marks(_ servers: [ZonesSection.Server], _ n: Int, size: Double) -> some View {
         let servers = servers.count > n ? Mark.troubleFirst(servers, by: \.mark) : servers
         return HStack(spacing: 2.5) {
-            ForEach(Array(servers.prefix(n).enumerated()), id: \.offset) { _, s in CardMark(mark: s.mark, size: size, color: p.color(s.mark)) }
+            ForEach(Array(servers.prefix(n).enumerated()), id: \.offset) { _, s in CardMark(mark: s.mark, size: size, color: p.listColor(s.mark)) }
             if servers.count > n {
                 Text(verbatim: "+\(servers.count - n)").font(t.font(9.5)).foregroundStyle(p.l3).padding(.leading, 1)
             }

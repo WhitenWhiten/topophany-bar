@@ -87,6 +87,14 @@ struct CardsPalette {
         }
     }
 
+    /// Up among other marks: quieter than trouble, so what needs a look
+    /// stands out and a calm network looks calm.
+    var calmUp: Color { up.opacity(increaseContrast ? 0.75 : 0.55) }
+
+    /// A mark's color in a list or a run of marks: up is quieter than
+    /// trouble, as on the bar.
+    func listColor(_ m: Mark) -> Color { m == .up ? calmUp : color(m) }
+
     /// A pill's or chip's background: the status color at 15%, or a fill.
     func tint(_ m: Mark, _ amount: Double = 0.15) -> Color {
         switch m {
@@ -367,9 +375,8 @@ struct StackBar: View {
                 }
             }
             let r = min(1, t.tick / 3)
-            // Up is quieter than trouble, so what needs a look stands out:
-            // as quiet as the widgets' marks for up.
-            draw(c.up) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.up.opacity(p.increaseContrast ? 0.75 : 0.55))) }
+            // Up is quieter than trouble, so what needs a look stands out.
+            draw(c.up) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.calmUp)) }
             draw(c.warning) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.warn)) }
             draw(c.down) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.down)) }
             draw(c.unknown) {

@@ -394,7 +394,7 @@ struct CardsStatusCard: View {
 
     func item(_ n: Int, _ m: Mark, _ word: String) -> some View {
         HStack(spacing: 4) {
-            CardMark(mark: m, size: 9, color: p.color(m)).opacity(n == 0 ? 0.45 : 1)
+            CardMark(mark: m, size: 9, color: p.listColor(m)).opacity(n == 0 ? 0.45 : 1)
             Text("\(n)").font(t.mono(11, .semibold)).foregroundStyle(n == 0 ? p.l3 : p.l1)
                 .contentTransition(.numericText(value: Double(n))).settles(on: n)
             Text(word).foregroundStyle(n == 0 ? p.l3 : p.l2)
@@ -534,7 +534,7 @@ struct CardsSeen: View {
 
     func chip(_ m: Mark, _ name: String, _ note: String?, calm: Bool, focused: Bool) -> some View {
         HStack(spacing: 5) {
-            CardMark(mark: m, size: calm ? 10 : 11, color: p.color(m))
+            CardMark(mark: m, size: calm ? 10 : 11, color: p.listColor(m))
             Text(name).foregroundStyle(calm ? p.l2 : p.l1)
             if let note { Text(note).font(t.font(11)).foregroundStyle(p.l2) }
         }
@@ -629,13 +629,13 @@ struct CardsApplications: View {
             ForEach(apps.rows) { a in
                 HStack(spacing: 8) {
                     HStack(spacing: 7) {
-                        CardMark(mark: a.mark, size: 10, color: p.color(a.mark))
+                        CardMark(mark: a.mark, size: 10, color: p.listColor(a.mark))
                         Text(a.name).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     HStack(spacing: 3) {
                         ForEach(Array(a.services.prefix(8).enumerated()), id: \.offset) { _, m in
-                            CardMark(mark: m, size: 8, color: p.color(m))
+                            CardMark(mark: m, size: 8, color: p.listColor(m))
                         }
                     }
                     .frame(width: 70 * t.scale, alignment: .leading)
@@ -776,7 +776,7 @@ struct CardsZones: View {
                 let servers = z.servers.count > 8 ? Mark.troubleFirst(z.servers, by: \.mark) : z.servers
                 HStack(spacing: 2.5) {
                     ForEach(Array(servers.prefix(8).enumerated()), id: \.offset) { _, s in
-                        CardMark(mark: s.mark, size: 8, color: p.color(s.mark))
+                        CardMark(mark: s.mark, size: 8, color: p.listColor(s.mark))
                     }
                     if z.servers.count > 8 {
                         Text("+\(z.servers.count - 8)").font(t.font(10)).foregroundStyle(p.l3).padding(.leading, 2)

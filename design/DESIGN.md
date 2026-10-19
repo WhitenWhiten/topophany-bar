@@ -35,7 +35,7 @@ Out of scope for v1:
 3. **Shape, then color.** Every status mark changes shape (● ▲ ✕ ○ ◌) as well as color. Shapes belong to the renderer, so no theme can remove that distinction.
 4. **Unknown is never zero.** Bars and ratios keep unknown in the denominator, drawn hollow or hatched. Unknown numbers are `null`.
 5. **Local is not evidence.** This Mac's local readings carry no health, are labeled "local readings", and never leave the Mac.
-6. **Beauty through restraint.** The panel is calm when things are calm: color appears only where something needs a look.
+6. **Beauty through restraint.** The panel is calm when things are calm: color appears only where something needs a look. In the cards themes, up among other marks (the bar's ticks, a legend, a list's dots) is drawn at about half strength, so trouble stands out; a verdict keeps its full color.
 
 ## 3. The status item
 

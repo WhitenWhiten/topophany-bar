@@ -246,7 +246,7 @@ struct WidgetStatus {
 
     func item(_ n: Int, _ m: Mark, _ word: String) -> some View {
         HStack(spacing: 4) {
-            CardMark(mark: m, size: 9, color: p.color(m)).opacity(n == 0 ? 0.45 : 1)
+            CardMark(mark: m, size: 9, color: p.listColor(m)).opacity(n == 0 ? 0.45 : 1)
             Text("\(n)").font(t.mono(11, .semibold)).foregroundStyle(n == 0 ? p.l3 : p.l1)
             Text(word).foregroundStyle(n == 0 ? p.l3 : p.l2)
         }
@@ -331,7 +331,7 @@ struct CheckGrid: View {
     func grid(_ c: Cells) -> some View {
         let p = palette
         let n = counts
-        let up = p.up.opacity(vibrant ? 0.4 : 0.55)
+        let up = vibrant ? p.up.opacity(0.4) : p.calmUp
         return Canvas { ctx, _ in
             var k = 0
             func draw(_ count: Int, _ mark: Mark, _ color: Color) {
@@ -403,7 +403,7 @@ struct WidgetSeen: View {
 
     func chip(_ m: Mark, _ name: String, _ note: String?, calm: Bool) -> some View {
         HStack(spacing: 5) {
-            CardMark(mark: m, size: calm ? 9 : 10, color: p.color(m))
+            CardMark(mark: m, size: calm ? 9 : 10, color: p.listColor(m))
             Text(name).foregroundStyle(calm ? p.l2 : p.l1)
             if let note { Text(note).font(t.font(11)).foregroundStyle(p.l2) }
         }
@@ -471,11 +471,11 @@ struct WidgetApplications: View {
             let (shown, rest) = apps.cut(rows)
             ForEach(shown) { a in
                 HStack(spacing: 7) {
-                    CardMark(mark: a.mark, size: 9, color: p.color(a.mark))
+                    CardMark(mark: a.mark, size: 9, color: p.listColor(a.mark))
                     Text(a.name).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                     HStack(spacing: 2.5) {
                         ForEach(Array(a.services.prefix(8).enumerated()), id: \.offset) { _, m in
-                            CardMark(mark: m, size: 7, color: p.color(m))
+                            CardMark(mark: m, size: 7, color: p.listColor(m))
                         }
                     }
                 }
@@ -497,7 +497,7 @@ struct WidgetApplications: View {
             Color.clear.frame(width: 9, height: 1)
             Text(tr("+\(rest.count) more")).foregroundStyle(p.l2).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 2.5) {
-                ForEach(Array(marks.prefix(8).enumerated()), id: \.offset) { _, r in CardMark(mark: r.mark, size: 7, color: p.color(r.mark)) }
+                ForEach(Array(marks.prefix(8).enumerated()), id: \.offset) { _, r in CardMark(mark: r.mark, size: 7, color: p.listColor(r.mark)) }
                 if marks.count > 8 { Text(verbatim: "+\(marks.count - 8)").font(t.font(9.5)).foregroundStyle(p.l3) }
             }
         }
@@ -648,7 +648,7 @@ struct WidgetServices: View {
             WidgetHeading(symbol: nil, title: tr("Services"), meta: "\(card.services.count)", p: p, t: t)
             ForEach(card.services.prefix(5)) { s in
                 HStack(spacing: 7) {
-                    CardMark(mark: s.mark, size: 9, color: p.color(s.mark))
+                    CardMark(mark: s.mark, size: 9, color: p.listColor(s.mark))
                     Text(s.name).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                     if !s.note.isEmpty { Text(s.note).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1) }
                 }

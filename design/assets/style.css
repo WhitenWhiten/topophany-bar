@@ -177,6 +177,9 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .nv .mk { flex: none; }
 .mk-up { color: var(--up, #4ade80); } .mk-warn { color: var(--warn, #fbbf24); }
 .mk-down { color: var(--down, #f87171); } .mk-unk { color: var(--unk, #6b7a8c); }
+/* Up among other marks is quieter than trouble, as on the bar: a calm
+   network looks calm, and what needs a look stands out. */
+.nv-legend .mk-up, .nv-chips .mk-up, .nv-app .mk-up, .fl-m .mk-up, .z-marks .mk-up, .w-app .mk-up { opacity: .55; }
 
 .nv-head { display: flex; align-items: center; gap: 9px; padding: 3px 3px 1px 5px; }
 .nv-mark { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)); }
