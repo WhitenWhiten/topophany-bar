@@ -1135,7 +1135,7 @@ struct LocalReadingsSettings: View {
 
     var body: some View {
         Section {
-            reading(.cpu, "CPU", "Total, system and user, with a minute of history")
+            reading(.cpu, "CPU", "Total, system and user, with the last \(historyMinutes) min")
             reading(.memory, "Memory", "Pressure, app, wired and compressed, as Activity Monitor counts them") {}
             reading(.storage, "Storage", nil) {
                 Picker("", selection: model.binding(\.sections.mac.volume)) {
@@ -1166,6 +1166,12 @@ struct LocalReadingsSettings: View {
         } footer: {
             Foot("Local readings are not evidence: they have no health and no thresholds, are never sent to a collector, and keep updating while the collector is unreachable.")
         }
+    }
+
+    /// How far back the CPU's history reaches at the chosen rate.
+    var historyMinutes: Int {
+        let every = Interval(model.settings.sections.mac.every)?.seconds ?? 2
+        return max(1, Int((every * Double(LocalSnapshot.historyLength) / 60).rounded()))
     }
 
     var automatic: String {

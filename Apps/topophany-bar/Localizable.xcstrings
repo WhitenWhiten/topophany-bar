@@ -2729,18 +2729,18 @@
         }
       }
     },
-    "Total, system and user, with a minute of history": {
+    "Total, system and user, with the last %lld min": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "合計、システム、ユーザー。1 分間の履歴付き"
+            "value": "合計、システム、ユーザー。直近 %lld 分の履歴付き"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "总计、系统和用户，附一分钟历史"
+            "value": "总计、系统和用户，附最近 %lld 分钟的历史"
           }
         }
       }
