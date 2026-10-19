@@ -1,6 +1,7 @@
 import AppKit
 import LocalReadings
 import SwiftUI
+import SystemConfiguration
 import TopophanyEngine
 import TopophanyKit
 import TopophanySections
@@ -137,11 +138,7 @@ struct GeneralSettings: View {
         SettingsForm {
             Section("Topophany") {
                 TopoRow()
-                LabeledContent {
-                    CommitField(prompt: "Active profile", value: model.binding(\.topo.profile)).frame(width: 200)
-                } label: {
-                    RowLabel("Profile", "Saved by `topo login`; the app never sees a token")
-                }
+                ProfileRow()
                 Picker(selection: model.binding(\.topo.observer)) {
                     Text("All observers").tag("")
                     let known = model.knownObservers
@@ -205,6 +202,38 @@ struct TerminalPicker: View {
         guard panel.runModal() == .OK, let url = panel.url, let id = Bundle(url: url)?.bundleIdentifier else { return }
         model.update { $0.terminal = id }
     }
+}
+
+/// The saved profile to read through: a menu of those `topo` lists, or a
+/// name typed in when this `topo` can't list them.
+struct ProfileRow: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let label = RowLabel("Profile", "Saved by `topo login`; the app never sees a token")
+        if let list = model.profiles, !list.profiles.isEmpty {
+            let chosen = model.settings.topo.profile
+            Picker(selection: model.binding(\.topo.profile)) {
+                Text(list.active.map { String(localized: "Active: \(Self.title($0))") } ?? String(localized: "Active profile")).tag("")
+                Divider()
+                ForEach(list.profiles) { p in Text(verbatim: Self.title(p)).tag(p.name) }
+                if !chosen.isEmpty, !list.profiles.contains(where: { $0.name == chosen }) {
+                    Text("\(chosen) (not saved)").tag(chosen)
+                }
+            } label: {
+                label
+            }
+        } else {
+            LabeledContent {
+                CommitField(prompt: "Active profile", value: model.binding(\.topo.profile)).frame(width: 200)
+            } label: {
+                label
+            }
+        }
+    }
+
+    /// "home — homelab", as the previews show a profile.
+    static func title(_ p: ProfileList.Profile) -> String { p.project.isEmpty ? p.name : "\(p.name) — \(p.project)" }
 }
 
 /// The `topo` executable: where it is and whether it speaks protocol 1.
@@ -688,36 +717,90 @@ struct ServersPicker: View {
 
     var body: some View {
         let nodes = model.settings.sections.serverNodes
+        let known = model.knownServers
         VStack(alignment: .leading, spacing: 10) {
             Text("Pinned servers").font(.headline)
-            if nodes.isEmpty {
-                Text("None yet").foregroundStyle(.secondary)
+            if known.isEmpty {
+                typed(nodes)
+            } else {
+                listed(known, pinned: nodes)
             }
-            ForEach(nodes, id: \.self) { n in
-                HStack {
-                    Text(verbatim: name(n)).lineLimit(1)
-                    if name(n) != n { Text(verbatim: n).font(.callout.monospaced()).foregroundStyle(.secondary) }
-                    Spacer()
-                    Button {
-                        model.update { $0.sections.serverNodes.removeAll { $0 == n } }
-                    } label: {
-                        Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text("Unpin \(name(n))"))
-                }
-            }
-            Divider()
-            HStack {
-                TextField("", text: $draft, prompt: Text("Node ID, as in topology.json"))
-                    .font(.body.monospaced())
-                    .onSubmit(add)
-                Button("Pin", action: add).disabled(!TemplateCompiler.validNode(draft.trimmingCharacters(in: .whitespaces)))
-            }
-            Text("A node that isn't in the topology shows as such.").font(.callout).foregroundStyle(.secondary)
         }
         .padding(14)
-        .frame(width: 320)
+        .frame(width: 340)
+    }
+
+    /// Every server `topo` lists, ticked when pinned, in its order; pinned
+    /// nodes it doesn't list come last.
+    func listed(_ known: [ServerListEntry], pinned: [String]) -> some View {
+        let missing = pinned.filter { n in !known.contains { $0.id == n } }
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(known) { s in
+                    Toggle(isOn: pinBinding(s.id)) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(verbatim: s.name).lineLimit(1)
+                            Text(verbatim: Words.join([s.id, s.kind, s.place])).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    }
+                    .toggleStyle(.checkbox)
+                }
+                ForEach(missing, id: \.self) { n in
+                    Toggle(isOn: pinBinding(n)) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(verbatim: n).font(.body.monospaced()).lineLimit(1)
+                            Text("Not in the topology").font(.callout).foregroundStyle(.secondary)
+                        }
+                    }
+                    .toggleStyle(.checkbox)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxHeight: 360)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    func pinBinding(_ node: String) -> Binding<Bool> {
+        Binding(get: { model.settings.sections.serverNodes.contains(node) },
+                set: { on in
+                    model.update { s in
+                        s.sections.serverNodes.removeAll { $0 == node }
+                        if on {
+                            s.sections.serverNodes.append(node)
+                            s.sections.servers = true
+                        }
+                    }
+                })
+    }
+
+    /// Node IDs typed in, when this `topo` can't list its servers.
+    @ViewBuilder func typed(_ nodes: [String]) -> some View {
+        if nodes.isEmpty {
+            Text("None yet").foregroundStyle(.secondary)
+        }
+        ForEach(nodes, id: \.self) { n in
+            HStack {
+                Text(verbatim: name(n)).lineLimit(1)
+                if name(n) != n { Text(verbatim: n).font(.callout.monospaced()).foregroundStyle(.secondary) }
+                Spacer()
+                Button {
+                    model.update { $0.sections.serverNodes.removeAll { $0 == n } }
+                } label: {
+                    Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(Text("Unpin \(name(n))"))
+            }
+        }
+        Divider()
+        HStack {
+            TextField("", text: $draft, prompt: Text("Node ID, as in topology.json"))
+                .font(.body.monospaced())
+                .onSubmit(add)
+            Button("Pin", action: add).disabled(!TemplateCompiler.validNode(draft.trimmingCharacters(in: .whitespaces)))
+        }
+        Text("A node that isn't in the topology shows as such.").font(.callout).foregroundStyle(.secondary)
     }
 
     func name(_ node: String) -> String {
@@ -870,11 +953,7 @@ struct MacServerSettings: View {
 
     var body: some View {
         Section {
-            LabeledContent {
-                CommitField(prompt: "Node ID", value: model.binding(\.sections.mac.node), monospaced: true).frame(width: 200)
-            } label: {
-                RowLabel("Node", nodeSubtitle)
-            }
+            NodeRow()
             Toggle(isOn: model.binding(\.sections.mac.resources)) {
                 RowLabel("Host resources", "From the node’s host check, against its own limits")
             }
@@ -893,12 +972,51 @@ struct MacServerSettings: View {
             Foot("This is the card everyone else sees for this Mac, read from the collector. Without a host check on the node, its resources read *unknown*, never zero.")
         }
     }
+}
 
-    var nodeSubtitle: LocalizedStringKey {
+/// This Mac's node: a menu of the servers `topo` lists, the one matching
+/// this Mac's name marked, or an ID typed in when it can't list them.
+struct NodeRow: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let known = model.knownServers
+        let node = model.settings.sections.mac.node
+        if known.isEmpty {
+            LabeledContent {
+                CommitField(prompt: "Node ID", value: model.binding(\.sections.mac.node), monospaced: true).frame(width: 200)
+            } label: {
+                RowLabel("Node", subtitle(nil))
+            }
+        } else {
+            let suggestion = Self.suggested(known)
+            Picker(selection: model.binding(\.sections.mac.node)) {
+                if node.isEmpty { Text("Choose a node").tag("") }
+                ForEach(known) { s in
+                    let title = Words.join([s.name, s.id, s.place])
+                    Text(verbatim: s.id == suggestion?.id ? String(localized: "\(title) (matches this Mac)") : title).tag(s.id)
+                }
+                if !node.isEmpty, !known.contains(where: { $0.id == node }) {
+                    Text("\(node) (not in the topology)").tag(node)
+                }
+            } label: {
+                RowLabel("Node", subtitle(node.isEmpty ? suggestion : nil))
+            }
+        }
+    }
+
+    func subtitle(_ suggestion: ServerListEntry?) -> LocalizedStringKey {
+        if let suggestion { return "Suggested: \(suggestion.name), which matches this Mac’s name" }
         if case .server(let c, _)? = model.panel.mac {
             if c.isMissing { return "Not in the topology" }
             return "\(Words.join([c.name, c.kind, c.place]))"
         }
         return "The node’s ID in topology.json"
+    }
+
+    /// The node whose ID or name matches this Mac's `LocalHostName`.
+    static func suggested(_ known: [ServerListEntry]) -> ServerListEntry? {
+        guard let host = SCDynamicStoreCopyLocalHostName(nil) as String? else { return nil }
+        return ServerListEntry.matching(localHostName: host, in: known)
     }
 }

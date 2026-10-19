@@ -20,6 +20,8 @@ final class AppModel {
     private(set) var engineStatus: EngineStatus = .starting
     private(set) var diagnostics: [String] = []
     private(set) var capabilities: Capabilities?
+    /// Saved profiles, when `topo` lists them.
+    private(set) var profiles: ProfileList?
     private(set) var lastFrameAt: Date?
     /// The keyboard's place in the panel.
     var focus: String?
@@ -97,6 +99,17 @@ final class AppModel {
         return list.map { ($0.id, $0.name) }
     }
 
+    /// Nodes with a card in the Servers tab, from the latest list `topo`
+    /// sent, for choosing nodes.
+    var knownServers: [ServerListEntry] {
+        guard let row = reading.row(TemplateCompiler.RowID.servers),
+              case .servers(let list) = reading.lastValue(of: row) else { return [] }
+        return list
+    }
+
+    /// Whether to ask for `servers.list`: when this `topo` offers it.
+    private var listServers: Bool { fixture != nil || capabilities?.listsServers == true }
+
     /// Applications by ID and name, from the latest list `topo` sent.
     var knownApplications: [(id: String, name: String)] {
         guard let row = reading.row(TemplateCompiler.RowID.applications),
@@ -107,18 +120,28 @@ final class AppModel {
     /// The interface local readings measure when none is chosen.
     var localInterfaceName: String? { local?.latest.network?.displayName }
 
-    /// Looks for `topo` again, off the main thread.
+    /// Looks for `topo` again, and lists its profiles again, off the main
+    /// thread.
     func locate() {
         let setting = effectiveSettings.topo.path
         Task.detached {
             let r = TopoLocator(setting: setting).locate()
             await MainActor.run { self.located = r }
         }
+        if case .running(let r) = engineStatus, fixture == nil, capabilities?.profiles == true { loadProfiles(path: r.path) }
+    }
+
+    private func loadProfiles(path: String) {
+        Task.detached {
+            let list = ProcessEngine.profiles(path)
+            await MainActor.run { self.profiles = list }
+        }
     }
 
     // MARK: running
 
     func start() {
+        if fixture != nil { profiles = FixtureEngine.profiles }
         locate()
         startEngine()
         startLocal()
@@ -163,7 +186,8 @@ final class AppModel {
     }
 
     private func request(_ s: TopophanyKit.Settings) -> Request {
-        var r = TemplateCompiler().request(for: effective(s), revision: 0, widgets: widgetNeeds, lang: L10n.previewLanguage)
+        var r = TemplateCompiler().request(for: effective(s), revision: 0, widgets: widgetNeeds, lang: L10n.previewLanguage,
+                                           listServers: listServers)
         r.requestID = ""
         return r
     }
@@ -171,7 +195,7 @@ final class AppModel {
     private func currentRequest() -> Request {
         revision += 1
         return TemplateCompiler().request(for: effectiveSettings, revision: revision, widgets: widgetNeeds,
-                                          lang: L10n.previewLanguage)
+                                          lang: L10n.previewLanguage, listServers: listServers)
     }
 
     private func send() {
@@ -239,7 +263,12 @@ final class AppModel {
     private func loadCapabilities(path: String) {
         Task.detached {
             let caps = try? ProcessEngine.check(path).get()
-            await MainActor.run { self.capabilities = caps }
+            await MainActor.run {
+                let listed = self.listServers
+                self.capabilities = caps
+                if self.listServers != listed { self.send() }
+                if caps?.profiles == true { self.loadProfiles(path: path) } else { self.profiles = nil }
+            }
         }
     }
 

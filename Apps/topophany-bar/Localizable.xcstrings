@@ -7,6 +7,54 @@
     "%@": {
       "shouldTranslate": false
     },
+    "%@ (matches this Mac)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（この Mac と一致）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（与本机匹配）"
+          }
+        }
+      }
+    },
+    "%@ (not in the topology)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（トポロジーにありません）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（不在拓扑中）"
+          }
+        }
+      }
+    },
+    "%@ (not saved)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（未保存）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（未保存）"
+          }
+        }
+      }
+    },
     "%@ lacks %@": {
       "localizations": {
         "ja": {
@@ -131,6 +179,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "当前配置"
+          }
+        }
+      }
+    },
+    "Active: %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用中：%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前：%@"
           }
         }
       }
@@ -339,6 +403,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "选择"
+          }
+        }
+      }
+    },
+    "Choose a node": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノードを選択"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择节点"
           }
         }
       }
@@ -1683,6 +1763,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "存储"
+          }
+        }
+      }
+    },
+    "Suggested: %@, which matches this Mac’s name": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "候補：%@（この Mac の名前と一致）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建议：%@，与本机名称匹配"
           }
         }
       }
