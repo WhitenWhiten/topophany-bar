@@ -129,8 +129,14 @@ final class PanelController: NSObject {
 
     private func installMonitors() {
         removeMonitors()
+        // The system hosts the menu bar item, so a click on it reaches this
+        // monitor too. That click is left to the item, which closes the
+        // panel; closing here would let the item open it again.
         if let m = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown], handler: { [weak self] _ in
-            MainActor.assumeIsolated { self?.close() }
+            MainActor.assumeIsolated {
+                guard let self, self.anchor?.window?.frame.contains(NSEvent.mouseLocation) != true else { return }
+                self.close()
+            }
         }) { monitors.append(m) }
         if let m = NSEvent.addLocalMonitorForEvents(matching: [.keyDown], handler: { [weak self] e in
             nonisolated(unsafe) let event = e
