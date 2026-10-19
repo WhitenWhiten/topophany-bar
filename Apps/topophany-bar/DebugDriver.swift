@@ -10,6 +10,7 @@ import TopophanyKit
 ///     settings N            show Settings on tab N, floating
 ///     panel | close         open or close the panel
 ///     key up|down|return    a key in the panel
+///     clickitem             a click on the menu bar item
 ///     mac off|local|server  This Mac's mode
 ///     click X Y             a click in Settings, in points from its top left
 ///     drag X Y DY [S]       a drag of DY points, over S seconds (default 0.6)
@@ -42,8 +43,14 @@ enum DebugDriver {
         case "panel": d.openPanelForSnapshot()
         case "close": d.closePanel()
         case "key": if w.count > 1 { d.panelKey(w[1]) }
-        case "mac":
-            if w.count > 1, let mode = Sections.MacMode(rawValue: w[1]) { d.model.update { $0.sections.mac.mode = mode } }
+        case "clickitem":
+            guard let b = d.statusButton, let win = b.window else { return }
+            let at = b.convert(NSPoint(x: b.bounds.midX, y: b.bounds.midY), to: nil)
+            for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+                if let e = NSEvent.mouseEvent(with: type, location: at, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                                              windowNumber: win.windowNumber, context: nil, eventNumber: 0, clickCount: 1,
+                                              pressure: type == .leftMouseUp ? 0 : 1) { NSApp.postEvent(e, atStart: false) }
+            }
         case "click":
             guard let x = num(1), let y = num(2), let win = d.settingsWindow else { return }
             Task { await drag(win, from: CGPoint(x: x, y: y), dy: 0, seconds: 0.05) }
@@ -54,7 +61,10 @@ enum DebugDriver {
             guard let win = d.settingsWindow else { return }
             trace(win, model: d.model, seconds: num(1) ?? 2)
         case "windows":
-            let lines = NSApp.windows.map { "\($0.windowNumber) \($0.isVisible ? "visible" : "hidden") \($0.frame) \($0.title)" }
+            var lines = NSApp.windows.map { "\($0.windowNumber) \($0.isVisible ? "visible" : "hidden") \($0.frame) \($0.title)" }
+            if let b = d.statusButton {
+                lines.append("item image \(b.image?.size ?? .zero) button \(b.frame) inset \(b.alignmentRectInsets)")
+            }
             try? lines.joined(separator: "\n").write(to: out.appending(path: "windows.txt"), atomically: true, encoding: .utf8)
         default: break
         }

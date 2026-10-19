@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openSettings: { [weak self] in self?.showSettings() },
             quit: { NSApp.terminate(nil) },
             openAttention: { [weak self] item in self?.openTUI(focus: item) })
+        panel.onOpenChange = { [weak item] open in item?.pressed = open }
         self.panel = panel
         statusItem = item
         model.onChange = { [weak item, weak panel] in
@@ -83,6 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     #if DEBUG
     var statusItemImage: NSImage? { statusItem?.button?.image }
+    var statusButton: NSStatusBarButton? { statusItem?.button }
     var panelWindow: NSWindow? { panel?.window }
     var settingsWindow: NSWindow? { settings?.window }
     func openPanelForSnapshot() { if let b = statusItem?.button { panel?.open(from: b) } }

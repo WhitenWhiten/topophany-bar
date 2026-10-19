@@ -15,6 +15,8 @@ final class PanelController: NSObject {
     }
 
     var actions: Actions?
+    /// Called as the panel opens and closes, for the menu bar item.
+    var onOpenChange: ((Bool) -> Void)?
     private let model: AppModel
     private var panel: KeyPanel?
     private var hosting: NSHostingView<PanelRoot>?
@@ -50,7 +52,7 @@ final class PanelController: NSObject {
         model.focus = nil
         model.refresh()
         layout()
-        button.highlight(true)
+        onOpenChange?(true)
         p.orderFrontRegardless()
         p.makeKey()
         installMonitors()
@@ -59,7 +61,7 @@ final class PanelController: NSObject {
     func close() {
         guard let p = panel, p.isVisible else { return }
         p.orderOut(nil)
-        anchor?.highlight(false)
+        onOpenChange?(false)
         model.focus = nil
         removeMonitors()
     }
