@@ -117,7 +117,7 @@ final class PanelController: NSObject {
         // The glass alone gives the window a square shadow, edged in black
         // past the corners; masked, the shadow follows the panel's shape.
         h.wantsLayer = true
-        h.layer?.cornerRadius = Renderers.renderer(for: model.theme).panelCornerRadius
+        h.layer?.cornerRadius = Renderers.renderer(for: model.theme).panelCornerRadius(model.theme)
         h.layer?.cornerCurve = .continuous
         h.layer?.masksToBounds = true
         let bf = anchor?.window?.frame ?? NSRect(x: s.frame.midX, y: s.visibleFrame.maxY, width: 0, height: 0)

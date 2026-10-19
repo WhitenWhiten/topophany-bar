@@ -38,6 +38,18 @@ public enum CellGlyph: Sendable, Hashable {
     case braille(UInt8)
 }
 
+/// How a section's box is drawn: the TUI's rounded box, a rule over the
+/// section as printed, or the box's four corners.
+public enum CellBoxStyle: String, Sendable, Hashable {
+    case rounded, rules, corners
+}
+
+/// How a meter's cells are filled: solid, a hairline apart; a halftone
+/// shade on a dotted track; or braille dots.
+public enum CellMeterStyle: String, Sendable, Hashable {
+    case blocks, shade, braille
+}
+
 /// One thing a cell scene draws, positioned in points.
 public enum CellItem: Sendable {
     /// Text on a line whose top is at `y`; one cell per character, two for
@@ -45,11 +57,14 @@ public enum CellItem: Sendable {
     case text(x: Double, y: Double, String, RGBA, bold: Bool)
     case glyph(x: Double, y: Double, CellGlyph, RGBA)
     case fill(CGRect, RGBA, radius: Double)
-    /// A vertical gradient: a bar's lit fill.
-    case shaded(CGRect, top: RGBA, middle: RGBA, bottom: RGBA)
-    /// A rounded box. `gaps` are x ranges of its top border left open for a
-    /// title.
-    case box(CGRect, RGBA, radius: Double, gaps: [ClosedRange<Double>])
+    /// A box in its style. `gaps` are x ranges of its top border left open
+    /// for a title.
+    case box(CGRect, RGBA, radius: Double, gaps: [ClosedRange<Double>], style: CellBoxStyle)
+    /// Diagonal lines `period` apart, clipped to the rect: a halftone.
+    case hatch(CGRect, RGBA, period: Double)
+    /// A grid of dots `diameter` wide, the first and last at the rect's
+    /// edges.
+    case dots(CGRect, RGBA, diameter: Double, columns: Int, rows: Int)
     /// Vertical stripes `period` apart, half on and half off.
     case stripes(CGRect, RGBA, period: Double)
     case line(from: CGPoint, to: CGPoint, RGBA, width: Double, dash: [Double])
@@ -98,18 +113,33 @@ public struct CellCanvas: View {
                 switch item {
                 case .fill(let r, let c, let radius):
                     ctx.fill(Path(roundedRect: r, cornerRadius: radius, style: .continuous), with: .color(Color(c)))
-                case .shaded(let r, let top, let mid, let bottom):
-                    ctx.fill(Path(r), with: .linearGradient(
-                        Gradient(stops: [.init(color: Color(top), location: 0), .init(color: Color(mid), location: 0.45),
-                                         .init(color: Color(bottom), location: 1)]),
-                        startPoint: CGPoint(x: r.midX, y: r.minY), endPoint: CGPoint(x: r.midX, y: r.maxY)))
-                case .box(let r, let c, let radius, let gaps):
+                case .box(let r, let c, let radius, let gaps, let style):
                     var box = ctx
                     if !gaps.isEmpty {
                         box.clip(to: Self.outside(gaps, of: r), style: FillStyle(eoFill: true))
                     }
-                    box.stroke(Path(roundedRect: r.insetBy(dx: 0.5, dy: 0.5), cornerRadius: radius, style: .continuous),
-                               with: .color(Color(c)), lineWidth: 1)
+                    box.stroke(Self.edge(r, style: style, radius: radius, arm: m.cell - 2.5), with: .color(Color(c)), lineWidth: 1)
+                case .hatch(let r, let c, let period):
+                    var h = ctx
+                    h.clip(to: Path(r))
+                    var p = Path()
+                    var x = r.minX - r.height
+                    while x < r.maxX {
+                        p.move(to: CGPoint(x: x, y: r.maxY))
+                        p.addLine(to: CGPoint(x: x + r.height, y: r.minY))
+                        x += period
+                    }
+                    h.stroke(p, with: .color(Color(c)), lineWidth: period * 0.42)
+                case .dots(let r, let c, let d, let columns, let rows):
+                    let px = columns > 1 ? (r.width - d) / Double(columns - 1) : 0
+                    let py = rows > 1 ? (r.height - d) / Double(rows - 1) : 0
+                    var p = Path()
+                    for i in 0..<max(0, columns) {
+                        for j in 0..<max(0, rows) {
+                            p.addEllipse(in: CGRect(x: r.minX + Double(i) * px, y: r.minY + Double(j) * py, width: d, height: d))
+                        }
+                    }
+                    ctx.fill(p, with: .color(Color(c)))
                 case .stripes(let r, let c, let period):
                     var x = r.minX
                     var p = Path()
@@ -144,6 +174,29 @@ public struct CellCanvas: View {
                     .frame(width: a.right, alignment: .trailing)
                     .offset(y: a.y)
             }
+        }
+    }
+
+    /// A box's edge in its style: the whole rounded box, the rule along its
+    /// top, or its four corners, each arm `arm` long.
+    static func edge(_ r: CGRect, style: CellBoxStyle, radius: Double, arm: Double) -> Path {
+        let b = r.insetBy(dx: 0.5, dy: 0.5)
+        switch style {
+        case .rounded:
+            return Path(roundedRect: b, cornerRadius: radius, style: .continuous)
+        case .rules:
+            var p = Path()
+            p.move(to: CGPoint(x: b.minX, y: b.minY))
+            p.addLine(to: CGPoint(x: b.maxX, y: b.minY))
+            return p
+        case .corners:
+            let a = min(arm, b.width / 4), v = min(arm, b.height / 4)
+            var p = Path()
+            p.addLines([CGPoint(x: b.minX, y: b.minY + v), CGPoint(x: b.minX, y: b.minY), CGPoint(x: b.minX + a, y: b.minY)])
+            p.addLines([CGPoint(x: b.maxX - a, y: b.minY), CGPoint(x: b.maxX, y: b.minY), CGPoint(x: b.maxX, y: b.minY + v)])
+            p.addLines([CGPoint(x: b.maxX, y: b.maxY - v), CGPoint(x: b.maxX, y: b.maxY), CGPoint(x: b.maxX - a, y: b.maxY)])
+            p.addLines([CGPoint(x: b.minX + a, y: b.maxY), CGPoint(x: b.minX, y: b.maxY), CGPoint(x: b.minX, y: b.maxY - v)])
+            return p
         }
     }
 

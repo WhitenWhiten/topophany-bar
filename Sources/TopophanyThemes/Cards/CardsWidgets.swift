@@ -356,14 +356,18 @@ struct WidgetHeading: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            if let symbol { Image(systemName: symbol).font(.system(size: 11, weight: .medium)) }
-            Text(title)
+            if p.style.caps {
+                Text(title.uppercased(with: L10n.locale)).font(t.font(9.5, .semibold)).tracking(1.3).foregroundStyle(p.accent)
+            } else {
+                if let symbol { Image(systemName: symbol).font(.system(size: 11, weight: .medium)) }
+                Text(title)
+            }
             Spacer(minLength: 4)
             Text(meta).fontWeight(.medium).foregroundStyle(p.l3)
         }
         .font(t.font(11, .semibold)).foregroundStyle(p.l2)
         .lineLimit(1)
-        .padding(.bottom, 5)
+        .padding(.bottom, p.style.caps ? 6 : 5)
     }
 }
 
@@ -402,7 +406,7 @@ struct WidgetSeen: View {
         .lineLimit(1)
         .padding(EdgeInsets(top: 3, leading: 6, bottom: 3, trailing: 8))
         .background {
-            let shape = RoundedRectangle(cornerRadius: 7, style: .continuous)
+            let shape = RoundedRectangle(cornerRadius: p.style.chip(7), style: .continuous)
             if calm {
                 shape.strokeBorder(p.isDark ? p.sep : Color.black.opacity(0.12), lineWidth: 0.5)
             } else {
@@ -671,13 +675,17 @@ struct WidgetServices: View {
     }
 }
 
-/// The background a Native widget sits on.
+/// The background a cards widget sits on: the theme's ground, as the
+/// panel's; on glass, a tint over what WidgetKit draws.
 struct CardsWidgetBackground: View {
     var ctx: RenderContext
 
     var body: some View {
         let dark = ctx.effectiveScheme == .dark
-        if ctx.reduceTransparency {
+        let p = CardsPalette.resolve(ctx)
+        if p.style.surface != .glass {
+            ZStack { CardsGround(p: p, live: false, shape: Rectangle()) }
+        } else if ctx.reduceTransparency {
             Rectangle().fill(dark ? Color(.sRGB, red: 0.13, green: 0.13, blue: 0.15) : Color(.sRGB, red: 0.96, green: 0.96, blue: 0.97))
         } else if let token = ctx.theme.color("panelMaterial", dark: dark) {
             Rectangle().fill(Color(token))

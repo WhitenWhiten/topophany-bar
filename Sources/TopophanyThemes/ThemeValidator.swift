@@ -5,7 +5,8 @@ import Foundation
 /// - every pair of status colors differs by ΔE ≥ 15 (OKLab × 100);
 /// - every required slot is present;
 /// - only a cards theme that follows the system gives slots per
-///   appearance, the one renderer that draws a theme in both.
+///   appearance, the one renderer that draws a theme in both;
+/// - every style slot is one its renderer takes, set to a name it knows.
 ///
 /// Status pairs closer than ΔE 8 under simulated color-blindness are
 /// reported as advisories, not refused: no green, orange and red palette,
@@ -50,6 +51,16 @@ public enum ThemeValidator {
         }
         if !(theme.dark.isEmpty && theme.light.isEmpty), theme.renderer != .cards || theme.appearance != .system {
             problems.append(Problem(description: "dark and light tokens are for cards themes that follow the system"))
+        }
+        let slots = StyleSlots.slots(theme.renderer)
+        for (slot, value) in theme.style.sorted(by: { $0.key < $1.key }) {
+            if let names = slots[slot] {
+                if !names.contains(value) {
+                    problems.append(Problem(description: "style \(slot) is \(names.joined(separator: ", ")), not \(value)"))
+                }
+            } else {
+                problems.append(Problem(description: "\(theme.renderer.rawValue) has no style \(slot)"))
+            }
         }
         if !problems.isEmpty { return problems }
 

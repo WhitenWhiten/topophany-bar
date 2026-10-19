@@ -43,10 +43,16 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
     public var dark: [String: String]
     /// Drawn in light, over `tokens`.
     public var light: [String: String]
+    /// How the renderer draws beyond its colors, by name: its surface, its
+    /// sections' edges, its meters and its texture, such as
+    /// `"meter": "ticks"`. Each renderer says which names it takes
+    /// (`StyleSlots`); one left out is the renderer's first.
+    public var style: [String: String]
     public var font: Font?
 
     public init(schema: Int = 1, id: String, name: String, renderer: RendererID, appearance: Appearance,
-                tokens: [String: String], dark: [String: String] = [:], light: [String: String] = [:], font: Font? = nil) {
+                tokens: [String: String], dark: [String: String] = [:], light: [String: String] = [:],
+                style: [String: String] = [:], font: Font? = nil) {
         self.schema = schema
         self.id = id
         self.name = name
@@ -55,10 +61,11 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
         self.tokens = tokens
         self.dark = dark
         self.light = light
+        self.style = style
         self.font = font
     }
 
-    enum CodingKeys: String, CodingKey { case schema, id, name, renderer, appearance, tokens, dark, light, font }
+    enum CodingKeys: String, CodingKey { case schema, id, name, renderer, appearance, tokens, dark, light, style, font }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -70,6 +77,7 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
         tokens = try c.decodeIfPresent([String: String].self, forKey: .tokens) ?? [:]
         dark = try c.decodeIfPresent([String: String].self, forKey: .dark) ?? [:]
         light = try c.decodeIfPresent([String: String].self, forKey: .light) ?? [:]
+        style = try c.decodeIfPresent([String: String].self, forKey: .style) ?? [:]
         font = try c.decodeIfPresent(Font.self, forKey: .font)
     }
 
@@ -83,6 +91,7 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
         try c.encode(tokens, forKey: .tokens)
         if !dark.isEmpty { try c.encode(dark, forKey: .dark) }
         if !light.isEmpty { try c.encode(light, forKey: .light) }
+        if !style.isEmpty { try c.encode(style, forKey: .style) }
         try c.encodeIfPresent(font, forKey: .font)
     }
 
@@ -94,6 +103,47 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
     public func color(_ slot: String, dark isDark: Bool) -> RGBA? {
         ((isDark ? dark : light)[slot] ?? tokens[slot]).flatMap(RGBA.init(css:))
     }
+
+    /// A style slot's choice, or the renderer's first when the theme gives
+    /// none or one the renderer doesn't take.
+    public func style(_ slot: String) -> String {
+        let names = StyleSlots.slots(renderer)[slot] ?? []
+        guard let v = style[slot], names.contains(v) else { return names.first ?? "" }
+        return v
+    }
+}
+
+/// The style slots each renderer reads, and the names each takes, its
+/// first the one it draws when a theme gives none. A style changes how a
+/// surface is drawn, never what a glyph is or what anything means.
+public enum StyleSlots {
+    public static let cards: [String: [String]] = [
+        // Glass, as the system draws it; matte, an opaque ground whose
+        // sections are ruled, not carded; night, an opaque ground that
+        // deepens toward the foot, its cards outlined.
+        "surface": ["glass", "matte", "night"],
+        // Fine graduated ticks; a scale's rule and its graduations; a
+        // matrix of dots.
+        "meter": ["ticks", "rule", "dots"],
+        // Section titles as written, or in letterspaced capitals.
+        "titles": ["plain", "caps"],
+        "texture": ["none", "weave", "grain"],
+    ]
+    public static let cells: [String: [String]] = [
+        // The TUI's rounded box; a rule over each section, as printed;
+        // the box's four corners only.
+        "box": ["rounded", "rules", "corners"],
+        // Solid cells; a halftone shade; braille dots.
+        "meter": ["blocks", "shade", "braille"],
+        "texture": ["none", "weave", "grain"],
+    ]
+
+    public static func slots(_ renderer: RendererID) -> [String: [String]] {
+        switch renderer {
+        case .cards: cards
+        case .cells: cells
+        }
+    }
 }
 
 /// The slots each renderer reads.
@@ -102,7 +152,9 @@ public enum TokenSlots {
     public static let cells = ["ink", "inkHigh", "selection", "key", "line", "track", "text", "muted", "faint",
                                "accent", "accent2", "kind", "up", "warning", "down", "unknown"]
     /// `cards` reads these; missing ones fall back to the system's.
-    public static let cards = ["accent", "accent2", "card", "cardEdge", "panelMaterial", "fill", "fill2"]
+    /// `panelMaterial2` is where a night surface deepens to, and `grain`
+    /// a texture's ink.
+    public static let cards = ["accent", "accent2", "card", "cardEdge", "panelMaterial", "panelMaterial2", "fill", "fill2", "grain"]
     /// Status colors, optional for `cards`.
     public static let status = ["up", "warning", "down", "unknown"]
 }

@@ -121,7 +121,7 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
                     let bottom = scene.items.map { item -> Double in
                         switch item {
                         case .text(_, let y, _, _, _), .glyph(_, let y, _, _): y + scene.metrics.line
-                        case .fill(let r, _, _), .shaded(let r, _, _, _), .box(let r, _, _, _), .stripes(let r, _, _): r.maxY
+                        case .fill(let r, _, _), .box(let r, _, _, _, _), .stripes(let r, _, _), .hatch(let r, _, _), .dots(let r, _, _, _, _): r.maxY
                         case .line(let a, let b, _, _, _): max(a.y, b.y)
                         }
                     }.max() ?? 0

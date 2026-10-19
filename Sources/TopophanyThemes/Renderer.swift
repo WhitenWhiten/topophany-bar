@@ -140,9 +140,9 @@ public protocol Renderer {
     func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView
     /// What a widget sits on: WidgetKit's container background.
     func widgetBackground(context: RenderContext) -> AnyView
-    /// The panel's corner radius: its window is masked to it, so the
-    /// window's shadow follows the corners.
-    var panelCornerRadius: Double { get }
+    /// The panel's corner radius in `theme`: its window is masked to it, so
+    /// the window's shadow follows the corners.
+    func panelCornerRadius(_ theme: Theme) -> Double
     /// The theme's colors, as this renderer resolves its slots.
     func colors(context: RenderContext) -> ThemeColors
 }

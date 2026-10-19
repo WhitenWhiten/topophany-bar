@@ -6,6 +6,11 @@ struct CellsPalette {
     var ink, inkHigh, selection, key, line, track: RGBA
     var text, muted, faint, glow, accent, accent2, kind: RGBA
     var up, warn, down, unknown: RGBA
+    /// A texture's ink.
+    var grain: RGBA
+    var box: CellBoxStyle
+    var meter: CellMeterStyle
+    var texture: Texture
 
     init(_ theme: Theme) {
         let fallback = ThemeStore.terminal
@@ -27,6 +32,10 @@ struct CellsPalette {
         warn = c("warning")
         down = c("down")
         unknown = c("unknown")
+        grain = theme.color("grain") ?? RGBA(0, 0, 0, 0)
+        box = CellBoxStyle(rawValue: theme.style("box")) ?? .rounded
+        meter = CellMeterStyle(rawValue: theme.style("meter")) ?? .blocks
+        texture = Texture(theme.style("texture"))
     }
 
     func tone(_ m: Mark) -> RGBA {
@@ -178,9 +187,7 @@ struct CellWriter {
             if withheld || percent == nil {
                 items.append(.stripes(r, p.track, period: cell))
             } else if let v = percent {
-                items.append(.fill(r, p.track, radius: 0))
-                let fill = CGRect(x: r.minX, y: r.minY, width: r.width * min(100, max(0, v)) / 100, height: r.height)
-                items.append(.shaded(fill, top: c.mix(RGBA(1, 1, 1), 0.26), middle: c, bottom: c.mix(RGBA(0, 0, 0), 0.18)))
+                meter(r, cells: Int((w / cell).rounded()), fraction: min(100, max(0, v)) / 100, color: c)
                 if let l = limit, l < 100 {
                     let lx = r.minX + r.width * l / 100
                     items.append(.fill(CGRect(x: lx, y: r.minY - 3, width: 1, height: r.height + 6), p.warn.opacity(0.65), radius: 0))
@@ -189,10 +196,24 @@ struct CellWriter {
         case .sparks(let values, let top, let c):
             let full = metrics.fontSize * 1.18
             let bottom = y + lineHeight / 2 + full / 2
+            let d = 0.16 * metrics.fontSize
             for (i, v) in values.enumerated() {
-                let k = max(1, min(8, Int((v / max(top, 1e-9) * 7).rounded()) + 1))
-                let h = full * Double(k) / 8
-                items.append(.fill(CGRect(x: x + Double(i) * cell, y: bottom - h, width: cell + 0.05, height: h), c, radius: 0))
+                let share = v / max(top, 1e-9)
+                switch p.meter {
+                case .blocks:
+                    let h = full * Double(max(1, min(8, Int((share * 7).rounded()) + 1))) / 8
+                    items.append(.fill(CGRect(x: x + Double(i) * cell, y: bottom - h, width: cell + 0.05, height: h), c, radius: 0))
+                case .shade:
+                    // A hairline a reading, as a pen on a drum draws it.
+                    let h = max(1, full * min(1, share))
+                    items.append(.fill(CGRect(x: x + (Double(i) + 0.5) * cell - 0.5, y: bottom - h, width: 1, height: h), c, radius: 0))
+                case .braille:
+                    let k = max(1, min(4, Int((share * 4).rounded())))
+                    let pitch = (full - d) / 3
+                    let h = d + Double(k - 1) * pitch
+                    items.append(.dots(CGRect(x: x + (Double(i) + 0.5) * cell - d / 2, y: bottom - h, width: d, height: h), c,
+                                       diameter: d, columns: 1, rows: k))
+                }
             }
         case .pill(let str, let fg, let bg):
             items.append(.fill(CGRect(x: x, y: y, width: w, height: lineHeight), bg, radius: 0))
@@ -220,6 +241,42 @@ struct CellWriter {
                 items.append(.fill(CGRect(x: x + w * m - 0.5, y: top, width: 1, height: h), p.ink, radius: 0))
             }
             items.append(.fill(CGRect(x: x + w / 2 - 1, y: top - 4, width: 2, height: h + 8), now, radius: 0))
+        }
+    }
+
+    /// A reading in `cells` cells from `r`'s left, in the palette's meter.
+    mutating func meter(_ r: CGRect, cells n: Int, fraction f: Double, color c: RGBA) {
+        let p = palette
+        switch p.meter {
+        case .blocks:
+            // Each cell a block, a hairline from the next; the reading fills
+            // whole cells and a share of the last.
+            let lit = f * Double(n)
+            for i in 0..<n {
+                let b = CGRect(x: r.minX + Double(i) * cell + 0.5, y: r.minY, width: cell - 1, height: r.height)
+                items.append(.fill(b, p.track, radius: 0))
+                let share = min(1, max(0, lit - Double(i)))
+                if share > 0 { items.append(.fill(CGRect(x: b.minX, y: b.minY, width: b.width * share, height: b.height), c, radius: 0)) }
+            }
+        case .shade:
+            // A dotted track, the reading a halftone over it with a rule
+            // beneath.
+            items.append(.dots(r.insetBy(dx: 0.5, dy: r.height * 0.32), p.faint.opacity(0.7), diameter: 1, columns: 2 * n, rows: 2))
+            let fill = CGRect(x: r.minX, y: r.minY, width: r.width * f, height: r.height)
+            items.append(.fill(fill, p.ink, radius: 0))
+            items.append(.hatch(fill, c, period: 2.2))
+            items.append(.fill(CGRect(x: fill.minX, y: fill.maxY - 1, width: fill.width, height: 1), c, radius: 0))
+        case .braille:
+            // Two columns of four dots a cell, as braille's ⣿.
+            let d = 0.16 * metrics.fontSize
+            let columns = 2 * n
+            let pitch = (r.width - d) / Double(columns - 1)
+            items.append(.dots(r, p.line, diameter: d, columns: columns, rows: 4))
+            let k = Int((f * Double(columns)).rounded())
+            if k > 0 {
+                items.append(.dots(CGRect(x: r.minX, y: r.minY, width: d + Double(k - 1) * pitch, height: r.height), c,
+                                   diameter: d, columns: k, rows: 4))
+            }
         }
     }
 
@@ -263,7 +320,7 @@ struct CellWriter {
             gaps.append((rightEnd - rw)...rightEnd)
         }
         let rect = CGRect(x: x0, y: top, width: x1 - x0, height: bottom - top)
-        items.insert(.box(rect, tint ?? p.line, radius: style.radius, gaps: gaps), at: start)
+        items.insert(.box(rect, tint ?? p.line, radius: style.radius, gaps: gaps, style: p.box), at: start)
         items += titleItems.items
         y = bottom
     }

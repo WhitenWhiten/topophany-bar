@@ -12,13 +12,12 @@ struct CardsPanel: View {
     var p: CardsPalette { CardsPalette.resolve(ctx) }
     var t: CardsType { CardsType(scale: ctx.scale, theme: ctx.theme) }
 
-    nonisolated static let radius = 18.0
-    /// Between cards.
-    static let gap = 6.0
+    /// Between cards; ruled sections meet at their rules.
+    var gap: Double { p.style.surface == .matte ? 0 : 6 }
 
     var body: some View {
         let p = self.p
-        VStack(spacing: Self.gap) {
+        VStack(spacing: gap) {
             CardsHeader(chrome: model.chrome, p: p, t: t)
             if model.pinStatus, ctx.maxHeight != nil {
                 CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t)
@@ -31,7 +30,7 @@ struct CardsPanel: View {
         }
         .padding(8)
         .frame(width: 344 * ctx.scale)
-        .background { CardsPanelBackground(ctx: ctx, p: p, radius: Self.radius) }
+        .background { CardsPanelBackground(ctx: ctx, p: p, radius: p.style.panelRadius) }
         .environment(\.colorScheme, ctx.effectiveScheme)
     }
 
@@ -46,7 +45,7 @@ struct CardsPanel: View {
     /// than the screen allows.
     func scrolling(_ p: CardsPalette) -> some View {
         ScrollView(.vertical) {
-            VStack(spacing: Self.gap) { sections(p) }
+            VStack(spacing: gap) { sections(p) }
                 .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
         }
         .scrollIndicators(.automatic)
@@ -55,6 +54,8 @@ struct CardsPanel: View {
     }
 }
 
+/// What the panel sits on: glass, as the system draws it; a matte ground
+/// and its texture; or a night that deepens toward the foot.
 struct CardsPanelBackground: View {
     var ctx: RenderContext
     var p: CardsPalette
@@ -63,16 +64,32 @@ struct CardsPanelBackground: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         ZStack {
-            if ctx.backdrop == .live, !ctx.reduceTransparency {
-                shape.fill(.clear).glassEffect(.regular.tint(p.panel), in: shape)
-            } else {
-                shape.fill(p.panel)
-            }
+            CardsGround(p: p, live: ctx.backdrop == .live && !ctx.reduceTransparency, shape: shape)
             shape.strokeBorder(p.isDark ? Color.white.opacity(ctx.increaseContrast ? 0.45 : 0.2) : Color.white.opacity(0.75),
                                lineWidth: 0.5)
         }
         .overlay(shape.stroke(p.isDark ? Color.black.opacity(0.75) : Color.black.opacity(ctx.increaseContrast ? 0.4 : 0.14),
                               lineWidth: 0.5))
+    }
+}
+
+/// A surface's ground, in `shape`: the panel's, or a widget's.
+struct CardsGround<S: Shape>: View {
+    var p: CardsPalette
+    /// Real glass behind it, rather than a drawn fill.
+    var live: Bool
+    var shape: S
+
+    var body: some View {
+        switch p.style.surface {
+        case .glass:
+            if live { shape.fill(.clear).glassEffect(.regular.tint(p.panel), in: shape) } else { shape.fill(p.panel) }
+        case .matte:
+            shape.fill(p.panel)
+        case .night:
+            shape.fill(LinearGradient(colors: [p.panel, p.panel2 ?? p.panel], startPoint: .top, endPoint: .bottom))
+        }
+        if p.style.texture != .none { TextureFill(texture: p.style.texture, color: p.grain).clipShape(shape) }
     }
 }
 
@@ -178,7 +195,10 @@ struct CardsFooter: View {
             Button { actions.quit() } label: {
                 Text(tr("Quit")).font(t.font(11.5, .medium)).foregroundStyle(p.l1)
                     .padding(.horizontal, 11).padding(.vertical, 3)
-                    .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(p.fill2))
+                    .background {
+                        let shape = RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous)
+                        if p.style.surface == .glass { shape.fill(p.fill2) } else { shape.strokeBorder(p.cardEdge, lineWidth: 0.75) }
+                    }
             }
             .buttonStyle(.plain)
             .keyboardShortcut("q", modifiers: .command)
@@ -189,6 +209,8 @@ struct CardsFooter: View {
 
 // MARK: cards
 
+/// A section: a card on glass, outlined at night, or on matte a ruled
+/// block of the page, its rule above it.
 struct Card<Content: View>: View {
     var p: CardsPalette
     var padding = EdgeInsets(top: 8, leading: 11, bottom: 9, trailing: 11)
@@ -196,18 +218,29 @@ struct Card<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 13, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: p.style.cardRadius, style: .continuous)
+        let matte = p.style.surface == .matte
         VStack(alignment: .leading, spacing: 0) { content }
-            .padding(padding)
+            .padding(matte ? EdgeInsets(top: padding.top + 3, leading: 6, bottom: padding.bottom + 3, trailing: 6) : padding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
-                shape.fill(p.card)
-                if let tint {
-                    shape.fill(LinearGradient(stops: [.init(color: tint, location: 0), .init(color: .clear, location: 0.55)],
-                                              startPoint: .topLeading, endPoint: .bottomTrailing))
+                if matte {
+                    if let tint { Rectangle().fill(tint.opacity(0.5)).frame(height: 2).frame(maxHeight: .infinity, alignment: .top) }
+                } else {
+                    shape.fill(p.card)
+                    if let tint {
+                        shape.fill(LinearGradient(stops: [.init(color: tint, location: 0), .init(color: .clear, location: 0.55)],
+                                                  startPoint: .topLeading, endPoint: .bottomTrailing))
+                    }
                 }
             }
-            .overlay(shape.strokeBorder(p.cardEdge, lineWidth: 0.5))
+            .overlay {
+                if matte {
+                    Rectangle().fill(p.cardEdge).frame(height: 0.75).frame(maxHeight: .infinity, alignment: .top)
+                } else {
+                    shape.strokeBorder(p.cardEdge, lineWidth: p.style.surface == .night ? 0.75 : 0.5)
+                }
+            }
     }
 }
 
@@ -220,13 +253,18 @@ struct CardTitle: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: symbol).font(.system(size: 11.5 * t.scale, weight: .medium)).frame(width: 14)
-            Text(title).font(t.font(11.5, .semibold))
+            if p.style.caps {
+                // Small capitals, as a printed page titles its sections.
+                Text(title.uppercased(with: L10n.locale)).font(t.font(10, .semibold)).tracking(1.4).foregroundStyle(p.accent)
+            } else {
+                Image(systemName: symbol).font(.system(size: 11.5 * t.scale, weight: .medium)).frame(width: 14)
+                Text(title).font(t.font(11.5, .semibold))
+            }
             Spacer(minLength: 6)
-            Text(meta).font(t.font(11, .medium)).foregroundStyle(p.l3).lineLimit(1)
+            Text(meta).font(t.font(p.style.caps ? 10.5 : 11, .medium)).foregroundStyle(p.l3).lineLimit(1)
         }
         .foregroundStyle(p.l2)
-        .padding(.bottom, 6)
+        .padding(.bottom, p.style.caps ? 8 : 6)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
     }
@@ -389,7 +427,7 @@ struct FocusRing: ViewModifier {
         content
             .background {
                 if on {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous).fill(p.accent.opacity(0.16)).padding(.horizontal, -5)
+                    RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous).fill(p.accent.opacity(0.16)).padding(.horizontal, -5)
                 }
             }
     }
@@ -405,7 +443,7 @@ struct HoverRow: ViewModifier {
         content
             .background {
                 if hover {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous).fill(p.fill2).padding(.horizontal, -5)
+                    RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous).fill(p.fill2).padding(.horizontal, -5)
                 }
             }
             .onHover { hover = $0 }
@@ -446,7 +484,7 @@ struct CardsSeen: View {
         .lineLimit(1)
         .padding(EdgeInsets(top: 3, leading: 6, bottom: 3, trailing: 8))
         .background {
-            let shape = RoundedRectangle(cornerRadius: 7, style: .continuous)
+            let shape = RoundedRectangle(cornerRadius: p.style.chip(7), style: .continuous)
             if calm {
                 shape.strokeBorder(p.isDark ? p.sep : Color.black.opacity(0.12), lineWidth: 0.5)
             } else {
@@ -778,7 +816,7 @@ struct CardsLocal: View {
                 .font(t.font(11.5)).foregroundStyle(p.l2)
                 .padding(.horizontal, 9).padding(.vertical, 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(p.fill2))
+                .background(RoundedRectangle(cornerRadius: p.style.surface == .matte ? 3 : 9, style: .continuous).fill(p.fill2))
                 .padding(.top, 6)
                 .accessibilityElement(children: .combine)
             }
@@ -791,7 +829,7 @@ struct CardsLocal: View {
             let peak = max(25, (local.cpuHistory.max() ?? 0) * 1.2)
             out.append(AnyView(tile("cpu", tr("CPU"), Words.percent(c.total),
                                     BarHistory(values: local.cpuHistory, top: peak, capacity: LocalSnapshot.historyLength,
-                                               color: p.accent, baseline: p.fill),
+                                               color: p.accent, baseline: p.fill, style: p.style.meter),
                                     tr("System \(Words.percent(c.system)) · User \(Words.percent(c.user))"))))
         }
         if let m = local.memory {
@@ -800,7 +838,7 @@ struct CardsLocal: View {
             // App, wired and compressed, as Activity Monitor splits "Memory Used".
             let parts = PartsBar(parts: [(Double(m.appBytes), p.accent), (Double(m.wiredBytes), p.accent.opacity(0.6)),
                                          (Double(m.compressedBytes), p.accent.opacity(0.34))],
-                                 total: Double(m.totalBytes), track: p.fill)
+                                 total: Double(m.totalBytes), track: p.fill, style: p.style.meter, scale: p.l3)
                 .help(tr("App \(app) GB · Wired \(Words.gb(Int64(m.wiredBytes))) GB · Compressed \(Words.gb(Int64(m.compressedBytes))) GB"))
             out.append(AnyView(tile("memorychip", tr("Memory"), Words.percent(m.usedPercent), parts, foot)))
         }
@@ -849,7 +887,14 @@ struct CardsLocal: View {
         }
         .padding(EdgeInsets(top: 7, leading: 8, bottom: 6, trailing: 8))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(p.fill2))
+        .background {
+            let shape = RoundedRectangle(cornerRadius: p.style.surface == .matte ? 3 : 9, style: .continuous)
+            switch p.style.surface {
+            case .glass: shape.fill(p.fill2)
+            case .night: shape.strokeBorder(p.cardEdge, lineWidth: 0.75)
+            case .matte: shape.fill(p.fill2.opacity(0.6))
+            }
+        }
         .accessibilityElement(children: .combine)
     }
 

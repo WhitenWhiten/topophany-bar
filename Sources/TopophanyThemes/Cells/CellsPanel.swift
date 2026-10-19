@@ -376,8 +376,12 @@ struct CellsPanel: View {
     var body: some View {
         let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover)
         let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
+        let p = CellsPalette(ctx.theme)
         fitted(scene)
-            .background(shape.fill(Color(CellsPalette(ctx.theme).ink)))
+            .background {
+                shape.fill(Color(p.ink))
+                TextureFill(texture: p.texture, color: Color(p.grain)).clipShape(shape)
+            }
             .clipShape(shape)
             .overlay(shape.strokeBorder(Color(CellsPalette(ctx.theme).line.opacity(ctx.increaseContrast ? 1 : 0.85)), lineWidth: 1))
             .overlay(shape.stroke(Color.black.opacity(ctx.theme.appearance == .light ? 0.22 : 0.7), lineWidth: 0.5))
@@ -460,9 +464,15 @@ struct CellsPanel: View {
         let b = CellsBodies(p: p, focus: ctx.focus)
         let ch = model.chrome
 
-        // Header: the TUI's top bar.
-        w.items.append(.fill(CGRect(x: 0, y: 0, width: width, height: 28), p.inkHigh, radius: 0))
-        w.items.append(.fill(CGRect(x: 0, y: 27, width: width, height: 1), p.line.opacity(0.7), radius: 0))
+        // Header: the TUI's top bar, or on a printed page a masthead over a
+        // double rule.
+        if p.box == .rules {
+            w.items.append(.fill(CGRect(x: 6, y: 25, width: width - 12, height: 1), p.line, radius: 0))
+            w.items.append(.fill(CGRect(x: 6, y: 27.5, width: width - 12, height: 0.75), p.line, radius: 0))
+        } else {
+            w.items.append(.fill(CGRect(x: 0, y: 0, width: width, height: 28), p.inkHigh, radius: 0))
+            w.items.append(.fill(CGRect(x: 0, y: 27, width: width, height: 1), p.line.opacity(0.7), radius: 0))
+        }
         w.y = 5
         let live: [Seg] = ch.isLive ? [.mark(.up, p), .t(" " + tr("LIVE"), p.up, bold: true)]
             : [.mark(.offline, p), .t(" " + tr("OFFLINE"), p.down, bold: true)]
@@ -554,8 +564,12 @@ struct CellsPanel: View {
             conn = .t(CellText.truncate(text, ownLine ? columns : room), p.down)
         }
         let footHeight = ownLine ? 48.0 : 28
-        w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: footHeight), p.inkHigh, radius: 0))
-        w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 1), p.line.opacity(0.7), radius: 0))
+        if p.box == .rules {
+            w.items.append(.fill(CGRect(x: 6, y: footTop, width: width - 12, height: 0.75), p.line, radius: 0))
+        } else {
+            w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: footHeight), p.inkHigh, radius: 0))
+            w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 1), p.line.opacity(0.7), radius: 0))
+        }
         w.y = footTop + 5
         if ownLine {
             w.line([conn])

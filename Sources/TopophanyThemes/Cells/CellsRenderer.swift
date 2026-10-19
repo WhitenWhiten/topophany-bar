@@ -21,10 +21,14 @@ public struct CellsRenderer: Renderer {
     }
 
     public func widgetBackground(context: RenderContext) -> AnyView {
-        AnyView(Rectangle().fill(Color(CellsPalette(context.theme).ink)))
+        let p = CellsPalette(context.theme)
+        return AnyView(ZStack {
+            Rectangle().fill(Color(p.ink))
+            TextureFill(texture: p.texture, color: Color(p.grain))
+        })
     }
 
-    public var panelCornerRadius: Double { CellsPanel.radius }
+    public func panelCornerRadius(_ theme: Theme) -> Double { CellsPanel.radius }
 
     /// The ink inside a box's line.
     public func colors(context: RenderContext) -> ThemeColors {

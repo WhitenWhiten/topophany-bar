@@ -23,6 +23,11 @@ struct CardsPalette {
     var on = Color.white
     /// Increase Contrast: drawn things take more ink.
     var increaseContrast = false
+    /// Where a night surface deepens to, at the foot.
+    var panel2: Color?
+    /// A texture's ink.
+    var grain = Color.clear
+    var style = CardsStyle()
 
     static func resolve(_ ctx: RenderContext) -> CardsPalette {
         let dark = ctx.effectiveScheme == .dark
@@ -50,6 +55,7 @@ struct CardsPalette {
                            panel: Color(.sRGB, red: 250 / 255, green: 250 / 255, blue: 253 / 255, opacity: 0.6),
                            up: .green, warn: .orange, down: .red, unknown: .gray, accent: .accentColor, accent2: .cyan)
         p.increaseContrast = hc
+        p.style = CardsStyle(ctx.theme)
         if ctx.reduceTransparency {
             p.panel = dark ? Color(.sRGB, red: 0.13, green: 0.13, blue: 0.15) : Color(.sRGB, red: 0.96, green: 0.96, blue: 0.97)
             p.card = dark ? Color(white: 1, opacity: 0.09) : Color(white: 1, opacity: 1)
@@ -60,7 +66,11 @@ struct CardsPalette {
         if let c = token("cardEdge") { p.cardEdge = c }
         if let c = token("fill") { p.fill = c }
         if let c = token("fill2") { p.fill2 = c }
-        if let c = token("panelMaterial"), !ctx.reduceTransparency { p.panel = c }
+        // A matte or night ground is opaque already; glass gives way to a
+        // solid fill under Reduce Transparency.
+        if let c = token("panelMaterial"), !ctx.reduceTransparency || p.style.surface != .glass { p.panel = c }
+        p.panel2 = token("panelMaterial2")
+        if let c = token("grain") { p.grain = c.opacity(hc ? 0.5 : 1) }
         if let c = token("up") { p.up = c }
         if let c = token("warning") { p.warn = c }
         if let c = token("down") { p.down = c }
@@ -211,7 +221,7 @@ struct HeroSymbol: View {
     }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: size * 12 / 44, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: palette.style.heroRadius(size), style: .continuous)
         let c = palette.color(status.mark)
         let hc = palette.increaseContrast
         shape
@@ -381,36 +391,59 @@ struct StackBar: View {
     }
 }
 
-/// A reading against the check's own limit. Unknown is hatched.
+/// A reading against the check's own limit, in the theme's meter: past
+/// the limit it reads in the warning color. Unknown is hatched, never
+/// empty.
 struct Meter: View {
     var percent: Double?
     var limit: Double?
     var palette: CardsPalette
     var height = 5.0
     var plain = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        GeometryReader { g in
-            ZStack(alignment: .leading) {
-                if let p = percent {
-                    Capsule().fill(palette.fill)
-                    Capsule()
-                        .fill(!plain && (limit.map { p > $0 } ?? false) ? palette.warn : palette.accent)
-                        .frame(width: max(height, g.size.width * min(100, max(0, p)) / 100))
-                } else {
-                    Hatch(color: palette.fill, line: 3, gap: 3).clipShape(Capsule())
-                }
-                if let l = limit, l < 100, percent != nil {
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(palette.l2)
-                        .frame(width: 1.5, height: height + 4)
-                        .offset(x: g.size.width * l / 100 - 0.75)
-                }
+        let p = palette
+        let style = p.style.meter
+        // Eases from the reading before; Canvas draws what the animation
+        // says it is now.
+        MeterCanvas(value: (percent ?? 0) / 100) { ctx, s, v in
+            guard percent != nil else {
+                style.drawUnknown(ctx, size: s, color: p.fill)
+                return
             }
-            .frame(height: g.size.height)
-            .settles(on: percent)
+            let over = !plain ? limit.map { $0 / 100 } : nil
+            var parts = [MeterStyle.Part(end: min(v, over ?? 1), color: p.accent)]
+            if let over, v > over { parts.append(.init(end: min(1, v), color: p.warn)) }
+            style.draw(ctx, size: s, parts: parts, track: p.fill, limit: percent == nil ? nil : limit, ink: p.l2, scale: p.l3)
         }
         .frame(height: height)
+        .animation(reduceMotion ? nil : .smooth(duration: 0.6), value: percent)
+    }
+}
+
+/// A meter's canvas, its value animatable, reaching past its frame by the
+/// limit mark's overhang.
+struct MeterCanvas: View, @MainActor Animatable {
+    var value: Double
+    var draw: (GraphicsContext, CGSize, Double) -> Void
+
+    var animatableData: Double {
+        get { value }
+        set { value = newValue }
+    }
+
+    var body: some View {
+        let o = MeterStyle.overhang
+        GeometryReader { g in
+            Canvas { ctx, s in
+                var c = ctx
+                c.translateBy(x: 0, y: o)
+                draw(c, CGSize(width: s.width, height: s.height - 2 * o), value)
+            }
+            .frame(width: g.size.width, height: g.size.height + 2 * o)
+            .offset(y: -o)
+        }
     }
 }
 
@@ -432,13 +465,15 @@ struct PillView: View {
             .padding(.horizontal, plain ? 0 : 6)
             .padding(.vertical, 2)
             .background {
-                if !plain { RoundedRectangle(cornerRadius: 5, style: .continuous).fill(palette.tint(pill.mark)) }
+                if !plain {
+                    RoundedRectangle(cornerRadius: palette.style.chip(5), style: .continuous).fill(palette.tint(pill.mark))
+                }
             }
     }
 }
 
-/// A history as bars, newest at the right, over a baseline; before the
-/// history is full, the left is baseline only.
+/// A history as bars, newest at the right, over a baseline, in the
+/// theme's meter; before the history is full, the left is baseline only.
 struct BarHistory: View {
     var values: [Double]
     /// The value a full bar stands for.
@@ -446,20 +481,11 @@ struct BarHistory: View {
     var capacity: Int
     var color: Color
     var baseline: Color
+    var style = MeterStyle.ticks
 
     var body: some View {
         Canvas { ctx, s in
-            let n = max(capacity, values.count)
-            guard n > 0 else { return }
-            ctx.fill(Path(CGRect(x: 0, y: s.height - 1, width: s.width, height: 1)), with: .color(baseline))
-            let pitch = s.width / Double(n)
-            let w = max(0.8, pitch - min(1, pitch * 0.3))
-            var path = Path()
-            for (i, v) in values.suffix(n).reversed().enumerated() {
-                let h = max(1, min(1, v / max(top, 1e-9)) * s.height)
-                path.addRect(CGRect(x: s.width - Double(i + 1) * pitch + (pitch - w), y: s.height - h, width: w, height: h))
-            }
-            ctx.fill(path, with: .color(color))
+            style.drawHistory(ctx, size: s, values: values, top: top, capacity: capacity, color: color, baseline: baseline)
         }
     }
 }
@@ -499,24 +525,25 @@ struct MirrorChart: View {
     }
 }
 
-/// Parts of a whole in one bar, each its share of `total`; what is left
-/// is the track.
+/// Parts of a whole in one meter, each its share of `total`, in the
+/// theme's meter; what is left is the track.
 struct PartsBar: View {
     var parts: [(Double, Color)]
     var total: Double
     var track: Color
     var height = 7.0
+    var style = MeterStyle.ticks
+    var scale = Color.clear
 
     var body: some View {
-        Canvas { ctx, s in
-            ctx.clip(to: Path(roundedRect: CGRect(origin: .zero, size: s), cornerRadius: s.height / 2, style: .continuous))
-            ctx.fill(Path(CGRect(origin: .zero, size: s)), with: .color(track))
-            var x = 0.0
-            for (v, color) in parts where v > 0 {
-                let w = s.width * min(1, v / max(total, 1e-9))
-                ctx.fill(Path(CGRect(x: x, y: 0, width: max(0, w - 1), height: s.height)), with: .color(color))
-                x += w
+        let parts = self.parts, total = self.total
+        MeterCanvas(value: 0) { ctx, s, _ in
+            var end = 0.0
+            let shares = parts.filter { $0.0 > 0 }.map { v, color in
+                end = min(1, end + v / max(total, 1e-9))
+                return MeterStyle.Part(end: end, color: color)
             }
+            style.draw(ctx, size: s, parts: shares, track: track, limit: nil, ink: .clear, scale: scale)
         }
         .frame(height: height)
     }
