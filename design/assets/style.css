@@ -341,13 +341,13 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .z-here svg { width: 11px; height: 11px; }
 .z-marks { display: flex; align-items: center; gap: 2.5px; flex: none; margin-left: auto; padding-left: 4px; }
 .z-marks em { font-style: normal; font-size: 10px; color: var(--l3); margin-left: 2px; }
-.z-rib { position: relative; height: 6px; }
-.z-day { position: absolute; inset: 0; border-radius: 3px; overflow: hidden; }
-.z-day i { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: var(--card-solid, rgba(30, 30, 36, .9)); }
+.z-rib { position: relative; height: 4px; }
+.z-day { position: absolute; inset: 0; border-radius: 2px; overflow: hidden; }
+.z-day i { position: absolute; top: 0; bottom: 0; width: 1.5px; margin-left: -.75px; background: var(--card-solid, rgba(30, 30, 36, .9)); }
 .light .z-day i { --card-solid: rgba(255, 255, 255, .95); }
-.z-rib b { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--l1);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); }
-.light .z-rib b { box-shadow: 0 0 0 1px rgba(255, 255, 255, .85); }
+.z-rib b { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--acc);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); }
+.light .z-rib b { box-shadow: 0 0 0 1px rgba(255, 255, 255, .9); }
 .z-o { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; line-height: 1.2; min-width: 28px; }
 .z-o b { font-size: 11px; font-weight: 500; color: var(--l3); font-variant-numeric: tabular-nums; }
 .z-o b.here { color: var(--l2); }

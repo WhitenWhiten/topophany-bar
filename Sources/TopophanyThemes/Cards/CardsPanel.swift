@@ -660,7 +660,7 @@ struct CardsZones: View {
                 }
                 .fixedSize()
             }
-            DayRibbon(zone: z, dark: p.isDark, now: p.l1, contrast: p.increaseContrast)
+            DayRibbon(zone: z, dark: p.isDark, now: p.accent, contrast: p.increaseContrast)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityHidden(true)
@@ -678,43 +678,50 @@ struct CardsZones: View {
     }
 }
 
-/// A zone's day from 12 hours before now to 12 hours after: dark around
-/// its midnight, light around its noon, a gap at midnight, and now a tick
-/// in the middle, where every zone's now lines up.
+/// A zone's day from 12 hours before now to 12 hours after: a fine band,
+/// slate around its midnight and pale around its noon, a gap at midnight,
+/// and now a tick in the accent, in the middle, where every zone's now
+/// lines up. Neither tone is a status color.
 struct DayRibbon: View {
     var zone: ZonesSection.Zone
     var dark: Bool
     var now: Color
     var contrast = false
-    var band = 6.0
+    var band = 4.0
+
+    /// Night and day, as red, green, blue and opacity.
+    var tones: (night: [Double], day: [Double]) {
+        dark ? ([0.42, 0.49, 0.72, contrast ? 0.42 : 0.26], [0.97, 0.96, 0.93, contrast ? 0.75 : 0.5])
+            : ([0.2, 0.25, 0.42, contrast ? 0.62 : 0.44], [0.24, 0.24, 0.3, contrast ? 0.16 : 0.08])
+    }
 
     var body: some View {
         Canvas { ctx, s in
             let y = (s.height - band) / 2
             let shape = Path(roundedRect: CGRect(x: 0, y: y, width: s.width, height: band), cornerRadius: band / 2)
+            let (night, noon) = tones
             let stops = (0...48).map { i -> Gradient.Stop in
                 let b = ZonesSection.daylight(ZonesSection.hour(zone, at: Double(i) / 48))
-                let c = dark ? Color(.sRGB, red: 1, green: 246 / 255, blue: 232 / 255, opacity: 0.07 + (contrast ? 0.65 : 0.55) * b)
-                    : Color(.sRGB, red: 40 / 255, green: 36 / 255, blue: 30 / 255, opacity: (contrast ? 0.52 : 0.42) - 0.36 * b)
-                return .init(color: c, location: Double(i) / 48)
+                let c = zip(night, noon).map { $0 + ($1 - $0) * b }
+                return .init(color: Color(.sRGB, red: c[0], green: c[1], blue: c[2], opacity: c[3]), location: Double(i) / 48)
             }
             var day = ctx
             day.clipToLayer { mask in
                 mask.fill(shape, with: .color(.white))
                 mask.blendMode = .clear
                 for m in ZonesSection.midnights(zone) {
-                    mask.fill(Path(CGRect(x: s.width * m - 0.5, y: 0, width: 1, height: s.height)), with: .color(.white))
+                    mask.fill(Path(CGRect(x: s.width * m - 0.75, y: 0, width: 1.5, height: s.height)), with: .color(.white))
                 }
             }
             day.fill(Path(CGRect(origin: .zero, size: s)),
                      with: .linearGradient(Gradient(stops: stops), startPoint: .zero, endPoint: CGPoint(x: s.width, y: 0)))
             let tick = Path(roundedRect: CGRect(x: s.width / 2 - 1, y: 0, width: 2, height: s.height), cornerRadius: 1)
-            ctx.stroke(tick, with: .color(dark ? Color.black.opacity(0.35) : Color.white.opacity(0.85)), lineWidth: 2)
+            ctx.stroke(tick, with: .color(dark ? Color.black.opacity(0.4) : Color.white.opacity(0.9)), lineWidth: 2)
             ctx.fill(tick, with: .color(now))
         }
         // The tick overhangs the band; only the band takes room.
-        .frame(height: band + 4)
-        .padding(.vertical, -2)
+        .frame(height: band + 6)
+        .padding(.vertical, -3)
     }
 }
 

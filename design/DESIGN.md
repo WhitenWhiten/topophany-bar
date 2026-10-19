@@ -171,7 +171,7 @@ Servers sit in different places, and an incident at 3 AM in one place is 6 PM in
 
 - **Rows:** one per time zone, west to east. Each row holds the places `topo` names (`servers.list`'s `where`) that share the zone, and one mark per server in them, its health as `topo` sent it. This Mac's zone is always a row, marked by the location arrow and "here"; with no servers in it, the row is titled This Mac.
 - **Each row shows:** the local time, the zone's short name, its offset from here ("+3h"), and "tomorrow" or "yesterday" when its date isn't this Mac's.
-- **The day ribbon:** the zone's 24 hours, from 12 hours before now to 12 hours after, so every row's now lines up in one column. It is dark from 20:00 to 4:00, light from 8:00 to 16:00, and soft between, with a gap at midnight. That is a clock's hour, not the sun's.
+- **The day ribbon:** the zone's 24 hours, from 12 hours before now to 12 hours after, so every row's now lines up in one column, a fine tick in the accent. The band is thin: slate from 20:00 to 4:00, pale from 8:00 to 16:00, and soft between, with a gap at midnight. That is a clock's hour, not the sun's, and neither tone is a status color.
 - **Where a zone comes from:**
   - A place's name suggests one: the system's city for every zone, in English, Japanese and Chinese, and the cities of `topo`'s gazetteer that no zone is named for (San Jose, Frankfurt, 成都). A label that only starts with a city counts ("Tokyo 2").
   - In Settings, Places… lets the user choose another zone for any place, or none.

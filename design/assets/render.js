@@ -362,14 +362,16 @@
     const t = Math.min(1, Math.max(0, ((1 - Math.cos((2 * Math.PI * h) / 24)) / 2 - 0.25) / 0.5));
     return t * t * (3 - 2 * t);
   };
-  // The zone's day from 12 hours before now to 12 hours after; now is the
-  // middle, so every row's now lines up.
+  // The zone's day from 12 hours before now to 12 hours after, slate around
+  // midnight and pale around noon; now is the middle, so every row's now
+  // lines up. Neither tone is a status color.
   function ribbon(z, dark) {
+    const [night, noon] = dark ? [[107, 125, 184, 0.26], [247, 245, 237, 0.5]] : [[51, 64, 107, 0.44], [61, 61, 77, 0.08]];
     const stops = [];
     for (let i = 0; i <= 48; i++) {
       const b = daylight((((z.hour - 12 + i / 2) % 24) + 24) % 24);
-      const c = dark ? `rgba(255,246,232,${(0.07 + 0.55 * b).toFixed(3)})` : `rgba(40,36,30,${(0.42 - 0.36 * b).toFixed(3)})`;
-      stops.push(`${c} ${((i / 48) * 100).toFixed(2)}%`);
+      const c = night.map((n, k) => n + (noon[k] - n) * b);
+      stops.push(`rgba(${c.slice(0, 3).map(Math.round).join(',')},${c[3].toFixed(3)}) ${((i / 48) * 100).toFixed(2)}%`);
     }
     let mids = '';
     for (let k = 0; k <= 1; k++) {
