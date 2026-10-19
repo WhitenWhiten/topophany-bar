@@ -25,6 +25,7 @@ import TopophanyWidgets
 ///     windows               each window's number and frame
 ///     handoff               what the widgets were last handed
 ///     login [on|off]        Open at login: set it, and report its status
+///     language L            the language: system, en, ja or zh-Hans
 ///
 /// A command starting with `@PID` goes to that running copy only.
 @MainActor
@@ -95,6 +96,8 @@ enum DebugDriver {
             @unknown default: "unknown"
             }
             try? "\(status) (setting \(d.model.settings.openAtLogin))".write(to: out.appending(path: "login.txt"), atomically: true, encoding: .utf8)
+        case "language":
+            if w.count > 1, let l = TopophanyKit.Settings.Language(rawValue: w[1]) { d.model.update { $0.language = l } }
         case "handoff":
             let store = HandoffStore(appGroup: HandoffStore.bundleAppGroup)
             var lines = ["group \(HandoffStore.bundleAppGroup ?? "none")", "directory \(store.directory?.path ?? "none")"]
