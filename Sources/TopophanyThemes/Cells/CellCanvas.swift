@@ -174,6 +174,7 @@ public struct CellCanvas: View {
         }
         .frame(width: scene.size.width, height: scene.size.height)
         .overlay(alignment: .topLeading) {
+            // Placed by padding, as layout, rather than shifted when drawn.
             ForEach(Array(scene.clocks.enumerated()), id: \.offset) { _, c in
                 HStack(spacing: 0) {
                     Text(.currentDate, format: ZoneClock.time(c.timeZone))
@@ -182,12 +183,15 @@ public struct CellCanvas: View {
                         Text(.currentDate, format: ZoneClock.period(c.timeZone))
                     }
                 }
+                .environment(\.timeZone, c.timeZone)
                 .font(Self.font(scene.metrics, bold: true))
-                    .foregroundStyle(Color(c.color))
-                    .lineLimit(1)
-                    .fixedSize()
-                    .frame(height: scene.metrics.line)
-                    .offset(x: c.x, y: c.y)
+                .foregroundStyle(Color(c.color))
+                .lineLimit(1)
+                .fixedSize()
+                .frame(height: scene.metrics.line)
+                .padding(.leading, c.x)
+                .padding(.top, c.y)
+                .frame(width: scene.size.width, height: scene.size.height, alignment: .topLeading)
             }
         }
         .overlay(alignment: .topLeading) {

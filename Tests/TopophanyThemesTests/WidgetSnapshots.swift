@@ -10,8 +10,9 @@ import TopophanySections
 /// the design's size unless given.
 @MainActor
 func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, theme: Theme, dark: Bool,
-               rendering: RenderContext.WidgetRendering = .fullColor) -> some View {
-    let ctx = RenderContext(theme: theme, colorScheme: dark ? .dark : .light, widgetRendering: rendering)
+               rendering: RenderContext.WidgetRendering = .fullColor, live: Bool = false) -> some View {
+    var ctx = RenderContext(theme: theme, colorScheme: dark ? .dark : .light, widgetRendering: rendering)
+    ctx.liveDates = live
     let r = Renderers.renderer(for: theme)
     let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
     return OnDesktop(dark: dark || theme.renderer == .cells) {
@@ -160,6 +161,41 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
         let stale = zones().notCurrent(at: snapshotOrigin.addingTimeInterval(47 * 60))
         try snapshot("widget-zones-native-dark-m-not-current", onDesktop(stale, .medium, theme: ThemeStore.native, dark: true))
         try snapshot("widget-zones-terminal-m-not-current", onDesktop(stale, .medium, theme: ThemeStore.terminal, dark: true))
+    }
+
+    /// Three zones as a real topology names them, in Chinese places on a
+    /// Japanese Mac, drawn live as on the desktop.
+    func asianZones() -> WidgetModel {
+        func zone(_ id: String, _ places: [String], _ marks: [Mark], here: Bool, hour: Double, time: String, name: String,
+                  relative: String, day: String) -> ZonesSection.Zone {
+            let tz = TimeZone(identifier: id)!
+            return .init(timeZone: tz, places: places,
+                         servers: marks.enumerated().map { .init(id: "\(id)-\($0.offset)", name: "n", mark: $0.element) },
+                         isHere: here, offset: tz.secondsFromGMT(for: snapshotOrigin), hour: hour, time: time, period: "",
+                         zoneName: name, relative: relative, day: day)
+        }
+        let z = ZonesSection(zones: [
+            zone("America/Los_Angeles", ["洛杉矶", "加利福尼亚"], [.up, .up, .up, .up], here: true, hour: 11.43, time: "11:26",
+                 name: "GMT-7", relative: "現在地", day: ""),
+            zone("Asia/Shanghai", ["杭州", "北京", "华为云"], [.up, .up], here: false, hour: 2.43, time: "2:26", name: "GMT+8",
+                 relative: "+15時間", day: "明日"),
+            zone("Asia/Tokyo", ["湖北", "东京"], [.up, .offline, .up, .up, .offline], here: false, hour: 3.43, time: "3:26",
+                 name: "JST", relative: "+16時間", day: "明日"),
+        ], serverCount: 13, unplaced: 2, isCurrent: true, now: snapshotOrigin)
+        var panel = previewPanel(.clear, settings: previewSettings(mac: .off))
+        panel.sections = [.zones(z)]
+        return WidgetModel(kind: .zones, panel: panel)
+    }
+
+    @Test func zonesLive() throws {
+        try L10n.with("ja") {
+            for theme in [ThemeStore.paper, ThemeStore.native] {
+                for (size, n) in Self.sizes where size != .extraLarge {
+                    try snapshot("widget-zones-live-\(theme.id)-\(n)-1080",
+                                 onDesktop(asianZones(), size, bounds: Self.smaller[size], theme: theme, dark: true, live: true))
+                }
+            }
+        }
     }
 
     /// Every zone row stays inside the widget, with the rest counted.

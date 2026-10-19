@@ -306,8 +306,12 @@ struct CellsBodies {
                lines: ZoneLines = .two, live: Bool = false, foot: Bool = true) {
         let n = w.frame.columns
         let shown = shown ?? z.zones
-        // As wide as the widest clock or zone name: "GMT-10", "GMT+5:30".
-        let tw = shown.map { max(CellText.width($0.clock), min(CellText.width($0.zoneName), 9)) }.max() ?? 0
+        // As wide as the widest clock or zone name ("GMT-10", "GMT+5:30"),
+        // and as "12:00 AM", which every clock comes to between reloads.
+        let tw = shown.map { zone in
+            let widest = 5 + (zone.period.isEmpty ? 0 : 1 + CellText.width(zone.period))
+            return max(CellText.width(zone.clock), widest, min(CellText.width(zone.zoneName), 9))
+        }.max() ?? 0
         let rw = shown.map { max(CellText.width($0.relative), z.clocksOnly ? 0 : CellText.width($0.day)) }.max() ?? 0
         // Night is the darker of the palette's quiet tones, day the lighter.
         let dark = p.ink.r + p.ink.g + p.ink.b < 1.5

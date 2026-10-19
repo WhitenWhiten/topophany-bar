@@ -13,10 +13,15 @@ struct ZoneClock: View {
 
     var body: some View {
         if live {
-            switch part {
-            case .time: Text(.currentDate, format: Self.time(zone.timeZone))
-            case .period: Text(.currentDate, format: Self.period(zone.timeZone))
+            // A date's text takes its time zone from the environment, not
+            // from its format.
+            Group {
+                switch part {
+                case .time: Text(.currentDate, format: Self.time(zone.timeZone))
+                case .period: Text(.currentDate, format: Self.period(zone.timeZone))
+                }
             }
+            .environment(\.timeZone, zone.timeZone)
         } else {
             Text(verbatim: part == .time ? zone.time : zone.period)
         }
@@ -134,12 +139,13 @@ struct WidgetZones: View {
     func compactRow(_ z: ZonesSection.Zone) -> some View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 0) {
-                ZoneClock(zone: z, part: .time, live: live).font(t.mono(14, .semibold)).foregroundStyle(p.l1)
+                ZoneClock(zone: z, part: .time, live: live).font(t.mono(14, .semibold)).foregroundStyle(p.l1).fixedSize()
                 if !z.period.isEmpty {
                     ZoneClock(zone: z, part: .period, live: live).font(t.font(9, .medium)).foregroundStyle(p.l3)
                 }
             }
-            .frame(width: 40, alignment: .leading)
+            // As wide as "12:00": every clock comes to two-digit hours.
+            .frame(width: 45 * t.scale, alignment: .leading)
             VStack(alignment: .leading, spacing: 3) {
                 title(z, 11.5)
                 marks(z.servers, 6, size: 7)
