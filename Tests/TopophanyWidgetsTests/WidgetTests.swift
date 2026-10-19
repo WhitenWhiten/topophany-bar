@@ -63,6 +63,15 @@ func temporaryStore() -> HandoffStore {
         #expect(p.mac == nil)
     }
 
+    @Test func listsTheServersTopoListed() {
+        let p = FixtureEngine.policy(.incidents, request: TemplateCompiler().request(for: settings(), revision: 1, listServers: true),
+                                     origin: origin, after: 4)
+        let h = Handoff(policy: p, theme: ThemeStore.native, settings: settings(), engineRunning: true, at: origin.addingTimeInterval(4))
+        #expect(h.servers().count == 11)
+        #expect(h.servers().first?.id == "macbook")
+        #expect(handoff(.incidents).servers().isEmpty)
+    }
+
     @Test func emptyWithoutAnAppGroup() {
         let store = HandoffStore(appGroup: nil)
         #expect(!store.isAvailable)

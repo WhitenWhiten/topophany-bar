@@ -59,8 +59,8 @@ struct StatusWidgetIntent: WidgetConfigurationIntent {
     var theme: ThemeChoice
 }
 
-/// A server a widget can show: the panel's pinned servers and This Mac's
-/// node, by the names `topo` last sent.
+/// A server a widget can show: This Mac's node, the panel's pinned servers,
+/// then every other server `topo` lists, by the names it last sent.
 struct NodeEntity: AppEntity {
     var id: String
     var name: String
@@ -93,9 +93,13 @@ struct NodeQuery: EntityQuery {
             let name = if case .server(let c, _)? = panel.mac, !c.isMissing { c.name } else { s.mac.node }
             out.append(NodeEntity(id: s.mac.node, name: name, isMac: true))
         }
+        let listed = h.servers()
         for node in s.serverNodes where !out.contains(where: { $0.id == node }) {
-            let name = panel.servers.first { $0.id == node && !$0.isMissing }?.name ?? node
+            let name = panel.servers.first { $0.id == node && !$0.isMissing }?.name ?? listed.first { $0.id == node }?.name ?? node
             out.append(NodeEntity(id: node, name: name, isMac: false))
+        }
+        for server in listed where !out.contains(where: { $0.id == server.id }) {
+            out.append(NodeEntity(id: server.id, name: server.name, isMac: false))
         }
         return out
     }

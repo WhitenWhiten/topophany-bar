@@ -76,6 +76,13 @@ public struct Handoff: Sendable, Codable {
                                                settings: widgetSettings))
     }
 
+    /// The servers `topo` last listed, for choosing a Server widget's node.
+    public func servers() -> [ServerListEntry] {
+        let r = reading()
+        guard let row = r.row(TemplateCompiler.RowID.servers), case .servers(let list) = r.lastValue(of: row) else { return [] }
+        return list
+    }
+
     /// The panel for a Server widget: its node's card is the one server,
     /// whether or not the panel pins it.
     public func panel(server node: String) -> PanelModel {
