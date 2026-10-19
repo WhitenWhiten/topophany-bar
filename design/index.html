@@ -39,8 +39,8 @@
   .free .card.no { box-shadow: inset 0 0 0 1px rgba(255,159,10,.3); }
   .free .card h4 span { font-weight: 500; color: #7d818a; font-size: 12.5px; margin-left: 6px; }
   .wrow { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; padding: 40px 24px; }
-  .themes4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
-  @media (max-width: 1200px) { .themes4 { grid-template-columns: 1fr 1fr; } }
+  .themes3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+  @media (max-width: 1200px) { .themes3 { grid-template-columns: 1fr 1fr; } }
   .th { border-radius: 14px; overflow: hidden; background: rgba(255,255,255,.03); box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); }
   .th .tile { height: 300px; position: relative; overflow: hidden; display: flex; justify-content: center; padding-top: 16px; }
   .th .tile > div { transform: scale(.78); transform-origin: top center; }
@@ -61,7 +61,7 @@
 <div class="wrap">
   <div class="eyebrow">Design preview · v1 · macOS 26 and later</div>
   <h1>topophany-bar</h1>
-  <p class="lede">Your whole network's status, one glance away in the macOS menu bar and on the desktop. A native companion to <code>topo</code> that shows what the collector concludes and never decides anything itself. It ships with two themes, the native macOS look and the TUI's own ink and phosphor, and is built so more can follow.</p>
+  <p class="lede">Your whole network's status, one glance away in the macOS menu bar and on the desktop. A native companion to <code>topo</code> that shows what the collector concludes and never decides anything itself. It ships with six themes: the native macOS look and the TUI's own ink and phosphor, and two more built on each.</p>
 
   <h2>Three looks, one meaning</h2>
   <p class="sub">The same collector, three ways. The status card is always first. Everything below it is a section you can turn off or reorder. Open the <a href="playground.html">playground</a> to try every state, theme and setting.</p>
@@ -76,8 +76,8 @@
   <div class="desk wall-dark wrow" id="wd"></div>
 
   <h2>Themes are a renderer plus tokens</h2>
-  <p class="sub">A <b>renderer</b> is code: it lays out sections for the panel and for each widget size. v1 has two: <code>cards</code> (Native) and <code>cells</code> (Terminal). A <b>theme</b> is data: a renderer's name and a token set of colors, materials and type. Adding a theme needs no code. Adding a renderer does, and every theme of that renderer comes with it. Status glyphs and what they mean belong to the renderer, so no theme can make two states look alike. Below, <b>Aurora</b> and <b>Paper</b> are example user themes that are token files only.</p>
-  <div class="themes4" id="themes"></div>
+  <p class="sub">A <b>renderer</b> is code: it lays out sections for the panel and for each widget size. v1 has two: <code>cards</code> (Native) and <code>cells</code> (Terminal). A <b>theme</b> is data: a renderer's name and a token set of colors, materials and type. Adding a theme needs no code. Adding a renderer does, and every theme of that renderer comes with it. Status glyphs and what they mean belong to the renderer, so no theme can make two states look alike. Below, <b>Aurora</b>, <b>Linen</b>, <b>Paper</b> and <b>Dusk</b> are token sets only, read through the same path a theme file takes.</p>
+  <div class="themes3" id="themes"></div>
 
   <h2>How it works</h2>
   <p class="sub">The app is a renderer. <code>topo</code> stays the brain: it holds the credentials, reads the collector and works out every row with the same code the TUI uses. They talk over a pipe, so there's no file to poll and no orphan process. When the app quits, <code>topo</code> sees its stdin close and exits.</p>
@@ -183,9 +183,11 @@
   const tO = Object.assign(TB.defaults(), { sections: { seen: true, attention: false, apps: false, servers: false, mac: false } });
   const themes = [
     ['Native', 'renderer: cards · tokens: system', 'dark', TB.nativePanel(sc, Object.assign({}, tO, { appearance: 'dark' }))],
+    ['Aurora', 'renderer: cards · tokens: aurora, light and dark', 'dark', TB.nativePanel(sc, Object.assign({}, tO, { appearance: 'dark', tokens: 'aurora' }))],
+    ['Linen', 'renderer: cards · tokens: linen · New York', 'light', TB.nativePanel(sc, Object.assign({}, tO, { appearance: 'light', tokens: 'linen' }))],
     ['Terminal', 'renderer: cells · palette: TUI', 'dark', TB.tuiPanel(sc, Object.assign({}, tO, { theme: 'tui' }))],
-    ['Aurora*', 'renderer: cards · tokens: aurora.json', 'dark', TB.nativePanel(sc, Object.assign({}, tO, { appearance: 'dark', tokens: 'aurora' }))],
-    ['Paper*', 'renderer: cells · palette: paper.json', 'light', TB.tuiPanel(sc, Object.assign({}, tO, { theme: 'tui', palette: 'paper' }))],
+    ['Paper', 'renderer: cells · palette: paper, light', 'light', TB.tuiPanel(sc, Object.assign({}, tO, { theme: 'tui', palette: 'paper' }))],
+    ['Dusk', 'renderer: cells · palette: dusk, dark', 'dark', TB.tuiPanel(sc, Object.assign({}, tO, { theme: 'tui', palette: 'dusk' }))],
   ];
   document.getElementById('themes').innerHTML = themes.map(([n, m, wall, html]) =>
     `<div class="th"><div class="tile desk wall-${wall}">${html}</div><div class="meta"><b>${n}</b><span>${m}</span></div></div>`).join('');

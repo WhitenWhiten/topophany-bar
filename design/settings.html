@@ -65,16 +65,16 @@
   .grow .lab .dot { display: inline-block; vertical-align: 1px; }
   .dot { width: 7px; height: 7px; border-radius: 50%; background: #30d158; display: inline-block; margin-right: 6px; box-shadow: 0 0 0 3px rgba(48,209,88,.2); }
 
-  .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .theme { border-radius: 12px; padding: 8px; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.08); }
-  .theme.on { box-shadow: inset 0 0 0 2px var(--acc); background: rgba(10,132,255,.08); }
-  .thumb { position: relative; height: 176px; border-radius: 8px; overflow: hidden; }
-  .thumb > div { position: absolute; left: 50%; top: 12px; transform: translateX(-50%) scale(.5); transform-origin: top center; }
-  .theme > b { display: flex; align-items: center; gap: 7px; margin: 9px 4px 1px; font-weight: 600; }
-  .theme > span { display: block; margin: 0 4px 2px 22px; font-size: 11.5px; color: var(--l2); }
-  .radio { width: 15px; height: 15px; border-radius: 50%; background: rgba(255,255,255,.12); flex: none; position: relative; }
-  .radio.on { background: var(--acc); }
-  .radio.on::after { content: ""; position: absolute; inset: 4.5px; border-radius: 50%; background: #fff; }
+  /* One line of themes, each a chip of its colors; it scrolls when more
+     themes than fit. */
+  .themes { display: flex; gap: 8px; padding: 10px 12px 9px; overflow-x: auto; }
+  .theme { flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .chip-t { width: 68px; height: 40px; padding: 3px; border-radius: 11px; box-sizing: content-box; }
+  .theme.on .chip-t { box-shadow: inset 0 0 0 2.5px var(--acc); }
+  .chip-t > span { display: flex; align-items: center; justify-content: center; gap: 3.5px; height: 100%; border-radius: 8px; }
+  .chip-t i { width: 7px; height: 7px; border-radius: 50%; }
+  .theme > b { font-size: 12px; font-weight: 400; color: var(--l2); }
+  .theme.on > b { font-weight: 600; color: var(--l1); }
   .checks3 { display: inline-flex; gap: 14px; }
   .checks3 > span { display: inline-flex; align-items: center; gap: 6px; }
   .prev { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
@@ -138,21 +138,28 @@
       ${row('Language', 'For the panel, the menu bar item, widgets and these settings', pop('Match System'))}
     </div>`);
 
-  // Appearance, with the real panels as thumbnails
-  const sc = D.scenarios.incidents;
-  const thumbO = Object.assign(TB.defaults(), { sections: { seen: true, attention: true, apps: false, servers: false, mac: false }, limit: 2 });
-  const nThumb = TB.nativePanel(sc, Object.assign({}, thumbO, { appearance: 'dark' }));
-  const tThumb = TB.tuiPanel(sc, Object.assign({}, thumbO, { theme: 'tui' }));
+  // Appearance: each theme as a chip of its colors, as the panel would draw
+  // it now (dark): its ground, then accent, second accent, up, warning, down
+  // and unknown.
   const prev = D.order.map((k) => TB.statusItem(D.scenarios[k], { theme: 'native', text: 'count', color: 'status' })).join('');
+  const sys = { acc: '#0a84ff', acc2: '#64d2ff', up: '#30d158', warn: '#ff9f0a', down: '#ff453a', unk: '#98989f' };
+  const cards = (id) => {
+    const t = Object.assign({ card: 'rgba(255,255,255,.068)', 'panel-bg': 'rgba(32,32,38,.55)' }, id ? TB.tokens[id].dark : {});
+    const layer = (c) => `linear-gradient(${c}, ${c})`;
+    return [`${layer(t.card)}, ${layer(t['panel-bg'])}, #1e1e23`, 'rgba(255,255,255,.14)', [t.acc || sys.acc, t.acc2 || sys.acc2, sys.up, sys.warn, sys.down, sys.unk]];
+  };
+  const cells = (id) => {
+    const p = TB.palettes[id];
+    return [p.ink, p.line, [p.acc, p.acc2, p.up, p.warn, p.down, p.unk]];
+  };
+  const chips = [['Native', cards()], ['Aurora', cards('aurora')], ['Linen', cards('linen')], ['Terminal', cells('terminal')], ['Paper', cells('paper')], ['Dusk', cells('dusk')]]
+    .map(([name, [ground, edge, dots]], i) => `<div class="theme ${i === 0 ? 'on' : ''}"><span class="chip-t"><span style="background:${ground};box-shadow:inset 0 0 0 1px ${edge}">${dots.map((c) => `<i style="background:${c}"></i>`).join('')}</span></span><b>${name}</b></div>`).join('');
   const appearance = win('Appearance', `
     <div class="gt">Theme</div>
-    <div class="themes">
-      <div class="theme on"><div class="thumb desk wall-dark">${nThumb}</div><b><span class="radio on"></span>Native</b><span>macOS glass, SF Pro and system colors, like the apps beside it.</span></div>
-      <div class="theme"><div class="thumb desk wall-dark">${tThumb}</div><b><span class="radio"></span>Terminal</b><span>Topophany’s TUI: ink, phosphor and monospace, the same glyphs as topo.</span></div>
-    </div>
-    <p class="foot">The theme applies to the panel, the menu bar item and every widget. A later release can add themes as files: a renderer's name and its tokens.</p>
+    <div class="group themes">${chips}</div>
+    <p class="foot">macOS glass, SF Pro and system colors, like the apps beside it.<br>The theme applies to the panel, the menu bar item and every widget. A later release can add themes as files: a renderer's name and its tokens.</p>
     <div class="gt">Panel</div><div class="group">
-      ${row('Appearance', 'Native theme only; Terminal always paints its ink', pop('Match System'))}
+      ${row('Appearance', 'For themes that follow the system; the others keep their own', pop('Match System'))}
       ${row('Text size', '', pop('Default'))}
     </div>
     <div class="gt">Menu bar</div><div class="group">
@@ -211,7 +218,7 @@
 
   document.getElementById('wins').innerHTML = [
     [general, '<b>General.</b> The app starts <code>topo monitor stream</code> as its child process. topo holds the credentials; the app only reads frames.'],
-    [appearance, '<b>Appearance.</b> Two themes, one meaning. Thumbnails are the real panels.'],
+    [appearance, '<b>Appearance.</b> Six themes, one meaning. Each shows its colors, as the panel would draw it now.'],
     [sections, '<b>Sections.</b> Status is fixed. The rest can be turned off and reordered.'],
     [local, '<b>This Mac: local readings.</b> RunCat-style live readings of the machine you’re on.'],
     [server, '<b>This Mac: as a server.</b> The Servers-tab card for this Mac’s node, plus what it observes.'],

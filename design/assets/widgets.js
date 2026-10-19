@@ -109,8 +109,7 @@
         body = `<div class="w-split"><div class="w-col w-left">${left}</div><div class="w-col w-right"><h4>Services<em>${(s.svc || []).length}</em></h4>${svc}${ob}</div></div>`;
       }
     }
-    const t = o.tokens && TB.tokens[o.tokens] && TB.tokens[o.tokens][o.appearance];
-    const vars = t ? Object.entries(t).map(([k, v]) => `--${k}:${v}`).join(';') + ';' : '';
+    const vars = TB.tokenCSS(o);
     return `<div class="wdg nv ${o.appearance} wd-${size} ${o.mode || ''}" style="${vars}width:${SIZE[size][0]}px;height:${SIZE[size][1]}px">${body}</div>`;
   }
 

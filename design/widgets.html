@@ -12,6 +12,7 @@
   .wgrid.small { width: auto; justify-content: center; }
   .scenes2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   .scenes2 .deskw { padding: 60px 24px 34px; }
+  .scenes2 + .scenes2 { margin-top: 22px; }
   .matrix { display: grid; grid-template-columns: 130px repeat(6, 170px); gap: 18px; align-items: center; justify-content: start; }
   .mh { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #7d818a; }
   .rowh b { display: block; font-size: 14px; font-weight: 650; }
@@ -54,9 +55,10 @@
   <p class="sub">The same widgets in the Terminal theme: the TUI's boxed panels, its big digits and its glyphs, sized down to 11 pt.</p>
   <div class="deskw desk wall-dark" id="d2"></div>
 
-  <h2>Light, and a theme you could write</h2>
-  <p class="sub">Native follows the system appearance. <b>Paper</b> is not part of v1: it shows that a theme can be only a palette for the Terminal renderer, and the panel and every widget pick it up.</p>
+  <h2>Light, and the other themes</h2>
+  <p class="sub">Native follows the system appearance, and so do Aurora and Linen. <b>Paper</b> and <b>Dusk</b> are only palettes for the Terminal renderer, and the panel and every widget pick them up.</p>
   <div class="scenes2"><div class="deskw desk wall-light" id="d3"></div><div class="deskw desk wall-light" id="d4"></div></div>
+  <div class="scenes2"><div class="deskw desk wall-light" id="d5"></div><div class="deskw desk wall-dark" id="d6"></div></div>
 
   <h2>Every state</h2>
   <p class="sub">The small Status widget in the five states the panel has, plus <b>Not current</b>. That one appears when the app has stopped renewing the widget, for example because it quit. It shows the last verdict as history, never as now.</p>
@@ -104,6 +106,8 @@
   desk('d2', { theme: 'tui', appearance: 'dark' }, { list: full });
   desk('d3', { theme: 'native', appearance: 'light' }, { small: true, list: [['status', 's', D.scenarios.clear], ['status', 'm', D.scenarios.clear]] });
   desk('d4', { theme: 'tui', appearance: 'light', palette: 'paper' }, { small: true, list: [['status', 's', D.scenarios.clear], ['status', 'm', D.scenarios.clear]] });
+  desk('d5', { theme: 'native', appearance: 'light', tokens: 'linen' }, { small: true, list: [['status', 's', D.scenarios.degraded], ['status', 'm', D.scenarios.degraded]] });
+  desk('d6', { theme: 'tui', appearance: 'dark', palette: 'dusk' }, { small: true, list: [['status', 's'], ['status', 'm']] });
 
   // This Mac as the last widget on the first two desktops
   ['d1', 'd2'].forEach((id, i) => {

@@ -442,18 +442,32 @@
   }
   TB._fleet = { nvFleet, fleetGrid };
 
-  // Token sets for the cards renderer. Native is the system's own; Aurora is an
-  // example user theme that only overrides tokens.
+  // Token sets for the cards renderer, by appearance, as ThemeStore has them.
+  // Native is the system's own; Aurora and Linen only set tokens, and Linen
+  // its family.
   const TOKENS = {
     aurora: {
       dark: { acc: '#2dd4bf', acc2: '#a78bfa', card: 'rgba(45, 212, 191, .07)', 'card-b': 'rgba(94, 234, 212, .14)', 'panel-bg': 'rgba(12, 28, 34, .62)', fill: 'rgba(94, 234, 212, .2)', fill2: 'rgba(94, 234, 212, .09)' },
       light: { acc: '#0d9488', acc2: '#7c3aed', card: 'rgba(240, 253, 250, .7)', 'card-b': 'rgba(13, 148, 136, .14)', 'panel-bg': 'rgba(236, 253, 248, .62)', fill: 'rgba(13, 148, 136, .18)', fill2: 'rgba(13, 148, 136, .08)' },
     },
+    linen: {
+      family: "ui-serif, 'New York', Georgia, serif",
+      dark: { acc: '#9db0e8', acc2: '#bca7de', card: 'rgba(255, 236, 212, .065)', 'card-b': 'rgba(255, 230, 200, .1)', 'panel-bg': 'rgba(42, 35, 28, .86)', fill: 'rgba(222, 200, 170, .24)', fill2: 'rgba(222, 200, 170, .11)' },
+      light: { acc: '#34509a', acc2: '#7a5ba8', card: 'rgba(255, 253, 248, .84)', 'card-b': 'rgba(110, 88, 60, .13)', 'panel-bg': 'rgba(241, 237, 229, .88)', fill: 'rgba(120, 100, 74, .2)', fill2: 'rgba(120, 100, 74, .09)' },
+    },
   };
   TB.tokens = TOKENS;
+  // The CSS for a token set, and its family; empty for Native.
+  const tokenCSS = (o) => {
+    const set = o.tokens && TOKENS[o.tokens];
+    const t = set && set[o.appearance];
+    if (!t) return '';
+    return Object.entries(t).map(([k, v]) => `--${k}:${v}`).join(';') + (set.family ? `;font-family:${set.family}` : '') + ';';
+  };
+  TB.tokenCSS = tokenCSS;
   const tokenStyle = (o) => {
-    const t = o.tokens && TOKENS[o.tokens] && TOKENS[o.tokens][o.appearance];
-    return t ? ` style="${Object.entries(t).map(([k, v]) => `--${k}:${v}`).join(';')}"` : '';
+    const css = tokenCSS(o);
+    return css ? ` style="${css}"` : '';
   };
 
   TB._cards = { mark, heroSymbol, stack, stackWithheld, nvMeter, nvServer, nvLocal, fromArrows, mins, worst, I, battery };
@@ -550,11 +564,17 @@
       text: '#d5dee7', muted: '#8393a3', faint: '#4a5868', glow: '#f0fdfa', acc: '#5eead4', acc2: '#7dd3fc', kind: '#fda4af',
       up: '#4ade80', warn: '#fbbf24', down: '#f87171', unk: '#6b7a8c',
     },
-    // An example user theme: the same renderer, a light palette.
+    // The same renderer, a light palette.
     paper: {
       ink: '#f5f0e6', inkHi: '#ece5d7', sel: '#e4ddcc', key: '#e3dbca', line: '#d3c9b5', track: '#e6dfd0',
       text: '#2a2925', muted: '#6e695d', faint: '#a29c8e', glow: '#ffffff', acc: '#0f766e', acc2: '#1d4ed8', kind: '#be185d',
-      up: '#15803d', warn: '#b45309', down: '#b91c1c', unk: '#8b8678',
+      up: '#15803d', warn: '#b8720a', down: '#b91c1c', unk: '#87929b',
+    },
+    // Pastels on deep indigo.
+    dusk: {
+      ink: '#1a1735', inkHi: '#201c3f', sel: '#2e2959', key: '#2a2650', line: '#3d3869', track: '#252147',
+      text: '#e6e2f8', muted: '#a49ecb', faint: '#68629a', glow: '#fff4fa', acc: '#b4a7fa', acc2: '#8bd3f7', kind: '#f4a7c9',
+      up: '#6ee7b0', warn: '#f7b96b', down: '#f7768e', unk: '#7a759f',
     },
   };
   TB.palettes = PALETTES;

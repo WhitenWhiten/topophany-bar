@@ -173,9 +173,13 @@ Servers sit in different places, and an incident at 3 AM in one place is 6 PM in
 | Theme | Renderer | Tokens |
 |---|---|---|
 | **Native** | `cards` | System materials and colors. Glass, SF Pro, SF Symbols, system green, orange, red and gray, and the accent color for capacity. Light, dark or Match System. |
+| **Aurora** | `cards` | Glass tinted the green-blue of a northern sky: accent `#2DD4BF` / `#0D9488`, a violet second accent, teal-tinted cards and fills. System status colors. Light or dark, as Native. |
+| **Linen** | `cards` | Matte, warm cards set in New York: an ink-blue accent (`#9DB0E8` / `#34509A`), walnut or linen ground, more opaque than glass. System status colors. Light or dark, as Native. |
 | **Terminal** | `cells` | The TUI's palette from `internal/tui/theme.go`: ink `#0A1016`, accent `#5EEAD4`, sky `#7DD3FC`, up `#4ADE80`, warn `#FBBF24`, down `#F87171`, unknown `#6B7A8C`, line `#243443`. It always paints its ink. |
+| **Paper** | `cells` | The TUI printed on warm paper: ink `#F5F0E6`, text `#2A2925`, accent `#0F766E`, up `#15803D`, warn `#B8720A`, down `#B91C1C`, unknown `#87929B`. Always light. |
+| **Dusk** | `cells` | The TUI at nightfall: ink `#1A1735`, text `#E6E2F8`, accent `#B4A7FA`, sky `#8BD3F7`, up `#6EE7B0`, warn `#F7B96B`, down `#F7768E`, unknown `#7A759F`. Always dark. |
 
-The theme applies to the panel, the menu bar item and every widget.
+The theme applies to the panel, the menu bar item and every widget. Settings shows each theme as a chip of its colors, in one line that scrolls when more than fit: its ground, then accent, second accent, up, warning, down and unknown, as the panel would draw it now. Each renderer says what those colors are (`Renderer.colors`). In Edit Widget, a widget can take any built-in theme, or the menu bar's.
 
 ## 7. Widgets
 
@@ -231,28 +235,42 @@ Themes must be able to grow: more built-in themes, and user themes later. So a t
   "appearance": "light",
   "tokens": {
     "ink": "#F5F0E6", "inkHigh": "#ECE5D7", "selection": "#E4DDCC", "key": "#E3DBCA", "line": "#D3C9B5", "track": "#E6DFD0",
-    "text": "#2A2925", "muted": "#6E695D", "faint": "#A29C8E", "accent": "#0F766E", "accent2": "#1D4ED8", "kind": "#BE185D",
-    "up": "#15803D", "warning": "#B45309", "down": "#B91C1C", "unknown": "#8B8678"
+    "text": "#2A2925", "muted": "#6E695D", "faint": "#A29C8E", "glow": "#FFFFFF", "accent": "#0F766E", "accent2": "#1D4ED8",
+    "kind": "#BE185D", "up": "#15803D", "warning": "#B8720A", "down": "#B91C1C", "unknown": "#87929B"
   },
   "font": { "family": "SF Mono", "size": 12 }
 }
 ```
 
+A `cards` theme that follows the system gives its slots per appearance. `dark` and `light` each override `tokens` in that appearance:
+
+```json
+{
+  "schema": 1, "id": "aurora", "name": "Aurora", "renderer": "cards", "appearance": "system",
+  "tokens": {},
+  "dark":  { "accent": "#2DD4BF", "accent2": "#A78BFA", "panelMaterial": "rgba(12, 28, 34, .62)", "card": "rgba(45, 212, 191, .07)" },
+  "light": { "accent": "#0D9488", "accent2": "#7C3AED", "panelMaterial": "rgba(236, 253, 248, .62)", "card": "rgba(240, 253, 250, .7)" },
+  "font": { "family": "SF Pro", "size": 13 }
+}
+```
+
 - **Token slots:**
   - `cells` takes the slots above.
-  - `cards` takes `accent`, `accent2`, `card`, `cardEdge`, `panelMaterial`, `fill`, `fill2`, and optionally the status colors. Missing slots fall back to the system's.
+  - `cards` takes `accent`, `accent2`, `card`, `cardEdge`, `panelMaterial`, `fill`, `fill2`, and optionally the status colors. Missing slots fall back to the system's. When it follows the system, `dark` and `light` may give any slot per appearance.
+- **Type:** `font.family` is SF Pro, SF Pro Rounded or New York for `cards`, which draws SF Pro for any other. `cells` always draws SF Mono, which its grid is measured in. The size is the renderer's, scaled by the Text size setting.
 - **Validation:** a theme is refused, with the reason, unless all of these hold:
   - text on ink is at least 4.5:1;
-  - every pair of status colors differs by at least ΔE 15 (OKLab ×100) to normal vision and at least 8 under simulated color-blindness;
-  - every required slot is present.
+  - every pair of status colors differs by at least ΔE 15 (OKLab ×100) to normal vision, in each appearance it draws in. Under simulated color-blindness, pairs under ΔE 8 are reported as advisories: no green, orange and red palette keeps that margin, and every status has its own shape;
+  - every required slot is present;
+  - only a `cards` theme that follows the system gives `dark` and `light` sets.
 - **What a theme can't change:** glyphs, layout and meaning.
 - **Where themes live:**
   - Built-in themes are compiled in.
   - User themes will be read from `~/Library/Application Support/topophany-bar/Themes/*.json`, then validated and copied into the App Group so widgets draw them too.
-  - v1 ships the loader disabled, but both built-in themes go through the same `Theme` type, so the path is already exercised.
+  - v1 ships the loader disabled, but every built-in theme goes through the same `Theme` type and validator, so the path is already exercised.
 - **Swift types:** `Theme { id, renderer: RendererID, tokens: Tokens }`. `Renderer` is a protocol with `panel(_:)`, `statusItem(_:)` and `widget(_:family:)`, each taking section models and tokens.
 
-The previews include two example user themes, **Aurora** (`cards`) and **Paper** (`cells`), as proof that a token file is a whole theme.
+**Aurora** and **Linen** (`cards`) and **Paper** and **Dusk** (`cells`) are built in, and each is only a token set: proof that a token file is a whole theme.
 
 ## 9. Configuration
 
@@ -437,7 +455,7 @@ How the change is tested and kept safe:
 3. **App complete:**
    - Applications, Servers and This Mac in both modes;
    - the `cells` renderer on `CellCanvas`;
-   - Settings, and the theme store with both built-in themes.
+   - Settings, and the theme store with the built-in themes.
 4. **Widgets:** Status in four sizes, Server in two, the App Group hand-off and the not-current timeline.
 5. **Polish:** VoiceOver, Reduce Transparency and Increase Contrast, keyboard navigation, localization (en, ja, zh), signing, notarization and the cask.
 
