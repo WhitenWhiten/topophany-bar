@@ -3,7 +3,9 @@ import Foundation
 /// Checks a theme (DESIGN.md §8). It is refused, with the reason, unless:
 /// - text on ink is at least 4.5:1;
 /// - every pair of status colors differs by ΔE ≥ 15 (OKLab × 100);
-/// - every required slot is present.
+/// - every required slot is present;
+/// - only a cards theme that follows the system gives slots per
+///   appearance, the one renderer that draws a theme in both.
 ///
 /// Status pairs closer than ΔE 8 under simulated color-blindness are
 /// reported as advisories, not refused: no green, orange and red palette,
@@ -41,8 +43,13 @@ public enum ThemeValidator {
         for slot in required where theme.tokens[slot] == nil {
             problems.append(Problem(description: "missing token \(slot)"))
         }
-        for (slot, value) in theme.tokens where RGBA(css: value) == nil && value != "system" {
-            problems.append(Problem(description: "token \(slot) isn't a color: \(value)"))
+        for (set, tokens) in [("", theme.tokens), ("dark ", theme.dark), ("light ", theme.light)] {
+            for (slot, value) in tokens.sorted(by: { $0.key < $1.key }) where RGBA(css: value) == nil && value != "system" {
+                problems.append(Problem(description: "\(set)token \(slot) isn't a color: \(value)"))
+            }
+        }
+        if !(theme.dark.isEmpty && theme.light.isEmpty), theme.renderer != .cards || theme.appearance != .system {
+            problems.append(Problem(description: "dark and light tokens are for cards themes that follow the system"))
         }
         if !problems.isEmpty { return problems }
 
@@ -56,7 +63,7 @@ public enum ThemeValidator {
         for ap in appearances {
             var status: [(String, RGBA)] = []
             for slot in TokenSlots.status {
-                guard let c = theme.color(slot) ?? systemStatus[ap]?[slot] else { continue }
+                guard let c = theme.color(slot, dark: ap == .dark) ?? systemStatus[ap]?[slot] else { continue }
                 status.append((slot, c))
             }
             for i in 0..<status.count {
@@ -65,7 +72,8 @@ public enum ThemeValidator {
                     let (b, cb) = status[j]
                     let d = deltaE(ca, cb)
                     if d < minimumDelta {
-                        problems.append(Problem(description: String(format: "%@ and %@ differ by ΔE %.1f, under 15", a, b, d)))
+                        let mode = theme.dark.isEmpty && theme.light.isEmpty ? "" : " in \(ap.rawValue)"
+                        problems.append(Problem(description: String(format: "%@ and %@ differ by ΔE %.1f%@, under 15", a, b, d, mode)))
                     }
                     for (name, sim) in ColorBlindness.all {
                         let ds = deltaE(sim(ca), sim(cb))

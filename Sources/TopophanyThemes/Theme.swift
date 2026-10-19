@@ -35,20 +35,27 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
     /// Slot name → color, such as `"ink": "#0A1016"`. A cards theme may
     /// leave slots out; they fall back to the system's.
     public var tokens: [String: String]
+    /// A cards theme that follows the system may give slots per
+    /// appearance: these are drawn in dark, over `tokens`.
+    public var dark: [String: String]
+    /// Drawn in light, over `tokens`.
+    public var light: [String: String]
     public var font: Font?
 
     public init(schema: Int = 1, id: String, name: String, renderer: RendererID, appearance: Appearance,
-                tokens: [String: String], font: Font? = nil) {
+                tokens: [String: String], dark: [String: String] = [:], light: [String: String] = [:], font: Font? = nil) {
         self.schema = schema
         self.id = id
         self.name = name
         self.renderer = renderer
         self.appearance = appearance
         self.tokens = tokens
+        self.dark = dark
+        self.light = light
         self.font = font
     }
 
-    enum CodingKeys: String, CodingKey { case schema, id, name, renderer, appearance, tokens, font }
+    enum CodingKeys: String, CodingKey { case schema, id, name, renderer, appearance, tokens, dark, light, font }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -58,10 +65,32 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
         renderer = try c.decode(RendererID.self, forKey: .renderer)
         appearance = try c.decodeIfPresent(Appearance.self, forKey: .appearance) ?? .system
         tokens = try c.decodeIfPresent([String: String].self, forKey: .tokens) ?? [:]
+        dark = try c.decodeIfPresent([String: String].self, forKey: .dark) ?? [:]
+        light = try c.decodeIfPresent([String: String].self, forKey: .light) ?? [:]
         font = try c.decodeIfPresent(Font.self, forKey: .font)
     }
 
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(schema, forKey: .schema)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(renderer, forKey: .renderer)
+        try c.encode(appearance, forKey: .appearance)
+        try c.encode(tokens, forKey: .tokens)
+        if !dark.isEmpty { try c.encode(dark, forKey: .dark) }
+        if !light.isEmpty { try c.encode(light, forKey: .light) }
+        try c.encodeIfPresent(font, forKey: .font)
+    }
+
+    /// A slot's color in every appearance.
     public func color(_ slot: String) -> RGBA? { tokens[slot].flatMap(RGBA.init(css:)) }
+
+    /// A slot's color in dark or light: that appearance's own, or the
+    /// theme's.
+    public func color(_ slot: String, dark isDark: Bool) -> RGBA? {
+        ((isDark ? dark : light)[slot] ?? tokens[slot]).flatMap(RGBA.init(css:))
+    }
 }
 
 /// The slots each renderer reads.

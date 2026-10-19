@@ -13,6 +13,23 @@ import Testing
         #expect(ThemeStore.native.renderer == .cards)
     }
 
+    /// Only cards draws a theme in both appearances, so only a cards theme
+    /// that follows the system may give slots per appearance.
+    @Test func tokensPerAppearanceAreForCardsThatFollowTheSystem() {
+        let message = "dark and light tokens are for cards themes that follow the system"
+        func refusals(_ json: String) -> [String] {
+            guard case .failure(.refused(let p)) = ThemeStore.load(Data(json.utf8)) else { return [] }
+            return p.map(\.description)
+        }
+        let cells = ThemeStore.terminalJSON.replacingOccurrences(of: "\"tokens\"", with: ##""dark": {"accent": "#FFFFFF"}, "tokens""##)
+        #expect(refusals(cells) == [message])
+        #expect(refusals(##"{"schema":1,"id":"x","renderer":"cards","appearance":"dark","light":{"accent":"#000000"}}"##) == [message])
+        #expect(refusals(#"{"schema":1,"id":"x","renderer":"cards","dark":{"accent":"teal"}}"#) == ["dark token accent isn't a color: teal"])
+        // Status colors are checked in each appearance, with its own.
+        let close = ##"{"schema":1,"id":"x","renderer":"cards","light":{"warning":"#FF3B30"}}"##
+        #expect(refusals(close) == ["warning and down differ by ΔE 0.0 in light, under 15"])
+    }
+
     /// DESIGN.md §8's example token file. Its warning is too close to down and
     /// to unknown for normal vision, so the validator refuses it, with reasons.
     @Test func examplePaperIsRefusedForItsWarningAndDown() {

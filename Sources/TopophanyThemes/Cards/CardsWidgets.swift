@@ -643,7 +643,7 @@ struct CardsWidgetBackground: View {
         let dark = ctx.effectiveScheme == .dark
         if ctx.reduceTransparency {
             Rectangle().fill(dark ? Color(.sRGB, red: 0.13, green: 0.13, blue: 0.15) : Color(.sRGB, red: 0.96, green: 0.96, blue: 0.97))
-        } else if let token = ctx.theme.color("panelMaterial") {
+        } else if let token = ctx.theme.color("panelMaterial", dark: dark) {
             Rectangle().fill(Color(token))
         } else {
             Rectangle().fill(dark ? Color(.sRGB, red: 28 / 255, green: 28 / 255, blue: 34 / 255, opacity: 0.5)

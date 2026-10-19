@@ -27,7 +27,7 @@ struct CardsPalette {
     static func resolve(_ ctx: RenderContext) -> CardsPalette {
         let dark = ctx.effectiveScheme == .dark
         let hc = ctx.increaseContrast
-        func token(_ slot: String) -> Color? { ctx.theme.color(slot).map(Color.init) }
+        func token(_ slot: String) -> Color? { ctx.theme.color(slot, dark: dark).map(Color.init) }
         var p = dark
             ? CardsPalette(isDark: true,
                            l1: Color(white: 1, opacity: 0.92),
