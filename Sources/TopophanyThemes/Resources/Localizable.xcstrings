@@ -1575,6 +1575,22 @@
         }
       }
     },
+    "cached": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャッシュ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缓存"
+          }
+        }
+      }
+    },
     "cached %@": {
       "localizations": {
         "ja": {

@@ -394,7 +394,10 @@ struct CellsPanel: View {
         }
         let st = model.status
         let updated = (st.isBlind ? st.lastKnown?.at : st.updatedAt).map { Words.ago($0, now: st.now, style: .compact) } ?? ""
-        w.box(title(tr("STATUS")), [.t(" " + (st.isBlind ? tr("cached \(updated)") : tr("updated \(updated)")) + " ", p.muted)],
+        // With nothing ever received there is no age, and "cached" stands
+        // alone: Japanese and Chinese put the age before it.
+        let age = st.isBlind ? (updated.isEmpty ? tr("cached") : tr("cached \(updated)")) : tr("updated \(updated)")
+        w.box(title(tr("STATUS")), [.t(" " + age + " ", p.muted)],
               x0: x0, x1: x1, style: .panel, tint: b.statusTint(st)) { w in
             b.status(&w, st, blockHeight: 54)
         }

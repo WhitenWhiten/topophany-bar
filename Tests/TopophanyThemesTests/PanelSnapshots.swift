@@ -73,6 +73,18 @@ import TopophanySections
                                         settings: previewSettings(), local: sampleLocal, here: snapshotHere))
     }
 
+    /// With nothing received there is no age, and "cached" stands alone in
+    /// every language.
+    @Test func terminalCachedWithoutAnAge() {
+        for l in ["en", "ja", "zh-Hans"] {
+            L10n.with(l) {
+                let scene = CellsPanel.scene(waitingPanel(.tooOld), ctx: RenderContext(theme: ThemeStore.terminal))
+                let texts = scene.items.compactMap { if case .text(_, _, let t, _, _) = $0 { t } else { nil } }
+                #expect(texts.contains(" \(tr("cached")) "), "\(l): \(texts.prefix(8))")
+            }
+        }
+    }
+
     /// The reason is never cut: when it doesn't fit beside the keycaps, the
     /// footer grows a line for it.
     @Test func terminalFooterReason() {
