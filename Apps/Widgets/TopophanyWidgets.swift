@@ -166,8 +166,8 @@ enum Timelines {
         }
     }
 
-    /// A Time zones widget's: an hour apart for a day, and at each zone's
-    /// midnight, its clocks live between them.
+    /// A Time zones widget's: one a minute for an hour, each with its
+    /// clocks.
     static func zones(theme choice: ThemeChoice, family: WidgetFamily, key: String) -> [Entry] {
         let now = Date()
         let h = store.read()

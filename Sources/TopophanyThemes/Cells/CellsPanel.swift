@@ -301,13 +301,14 @@ struct CellsBodies {
     /// Each zone in `lines`, every ribbon as wide as the others so the now
     /// ticks line up. `shown` are the zones that fit, `rest` those left
     /// out, counted on a last line with their servers' marks, trouble
-    /// first. Live, the clocks are left to the scene's live text.
+    /// first.
     func zones(_ w: inout CellWriter, _ z: ZonesSection, shown: [ZonesSection.Zone]? = nil, rest: [ZonesSection.Zone] = [],
-               lines: ZoneLines = .two, live: Bool = false, foot: Bool = true) {
+               lines: ZoneLines = .two, foot: Bool = true) {
         let n = w.frame.columns
         let shown = shown ?? z.zones
         // As wide as the widest clock or zone name ("GMT-10", "GMT+5:30"),
-        // and as "12:00 AM", which every clock comes to between reloads.
+        // and as "12:00 AM", so the column holds still from one minute's
+        // entry to the next.
         let tw = shown.map { zone in
             let widest = 5 + (zone.period.isEmpty ? 0 : 1 + CellText.width(zone.period))
             return max(CellText.width(zone.clock), widest, min(CellText.width(zone.zoneName), 9))
@@ -322,12 +323,9 @@ struct CellsBodies {
             }
             return .ribbon(cells, midnights: ZonesSection.midnights(zone), now: p.accent)
         }
-        func clock(_ zone: ZonesSection.Zone, _ w: inout CellWriter) -> Seg {
-            // A day past its reload, the clock would be wrong.
-            if z.isLongPast { return .t(CellText.pad("—", tw), p.faint) }
-            guard live else { return .t(CellText.pad(zone.clock, tw), p.text, bold: true) }
-            w.clocks.append(LiveClock(x: w.frame.x, y: w.y, zone: zone, at: z.now, color: p.text))
-            return .t(String(repeating: " ", count: tw), p.text)
+        func clock(_ zone: ZonesSection.Zone) -> Seg {
+            // Long past its reload, the time isn't known.
+            z.isLongPast ? .t(CellText.pad("—", tw), p.faint) : .t(CellText.pad(zone.clock, tw), p.text, bold: true)
         }
         // Every mark in `room` cells, or as many as fit beside a count of
         // the rest, trouble first, so trouble left out still shows.
@@ -345,7 +343,7 @@ struct CellsBodies {
             for zone in shown {
                 let m = marks(zone.servers, room: 10)
                 let room = n - tw - 2 - m.reduce(0) { $0 + $1.width } - 1 - rw - 1
-                w.line([clock(zone, &w), .t("  ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)],
+                w.line([clock(zone), .t("  ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)],
                        m + [.t(" ", p.text), relative(zone)])
                 // Long past a reload, its now would be an hour gone by.
                 w.line([.t(CellText.pad(CellText.truncate(zone.zoneName, tw), tw), p.faint), .t("  ", p.text)]
@@ -365,11 +363,11 @@ struct CellsBodies {
                 if ribbonCells >= 6 { right += [.t(" ", p.text), ribbon(zone, ribbonCells)] }
                 if withRibbon { right += [.t(" ", p.text), relative(zone)] }
                 let room = n - tw - 1 - right.reduce(0) { $0 + $1.width } - 1
-                w.line([clock(zone, &w), .t(" ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)], right)
+                w.line([clock(zone), .t(" ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)], right)
             }
         case .stacked:
             for zone in shown {
-                w.line([clock(zone, &w)], marks(zone.servers, room: max(1, n - tw - 1 - rw - 1)) + [.t(" ", p.text), relative(zone)])
+                w.line([clock(zone)], marks(zone.servers, room: max(1, n - tw - 1 - rw - 1)) + [.t(" ", p.text), relative(zone)])
                 w.line([.t("  " + CellText.truncate(zone.title, max(1, n - 2)), p.text)])
             }
         }

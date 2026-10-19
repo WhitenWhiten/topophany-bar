@@ -33,9 +33,7 @@ struct CellsWidget: View {
         case .server: l.server(size)
         case .zones: l.zones(size)
         }
-        var scene = CellScene(size: bounds, metrics: m, items: l.w.items, live: l.w.live)
-        scene.clocks = l.w.clocks
-        return scene
+        return CellScene(size: bounds, metrics: m, items: l.w.items, live: l.w.live)
     }
 
     /// Lays out one widget, top to bottom.
@@ -220,7 +218,6 @@ struct CellsWidget: View {
             let fits = z.zones.count * per + extra <= room
             let (shown, rest) = fits ? (z.zones, []) : z.cut(keeping: max(1, (room - 1) / per))
             let b = self.b
-            let live = ctx.liveDates
             let lines: CellsBodies.ZoneLines = switch size {
             case .small: .stacked
             case .medium: .one(ribbon: true)
@@ -228,7 +225,7 @@ struct CellsWidget: View {
             }
             w.box(title(tr("TIME ZONES"), "\(z.zones.count)"), size == .small ? [] : [.t(" " + tr("\(z.serverCount) servers") + " ", p.muted)],
                   x0: x0, x1: x1, style: style) { w in
-                b.zones(&w, z, shown: shown, rest: rest, lines: lines, live: live,
+                b.zones(&w, z, shown: shown, rest: rest, lines: lines,
                         foot: !rest.isEmpty || (extra > 0 && shown.count * per + 1 <= room))
             }
         }

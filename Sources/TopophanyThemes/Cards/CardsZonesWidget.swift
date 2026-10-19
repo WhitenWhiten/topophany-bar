@@ -2,27 +2,17 @@ import Foundation
 import SwiftUI
 import TopophanySections
 
-/// A zone's clock: counting up live in a widget, where WidgetKit turns it
-/// each minute without a reload; as of the model's time in a snapshot. Its
-/// period turns with the hour, at an entry. A day past its reload, a dash.
+/// A zone's clock, as of its entry: the timeline has one each minute.
+/// Long past its reload, a dash.
 struct ZoneClock: View {
     enum Part { case time, period }
 
     var zone: ZonesSection.Zone
     var part: Part
-    var live: Bool
-    /// The entry's time.
-    var at: Date
     var isLongPast = false
 
     var body: some View {
-        if isLongPast {
-            Text(verbatim: part == .time ? "—" : "")
-        } else if live, part == .time {
-            LiveZoneTime(zone: zone, at: at)
-        } else {
-            Text(verbatim: part == .time ? zone.time : zone.period)
-        }
+        Text(verbatim: isLongPast ? (part == .time ? "—" : "") : part == .time ? zone.time : zone.period)
     }
 }
 
@@ -37,7 +27,6 @@ struct WidgetZones: View {
     var room: CGSize
     var p: CardsPalette
     var t: CardsType
-    var live: Bool
 
     var compact: Bool { size == .small }
     /// The least a row takes; with room to spare, rows spread up to half as
@@ -102,7 +91,7 @@ struct WidgetZones: View {
     }
 
     func clock(_ z: ZonesSection.Zone, _ part: ZoneClock.Part) -> ZoneClock {
-        ZoneClock(zone: z, part: part, live: live, at: zones.now, isLongPast: zones.isLongPast)
+        ZoneClock(zone: z, part: part, isLongPast: zones.isLongPast)
     }
 
     var meta: String { Words.join([tr("\(zones.zones.count) zones"), tr("\(zones.serverCount) servers")]) }
@@ -215,7 +204,7 @@ struct WidgetZones: View {
     }
 
     func spoken(_ shown: [ZonesSection.Zone]) -> String {
-        shown.map { z in Words.join([z.title, live ? "" : z.clock, z.relative, tr("\(z.servers.count) servers")]) }
+        shown.map { z in Words.join([z.title, zones.isLongPast ? "" : z.clock, z.relative, tr("\(z.servers.count) servers")]) }
             .joined(separator: ". ")
     }
 }

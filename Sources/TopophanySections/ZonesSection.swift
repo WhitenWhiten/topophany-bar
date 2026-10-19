@@ -70,8 +70,8 @@ public struct ZonesSection: Sendable, Hashable {
     /// The marks are from the last list, every one withheld.
     public var isCurrent: Bool
     public var now: Date
-    /// A day past its last reload, a widget's clocks, ribbons and days are
-    /// of a time gone by: only its offsets and places are drawn.
+    /// Past its last entry, a widget's clocks, ribbons and days are of a
+    /// time gone by: only its offsets and places are drawn.
     public var isLongPast = false
 
     public init(zones: [Zone], serverCount: Int, unplaced: Int, isCurrent: Bool, now: Date) {

@@ -187,7 +187,7 @@ Servers sit in different places, and an incident at 3 AM in one place is 6 PM in
 - **Health:** the marks are `topo`'s and nothing else. A zone row has no health of its own. When the list isn't current, the clocks go on and every mark is withheld (◌).
 - **Without `servers.list`:** the pinned servers' cards stand in.
 - **Server cards** (Servers, and This Mac as a server) add the time where the server is after its place, by the same zones. It never truncates; the provider gives way first. The Server widget leaves it out; the Time zones widget keeps the clocks.
-- **The widget:** Time zones, small, medium and large (section 7.1), shows the section whether the panel does or not. Its clocks turn each minute without a reload: WidgetKit keeps only its own formats live, so each clock is the system's count, from as many hours before its hour began as it shows, its seconds clipped away. An entry at each of a zone's hours sets its clock again, moves the ribbons and, at its midnight, turns its day. Its drawing is shapes and fills only: a layer clipped inside a canvas doesn't survive a widget's archive. As many zones as fit are drawn, This Mac's always among them, and the rest are counted at the foot ("+2 more") with their servers' marks, trouble first.
+- **The widget:** Time zones, small, medium and large (section 7.1), shows the section whether the panel does or not. Its clocks are plain text, set by an entry each minute: a widget keeps another zone's time live only as a timer with its seconds, and a timer clipped to its minutes isn't drawn at all. Its drawing is shapes and fills only: a layer clipped inside a canvas doesn't survive a widget's archive. As many zones as fit are drawn, This Mac's always among them, and the rest are counted at the foot ("+2 more") with their servers' marks, trouble first.
 - **Terminal:** two lines per zone. The ribbon is one cell per stretch of hours, in the palette's own night and day tones, and now is the accent.
 
 ## 6. Themes in v1
@@ -244,7 +244,7 @@ Each reload gives WidgetKit two timeline entries:
 
 If the app quits, crashes or the Mac sleeps through a renewal, the widget switches itself to **Not current**. It shows the last verdict as history ("Last known: 5 incidents · 47 min ago"), never as now. The widget's age line uses WidgetKit's relative date, which counts up without reloads.
 
-A Time zones widget's timeline is longer: an entry at each hour of each zone for a day, on the half hour where a zone is offset by one. WidgetKit draws every entry ahead, so there are no more than that. Its marks are current until the same moment, then withheld (◌), and the clocks go on. Past the day, the last entry draws places and offsets alone, its clocks "—": a clock counts within its hour, and there are no more hours to set it.
+A Time zones widget's timeline is longer: an entry each minute for an hour, twice the heartbeat, so a reload always comes first while the app runs. Its marks are current until the same moment as the others', then withheld (◌), and the clocks go on. Past the hour, the last entry draws places and offsets alone, its clocks "—".
 
 ### 7.4 Rendering modes
 

@@ -15,18 +15,16 @@ public enum WidgetSchedule {
         h.writtenAt.addingTimeInterval(h.heartbeat + grace)
     }
 
-    /// A Time zones widget's clocks count up live within each zone's hour;
-    /// its day ribbons move a step this often. WidgetKit draws every entry
-    /// ahead, so each one costs.
-    public static let zonesStep: TimeInterval = 3600
-    /// How far ahead its entries reach. Without a reload in that time, the
-    /// last entry draws the clocks alone.
-    public static let zonesSpan: TimeInterval = 24 * 3600
+    /// A Time zones widget's clocks are set by its entries, one a minute:
+    /// WidgetKit keeps no other time of another zone's live.
+    public static let zonesStep: TimeInterval = 60
+    /// How far ahead its entries reach: twice the heartbeat, so a reload
+    /// comes well before the last. Past it, the time isn't known.
+    public static let zonesSpan: TimeInterval = 2 * heartbeat
 
-    /// A Time zones widget's entries: one at each hour of each zone, where
-    /// its clock is set again and, at midnight, its day turns; current
-    /// until the next heartbeat plus the grace and history after it, the
-    /// clocks going on. Past the span, places and offsets alone.
+    /// A Time zones widget's entries: one at each minute, current until the
+    /// next heartbeat plus the grace and history after it, the clocks going
+    /// on. Past the span, places and offsets alone, the clocks "—".
     public static func zonesEntries(_ h: Handoff?, at now: Date, here: TimeZone = .autoupdatingCurrent)
         -> [(date: Date, panel: PanelModel, isCurrent: Bool)] {
         guard let h else {
@@ -39,17 +37,6 @@ public enum WidgetSchedule {
         let first = (now.timeIntervalSinceReferenceDate / zonesStep).rounded(.down) * zonesStep + zonesStep
         var dates = Set([now] + stride(from: first, to: end.timeIntervalSinceReferenceDate, by: zonesStep)
             .map { Date(timeIntervalSinceReferenceDate: $0) })
-        let zones = WidgetModel(kind: .zones, panel: h.panel(zonesAt: now, here: here)).zones?.zones ?? []
-        for zone in zones {
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = zone.timeZone
-            var d = now
-            while let hour = calendar.nextDate(after: d, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime),
-                  hour < end {
-                dates.insert(hour)
-                d = hour
-            }
-        }
         if stale > now, stale < end { dates.insert(stale) }
         var out = dates.sorted().map { d -> (date: Date, panel: PanelModel, isCurrent: Bool) in
             let p = h.panel(zonesAt: d, here: here)

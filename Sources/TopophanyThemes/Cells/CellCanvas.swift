@@ -81,24 +81,12 @@ public struct LiveAge: Sendable {
     public var background: RGBA?
 }
 
-/// A zone's clock that turns on its own, as a widget's must between
-/// reloads: set as live text over the scene, from `x`, on the line at `y`.
-public struct LiveClock: Sendable {
-    public var x: Double
-    public var y: Double
-    public var zone: ZonesSection.Zone
-    /// The entry's time.
-    public var at: Date
-    public var color: RGBA
-}
-
 /// A drawn grid of styled cells and the TUI's vector pieces.
 public struct CellScene: Sendable {
     public var size: CGSize
     public var metrics: CellMetrics
     public var items: [CellItem] = []
     public var live: [LiveAge] = []
-    public var clocks: [LiveClock] = []
     /// Named y positions, such as where a pinned part ends.
     public var marks: [String: Double] = [:]
     /// Named areas, such as a keycap and its label.
@@ -173,24 +161,6 @@ public struct CellCanvas: View {
             }
         }
         .frame(width: scene.size.width, height: scene.size.height)
-        .overlay(alignment: .topLeading) {
-            // Placed by padding, as layout, rather than shifted when drawn.
-            ForEach(Array(scene.clocks.enumerated()), id: \.offset) { _, c in
-                HStack(spacing: 0) {
-                    LiveZoneTime(zone: c.zone, at: c.at)
-                    // The period turns with the hour, at an entry.
-                    if !c.zone.period.isEmpty { Text(verbatim: " " + c.zone.period) }
-                }
-                .font(Self.font(scene.metrics, bold: true))
-                .foregroundStyle(Color(c.color))
-                .lineLimit(1)
-                .fixedSize()
-                .frame(height: scene.metrics.line)
-                .padding(.leading, c.x)
-                .padding(.top, c.y)
-                .frame(width: scene.size.width, height: scene.size.height, alignment: .topLeading)
-            }
-        }
         .overlay(alignment: .topLeading) {
             ForEach(Array(scene.live.enumerated()), id: \.offset) { _, a in
                 Text(.currentDate, format: .reference(to: a.date, allowedFields: [.minute, .hour, .day], maxFieldCount: 1))

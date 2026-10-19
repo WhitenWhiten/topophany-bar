@@ -164,36 +164,39 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
     }
 
     /// Three zones as a real topology names them, in Chinese places on a
-    /// Japanese Mac, drawn live as on the desktop.
-    func asianZones() -> WidgetModel {
-        func zone(_ id: String, _ places: [String], _ marks: [Mark], here: Bool, hour: Double, time: String, name: String,
-                  relative: String, day: String) -> ZonesSection.Zone {
+    /// Japanese Mac, drawn as on the desktop.
+    /// On a 12-hour clock in Chinese, each time with its period of the day.
+    func asianZones(twelveHour: Bool = false) -> WidgetModel {
+        func zone(_ id: String, _ places: [String], _ marks: [Mark], here: Bool, hour: Double, time: String, period: String,
+                  name: String, relative: String, day: String) -> ZonesSection.Zone {
             let tz = TimeZone(identifier: id)!
             return .init(timeZone: tz, places: places,
                          servers: marks.enumerated().map { .init(id: "\(id)-\($0.offset)", name: "n", mark: $0.element) },
-                         isHere: here, offset: tz.secondsFromGMT(for: snapshotOrigin), hour: hour, time: time, period: "",
-                         zoneName: name, relative: relative, day: day)
+                         isHere: here, offset: tz.secondsFromGMT(for: snapshotOrigin), hour: hour, time: time,
+                         period: twelveHour ? period : "", zoneName: name, relative: relative, day: day)
         }
         let z = ZonesSection(zones: [
-            zone("America/Los_Angeles", ["洛杉矶", "加利福尼亚"], [.up, .up, .up, .up], here: true, hour: 11.43, time: "11:26",
-                 name: "GMT-7", relative: "現在地", day: ""),
-            zone("Asia/Shanghai", ["杭州", "北京", "华为云"], [.up, .up], here: false, hour: 2.43, time: "2:26", name: "GMT+8",
-                 relative: "+15時間", day: "明日"),
-            zone("Asia/Tokyo", ["湖北", "东京"], [.up, .offline, .up, .up, .offline], here: false, hour: 3.43, time: "3:26",
-                 name: "JST", relative: "+16時間", day: "明日"),
-        // Dated now, as an entry is: the clocks count up from it.
-        ], serverCount: 13, unplaced: 2, isCurrent: true, now: Date())
+            zone("America/Los_Angeles", ["洛杉矶", "加利福尼亚"], [.up, .up, .up, .up], here: true, hour: 12.22,
+                 time: "12:13", period: "中午", name: "GMT-7", relative: "現在地", day: ""),
+            zone("Asia/Shanghai", ["杭州", "北京", "华为云"], [.up, .up], here: false, hour: 3.22, time: "3:13", period: "凌晨",
+                 name: "GMT+8", relative: "+15時間", day: "明日"),
+            zone("Asia/Tokyo", ["湖北", "东京"], [.up, .offline, .up, .up, .offline], here: false, hour: 4.22, time: "4:13",
+                 period: "凌晨", name: "JST", relative: "+16時間", day: "明日"),
+        ], serverCount: 13, unplaced: 2, isCurrent: true, now: snapshotOrigin)
         var panel = previewPanel(.clear, settings: previewSettings(mac: .off))
         panel.sections = [.zones(z)]
         return WidgetModel(kind: .zones, panel: panel)
     }
 
-    @Test func zonesLive() throws {
-        try L10n.with("ja") {
-            for theme in [ThemeStore.paper, ThemeStore.native] {
-                for (size, n) in Self.sizes where size != .extraLarge {
-                    try snapshot("widget-zones-live-\(theme.id)-\(n)-1080",
-                                 onDesktop(asianZones(), size, bounds: Self.smaller[size], theme: theme, dark: true, live: true))
+    @Test func zonesJapanese() throws {
+        for (l, name, twelve) in [("ja", "ja", false)] {
+            try L10n.with(l) {
+                for theme in [ThemeStore.paper, ThemeStore.native] {
+                    for (size, n) in Self.sizes where size != .extraLarge {
+                        try snapshot("widget-zones-\(name)-\(theme.id)-\(n)-1080",
+                                     onDesktop(asianZones(twelveHour: twelve), size, bounds: Self.smaller[size], theme: theme,
+                                               dark: true, live: true))
+                    }
                 }
             }
         }
@@ -213,12 +216,14 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
                         "\(size) \(bounds)")
             }
         }
-        // Live, the clocks are left to live text, one a zone.
+        // On the desktop too, each clock is its entry's text.
         var ctx = RenderContext(theme: ThemeStore.terminal)
         ctx.liveDates = true
         let live = CellsWidget.scene(zones(), size: .large, bounds: CGSize(width: 364, height: 364), ctx: ctx)
-        #expect(live.clocks.count == 5)
-        #expect(!live.items.contains { if case .text(_, _, let t, _, _) = $0 { t.contains("AM") || t.contains("PM") } else { false } })
+        let texts = live.items.compactMap { if case .text(_, _, let t, _, _) = $0 { t } else { nil } }
+        for zone in try #require(zones().zones?.zones) {
+            #expect(texts.contains { $0.hasPrefix(zone.clock) }, "\(zone.clock)")
+        }
     }
 
     @Test func monochrome() throws {

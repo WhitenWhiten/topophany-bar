@@ -136,7 +136,6 @@ struct CellWriter {
     var y: Double = 0
     var items: [CellItem] = []
     var live: [LiveAge] = []
-    var clocks: [LiveClock] = []
     /// Where the keyboard's focus is drawn.
     var focused: CGRect?
     var frame: Frame

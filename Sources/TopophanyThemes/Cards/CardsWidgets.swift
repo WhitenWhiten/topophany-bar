@@ -22,7 +22,7 @@ struct CardsWidget: View {
             case .zones:
                 if let z = model.zones {
                     WidgetZones(zones: z, size: size, room: CGSize(width: bounds.width - 28, height: bounds.height - 28),
-                                p: p, t: t, live: ctx.liveDates)
+                                p: p, t: t)
                 }
             }
         }
