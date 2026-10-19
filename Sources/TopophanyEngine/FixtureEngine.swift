@@ -21,6 +21,12 @@ public final class FixtureEngine: Engine {
         public var loops: Bool { self != .stale && self != .stopped }
     }
 
+    /// The profiles a fixture launch offers, as `--profiles` would list them.
+    public static let profiles = ProfileList(profiles: [
+        .init(name: "home", project: "homelab", active: true),
+        .init(name: "work", project: "acme"),
+    ])
+
     public static let anchor = Timestamp.parse("2026-10-18T13:30:00Z")!
 
     private struct Item: Sendable {

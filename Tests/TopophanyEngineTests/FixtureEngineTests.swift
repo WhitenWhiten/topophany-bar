@@ -58,6 +58,21 @@ func frames(_ events: [EngineEvent]) -> [Frame] {
         }
     }
 
+    @Test func listsServersWhenAsked() {
+        var s = Settings()
+        s.sections.servers = true
+        let asked = TemplateCompiler().request(for: s, revision: 1, listServers: true)
+        let r = FixtureEngine.reading(.incidents, request: asked, origin: t, after: 4)
+        guard let row = r.row(TemplateCompiler.RowID.servers), case .servers(let list) = r.lastValue(of: row) else {
+            Issue.record("no server list")
+            return
+        }
+        #expect(list.count == 11)
+        #expect(list.first { $0.id == "bwh-la" }?.note == "affected")
+        let plain = FixtureEngine.reading(.incidents, request: TemplateCompiler().request(for: s, revision: 1), origin: t, after: 4)
+        #expect(plain.row(TemplateCompiler.RowID.servers) == nil)
+    }
+
     @Test func replaysAgainstTheClock() async {
         let clock = ManualClock(t)
         let e = FixtureEngine(scenario: .clear, clock: clock, tick: nil)

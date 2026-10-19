@@ -181,6 +181,16 @@ public final class ProcessEngine: Engine {
         return .success(caps)
     }
 
+    /// `topo monitor stream --profiles`: the saved profiles, by name and
+    /// project. Only for a `topo` whose capabilities say it's served.
+    public static func profiles(_ path: String, timeout: TimeInterval = 5) -> ProfileList? {
+        guard let out = Subprocess.run(path, ["monitor", "stream", "--profiles"], timeout: timeout), out.status == 0 else {
+            return nil
+        }
+        let line = out.stdout.split(separator: 0x0A).first.map { Data($0) } ?? Data()
+        return try? JSONDecoder().decode(ProfileList.self, from: line)
+    }
+
     /// Runs one process to its end. Returns why it ended.
     private func runOnce(path: String, version: String) -> String {
         let p = Process()
