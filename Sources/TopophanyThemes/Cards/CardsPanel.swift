@@ -13,10 +13,12 @@ struct CardsPanel: View {
     var t: CardsType { CardsType(scale: ctx.scale, theme: ctx.theme) }
 
     nonisolated static let radius = 18.0
+    /// Between cards.
+    static let gap = 6.0
 
     var body: some View {
         let p = self.p
-        VStack(spacing: 7) {
+        VStack(spacing: Self.gap) {
             CardsHeader(chrome: model.chrome, p: p, t: t)
             if model.pinStatus, ctx.maxHeight != nil {
                 CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t)
@@ -44,7 +46,7 @@ struct CardsPanel: View {
     /// than the screen allows.
     func scrolling(_ p: CardsPalette) -> some View {
         ScrollView(.vertical) {
-            VStack(spacing: 7) { sections(p) }
+            VStack(spacing: Self.gap) { sections(p) }
                 .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
         }
         .scrollIndicators(.automatic)
@@ -189,7 +191,7 @@ struct CardsFooter: View {
 
 struct Card<Content: View>: View {
     var p: CardsPalette
-    var padding = EdgeInsets(top: 9, leading: 11, bottom: 10, trailing: 11)
+    var padding = EdgeInsets(top: 8, leading: 11, bottom: 9, trailing: 11)
     var tint: Color?
     @ViewBuilder var content: Content
 
@@ -224,7 +226,7 @@ struct CardTitle: View {
             Text(meta).font(t.font(11, .medium)).foregroundStyle(p.l3).lineLimit(1)
         }
         .foregroundStyle(p.l2)
-        .padding(.bottom, 7)
+        .padding(.bottom, 6)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
     }
@@ -393,6 +395,23 @@ struct FocusRing: ViewModifier {
     }
 }
 
+/// A row that opens something lights faintly under the pointer, as far
+/// out as the keyboard's focus does.
+struct HoverRow: ViewModifier {
+    var p: CardsPalette
+    @State private var hover = false
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                if hover {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous).fill(p.fill2).padding(.horizontal, -5)
+                }
+            }
+            .onHover { hover = $0 }
+    }
+}
+
 struct CardsSeen: View {
     var seen: SeenFromSection
     var p: CardsPalette
@@ -452,7 +471,8 @@ struct CardsAttention: View {
             ForEach(Array(attention.items.enumerated()), id: \.element.id) { i, a in
                 if i > 0 { Rectangle().fill(p.sep).frame(height: 0.5) }
                 row(a)
-                    .padding(.top, i == 0 ? 1 : 6.5).padding(.bottom, 6.5)
+                    .padding(.top, i == 0 ? 1 : 5.5).padding(.bottom, 5.5)
+                    .modifier(HoverRow(p: p))
                     .modifier(FocusRing(on: focus == "attention:" + a.id, p: p))
             }
             if attention.more > 0 {
@@ -464,11 +484,13 @@ struct CardsAttention: View {
                     }
                     .font(t.font(11.5, .medium)).foregroundStyle(p.accent)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 7)
+                    .padding(.vertical, 3)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .modifier(HoverRow(p: p))
                 .modifier(FocusRing(on: focus == "attention:more", p: p))
+                .padding(.top, 4)
             }
         }
     }
@@ -526,7 +548,7 @@ struct CardsApplications: View {
                         .frame(width: 96 * t.scale, alignment: .trailing)
                 }
                 .font(t.font(12.5)).foregroundStyle(p.l1)
-                .padding(.vertical, 3.1)
+                .padding(.vertical, 2.5)
                 .opacity(apps.isCurrent ? 1 : 0.55)
                 .modifier(FocusRing(on: focus == "app:" + a.id, p: p))
                 .accessibilityElement(children: .combine)
@@ -619,7 +641,7 @@ struct CardsZones: View {
                         middle(z).padding(.horizontal, 10)
                         right(z).gridColumnAlignment(.trailing)
                     }
-                    .padding(.top, i == 0 ? 1 : 5).padding(.bottom, 5)
+                    .padding(.top, i == 0 ? 1 : 4.5).padding(.bottom, 4.5)
                 }
             }
             if zones.unplaced > 0 {
@@ -737,7 +759,7 @@ struct CardsLocal: View {
             CardTitle(symbol: macSymbol(local.model), title: tr("This Mac"),
                       meta: Words.join([local.model, tr("local readings")]), p: p, t: t)
             let tiles = Array(tilesList.enumerated())
-            Grid(horizontalSpacing: 6, verticalSpacing: 6) {
+            Grid(horizontalSpacing: 5, verticalSpacing: 5) {
                 ForEach(0..<((tiles.count + 1) / 2), id: \.self) { r in
                     GridRow {
                         tiles[r * 2].element

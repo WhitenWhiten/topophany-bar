@@ -117,7 +117,7 @@ The header shows the mark, the project and view, Open in Terminal (⌘O) and Set
 
 Size:
 
-- **Native:** 344 pt wide.
+- **Native:** 344 pt wide, cards 6 pt apart. Rows that open something (attention entries, "*N* more") light faintly under the pointer, as far out as the keyboard's focus.
 - **Terminal:** 48 columns of SF Mono 12 inside 7 pt margins.
 - **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls.
 

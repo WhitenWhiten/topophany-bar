@@ -15,11 +15,11 @@ struct CardsFleet: View {
         Card(p: p) {
             CardTitle(symbol: "square.grid.2x2", title: tr("Fleet"),
                       meta: Words.join([tr("\(fleet.nodeCount) servers"), tr("\(fleet.providerCount) providers")]), p: p, t: t)
-            FleetGrid(groups: fleet.edges, isCurrent: fleet.isCurrent, p: p, t: t, marks: marks)
+            FleetGrid(groups: fleet.edges, isCurrent: fleet.isCurrent, p: p, t: t, marks: marks, spacing: 5.5)
             if !fleet.edges.isEmpty, !fleet.servers.isEmpty {
-                Rectangle().fill(p.sep).frame(height: 0.5).padding(.top, 7).padding(.bottom, 7)
+                Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 6)
             }
-            FleetGrid(groups: fleet.servers, isCurrent: fleet.isCurrent, p: p, t: t, marks: marks)
+            FleetGrid(groups: fleet.servers, isCurrent: fleet.isCurrent, p: p, t: t, marks: marks, spacing: 5.5)
         }
     }
 }
