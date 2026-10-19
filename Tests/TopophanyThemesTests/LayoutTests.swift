@@ -18,4 +18,21 @@ import Testing
         #expect(CellText.route(route, 7) == "Primar…")
         #expect(CellText.route(["Direct entry to BandwagonHost"], 17) == "Direct entry to…")
     }
+
+    @Test func checkGrids() throws {
+        // 68 checks fill four rows of a small widget's column.
+        let small = try #require(CheckGrid.cells(68, in: CGSize(width: 142, height: 34)))
+        #expect(small.rows == 4 && small.columns == 17)
+        #expect(small.size.width <= 142 + 1e-9 && small.size.height <= 34 + 1e-9)
+        #expect(abs(small.side - small.width) < 1e-9)
+        // A few checks keep one row, spread across it.
+        let few = try #require(CheckGrid.cells(10, in: CGSize(width: 142, height: 34)))
+        #expect(few.rows == 1 && few.side == 7.5)
+        // Rows stay about as evenly spaced across as down.
+        let mid = try #require(CheckGrid.cells(20, in: CGSize(width: 142, height: 34)))
+        #expect(mid.rows == 1)
+        // More marks than can be read: the stacked bar instead.
+        #expect(CheckGrid.cells(400, in: CGSize(width: 142, height: 34)) == nil)
+        #expect(CheckGrid.cells(0, in: CGSize(width: 142, height: 34)) == nil)
+    }
 }

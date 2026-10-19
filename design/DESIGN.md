@@ -185,8 +185,10 @@ Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary
 
 | Kind | Small 170×170 | Medium 364×170 | Large 364×364 | Extra large 752×364 |
 |---|---|---|---|---|
-| **Status** | verdict, bar, observers, age | Status, plus Needs attention (or Applications when nothing needs attention) | Status with legend, Seen from, Needs attention | Large, plus Applications and pinned Servers |
+| **Status** | verdict, a mark per check, observers, age | Status, plus Needs attention (or Applications when nothing needs attention) | Status with legend, Seen from, Needs attention | Large, plus Applications and pinned Servers |
 | **Server** | one node: CPU, memory and disk against limits, state, age | plus its services and what it observes from there | n/a | n/a |
+
+- **A mark per check.** In a narrow column (the small widget, and the medium widget's left), the bar's ticks wrap into a grid: every check as its mark, filled a column at a time in the bar's order, so trouble gathers at the right as it does on the bar. Up is quieter than trouble. Past what can be read, the stacked bar.
 
 Every widget is built from the same section models and the same renderer as the panel, in the same theme. In the cells renderer they become the TUI's boxes at 11 pt. In **Edit Widget**, users choose what a widget shows (the medium widget's right side; the server, including This Mac) and its theme (default: the same as the bar). They never choose what it means. Clicking a widget opens the panel; clicking an attention row opens the TUI on it.
 

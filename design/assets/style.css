@@ -448,6 +448,10 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .w-status.big .w-title b { font-size: 18px; }
 .w-status.big .nv-ticks, .w-status.big .nv-runs { margin: 12px 0 7px; }
 .nv-stack.withheld { background: repeating-linear-gradient(135deg, var(--fill) 0 3px, transparent 3px 6px); }
+.w-checks { height: 34px; margin-bottom: 8px; flex: none; }
+.w-checks > svg { display: block; overflow: visible; }
+.w-checks .mk-up { opacity: .55; }
+.wdg.vibrant .w-checks .mk-up { opacity: .4; }
 .w-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--l3); }
 .w-foot span { display: inline-flex; align-items: center; gap: 4px; }
 .w-foot svg { width: 11px; height: 11px; }

@@ -33,19 +33,10 @@ struct CardsWidget: View {
         let w = WidgetStatus(status: model.status, p: p, t: t, ctx: ctx)
         switch size {
         case .small:
-            VStack(alignment: .leading, spacing: 0) {
-                w.compact
-                Spacer(minLength: 0)
-                w.foot(wide: false)
-            }
+            narrow(w)
         case .medium:
             HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 0) {
-                    w.compact
-                    Spacer(minLength: 0)
-                    w.foot(wide: false)
-                }
-                .frame(width: 136)
+                narrow(w).frame(width: 136)
                 right(p, attentionRows: 3, appRows: 6)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -66,6 +57,17 @@ struct CardsWidget: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+        }
+    }
+
+    /// The verdict in a narrow column: the checks fill the room between
+    /// its words and the foot.
+    func narrow(_ w: WidgetStatus) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            w.compact
+            w.checks.padding(.bottom, 8).layoutPriority(1)
+            Spacer(minLength: 0)
+            w.foot(wide: false)
         }
     }
 
@@ -164,10 +166,21 @@ struct WidgetStatus {
                 .padding(.top, 10)
             Text(status.shortSubtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
                 .padding(.top, 2).padding(.bottom, 9)
-            bar
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(Words.join([status.title, status.shortSubtitle])))
+    }
+
+    /// Every check in the room it's given, a mark each; withheld while
+    /// blind.
+    @ViewBuilder var checks: some View {
+        if !status.isBlind, let c = status.counts?.complete {
+            CheckGrid(counts: c, palette: p, vibrant: ctx.widgetRendering == .vibrant)
+                .frame(maxHeight: 34)
+                .accessibilityHidden(true)
+        } else {
+            bar
+        }
     }
 
     var big: some View {
@@ -239,6 +252,83 @@ struct WidgetStatus {
         .font(t.font(10.5)).foregroundStyle(p.l3)
         .lineLimit(1)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// The panel's ticks, wrapped into a grid for a narrow column: every
+/// check as its mark, filled a column at a time in the bar's order (up,
+/// warn, down, unknown), so trouble gathers at the right as it does on the
+/// bar. Up is quieter than trouble. Past what can be told apart, the
+/// stacked bar.
+struct CheckGrid: View {
+    var counts: (up: Int, warning: Int, down: Int, unknown: Int)
+    var palette: CardsPalette
+    /// Monochrome keeps shape and weight only, so up is quieter still.
+    var vibrant = false
+
+    struct Cells: Equatable {
+        var rows: Int
+        var columns: Int
+        var width: Double
+        /// A mark's size, at most the cell's width.
+        var side: Double
+
+        static let gap = 1.5
+
+        var size: CGSize {
+            CGSize(width: Double(columns) * width + Double(columns - 1) * Self.gap,
+                   height: Double(rows) * side + Double(rows - 1) * Self.gap)
+        }
+    }
+
+    /// The largest marks that hold `n` checks in `size`, spaced about as
+    /// evenly across as down, or nil when they'd be too small to read.
+    static func cells(_ n: Int, in size: CGSize) -> Cells? {
+        guard n > 0 else { return nil }
+        let gap = Cells.gap
+        var best: Cells?
+        for rows in 1...min(8, n) {
+            let columns = (n + rows - 1) / rows
+            let width = (size.width - gap * Double(columns - 1)) / Double(columns)
+            let side = min(width, 7.5, (size.height - gap * Double(rows - 1)) / Double(rows))
+            guard side >= 3.5, rows == 1 || width <= 1.5 * side, side > (best?.side ?? 0) + 0.01 else { continue }
+            best = Cells(rows: rows, columns: columns, width: width, side: side)
+        }
+        return best
+    }
+
+    var total: Int { counts.up + counts.warning + counts.down + counts.unknown }
+
+    var body: some View {
+        GeometryReader { g in
+            if let c = Self.cells(total, in: g.size) {
+                grid(c).frame(width: c.size.width, height: c.size.height)
+            } else {
+                StackBar(counts: counts, palette: palette)
+            }
+        }
+    }
+
+    func grid(_ c: Cells) -> some View {
+        let p = palette
+        let n = counts
+        let up = p.up.opacity(vibrant ? 0.4 : 0.55)
+        return Canvas { ctx, _ in
+            var k = 0
+            func draw(_ count: Int, _ mark: Mark, _ color: Color) {
+                for _ in 0..<count {
+                    var m = ctx
+                    m.translateBy(x: Double(k / c.rows) * (c.width + Cells.gap) + (c.width - c.side) / 2,
+                                  y: Double(k % c.rows) * (c.side + Cells.gap))
+                    CardMark.draw(mark, in: m, size: c.side, color: color)
+                    k += 1
+                }
+            }
+            draw(n.up, .up, up)
+            draw(n.warning, .degraded, p.warn)
+            draw(n.down, .down, p.down)
+            draw(n.unknown, .unknown, p.unknown)
+        }
     }
 }
 

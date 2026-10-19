@@ -23,11 +23,38 @@
   // The status bar's width in each layout: the widget's, the left column's.
   const BAR = { s: 142, m: 136, l: 336, xl: 350 };
 
+  // In a narrow column the bar's ticks wrap into a grid: every check as its
+  // mark, a column at a time in the bar's order, so trouble gathers at the
+  // right. Past what can be read, the stacked bar.
+  function checkGrid(c, width, height = 34) {
+    const n = c.up + c.warn + c.down + c.unknown;
+    const gap = 1.5;
+    let g = null;
+    for (let rows = 1; rows <= Math.min(8, n); rows++) {
+      const cols = Math.ceil(n / rows);
+      const w = (width - gap * (cols - 1)) / cols;
+      const side = Math.min(w, 7.5, (height - gap * (rows - 1)) / rows);
+      if (side < 3.5 || (rows > 1 && w > 1.5 * side) || side <= (g ? g.side : 0) + 0.01) continue;
+      g = { rows, cols, w, side };
+    }
+    if (!g) return C.stack(c, width);
+    const marks = [...Array(c.up).fill('up'), ...Array(c.warn).fill('degraded'), ...Array(c.down).fill('down'), ...Array(c.unknown).fill('unknown')];
+    const svgs = marks.map((h, k) => {
+      const x = Math.floor(k / g.rows) * (g.w + gap) + (g.w - g.side) / 2;
+      const y = (k % g.rows) * (g.side + gap);
+      return C.mark(h, g.side.toFixed(2)).replace('<svg ', `<svg x="${x.toFixed(2)}" y="${y.toFixed(2)}" `);
+    }).join('');
+    const W = (g.cols * g.w + (g.cols - 1) * gap).toFixed(2);
+    const H = (g.rows * g.side + (g.rows - 1) * gap).toFixed(2);
+    return `<div class="w-checks"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${svgs}</svg></div>`;
+  }
+
   function nStatusBlock(sc, big, size) {
+    const checks = offline(sc) ? C.stackWithheld() : big ? C.stack(sc.counts, BAR[size]) : checkGrid(sc.counts, BAR[size]);
     return `<div class="w-status ${big ? 'big' : ''}">
       <div class="w-top">${C.heroSymbol(sc.verdict.state)}${big ? `<div class="w-title"><b>${esc(sc.verdict.title)}</b><span>${esc(sc.verdict.sub)}</span></div>` : ''}<img class="w-mark" src="assets/mark.svg" alt=""></div>
       ${big ? '' : `<div class="w-title"><b>${esc(sc.verdict.title.replace('Evidence incomplete', 'Incomplete'))}</b><span>${esc(sc.short)}</span></div>`}
-      ${offline(sc) ? C.stackWithheld() : C.stack(sc.counts, BAR[size])}
+      ${checks}
       ${big && !offline(sc) ? legend(sc.counts) : ''}
     </div>`;
   }

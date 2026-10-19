@@ -123,44 +123,48 @@ struct CardMark: View {
     var on: Color = .white
 
     var body: some View {
-        Canvas { ctx, s in
-            let k = s.width / 14
-            ctx.scaleBy(x: k, y: k)
-            switch mark {
-            case .up:
-                ctx.fill(Path(ellipseIn: CGRect(x: 1.8, y: 1.8, width: 10.4, height: 10.4)), with: .color(color))
-            case .degraded:
-                var t = Path()
-                t.move(to: CGPoint(x: 6.1, y: 1.9))
-                t.addQuadCurve(to: CGPoint(x: 7.9, y: 1.9), control: CGPoint(x: 7, y: 0.4))
-                t.addLine(to: CGPoint(x: 12.9, y: 11))
-                t.addQuadCurve(to: CGPoint(x: 12, y: 12.5), control: CGPoint(x: 13.6, y: 12.5))
-                t.addLine(to: CGPoint(x: 2, y: 12.5))
-                t.addQuadCurve(to: CGPoint(x: 1.1, y: 11), control: CGPoint(x: 0.4, y: 12.5))
-                t.closeSubpath()
-                ctx.fill(t, with: .color(color))
-                var bar = Path()
-                bar.move(to: CGPoint(x: 7, y: 5.2))
-                bar.addLine(to: CGPoint(x: 7, y: 8.2))
-                ctx.stroke(bar, with: .color(on), style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
-                ctx.fill(Path(ellipseIn: CGRect(x: 6.25, y: 9.45, width: 1.5, height: 1.5)), with: .color(on))
-            case .down:
-                ctx.fill(Path(ellipseIn: CGRect(x: 1, y: 1, width: 12, height: 12)), with: .color(color))
-                var x = Path()
-                x.move(to: CGPoint(x: 4.9, y: 4.9))
-                x.addLine(to: CGPoint(x: 9.1, y: 9.1))
-                x.move(to: CGPoint(x: 9.1, y: 4.9))
-                x.addLine(to: CGPoint(x: 4.9, y: 9.1))
-                ctx.stroke(x, with: .color(on), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-            case .unknown:
-                ctx.stroke(Path(ellipseIn: CGRect(x: 2.2, y: 2.2, width: 9.6, height: 9.6)), with: .color(color), lineWidth: 1.6)
-            case .offline:
-                ctx.stroke(Path(ellipseIn: CGRect(x: 2, y: 2, width: 10, height: 10)), with: .color(color),
-                           style: StrokeStyle(lineWidth: 1.5, dash: [2.2, 1.9]))
-            }
+        Canvas { ctx, s in Self.draw(mark, in: ctx, size: s.width, color: color, on: on) }
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+
+    /// Draws `mark` in a `size`-point square at the context's origin.
+    nonisolated static func draw(_ mark: Mark, in ctx: GraphicsContext, size: Double, color: Color, on: Color = .white) {
+        var ctx = ctx
+        let k = size / 14
+        ctx.scaleBy(x: k, y: k)
+        switch mark {
+        case .up:
+            ctx.fill(Path(ellipseIn: CGRect(x: 1.8, y: 1.8, width: 10.4, height: 10.4)), with: .color(color))
+        case .degraded:
+            var t = Path()
+            t.move(to: CGPoint(x: 6.1, y: 1.9))
+            t.addQuadCurve(to: CGPoint(x: 7.9, y: 1.9), control: CGPoint(x: 7, y: 0.4))
+            t.addLine(to: CGPoint(x: 12.9, y: 11))
+            t.addQuadCurve(to: CGPoint(x: 12, y: 12.5), control: CGPoint(x: 13.6, y: 12.5))
+            t.addLine(to: CGPoint(x: 2, y: 12.5))
+            t.addQuadCurve(to: CGPoint(x: 1.1, y: 11), control: CGPoint(x: 0.4, y: 12.5))
+            t.closeSubpath()
+            ctx.fill(t, with: .color(color))
+            var bar = Path()
+            bar.move(to: CGPoint(x: 7, y: 5.2))
+            bar.addLine(to: CGPoint(x: 7, y: 8.2))
+            ctx.stroke(bar, with: .color(on), style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
+            ctx.fill(Path(ellipseIn: CGRect(x: 6.25, y: 9.45, width: 1.5, height: 1.5)), with: .color(on))
+        case .down:
+            ctx.fill(Path(ellipseIn: CGRect(x: 1, y: 1, width: 12, height: 12)), with: .color(color))
+            var x = Path()
+            x.move(to: CGPoint(x: 4.9, y: 4.9))
+            x.addLine(to: CGPoint(x: 9.1, y: 9.1))
+            x.move(to: CGPoint(x: 9.1, y: 4.9))
+            x.addLine(to: CGPoint(x: 4.9, y: 9.1))
+            ctx.stroke(x, with: .color(on), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+        case .unknown:
+            ctx.stroke(Path(ellipseIn: CGRect(x: 2.2, y: 2.2, width: 9.6, height: 9.6)), with: .color(color), lineWidth: 1.6)
+        case .offline:
+            ctx.stroke(Path(ellipseIn: CGRect(x: 2, y: 2, width: 10, height: 10)), with: .color(color),
+                       style: StrokeStyle(lineWidth: 1.5, dash: [2.2, 1.9]))
         }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
     }
 }
 
