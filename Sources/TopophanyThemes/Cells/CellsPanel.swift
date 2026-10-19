@@ -361,7 +361,7 @@ struct CellsPanel: View {
             .background(shape.fill(Color(CellsPalette(ctx.theme).ink)))
             .clipShape(shape)
             .overlay(shape.strokeBorder(Color(CellsPalette(ctx.theme).line.opacity(ctx.increaseContrast ? 1 : 0.85)), lineWidth: 1))
-            .overlay(shape.stroke(Color.black.opacity(0.7), lineWidth: 0.5))
+            .overlay(shape.stroke(Color.black.opacity(ctx.theme.appearance == .light ? 0.22 : 0.7), lineWidth: 0.5))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(CellsAccessibility.panel(model))
             .overlay(alignment: .bottomLeading) { keys(scene) }

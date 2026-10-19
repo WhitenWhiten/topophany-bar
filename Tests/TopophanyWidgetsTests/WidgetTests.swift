@@ -43,6 +43,15 @@ func temporaryStore() -> HandoffStore {
         #expect(back.decodedSettings == settings())
     }
 
+    /// Every built-in theme reaches the widgets whole, light and dark
+    /// tokens included.
+    @Test func everyThemeRoundTrips() {
+        for t in ThemeStore.builtIn {
+            let h = Handoff(policy: policy(.clear), theme: t, settings: settings(), engineRunning: true, at: origin.addingTimeInterval(4))
+            #expect(h.decodedTheme == t, "\(t.id)")
+        }
+    }
+
     @Test func showsWhatTheAppShowed() {
         let h = handoff(.incidents)
         var s = settings()

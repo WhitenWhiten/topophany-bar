@@ -111,7 +111,8 @@ public struct Settings: Sendable, Hashable, Codable {
             }
         }
 
-        /// A theme ID: `native` or `terminal`.
+        /// A theme ID, such as `native` or `terminal`; an ID no theme has
+        /// draws Native.
         public var theme = "native"
         public var panel: Panel = .system
         public var textSize: TextSize = .default

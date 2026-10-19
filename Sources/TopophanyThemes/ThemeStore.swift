@@ -31,8 +31,57 @@ public struct ThemeStore: Sendable {
      "font": {"family": "SF Mono", "size": 12}}
     """#
 
-    /// Every built-in theme, through the same path a file takes.
-    public static let builtIn: [Theme] = [nativeJSON, terminalJSON].map { json in
+    /// Glass tinted the green-blue of a northern sky, a violet second
+    /// accent; light or dark, as the system is.
+    public static let auroraJSON = #"""
+    {"schema": 1, "id": "aurora", "name": "Aurora", "renderer": "cards", "appearance": "system",
+     "tokens": {},
+     "dark": {
+       "accent": "#2DD4BF", "accent2": "#A78BFA", "card": "rgba(45, 212, 191, .07)", "cardEdge": "rgba(94, 234, 212, .14)",
+       "panelMaterial": "rgba(12, 28, 34, .62)", "fill": "rgba(94, 234, 212, .2)", "fill2": "rgba(94, 234, 212, .09)"},
+     "light": {
+       "accent": "#0D9488", "accent2": "#7C3AED", "card": "rgba(240, 253, 250, .7)", "cardEdge": "rgba(13, 148, 136, .14)",
+       "panelMaterial": "rgba(236, 253, 248, .62)", "fill": "rgba(13, 148, 136, .18)", "fill2": "rgba(13, 148, 136, .08)"},
+     "font": {"family": "SF Pro", "size": 13}}
+    """#
+
+    /// Matte, warm cards set in New York, an ink-blue accent; light or
+    /// dark, as the system is.
+    public static let linenJSON = #"""
+    {"schema": 1, "id": "linen", "name": "Linen", "renderer": "cards", "appearance": "system",
+     "tokens": {},
+     "dark": {
+       "accent": "#9DB0E8", "accent2": "#BCA7DE", "card": "rgba(255, 236, 212, .065)", "cardEdge": "rgba(255, 230, 200, .1)",
+       "panelMaterial": "rgba(42, 35, 28, .86)", "fill": "rgba(222, 200, 170, .24)", "fill2": "rgba(222, 200, 170, .11)"},
+     "light": {
+       "accent": "#34509A", "accent2": "#7A5BA8", "card": "rgba(255, 253, 248, .84)", "cardEdge": "rgba(110, 88, 60, .13)",
+       "panelMaterial": "rgba(241, 237, 229, .88)", "fill": "rgba(120, 100, 74, .2)", "fill2": "rgba(120, 100, 74, .09)"},
+     "font": {"family": "New York", "size": 13}}
+    """#
+
+    /// The TUI printed on warm paper.
+    public static let paperJSON = #"""
+    {"schema": 1, "id": "paper", "name": "Paper", "renderer": "cells", "appearance": "light",
+     "tokens": {
+       "ink": "#F5F0E6", "inkHigh": "#ECE5D7", "selection": "#E4DDCC", "key": "#E3DBCA", "line": "#D3C9B5", "track": "#E6DFD0",
+       "text": "#2A2925", "muted": "#6E695D", "faint": "#A29C8E", "glow": "#FFFFFF", "accent": "#0F766E", "accent2": "#1D4ED8",
+       "kind": "#BE185D", "up": "#15803D", "warning": "#B8720A", "down": "#B91C1C", "unknown": "#87929B"},
+     "font": {"family": "SF Mono", "size": 12}}
+    """#
+
+    /// The TUI at nightfall: pastels on deep indigo.
+    public static let duskJSON = #"""
+    {"schema": 1, "id": "dusk", "name": "Dusk", "renderer": "cells", "appearance": "dark",
+     "tokens": {
+       "ink": "#1A1735", "inkHigh": "#201C3F", "selection": "#2E2959", "key": "#2A2650", "line": "#3D3869", "track": "#252147",
+       "text": "#E6E2F8", "muted": "#A49ECB", "faint": "#68629A", "glow": "#FFF4FA", "accent": "#B4A7FA", "accent2": "#8BD3F7",
+       "kind": "#F4A7C9", "up": "#6EE7B0", "warning": "#F7B96B", "down": "#F7768E", "unknown": "#7A759F"},
+     "font": {"family": "SF Mono", "size": 12}}
+    """#
+
+    /// Every built-in theme, through the same path a file takes: the cards
+    /// themes, then the cells themes.
+    public static let builtIn: [Theme] = [nativeJSON, auroraJSON, linenJSON, terminalJSON, paperJSON, duskJSON].map { json in
         switch load(Data(json.utf8)) {
         case .success(let t): return t
         case .failure(let e): fatalError("built-in theme refused: \(e)")
@@ -40,7 +89,11 @@ public struct ThemeStore: Sendable {
     }
 
     public static var native: Theme { builtIn[0] }
-    public static var terminal: Theme { builtIn[1] }
+    public static var aurora: Theme { builtIn[1] }
+    public static var linen: Theme { builtIn[2] }
+    public static var terminal: Theme { builtIn[3] }
+    public static var paper: Theme { builtIn[4] }
+    public static var dusk: Theme { builtIn[5] }
 
     /// Where user themes will be read from.
     public static var userDirectory: URL {

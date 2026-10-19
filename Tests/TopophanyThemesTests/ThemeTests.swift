@@ -4,13 +4,35 @@ import Testing
 
 @Suite struct ThemeTests {
     @Test func builtInsPassValidation() {
-        #expect(ThemeStore.builtIn.map(\.id) == ["native", "terminal"])
+        #expect(ThemeStore.builtIn.map(\.id) == ["native", "aurora", "linen", "terminal", "paper", "dusk"])
         for t in ThemeStore.builtIn { #expect(ThemeValidator.refusals(t).isEmpty, "\(t.id): \(ThemeValidator.refusals(t))") }
         // Red-green margins under simulated color-blindness are advisories:
         // the TUI's own palette is under 8 for up/warning.
         #expect(ThemeValidator.validate(ThemeStore.terminal).contains { $0.isAdvisory && $0.description.contains("protanopia") })
-        #expect(ThemeStore.terminal.renderer == .cells)
-        #expect(ThemeStore.native.renderer == .cards)
+        #expect(ThemeStore.builtIn.map(\.renderer) == [.cards, .cards, .cards, .cells, .cells, .cells])
+        #expect(ThemeStore.builtIn.map(\.appearance) == [.system, .system, .system, .dark, .light, .dark])
+        for t in ThemeStore.builtIn { #expect(ThemeStore().theme(t.id) == t) }
+    }
+
+    /// A cards theme that follows the system has its own slots in each
+    /// appearance, over the shared ones; the rest stay the system's.
+    @Test func tokensPerAppearance() throws {
+        let aurora = ThemeStore.aurora
+        #expect(aurora.color("accent", dark: true) == RGBA(css: "#2DD4BF"))
+        #expect(aurora.color("accent", dark: false) == RGBA(css: "#0D9488"))
+        #expect(aurora.color("accent") == nil)
+        #expect(aurora.color("up", dark: true) == nil)
+        var shared = aurora
+        shared.tokens["accent2"] = "#123456"
+        shared.dark["accent2"] = nil
+        #expect(shared.color("accent2", dark: true) == RGBA(css: "#123456"))
+        #expect(shared.color("accent2", dark: false) == RGBA(css: "#7C3AED"))
+        // The sets survive the hand-off to widgets; a theme without them
+        // writes none.
+        let back = try JSONDecoder().decode(Theme.self, from: JSONEncoder().encode(aurora))
+        #expect(back == aurora)
+        let native = String(decoding: try JSONEncoder().encode(ThemeStore.native), as: UTF8.self)
+        #expect(!native.contains("\"dark\"") && !native.contains("\"light\""))
     }
 
     /// Only cards draws a theme in both appearances, so only a cards theme
@@ -30,9 +52,10 @@ import Testing
         #expect(refusals(close) == ["warning and down differ by ΔE 0.0 in light, under 15"])
     }
 
-    /// DESIGN.md §8's example token file. Its warning is too close to down and
-    /// to unknown for normal vision, so the validator refuses it, with reasons.
-    @Test func examplePaperIsRefusedForItsWarningAndDown() {
+    /// Paper's first draft, once DESIGN.md §8's example. Its warning is too
+    /// close to down and to unknown for normal vision, so the validator
+    /// refuses it, with reasons; the built-in Paper moves both.
+    @Test func paperDraftIsRefusedForItsWarningAndDown() {
         let paper = ##"{"schema":1,"id":"paper","name":"Paper","renderer":"cells","appearance":"light","tokens":{"ink":"#F5F0E6","inkHigh":"#ECE5D7","selection":"#E4DDCC","key":"#E3DBCA","line":"#D3C9B5","track":"#E6DFD0","text":"#2A2925","muted":"#6E695D","faint":"#A29C8E","accent":"#0F766E","accent2":"#1D4ED8","kind":"#BE185D","up":"#15803D","warning":"#B45309","down":"#B91C1C","unknown":"#8B8678"},"font":{"family":"SF Mono","size":12}}"##
         guard case .failure(.refused(let p)) = ThemeStore.load(Data(paper.utf8)) else { Issue.record("accepted"); return }
         #expect(p.map(\.description) == ["warning and down differ by ΔE 9.1, under 15", "warning and unknown differ by ΔE 14.6, under 15"])
@@ -65,10 +88,10 @@ import Testing
         try Data("{".utf8).write(to: dir.appending(path: "broken.json"))
         var off = ThemeStore()
         off.loadUserThemes(from: dir)
-        #expect(off.themes.count == 2)
+        #expect(off.themes == ThemeStore.builtIn)
         var on = ThemeStore()
         on.loadUserThemes(from: dir, enabled: true)
-        #expect(on.themes.map(\.id) == ["native", "terminal", "mine"])
+        #expect(on.themes.map(\.id) == ThemeStore.builtIn.map(\.id) + ["mine"])
         #expect(on.refused.map(\.file) == ["broken.json"])
         #expect(on.theme("nope").id == "native")
     }
