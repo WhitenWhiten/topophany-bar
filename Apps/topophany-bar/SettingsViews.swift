@@ -397,14 +397,25 @@ struct AppearanceSettings: View {
     var body: some View {
         SettingsForm {
             Section {
-                HStack(spacing: 12) {
-                    ForEach(ThemeStore.builtIn, id: \.id) { t in ThemeChoice(theme: t) }
+                // One line; it scrolls when more themes than fit.
+                ScrollView(.horizontal) {
+                    HStack(alignment: .top, spacing: 8) {
+                        ForEach(model.themes.themes, id: \.id) { t in ThemeChoice(theme: t) }
+                    }
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
+                .scrollIndicators(.automatic)
+                .scrollBounceBehavior(.basedOnSize)
             } header: {
                 Text("Theme")
             } footer: {
-                Foot("The theme applies to the panel, the menu bar item and every widget. A later release can add themes as files: a renderer's name and its tokens.")
+                VStack(alignment: .leading, spacing: 4) {
+                    if let blurb = model.theme.blurb {
+                        Text(verbatim: blurb).font(.callout).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Foot("The theme applies to the panel, the menu bar item and every widget. A later release can add themes as files: a renderer's name and its tokens.")
+                }
             }
             Section("Panel") {
                 Picker(selection: model.binding(\.appearance.panel)) {
@@ -412,9 +423,9 @@ struct AppearanceSettings: View {
                     Text("Light").tag(TopophanyKit.Settings.Appearance.Panel.light)
                     Text("Dark").tag(TopophanyKit.Settings.Appearance.Panel.dark)
                 } label: {
-                    RowLabel("Appearance", "Native theme only; Terminal always paints its ink")
+                    RowLabel("Appearance", "For themes that follow the system; the others keep their own")
                 }
-                .disabled(model.theme.renderer == .cells)
+                .disabled(model.theme.appearance != .system)
                 Picker(selection: model.binding(\.appearance.textSize)) {
                     Text("Small").tag(TopophanyKit.Settings.Appearance.TextSize.small)
                     Text("Default").tag(TopophanyKit.Settings.Appearance.TextSize.default)
@@ -473,88 +484,75 @@ extension AppearanceSettings {
     }
 }
 
-/// A theme, shown as the real panel it draws.
+/// A theme, shown as its colors.
 struct ThemeChoice: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var systemScheme
     var theme: Theme
 
     var selected: Bool { model.theme.id == theme.id }
+
+    /// The light or dark the panel would draw this theme in now.
+    var scheme: ColorScheme {
+        switch model.settings.appearance.panel {
+        case .light: .light
+        case .dark: .dark
+        case .system: systemScheme
+        }
+    }
 
     var body: some View {
         Button {
             model.update { $0.appearance.theme = theme.id }
         } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                ThemeThumbnail(theme: theme)
-                    .frame(height: 128)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.12), lineWidth: selected ? 2.5 : 1))
-                HStack(spacing: 6) {
-                    Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                        .foregroundStyle(selected ? Color.accentColor : .secondary)
-                    Text(verbatim: theme.id == "terminal" ? tr("Terminal") : tr("Native"))
-                        .fontWeight(.medium)
-                }
-                Text(theme.id == "terminal"
-                     ? "Topophany’s TUI: ink, phosphor and monospace, the same glyphs as topo."
-                     : "macOS glass, SF Pro and system colors, like the apps beside it.")
-                    .font(.callout).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 5) {
+                ThemeSwatch(theme: theme, colorScheme: scheme)
+                    .frame(width: 68, height: 40)
+                    .padding(3)
+                    .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 2.5))
+                Text(verbatim: theme.title)
+                    .font(.callout)
+                    .fontWeight(selected ? .semibold : .regular)
+                    .foregroundStyle(selected ? .primary : .secondary)
+                    .lineLimit(1)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .help(theme.blurb ?? "")
+        .accessibilityLabel(theme.title)
+        .accessibilityHint(theme.blurb ?? "")
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
-/// The top of the panel in a theme, drawn from the incidents fixture.
-struct ThemeThumbnail: View {
-    var theme: Theme
-
-    /// Its words are fixed when it is built: one per language.
-    static var models: [String: PanelModel] = [:]
-
-    static var model: PanelModel {
-        if let m = models[L10n.localization] { return m }
-        let m = build()
-        models[L10n.localization] = m
-        return m
-    }
-
-    static func build() -> PanelModel {
-        var s = TopophanyKit.Settings()
-        s.sections.applications = false
-        s.sections.zones = false
-        s.sections.mac.mode = .off
-        s.sections.attentionLimit = 3
-        let now = Date()
-        let r = FixtureEngine.reading(.incidents, request: TemplateCompiler().request(for: s, revision: 0), origin: now, after: 4)
-        return SectionBuilder.panel(PanelInput(reading: r, engine: .running, settings: s))
-    }
-
-    static let scale = 0.6
-
-    var body: some View {
-        let ctx = RenderContext(theme: theme, colorScheme: .dark)
-        GeometryReader { g in
-            Renderers.renderer(for: theme).panel(Self.model, context: ctx)
-                .environment(\.colorScheme, .dark)
-                .fixedSize()
-                .scaleEffect(Self.scale, anchor: .top)
-                // Scaling leaves the layout size alone; the frame reports
-                // the thumbnail's own size instead.
-                .frame(width: g.size.width, height: g.size.height, alignment: .top)
-                .padding(.top, 10)
-                .allowsHitTesting(false)
+extension Theme {
+    /// A built-in theme's name in the chosen language; a file's own name
+    /// otherwise.
+    var title: String {
+        switch id {
+        case "native": tr("Native")
+        case "aurora": tr("Aurora")
+        case "linen": tr("Linen")
+        case "terminal": tr("Terminal")
+        case "paper": tr("Paper")
+        case "dusk": tr("Dusk")
+        default: name
         }
-        .background(LinearGradient(colors: [Color(red: 0.23, green: 0.25, blue: 0.55), Color(red: 0.35, green: 0.18, blue: 0.45),
-                                            Color(red: 0.06, green: 0.32, blue: 0.36)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing))
-        .clipped()
-        .accessibilityHidden(true)
+    }
+
+    /// How a built-in theme looks, in a sentence.
+    var blurb: String? {
+        switch id {
+        case "native": tr("macOS glass, SF Pro and system colors, like the apps beside it.")
+        case "aurora": tr("Glass tinted the teal of a northern sky, with a violet second accent.")
+        case "linen": tr("Warm, matte cards set in New York, with an ink-blue accent.")
+        case "terminal": tr("Topophany’s TUI: ink, phosphor and monospace, the same glyphs as topo.")
+        case "paper": tr("Topophany’s TUI printed on warm paper.")
+        case "dusk": tr("Topophany’s TUI at nightfall: pastels on deep indigo.")
+        default: nil
+        }
     }
 }
 

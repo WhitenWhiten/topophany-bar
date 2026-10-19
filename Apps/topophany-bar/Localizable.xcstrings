@@ -457,6 +457,22 @@
         }
       }
     },
+    "Aurora": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オーロラ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "极光"
+          }
+        }
+      }
+    },
     "Australia": {
       "localizations": {
         "ja": {
@@ -729,6 +745,22 @@
         }
       }
     },
+    "Dusk": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "薄暮"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暮色"
+          }
+        }
+      }
+    },
     "Each section is a row set in the template the app sends to `topo monitor stream`. What makes an entry up, warn or down is set in `topology.json` (for example `max_disk_percent`), not here.": {
       "localizations": {
         "ja": {
@@ -873,6 +905,22 @@
         }
       }
     },
+    "For themes that follow the system; the others keep their own": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システムに合わせるテーマのみ。ほかのテーマは独自の外観を保ちます"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅适用于跟随系统的主题；其他主题保持自己的外观"
+          }
+        }
+      }
+    },
     "Found in %@; every reading comes from it": {
       "localizations": {
         "ja": {
@@ -933,6 +981,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "通用"
+          }
+        }
+      }
+    },
+    "Glass tinted the teal of a northern sky, with a violet second accent.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "北の空の青緑に染まったガラスに、紫の第二アクセント。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "染上北方夜空青绿色的玻璃，配以紫色的第二强调色。"
           }
         }
       }
@@ -1061,6 +1125,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "浅色"
+          }
+        }
+      }
+    },
+    "Linen": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リネン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "亚麻"
           }
         }
       }
@@ -1237,22 +1317,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "原生"
-          }
-        }
-      }
-    },
-    "Native theme only; Terminal always paints its ink": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ネイティブテーマのみ。ターミナルは常に独自の背景色で描画します"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "仅适用于原生主题；终端主题始终使用自己的底色"
           }
         }
       }
@@ -1589,6 +1653,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "面板版块"
+          }
+        }
+      }
+    },
+    "Paper": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ペーパー"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "纸张"
           }
         }
       }
@@ -2505,6 +2585,38 @@
         }
       }
     },
+    "Topophany’s TUI at nightfall: pastels on deep indigo.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日暮れの Topophany の TUI：深い藍色にパステルカラー。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黄昏时分的 Topophany TUI：深靛蓝上的柔和色彩。"
+          }
+        }
+      }
+    },
+    "Topophany’s TUI printed on warm paper.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "温かみのある紙に刷った Topophany の TUI。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "印在暖色纸上的 Topophany TUI。"
+          }
+        }
+      }
+    },
     "Topophany’s TUI: ink, phosphor and monospace, the same glyphs as topo.": {
       "localizations": {
         "ja": {
@@ -2597,6 +2709,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "视角"
+          }
+        }
+      }
+    },
+    "Warm, matte cards set in New York, with an ink-blue accent.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New York 書体で組んだ、温かみのあるマットなカード。アクセントはインクブルーです。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以 New York 字体排印的温暖哑光卡片，配以墨蓝色强调色。"
           }
         }
       }
