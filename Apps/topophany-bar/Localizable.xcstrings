@@ -327,6 +327,38 @@
         }
       }
     },
+    "Choose": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择"
+          }
+        }
+      }
+    },
+    "Choose the terminal that opens the TUI. It's given a shell script to open.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TUI を開くターミナルを選択してください。シェルスクリプトとして渡されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择用于打开 TUI 的终端。它会收到一个要打开的 shell 脚本。"
+          }
+        }
+      }
+    },
     "Choose the topo executable": {
       "localizations": {
         "ja": {
@@ -1091,6 +1123,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "先显示未关闭的事件，再显示其他需要查看的项目"
+          }
+        }
+      }
+    },
+    "Other…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "その他…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他…"
           }
         }
       }

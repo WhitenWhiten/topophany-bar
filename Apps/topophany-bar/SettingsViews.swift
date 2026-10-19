@@ -169,17 +169,41 @@ struct GeneralSettings: View {
             Section("Startup") {
                 Toggle(isOn: model.binding(\.openAtLogin)) { RowLabel("Open at login") }
                     .toggleStyle(.switch)
-                Picker(selection: model.binding(\.terminal)) {
-                    let apps = TerminalLauncher.apps()
-                    if !apps.contains(where: { $0.id == model.settings.terminal }) {
-                        Text(apps.first?.name ?? String(localized: "Default")).tag(model.settings.terminal)
-                    }
-                    ForEach(apps) { a in Text(a.name).tag(a.id) }
-                } label: {
-                    RowLabel("Open Topophany in", "Where ⌘O and “more in Topophany” open the TUI")
-                }
+                TerminalPicker()
             }
         }
+    }
+}
+
+/// The terminals installed that the TUI can open in, then any other app.
+struct TerminalPicker: View {
+    @Environment(AppModel.self) private var model
+    private static let other = "\u{0}other"
+
+    var body: some View {
+        let chosen = model.settings.terminal
+        let terminals = TerminalLauncher.terminals(chosen: chosen)
+        Picker(selection: Binding(get: { TerminalLauncher.terminal(chosen: chosen)?.id ?? "" },
+                                  set: { id in id == Self.other ? choose() : model.update { $0.terminal = id } })) {
+            ForEach(terminals) { t in
+                Label { Text(verbatim: t.name) } icon: { Image(nsImage: t.icon) }.tag(t.id)
+            }
+            Divider()
+            Text("Other…").tag(Self.other)
+        } label: {
+            RowLabel("Open Topophany in", "Where ⌘O and “more in Topophany” open the TUI")
+        }
+    }
+
+    /// Any app, which is given the TUI as a script to open.
+    func choose() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.applicationBundle]
+        panel.directoryURL = URL(filePath: "/Applications")
+        panel.prompt = String(localized: "Choose")
+        panel.message = String(localized: "Choose the terminal that opens the TUI. It's given a shell script to open.")
+        guard panel.runModal() == .OK, let url = panel.url, let id = Bundle(url: url)?.bundleIdentifier else { return }
+        model.update { $0.terminal = id }
     }
 }
 

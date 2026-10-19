@@ -10,7 +10,7 @@ public struct Settings: Sendable, Hashable, Codable {
     public var sections = Sections()
     public var openAtLogin = true
     /// The bundle identifier of the terminal that opens the TUI; empty for
-    /// Terminal.
+    /// the system's terminal for scripts.
     public var terminal = ""
 
     public init() {}
