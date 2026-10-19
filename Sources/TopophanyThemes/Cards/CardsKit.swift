@@ -395,29 +395,88 @@ struct PillView: View {
     }
 }
 
-/// A smoothed series with a soft fill under it.
-struct Sparkline: View {
+/// A history as bars, newest at the right, over a baseline; before the
+/// history is full, the left is baseline only.
+struct BarHistory: View {
     var values: [Double]
-    var top: Double?
+    /// The value a full bar stands for.
+    var top: Double
+    var capacity: Int
     var color: Color
+    var baseline: Color
 
     var body: some View {
         Canvas { ctx, s in
-            guard values.count > 1 else { return }
-            let peak = top ?? max(1e-9, (values.max() ?? 1) * 1.15)
-            let pts = values.enumerated().map { i, v in
-                CGPoint(x: Double(i) / Double(values.count - 1) * s.width, y: s.height - 1 - min(1, v / peak) * (s.height - 3))
+            let n = max(capacity, values.count)
+            guard n > 0 else { return }
+            ctx.fill(Path(CGRect(x: 0, y: s.height - 1, width: s.width, height: 1)), with: .color(baseline))
+            let pitch = s.width / Double(n)
+            let w = max(0.8, pitch - min(1, pitch * 0.3))
+            var path = Path()
+            for (i, v) in values.suffix(n).reversed().enumerated() {
+                let h = max(1, min(1, v / max(top, 1e-9)) * s.height)
+                path.addRect(CGRect(x: s.width - Double(i + 1) * pitch + (pitch - w), y: s.height - h, width: w, height: h))
             }
-            var line = Path()
-            line.addLines(pts)
-            var area = line
-            area.addLine(to: CGPoint(x: s.width, y: s.height))
-            area.addLine(to: CGPoint(x: 0, y: s.height))
-            area.closeSubpath()
-            ctx.fill(area, with: .linearGradient(Gradient(colors: [color.opacity(0.32), color.opacity(0)]),
-                                                 startPoint: .zero, endPoint: CGPoint(x: 0, y: s.height)))
-            ctx.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+            ctx.fill(path, with: .color(color))
         }
+    }
+}
+
+/// Two histories on one axis: `up` above the line, `down` below it, on a
+/// shared scale.
+struct MirrorChart: View {
+    var up: [Double]
+    var down: [Double]
+    var upColor: Color
+    var downColor: Color
+    var axis: Color
+
+    var body: some View {
+        Canvas { ctx, s in
+            let mid = (s.height / 2).rounded()
+            let peak = max(1e-9, (up + down).max() ?? 0) * 1.1
+            func area(_ values: [Double], _ sign: Double) -> (Path, Path) {
+                let pts = values.enumerated().map { i, v in
+                    CGPoint(x: Double(i) / Double(max(1, values.count - 1)) * s.width, y: mid - sign * min(1, v / peak) * (mid - 1))
+                }
+                var line = Path()
+                line.addLines(pts)
+                var fill = line
+                fill.addLine(to: CGPoint(x: s.width, y: mid))
+                fill.addLine(to: CGPoint(x: 0, y: mid))
+                fill.closeSubpath()
+                return (line, fill)
+            }
+            for (values, sign, color) in [(up, 1.0, upColor), (down, -1.0, downColor)] where values.count > 1 {
+                let (line, fill) = area(values, sign)
+                ctx.fill(fill, with: .color(color.opacity(0.26)))
+                ctx.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 1.2, lineJoin: .round))
+            }
+            ctx.fill(Path(CGRect(x: 0, y: mid - 0.25, width: s.width, height: 0.5)), with: .color(axis))
+        }
+    }
+}
+
+/// Parts of a whole in one bar, each its share of `total`; what is left
+/// is the track.
+struct PartsBar: View {
+    var parts: [(Double, Color)]
+    var total: Double
+    var track: Color
+    var height = 7.0
+
+    var body: some View {
+        Canvas { ctx, s in
+            ctx.clip(to: Path(roundedRect: CGRect(origin: .zero, size: s), cornerRadius: s.height / 2, style: .continuous))
+            ctx.fill(Path(CGRect(origin: .zero, size: s)), with: .color(track))
+            var x = 0.0
+            for (v, color) in parts where v > 0 {
+                let w = s.width * min(1, v / max(total, 1e-9))
+                ctx.fill(Path(CGRect(x: x, y: 0, width: max(0, w - 1), height: s.height)), with: .color(color))
+                x += w
+            }
+        }
+        .frame(height: height)
     }
 }
 

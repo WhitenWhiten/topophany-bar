@@ -625,6 +625,22 @@
         }
       }
     },
+    "App %@ GB · Wired %@ GB · Compressed %@ GB": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリ %@ GB · 確保 %@ GB · 圧縮 %@ GB"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用 %@ GB · 联动 %@ GB · 压缩 %@ GB"
+          }
+        }
+      }
+    },
     "Applications": {
       "localizations": {
         "ja": {

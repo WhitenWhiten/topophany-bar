@@ -117,16 +117,6 @@
   // The bar's place while nothing current is known: hatched, as tall as the ticks.
   const stackWithheld = () => '<div class="nv-runs"><div class="nv-stack withheld"></div></div>';
 
-  function spark(vals, w, h, cls, max) {
-    const top = max || Math.max(...vals) * 1.15;
-    const pts = vals.map((v, i) => [(i / (vals.length - 1)) * w, h - 1 - (v / top) * (h - 3)]);
-    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
-    const id = 'g' + Math.random().toString(36).slice(2, 8);
-    return `<svg class="spark ${cls}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="${h}">
-      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>
-      <path d="${line}L${w} ${h}L0 ${h}Z" fill="url(#${id})"/><path d="${line}" stroke="currentColor" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
-  }
-
   const SEV = { down: 0, degraded: 1, unknown: 2, cached: 3, up: 4 };
   const worst = (a, b) => SEV[a.health] - SEV[b.health] || (parseInt(b.note) || 0) - (parseInt(a.note) || 0);
   const fromArrows = (t) => esc(t).split(' → ').join('<i class="arr">→</i>');
@@ -151,19 +141,53 @@
     </div>`;
   }
 
+  // A history as bars, newest at the right, over a baseline; before the
+  // history is full (60 samples), the left is baseline only.
+  function barHistory(vals, top, capacity = 60) {
+    const n = Math.max(capacity, vals.length);
+    const pitch = 100 / n;
+    const bars = vals.slice(-n).map((v, i, a) => {
+      const x = 100 - (a.length - i) * pitch;
+      return `<i style="left:${x.toFixed(3)}%;width:calc(${pitch.toFixed(3)}% - .6px);height:${Math.max(1, Math.min(1, v / top) * 22).toFixed(2)}px"></i>`;
+    }).join('');
+    return `<div class="nv-bars">${bars}</div>`;
+  }
+
+  // Two histories on one axis: down above the line, up below it, on one scale.
+  function mirror(down, up, w = 140, h = 22) {
+    const mid = Math.round(h / 2);
+    const peak = Math.max(...down, ...up) * 1.1;
+    const area = (vals, sign) => {
+      const pts = vals.map((v, i) => [(i / (vals.length - 1)) * w, mid - sign * Math.min(1, v / peak) * (mid - 1)]);
+      const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
+      return { line, fill: line + `L${w} ${mid}L0 ${mid}Z` };
+    };
+    const a = area(down, 1), b = area(up, -1);
+    return `<svg class="nv-mirror" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="${h}">
+      <path d="${a.fill}" fill="var(--acc)" fill-opacity=".26"/><path d="${a.line}" stroke="var(--acc)" stroke-width="1.2" fill="none" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <path d="${b.fill}" fill="var(--acc2)" fill-opacity=".26"/><path d="${b.line}" stroke="var(--acc2)" stroke-width="1.2" fill="none" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <rect x="0" y="${mid - 0.25}" width="${w}" height=".5" fill="var(--sep)"/></svg>`;
+  }
+
+  // App, wired and compressed, as Activity Monitor splits "Memory Used".
+  function memoryParts(m) {
+    const w = (x) => ((x / m.total) * 100).toFixed(3) + '%';
+    return `<div class="nv-parts"><i style="width:${w(m.app)}"></i><i style="width:${w(m.wired)}"></i><i style="width:${w(m.comp)}"></i></div>`;
+  }
+
   function nvLocal(L) {
     return `<div class="nv-tiles">
       <div class="nv-tile"><div class="nv-tile-h"><span>${I.cpu}CPU</span><b>${L.cpu.v.toFixed(1)}%</b></div>
-        ${spark(L.cpu.spark, 140, 22, 'acc', Math.max(25, Math.max(...L.cpu.spark) * 1.2))}
+        <div class="nv-tile-g">${barHistory(L.cpu.spark, Math.max(25, Math.max(...L.cpu.spark) * 1.2))}</div>
         <div class="nv-tile-f">System ${L.cpu.sys}% · User ${L.cpu.user}%</div></div>
       <div class="nv-tile"><div class="nv-tile-h"><span>${I.memory}Memory</span><b>${L.mem.v.toFixed(1)}%</b></div>
-        <div class="nv-tile-bar">${nvMeter(L.mem.v)}</div>
+        <div class="nv-tile-bar">${memoryParts(L.mem)}</div>
         <div class="nv-tile-f">Pressure ${L.mem.pressure.toFixed(0)}% · App ${L.mem.app} GB</div></div>
       <div class="nv-tile"><div class="nv-tile-h"><span>${I.drive}Storage</span><b>${L.disk.v.toFixed(1)}%</b></div>
         <div class="nv-tile-bar">${nvMeter(L.disk.v)}</div>
         <div class="nv-tile-f">${L.disk.used} of ${L.disk.total} GB used</div></div>
       <div class="nv-tile"><div class="nv-tile-h"><span>${I.net}Network</span><b class="nv-iface">${L.net.iface}</b></div>
-        <div class="nv-duo">${spark(L.net.downSpark, 140, 22, 'acc')}${spark(L.net.upSpark, 140, 22, 'acc2')}</div>
+        <div class="nv-tile-g">${mirror(L.net.downSpark, L.net.upSpark)}</div>
         <div class="nv-tile-f"><span class="c-acc">↓</span> ${L.net.down.replace(' kB/s', '')} · <span class="c-acc2">↑</span> ${L.net.up}</div></div>
     </div>
     <div class="nv-batt"><span class="nv-batt-i">${battery(L.battery.v, true)}</span><b>${L.battery.v}%</b><span>${L.battery.state} · ${L.battery.remain}</span></div>`;
@@ -183,7 +207,7 @@
     return t ? ` style="${Object.entries(t).map(([k, v]) => `--${k}:${v}`).join(';')}"` : '';
   };
 
-  TB._cards = { mark, heroSymbol, stack, stackWithheld, spark, nvMeter, nvServer, nvLocal, fromArrows, mins, worst, I, battery };
+  TB._cards = { mark, heroSymbol, stack, stackWithheld, nvMeter, nvServer, nvLocal, fromArrows, mins, worst, I, battery };
 
   TB.nativePanel = function (sc, o) {
     const L = window.TB_DATA.local;

@@ -591,14 +591,19 @@ struct CardsLocal: View {
         if let c = local.cpu {
             let peak = max(25, (local.cpuHistory.max() ?? 0) * 1.2)
             out.append(AnyView(tile("cpu", tr("CPU"), Words.percent(c.total),
-                                    Sparkline(values: local.cpuHistory, top: peak, color: p.accent),
+                                    BarHistory(values: local.cpuHistory, top: peak, capacity: LocalSnapshot.historyLength,
+                                               color: p.accent, baseline: p.fill),
                                     tr("System \(Words.percent(c.system)) · User \(Words.percent(c.user))"))))
         }
         if let m = local.memory {
             let app = Words.gb(Int64(m.appBytes))
             let foot = m.pressurePercent.map { tr("Pressure \(Words.percent($0, digits: 0)) · App \(app) GB") } ?? tr("App \(app) GB")
-            out.append(AnyView(tile("memorychip", tr("Memory"), Words.percent(m.usedPercent),
-                                    Meter(percent: m.usedPercent, limit: nil, palette: p, height: 7, plain: true), foot)))
+            // App, wired and compressed, as Activity Monitor splits "Memory Used".
+            let parts = PartsBar(parts: [(Double(m.appBytes), p.accent), (Double(m.wiredBytes), p.accent.opacity(0.6)),
+                                         (Double(m.compressedBytes), p.accent.opacity(0.34))],
+                                 total: Double(m.totalBytes), track: p.fill)
+                .help(tr("App \(app) GB · Wired \(Words.gb(Int64(m.wiredBytes))) GB · Compressed \(Words.gb(Int64(m.compressedBytes))) GB"))
+            out.append(AnyView(tile("memorychip", tr("Memory"), Words.percent(m.usedPercent), parts, foot)))
         }
         if let s = local.storage {
             out.append(AnyView(tile("internaldrive", tr("Storage"), Words.percent(s.usedPercent),
@@ -606,10 +611,8 @@ struct CardsLocal: View {
                                     tr("\(Words.gb(s.usedBytes)) of \(Words.gb(s.totalBytes)) GB used"))))
         }
         if let n = local.network {
-            let sparks = ZStack {
-                Sparkline(values: local.receivedHistory, top: nil, color: p.accent)
-                Sparkline(values: local.sentHistory, top: nil, color: p.accent2)
-            }
+            let sparks = MirrorChart(up: local.receivedHistory, down: local.sentHistory, upColor: p.accent, downColor: p.accent2,
+                                     axis: p.sep)
             var foot = AttributedString("↓")
             foot.foregroundColor = p.accent
             foot.font = t.font(10, .bold)
