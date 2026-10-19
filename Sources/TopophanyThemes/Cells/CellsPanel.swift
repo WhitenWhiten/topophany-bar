@@ -429,21 +429,36 @@ struct CellsPanel: View {
             }
         }
 
-        // Footer: keycaps and the connection.
+        // Footer: keycaps and the connection. Live, the project is cut to
+        // fit, as the header shows it whole; otherwise the connection says
+        // what's wrong, and takes a line of its own above the keycaps when
+        // it doesn't fit beside them.
         w.y += 9
         let footTop = w.y
         marks["footer"] = footTop
-        w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 28), p.inkHigh, radius: 0))
-        w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 1), p.line.opacity(0.7), radius: 0))
-        w.y = footTop + 5
         func key(_ k: String, _ label: String, _ id: String) -> (id: String, segs: [Seg]) {
             (id, [.key(" \(k) "), .t(" " + label + "  ", hover == id ? p.text : p.muted)])
         }
         let keys = [key("↵", tr("Open"), "open"), key(",", tr("Settings"), "settings"), key("q", tr("Quit"), "quit")]
         let room = columns - keys.reduce(0) { $0 + $1.segs.reduce(0) { $0 + $1.width } }
-        let conn: [Seg] = ch.isLive
-            ? [.t(CellText.truncate(Words.join([ch.project, ch.updatedAt.map { Words.span(since: $0, now: ch.now, style: .compact) } ?? ""]), room), p.faint)]
-            : [.t(CellText.truncate(ch.connection == .unreachable ? tr("unreachable") : ch.connectionText.lowercased(), room), p.down)]
+        let conn: Seg
+        var ownLine = false
+        if ch.isLive {
+            let text = Words.join([ch.project, ch.updatedAt.map { Words.span(since: $0, now: ch.now, style: .compact) } ?? ""])
+            conn = .t(CellText.truncate(text, room), p.faint)
+        } else {
+            let text = ch.connection == .unreachable ? tr("unreachable") : ch.connectionText.lowercased()
+            ownLine = CellText.width(text) > room
+            conn = .t(CellText.truncate(text, ownLine ? columns : room), p.down)
+        }
+        let footHeight = ownLine ? 48.0 : 28
+        w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: footHeight), p.inkHigh, radius: 0))
+        w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 1), p.line.opacity(0.7), radius: 0))
+        w.y = footTop + 5
+        if ownLine {
+            w.line([conn])
+            w.y += 2
+        }
         // Each keycap and its label is a button.
         var regions: [String: CGRect] = [:]
         var col = 0
@@ -452,8 +467,8 @@ struct CellsPanel: View {
             regions[k.id] = CGRect(x: w.frame.x + Double(col) * w.cell - 2, y: w.y - 4, width: Double(n - 2) * w.cell + 4, height: w.lineHeight + 8)
             col += n
         }
-        w.line(keys.flatMap(\.segs), conn)
-        w.y = footTop + 28
+        w.line(keys.flatMap(\.segs), ownLine ? [] : [conn])
+        w.y = footTop + footHeight
         var scene = CellScene(size: CGSize(width: width, height: w.y), metrics: m, items: w.items)
         scene.marks = marks
         scene.regions = regions

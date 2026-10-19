@@ -60,12 +60,36 @@ import TopophanySections
         #expect(size.height <= 700 + 48 + 0.5, "\(size)")
         let mac = previewPanel(.incidents, settings: previewSettings(mac: .server))
         try snapshot("panel-terminal-incidents-mac", OnDesktop(dark: true) { CellsPanel(model: mac, ctx: RenderContext(theme: ThemeStore.terminal)) })
+        // Too long to sit beside the keycaps, the reason takes its own line.
+        for (name, engine) in [("too-old", EngineCondition.tooOld), ("restarting", .restarting(at: snapshotOrigin.addingTimeInterval(14)))] {
+            let model = waitingPanel(engine)
+            try snapshot("panel-terminal-\(name)", OnDesktop(dark: true) { CellsPanel(model: model, ctx: RenderContext(theme: ThemeStore.terminal)) })
+        }
+    }
+
+    /// No frame yet, for the reason the engine gives.
+    func waitingPanel(_ engine: EngineCondition) -> PanelModel {
+        SectionBuilder.panel(PanelInput(reading: ReaderPolicy().evaluate(at: snapshotOrigin), engine: engine,
+                                        settings: previewSettings(), local: sampleLocal, here: snapshotHere))
+    }
+
+    /// The reason is never cut: when it doesn't fit beside the keycaps, the
+    /// footer grows a line for it.
+    @Test func terminalFooterReason() {
+        let ctx = RenderContext(theme: ThemeStore.terminal)
+        func texts(_ s: CellScene) -> [String] { s.items.compactMap { if case .text(_, _, let t, _, _) = $0 { t } else { nil } } }
+        let old = CellsPanel.scene(waitingPanel(.tooOld), ctx: ctx)
+        #expect(texts(old).contains("topo needs an upgrade"))
+        #expect(old.size.height - old.marks["footer"]! == 48)
+        let live = CellsPanel.scene(previewPanel(.clear), ctx: ctx)
+        #expect(live.size.height - live.marks["footer"]! == 28)
     }
 
     /// The keycaps are buttons, within the footer.
     @Test func terminalKeycaps() {
         let ctx = RenderContext(theme: ThemeStore.terminal)
-        for s in [CellsPanel.scene(previewPanel(.clear), ctx: ctx), CellsPanel.scene(previewPanel(.offline), ctx: ctx)] {
+        for model in [previewPanel(.clear), previewPanel(.offline), waitingPanel(.tooOld)] {
+            let s = CellsPanel.scene(model, ctx: ctx)
             #expect(Set(s.regions.keys) == ["open", "settings", "quit"])
             for r in s.regions.values { #expect(r.minY > s.marks["footer"]! && r.maxY < s.size.height) }
         }
