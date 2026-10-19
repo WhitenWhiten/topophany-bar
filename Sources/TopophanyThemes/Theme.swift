@@ -17,6 +17,9 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
         case system
     }
 
+    /// The type a theme is set in. `cards` draws SF Pro, SF Pro Rounded or
+    /// New York, and SF Pro for any other family; `cells` always draws SF
+    /// Mono, which its grid is measured in.
     public struct Font: Sendable, Hashable, Codable {
         public var family: String
         public var size: Double

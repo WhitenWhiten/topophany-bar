@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import TopophanyThemes
 
@@ -50,6 +51,19 @@ import Testing
         // Status colors are checked in each appearance, with its own.
         let close = ##"{"schema":1,"id":"x","renderer":"cards","light":{"warning":"#FF3B30"}}"##
         #expect(refusals(close) == ["warning and down differ by ΔE 0.0 in light, under 15"])
+    }
+
+    /// Cards sets a theme in its family; cells keeps the monospace its grid
+    /// is measured in.
+    @Test func typeFamilies() {
+        #expect(CardsType(scale: 1, theme: ThemeStore.native).design == .default)
+        #expect(CardsType(scale: 1, theme: ThemeStore.aurora).design == .default)
+        #expect(CardsType(scale: 1, theme: ThemeStore.linen).design == .serif)
+        var rounded = ThemeStore.native
+        rounded.font = Theme.Font(family: "SF Pro Rounded", size: 13)
+        #expect(CardsType(scale: 1, theme: rounded).design == .rounded)
+        rounded.font = Theme.Font(family: "Comic Sans", size: 13)
+        #expect(CardsType(scale: 1, theme: rounded).design == .default)
     }
 
     /// Paper's first draft, once DESIGN.md §8's example. Its warning is too

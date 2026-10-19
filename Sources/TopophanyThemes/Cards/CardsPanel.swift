@@ -10,7 +10,7 @@ struct CardsPanel: View {
     @State private var scrollHeight: Double = 0
 
     var p: CardsPalette { CardsPalette.resolve(ctx) }
-    var t: CardsType { CardsType(scale: ctx.scale) }
+    var t: CardsType { CardsType(scale: ctx.scale, theme: ctx.theme) }
 
     nonisolated static let radius = 18.0
 

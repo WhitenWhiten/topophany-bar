@@ -101,16 +101,27 @@ extension View {
     func settles<V: Equatable>(on value: V) -> some View { modifier(Settle(value: value)) }
 }
 
-/// The text sizes of the cards renderer, scaled by the Text size setting.
+/// The text sizes of the cards renderer, scaled by the Text size setting,
+/// in the theme's family.
 struct CardsType {
     var scale: Double
+    var design: Font.Design = .default
+
+    init(scale: Double, theme: Theme? = nil) {
+        self.scale = scale
+        design = switch theme?.font?.family {
+        case "SF Pro Rounded": .rounded
+        case "New York": .serif
+        default: .default
+        }
+    }
 
     func font(_ size: Double, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size * scale, weight: weight)
+        .system(size: size * scale, weight: weight, design: design)
     }
 
     func mono(_ size: Double, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size * scale, weight: weight).monospacedDigit()
+        .system(size: size * scale, weight: weight, design: design).monospacedDigit()
     }
 }
 

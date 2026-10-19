@@ -11,7 +11,7 @@ struct CardsWidget: View {
     var ctx: RenderContext
 
     var p: CardsPalette { CardsPalette.resolve(ctx) }
-    var t: CardsType { CardsType(scale: 1) }
+    var t: CardsType { CardsType(scale: 1, theme: ctx.theme) }
 
     var body: some View {
         let p = self.p
