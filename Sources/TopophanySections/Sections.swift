@@ -111,6 +111,14 @@ public struct ApplicationsSection: Sendable, Hashable {
     }
 
     public var serviceCount: Int { rows.reduce(0) { $0 + $1.services.count } }
+
+    /// The rows that fit in `lines`, in order, and those left out for a
+    /// last line that counts them: all of them when they fit.
+    public func cut(_ lines: Int) -> (shown: [Row], rest: [Row]) {
+        guard rows.count > lines else { return (rows, []) }
+        let n = max(0, lines - 1)
+        return (Array(rows.prefix(n)), Array(rows.dropFirst(n)))
+    }
 }
 
 /// A server's card, as the Servers tab draws it.

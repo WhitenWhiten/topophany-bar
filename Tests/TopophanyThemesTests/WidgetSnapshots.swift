@@ -92,6 +92,52 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
         }
     }
 
+    /// More applications than any size holds, as a larger topology
+    /// declares, with trouble near the end.
+    func crowded() throws -> WidgetModel {
+        var panel = previewPanel(.clear, settings: previewSettings(mac: .off, servers: true))
+        let i = try #require(panel.sections.firstIndex { if case .applications = $0 { true } else { false } })
+        guard case .applications(let a) = panel.sections[i] else { return status(.clear) }
+        var rows = (0..<13).map { k in
+            var r = a.rows[k % a.rows.count]
+            r.id += "-\(k)"
+            r.name = "\(r.name) \(k + 1)"
+            return r
+        }
+        rows[11].mark = .degraded
+        rows[11].services[0] = .degraded
+        panel.sections[i] = .applications(ApplicationsSection(rows: rows, isCurrent: true))
+        return WidgetModel(kind: .status, panel: panel)
+    }
+
+    /// Every box ends above the widget's bottom, whatever the lists hold:
+    /// what doesn't fit is counted on a last line.
+    @Test func terminalListsFit() throws {
+        let model = try crowded()
+        for theme in [ThemeStore.terminal, ThemeStore.paper] {
+            for (size, n) in Self.sizes {
+                for (bounds, tag) in [(CGSize(width: size.width, height: size.height), ""), (try #require(Self.smaller[size]), "-1080")] {
+                    let scene = CellsWidget.scene(model, size: size, bounds: bounds, ctx: RenderContext(theme: theme))
+                    let bottom = scene.items.map { item -> Double in
+                        switch item {
+                        case .text(_, let y, _, _, _), .glyph(_, let y, _, _): y + scene.metrics.line
+                        case .fill(let r, _, _), .shaded(let r, _, _, _), .box(let r, _, _, _), .stripes(let r, _, _): r.maxY
+                        case .line(let a, let b, _, _, _): max(a.y, b.y)
+                        }
+                    }.max() ?? 0
+                    #expect(bottom <= bounds.height - 6, "\(theme.id) \(n)\(tag): \(bottom) of \(bounds.height)")
+                    let texts = scene.items.compactMap { if case .text(_, _, let t, _, _) = $0 { t } else { nil } }
+                    if size != .small { #expect(texts.contains { $0.contains("more") }, "\(theme.id) \(n)\(tag) counts the rest") }
+                }
+                try snapshot("widget-\(theme.id)-crowded-\(n)-1080",
+                             onDesktop(model, size, bounds: Self.smaller[size], theme: theme, dark: true))
+            }
+        }
+        for (size, n) in Self.sizes where size != .small {
+            try snapshot("widget-native-dark-crowded-\(n)-1080", onDesktop(model, size, bounds: Self.smaller[size], theme: ThemeStore.native, dark: true))
+        }
+    }
+
     @Test func monochrome() throws {
         for theme in [ThemeStore.native, ThemeStore.terminal] {
             for (size, n) in [(WidgetSize.small, "s"), (.medium, "m")] {

@@ -53,6 +53,14 @@ struct CellsWidget: View {
         /// The x of a column's left edge, from the widget's left padding.
         func x(_ col: Int) -> Double { pad.side + Double(col) * cell }
 
+        /// A box's border and padding, in plain headings or boxed.
+        var chrome: Double {
+            w.plain ? style.margin * 0.4 + w.lineHeight + style.padBottom : style.margin + style.padTop + style.padBottom + 2
+        }
+
+        /// How many lines a box started now can hold above the bottom.
+        var linesLeft: Int { max(0, Int(((bottom - w.y - chrome) / w.lineHeight + 0.001).rounded(.down))) }
+
         func title(_ t: String, _ extra: String? = nil) -> [Seg] {
             var s: [Seg] = [.t(" " + t, p.accent, bold: true)]
             if let extra { s += [.t(" · ", p.faint), .t(extra, p.muted)] }
@@ -95,23 +103,42 @@ struct CellsWidget: View {
             }
         }
 
+        /// Up to two observers that see a problem, as many as fit; the rest
+        /// are counted as problems, never as calm.
         mutating func seenBox(x0: Double, x1: Double) {
             guard let seen = model.panel.seen else { return }
+            let problems = seen.problems?.count ?? 0
+            func lines(_ max: Int) -> Int {
+                problems == 0 ? 1 : min(problems, max) + (problems > max ? 1 : 0) + (seen.calm > 0 ? 1 : 0)
+            }
+            let room = linesLeft
+            guard let shown = (0...2).reversed().first(where: { lines($0) <= room }) else { return }
             let b = self.b
-            w.box(title(tr("SEEN FROM"), seen.total.map { "\($0)" }), x0: x0, x1: x1, style: style) { b.seen(&$0, seen, max: 2) }
+            w.box(title(tr("SEEN FROM"), seen.total.map { "\($0)" }), x0: x0, x1: x1, style: style) { b.seen(&$0, seen, max: shown) }
         }
 
         var attention: AttentionSection? { model.panel.attention.flatMap { $0.items.isEmpty ? nil : $0 } }
 
+        /// Up to three entries, as many as fit with the line that counts the
+        /// rest.
         mutating func attentionBox(_ a: AttentionSection, x0: Double, x1: Double) {
+            let room = linesLeft
+            var limit = min(3, a.items.count)
+            while limit > 0, limit + (a.total > limit ? 1 : 0) > room { limit -= 1 }
+            guard room > 0 else { return }
             let b = self.b
-            w.box(title(tr("NEEDS ATTENTION"), "\(a.total)"), x0: x0, x1: x1, style: style) { b.attention(&$0, a, limit: 3, compact: true) }
+            w.box(title(tr("NEEDS ATTENTION"), "\(a.total)"), x0: x0, x1: x1, style: style) {
+                b.attention(&$0, a, limit: limit, compact: true)
+            }
         }
 
+        /// As many applications as fit, the rest counted on the last line.
         mutating func servicesBox(_ a: ApplicationsSection, x0: Double, x1: Double, narrow: Bool) {
+            let room = linesLeft
+            guard room > 0 else { return }
             let b = self.b
             w.box(title(tr("SERVICES"), tr("\(a.rows.count) apps")), x0: x0, x1: x1, style: style) {
-                b.applications(&$0, a, nameWidth: narrow ? 13 : 15, tight: narrow, notes: !narrow)
+                b.applications(&$0, a, nameWidth: narrow ? 13 : 15, tight: narrow, notes: !narrow, lines: room)
             }
         }
 
@@ -157,7 +184,8 @@ struct CellsWidget: View {
                 let top = w.y
                 statusBox(x0: x0, x1: split, short: false)
                 seenBox(x0: x0, x1: split)
-                if let c = model.panel.servers.first {
+                // A server's place and its three meters, when they fit.
+                if let c = model.panel.servers.first, linesLeft >= 4 {
                     let b = self.b
                     w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: split, style: style) { b.server(&$0, c, bar: 23) }
                 }

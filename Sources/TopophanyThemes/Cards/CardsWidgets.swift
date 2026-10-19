@@ -459,7 +459,8 @@ struct WidgetApplications: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             WidgetHeading(symbol: "square.3.layers.3d", title: tr("Applications"), meta: "\(apps.rows.count)", p: p, t: t)
-            ForEach(apps.rows.prefix(rows)) { a in
+            let (shown, rest) = apps.cut(rows)
+            ForEach(shown) { a in
                 HStack(spacing: 7) {
                     CardMark(mark: a.mark, size: 9, color: p.color(a.mark))
                     Text(a.name).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
@@ -475,7 +476,27 @@ struct WidgetApplications: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text("\(a.name), \(a.note)"))
             }
+            if !rest.isEmpty { more(rest) }
         }
+    }
+
+    /// Applications left out for room: how many, and their marks, trouble
+    /// first, so trouble left out still shows.
+    func more(_ rest: [ApplicationsSection.Row]) -> some View {
+        let marks = Mark.troubleFirst(rest, by: \.mark)
+        return HStack(spacing: 7) {
+            Color.clear.frame(width: 9, height: 1)
+            Text(tr("+\(rest.count) more")).foregroundStyle(p.l2).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 2.5) {
+                ForEach(Array(marks.prefix(8).enumerated()), id: \.offset) { _, r in CardMark(mark: r.mark, size: 7, color: p.color(r.mark)) }
+                if marks.count > 8 { Text(verbatim: "+\(marks.count - 8)").font(t.font(9.5)).foregroundStyle(p.l3) }
+            }
+        }
+        .font(t.font(12))
+        .padding(.vertical, 2)
+        .opacity(apps.isCurrent ? 1 : 0.55)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(tr("+\(rest.count) more") + ": " + rest.map { "\($0.name), \($0.note)" }.joined(separator: " · ")))
     }
 }
 

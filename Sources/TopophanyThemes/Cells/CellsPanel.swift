@@ -129,8 +129,27 @@ struct CellsBodies {
 
     // MARK: services
 
-    func applications(_ w: inout CellWriter, _ a: ApplicationsSection, nameWidth: Int = 15, tight: Bool = false, notes: Bool = true) {
-        for row in a.rows {
+    /// At most `lines` lines: applications left out are counted on the
+    /// last, their marks kept, trouble first.
+    func applications(_ w: inout CellWriter, _ a: ApplicationsSection, nameWidth: Int = 15, tight: Bool = false, notes: Bool = true,
+                      lines: Int = .max) {
+        let (shown, rest) = a.cut(lines)
+        defer {
+            if !rest.isEmpty {
+                let per = tight ? 1 : 2
+                var segs: [Seg] = [.t("  ", p.text), .t(CellText.pad(tr("+\(rest.count) more"), nameWidth), p.muted), .t(" ", p.text)]
+                let room = w.frame.columns - 2 - nameWidth - 1
+                let marks = Mark.troubleFirst(rest, by: \.mark)
+                let fit = marks.count * per <= room ? marks.count : max(0, (room - 3) / per)
+                for r in marks.prefix(fit) {
+                    segs.append(.mark(r.mark, p))
+                    if !tight { segs.append(.t(" ", p.text)) }
+                }
+                if fit < marks.count { segs.append(.t("+\(marks.count - fit)", p.faint)) }
+                w.line(segs)
+            }
+        }
+        for row in shown {
             focusRow(&w, "app:" + row.id, lines: 1)
             var segs: [Seg] = [.mark(row.mark, p), .t(" ", p.text),
                                .t(CellText.pad(row.name, nameWidth), p.text, bold: row.mark == .degraded || row.mark == .down),

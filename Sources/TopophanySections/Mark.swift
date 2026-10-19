@@ -39,6 +39,26 @@ public enum Mark: String, Sendable, Hashable, CaseIterable {
     }
 }
 
+extension Mark {
+    /// `items` with what needs a look first: down, warn, unknown, not
+    /// current, then up, each in its own order. For counting what was left
+    /// out for room, so trouble left out still shows; nothing is added up.
+    public static func troubleFirst<T>(_ items: [T], by mark: (T) -> Mark) -> [T] {
+        func rank(_ m: Mark) -> Int {
+            switch m {
+            case .down: 0
+            case .degraded: 1
+            case .unknown: 2
+            case .offline: 3
+            case .up: 4
+            }
+        }
+        return items.enumerated()
+            .sorted { (rank(mark($0.element)), $0.offset) < (rank(mark($1.element)), $1.offset) }
+            .map(\.element)
+    }
+}
+
 /// A short state word beside an entry, such as OPEN or AFFECTED, and the
 /// mark that colors it.
 public struct Pill: Sendable, Hashable {

@@ -72,18 +72,7 @@ public struct FleetSection: Sendable, Hashable {
     /// counts them shows what needs a look before what is up. Each keeps
     /// its own mark; nothing is added up.
     public static func troubleFirst(_ groups: [Group]) -> [Node] {
-        func rank(_ m: Mark) -> Int {
-            switch m {
-            case .down: 0
-            case .degraded: 1
-            case .unknown: 2
-            case .offline: 3
-            case .up: 4
-            }
-        }
-        return groups.flatMap(\.nodes).enumerated()
-            .sorted { (rank($0.element.mark), $0.offset) < (rank($1.element.mark), $1.offset) }
-            .map(\.element)
+        Mark.troubleFirst(groups.flatMap(\.nodes), by: \.mark)
     }
 
     /// Every mark withheld, the names kept: history, as of the last list.
