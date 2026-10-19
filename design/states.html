@@ -94,6 +94,15 @@
       h += `<div class="strip wall-${ap}"><div class="mb mb-${ap}"><div class="mb-right">${items}</div></div></div>`;
     });
   });
+  // Quieted until it gets worse: the badge keeps its shape, in the menu bar's ink.
+  ['degraded', 'incidents'].forEach((k) => {
+    const sc = D.scenarios[k];
+    h += `<div class="rowh"><b>${sc.label}, quieted</b><span>Quiet until it gets worse: no red or orange in the menu bar until it does.</span></div>`;
+    looks.forEach(([, o, ap]) => {
+      const items = ['symbol', 'count', 'words'].map((text) => TB.statusItem(sc, Object.assign({ text, quiet: true }, o))).join('');
+      h += `<div class="strip wall-${ap}"><div class="mb mb-${ap}"><div class="mb-right">${items}</div></div></div>`;
+    });
+  });
   document.getElementById('items').innerHTML = h;
 
   let g = '<div></div><div class="mh">Native · dark</div><div class="mh">Native · light</div><div class="mh">Terminal</div>';

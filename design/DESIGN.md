@@ -81,6 +81,19 @@ CPU, memory and network can stand before the globe. They are local readings (sec
 
 Before the first sample a reading shows `–`, never 0. In Terminal the readings take a chip of their own, before the status chip.
 
+### 3.3 Quiet until it gets worse
+
+Some people can't work beside a red or orange badge they already know about. They can quiet it: Quiet in the Status card (`m` in Terminal), or Quiet Until It Gets Worse in the item's right-click menu.
+
+- **What changes:** only the menu bar item's look. The badge keeps its shape and the count or words stay, all in the menu bar's ink, as with Status colors off. The panel and the widgets show everything as before.
+- **When it ends:** when the verdict asks for more attention, by the ripple's rule (section 3.1): a worse mark, or more under the same mark. The color comes back with the ripple. It also ends when the verdict clears, so the next problem alerts afresh.
+- **As it eases:** quiet follows the verdict down. Five incidents quieted that fall to two alert again at three.
+- **While nothing current is known:** it holds. Offline is not worse.
+- **How long:** for this launch only. Quiet is never saved and never sent anywhere.
+- **Not offered** while there's no alert, or while Status colors are off.
+- **Status card:** a Quiet button beside the verdict, pressed in the accent while quiet. In Terminal, a keycap line at the foot of the Status box: `m quiet the menu bar until it gets worse`, or `m menu bar quiet until it gets worse · undo`.
+- **VoiceOver:** "Topophany: 5 incidents, quieted, updated 4 seconds ago."
+
 ## 4. The panel
 
 The header shows the mark, the project and view, Open in Terminal (⌘O) and Settings (⌘,). The footer shows the connection and Quit. Sections run in this default order:
@@ -279,7 +292,7 @@ A `cards` theme that follows the system gives its slots per appearance. `dark` a
 | Yours (Settings, Edit Widget) | Fixed (topology + collector) |
 |---|---|
 | Theme; panel appearance; text size | What counts as up, warn, down or unknown |
-| Menu bar: Symbol, Count or Words; status colors; motion; this Mac's readings | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
+| Menu bar: Symbol, Count or Words; status colors; motion; this Mac's readings; quiet its alert until it gets worse | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
 | Sections on or off and their order (Status is fixed) | Freshness, staleness, publisher lease |
 | The time zone of each place | Each server's health in Time zones |
 | Attention rows (3 or 5); which applications; pinned servers | How groups add up (unknown always counted) |

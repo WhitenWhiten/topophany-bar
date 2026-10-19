@@ -8,7 +8,8 @@
   /* One surface on the desktop, for side-by-side comparison with the app's
      snapshots. Query: what=panel|hero|widget|item, scenario, theme
      (native|tui), tokens (aurora|linen, over native), palette (paper|dusk,
-     over tui), appearance (dark|light), mac, servers, limit, kind, size. */
+     over tui), appearance (dark|light), mac, servers, limit, kind, size,
+     quiet (1 for the menu bar's alert quieted). */
   html, body { margin: 0; background: #fff !important; }
   #stage { display: inline-block; padding: 24px; border-radius: 0; box-shadow: none; }
   #stage.desk::before, #stage.desk::after { display: none; }
@@ -27,7 +28,7 @@
   const D = window.TB_DATA;
   const o = Object.assign(TB.defaults(), { theme: q.get('theme') || 'native', appearance: q.get('appearance') || 'dark',
     mac: q.get('mac') || 'local', limit: +(q.get('limit') || 3), text: q.get('text') || 'count', color: q.get('color') || 'status',
-    tokens: q.get('tokens') || '', palette: q.get('palette') || '' });
+    tokens: q.get('tokens') || '', palette: q.get('palette') || '', quiet: q.get('quiet') === '1' });
   if (q.get('servers')) o.sections.servers = q.get('servers') === '1';
   const sc = D.scenarios[q.get('scenario') || 'incidents'];
   const el = document.getElementById('stage');

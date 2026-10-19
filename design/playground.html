@@ -40,9 +40,9 @@
 <script src="assets/render.js"></script>
 <script>
   const D = window.TB_DATA;
-  const st = Object.assign(TB.defaults(), { scenario: 'incidents' });
+  const st = Object.assign(TB.defaults(), { scenario: 'incidents', alert: 'shown' });
   const q = new URLSearchParams(location.search);
-  for (const k of ['theme', 'appearance', 'text', 'color', 'mac', 'scenario']) if (q.get(k)) st[k] = q.get(k);
+  for (const k of ['theme', 'appearance', 'text', 'color', 'alert', 'mac', 'scenario']) if (q.get(k)) st[k] = q.get(k);
   if (q.get('servers')) st.sections.servers = q.get('servers') === '1';
   if (q.get('limit')) st.limit = +q.get('limit');
 
@@ -52,6 +52,7 @@
     ['appearance', 'Appearance', [['dark', 'Dark'], ['light', 'Light']]],
     ['text', 'Menu bar shows', [['symbol', 'Symbol'], ['count', 'Count'], ['words', 'Words']]],
     ['color', 'Menu bar color', [['status', 'Status colors'], ['mono', 'Monochrome']]],
+    ['alert', 'Menu bar alert', [['shown', 'Shown'], ['quiet', 'Quiet until worse']]],
     ['mac', 'This Mac', [['local', 'Local readings'], ['server', 'As a server'], ['off', 'Off']]],
     ['limit', 'Needs attention rows', [[3, '3'], [5, '5']]],
   ];
@@ -72,7 +73,7 @@
     // A theme is a renderer family and a token set.
     const look = { native: { theme: 'native' }, tui: { theme: 'tui' }, aurora: { theme: 'native', tokens: 'aurora' }, linen: { theme: 'native', tokens: 'linen' },
       paper: { theme: 'tui', palette: 'paper' }, dusk: { theme: 'tui', palette: 'dusk' } }[st.theme];
-    TB.scene(document.getElementById('stage'), D.scenarios[st.scenario], Object.assign({}, st, look));
+    TB.scene(document.getElementById('stage'), D.scenarios[st.scenario], Object.assign({}, st, look, { quiet: st.alert === 'quiet' }));
   }
   draw();
 </script>

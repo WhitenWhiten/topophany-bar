@@ -60,6 +60,7 @@
     net: sv('<path d="M6.6 15.4V4.8M3.9 7.5l2.7-2.7 2.7 2.7M13.4 4.6v10.6M10.7 12.5l2.7 2.7 2.7-2.7"/>'),
     power: sv('<path d="M10 3.2v6.4"/><path d="M6.1 5.6a6.1 6.1 0 1 0 7.8 0"/>'),
     chevron: sv('<path d="M8 5.5 12.5 10 8 14.5"/>'),
+    bellSlash: sv('<path d="M6.2 6.4a3.9 3.9 0 0 1 7.7.9v2.9l1.6 2.6H8.8M4.6 12.8h1.7l.9-1.5V9.4"/><path d="M8.4 15.3a1.7 1.7 0 0 0 3.2 0"/><path d="M3.6 3.6l12.8 12.8"/>'),
     bolt: sv('<path d="M11 2.8 5.6 11h4l-1 6.2 5.8-8.4h-4.1Z" fill="currentColor" stroke-width="1"/>'),
     info: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 9v4.6"/><circle cx="10" cy="6.4" r=".5" fill="currentColor"/>'),
     clock: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 5.8V10l2.8 1.8"/>'),
@@ -470,6 +471,9 @@
     return css ? ` style="${css}"` : '';
   };
 
+  // An alert the menu bar shows in color: degraded or incidents, with status colors on.
+  const alertOf = (sc, o) => ['degraded', 'incidents'].includes(sc.verdict.state) && o.color !== 'mono';
+
   TB._cards = { mark, heroSymbol, stack, stackWithheld, nvMeter, nvServer, nvLocal, fromArrows, mins, worst, I, battery };
 
   TB.nativePanel = function (sc, o) {
@@ -490,9 +494,11 @@
     // Status: always first, never optional.
     const leg = (n, h, word) => `<span class="${n ? '' : 'zero'}">${mark(h, 9)}<b>${n}</b>${word}</span>`;
     const offline = v.state === 'offline';
+    // While the menu bar shows an alert in color, it can be quieted until it gets worse.
+    const quiet = alertOf(sc, o) ? `<button class="nv-quiet${o.quiet ? ' on' : ''}" title="${o.quiet ? 'The menu bar stays quiet until this gets worse. Click to show its colors again.' : 'Quiet the menu bar until this gets worse'}">${I.bellSlash}${o.quiet ? 'Quieted' : 'Quiet'}</button>` : '';
     out.push(`<section class="nv-card nv-hero hero-${v.state}">
       <div class="nv-hero-top">${heroSymbol(v.state)}
-        <div class="nv-hero-t"><b>${esc(v.title)}</b><span>${esc(v.sub)}</span></div></div>
+        <div class="nv-hero-t"><div class="nv-hero-l"><b>${esc(v.title)}</b>${quiet}</div><span>${esc(v.sub)}</span></div></div>
       ${offline
         ? `<div class="nv-cached"><span class="pill p-unk">CACHED</span>Last snapshot ${esc(sc.updated)} said <b>${esc(sc.lastKnown.toLowerCase())}</b>. Nothing current is known.</div>`
         : `${stack(c, 304)}
@@ -840,7 +846,10 @@
     out.push(tl([S('◉', 'acc'), S(' TOPOPHANY', 'acc b'), S(' ╱ ', 'faint'), S('homelab', 'b'), S(' · all observers', 'faint')],
       [sc.live ? S('● LIVE', 'h-up b') : S('◌ OFFLINE', 'h-down b')], 'bar head', W));
 
-    out.push(box(title('STATUS'), [S(' ' + (offline ? 'cached ' : 'updated ') + sc.updated + ' ', 'muted')], tStatusBody(sc, p, IW), { tint: statusTint(sc, p), cls: 'status' }));
+    // `m` quiets the menu bar's alert, or shows it again.
+    const quietKey = ['degraded', 'incidents'].includes(v.state) && o.color !== 'mono'
+      ? '<div class="tgap4"></div>' + tl([S(' m ', 'key'), S(o.quiet ? ' menu bar quiet until it gets worse · undo' : ' quiet the menu bar until it gets worse', 'muted')], [], '', IW) + '<div class="tgap4"></div>' : '';
+    out.push(box(title('STATUS'), [S(' ' + (offline ? 'cached ' : 'updated ') + sc.updated + ' ', 'muted')], tStatusBody(sc, p, IW) + quietKey, { tint: statusTint(sc, p), cls: 'status' }));
     if (o.heroOnly) return `<div class="tv" style="${paletteVars(p)}"><div class="tv-panel">${out.join('')}<div class="tgap"></div></div></div>`;
 
     if (o.sections.seen) out.push(box(title('SEEN FROM', String(sc.seen.length)), null, tSeenBody(sc, IW)));
@@ -957,14 +966,15 @@
     const reads = o.readings || [];
     if (o.theme === 'tui') {
       const g = v.state === 'offline' ? '◌' : TB.glyph(v.health);
-      const cls = v.state === 'offline' ? 'unk' : TB.cls(v.health);
+      const cls = v.state === 'offline' ? 'unk' : o.quiet && ['degraded', 'down'].includes(v.health) ? 'quiet' : TB.cls(v.health);
       const text = o.text === 'symbol' ? '' : o.text === 'count'
         ? (v.count ? ' ' + v.count : '') : ' ' + v.tui.replace('INCOMPLETE EVIDENCE', 'INCOMPLETE');
       const vars = TB.paletteVars(TB.palettes[o.palette || 'terminal']);
       const chip = `<span class="tchip"><span class="g h-${cls}${live ? ' breathe' : ''}" data-g="${g}">${g}</span>${esc(text)}</span>`;
       return `<span class="mb-item ours titem ${o.pressed ? 'pressed' : ''}" style="${vars}">${reads.length ? tuiReadings(reads) : ''}${chip}</span>`;
     }
-    const mono = o.color === 'mono';
+    // Quieted, an alert's badge keeps its shape in the menu bar's ink.
+    const mono = o.color === 'mono' || (o.quiet && (st === 'degraded' || st === 'down'));
     const id = 'm' + Math.random().toString(36).slice(2, 8);
     const badge = {
       up: '<circle cx="14.6" cy="14.6" r="3.3" fill="var(--b)"/>',
