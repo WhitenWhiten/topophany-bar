@@ -327,19 +327,21 @@ struct CellsBodies {
             w.clocks.append(LiveClock(x: w.frame.x, y: w.y, timeZone: zone.timeZone, period: !zone.period.isEmpty, color: p.text))
             return .t(String(repeating: " ", count: tw), p.text)
         }
-        // Cut short, trouble first, so trouble left out still shows.
-        func marks(_ servers: [ZonesSection.Server], _ max: Int) -> [Seg] {
-            let servers = servers.count > max ? Mark.troubleFirst(servers, by: \.mark) : servers
-            var marks: [Seg] = servers.prefix(max).map { .mark($0.mark, p) }
-            if servers.count > max { marks.append(.t("+\(servers.count - max)", p.faint)) }
-            return marks
+        // Every mark in `room` cells, or as many as fit beside a count of
+        // the rest, trouble first, so trouble left out still shows.
+        func marks(_ servers: [ZonesSection.Server], room: Int) -> [Seg] {
+            guard servers.count > room else { return servers.map { .mark($0.mark, p) } }
+            var shown = max(1, room - 2)
+            if servers.count - shown >= 10 { shown = max(1, room - 3) }
+            let first = Mark.troubleFirst(servers, by: \.mark)
+            return first.prefix(shown).map { .mark($0.mark, p) } + [.t("+\(servers.count - shown)", p.faint)]
         }
         let relative = { (zone: ZonesSection.Zone) -> Seg in .t(CellText.padLeft(zone.relative, rw), zone.isHere ? p.accent : p.muted) }
         switch lines {
         case .two:
             let width = max(8, n - tw - 2 - 1 - rw)
             for zone in shown {
-                let m = marks(zone.servers, 8)
+                let m = marks(zone.servers, room: 10)
                 let room = n - tw - 2 - m.reduce(0) { $0 + $1.width } - 1 - rw - 1
                 w.line([clock(zone, &w), .t("  ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)],
                        m + [.t(" ", p.text), relative(zone)])
@@ -349,12 +351,14 @@ struct CellsBodies {
                        z.clocksOnly ? [] : [.t(CellText.padLeft(zone.day, rw), p.faint)])
             }
         case .one(let withRibbon):
-            // Places get at least ten cells; the ribbon takes what's left.
-            let title = 10
-            let markCells = shown.map { marks($0.servers, 6).reduce(0) { $0 + $1.width } }.max() ?? 0
-            let ribbonCells = withRibbon && !z.clocksOnly ? n - tw - 1 - title - 1 - markCells - 1 - 1 - rw : 0
+            // Places take what they need, leaving the ribbon eight cells,
+            // and at least ten; the ribbon takes the rest.
+            let markCells = shown.map { marks($0.servers, room: 8).reduce(0) { $0 + $1.width } }.max() ?? 0
+            let both = n - tw - 1 - 1 - markCells - 1 - 1 - rw
+            let places = shown.map { CellText.width($0.title) }.max() ?? 0
+            let ribbonCells = withRibbon && !z.clocksOnly ? both - min(places, max(10, both - 8)) : 0
             for zone in shown {
-                let m = marks(zone.servers, 6)
+                let m = marks(zone.servers, room: 8)
                 var right: [Seg] = m + [.t(String(repeating: " ", count: markCells - m.reduce(0) { $0 + $1.width }), p.text)]
                 if ribbonCells >= 6 { right += [.t(" ", p.text), ribbon(zone, ribbonCells)] }
                 if withRibbon { right += [.t(" ", p.text), relative(zone)] }
@@ -362,16 +366,14 @@ struct CellsBodies {
                 w.line([clock(zone, &w), .t(" ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)], right)
             }
         case .stacked:
-            // Room for the marks, and for a count of those that don't fit.
-            let most = max(1, n - tw - 1 - rw - 4)
             for zone in shown {
-                w.line([clock(zone, &w)], marks(zone.servers, most) + [.t(" ", p.text), relative(zone)])
+                w.line([clock(zone, &w)], marks(zone.servers, room: max(1, n - tw - 1 - rw - 1)) + [.t(" ", p.text), relative(zone)])
                 w.line([.t("  " + CellText.truncate(zone.title, max(1, n - 2)), p.text)])
             }
         }
         guard foot else { return }
         if !rest.isEmpty {
-            w.line([.t(tr("+\(rest.count) more"), p.muted)], marks(ZonesSection.servers(rest), 10))
+            w.line([.t(tr("+\(rest.count) more"), p.muted)], marks(ZonesSection.servers(rest), room: 12))
         } else if !z.isCurrent, shown.count < z.zones.count + 1 {
             w.line([.mark(.offline, p), .t(" " + tr("servers not known now"), p.muted)])
         } else if z.unplaced > 0 {
