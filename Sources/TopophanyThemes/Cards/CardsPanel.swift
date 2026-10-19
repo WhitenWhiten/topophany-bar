@@ -920,8 +920,8 @@ struct CardsLocal: View {
                                     tr("\(Words.gb(s.usedBytes)) of \(Words.gb(s.totalBytes)) GB used"))))
         }
         if let n = local.network {
-            let sparks = MirrorChart(up: local.receivedHistory, down: local.sentHistory, upColor: p.accent, downColor: p.accent2,
-                                     axis: p.sep)
+            let sparks = MirrorChart(up: local.receivedHistory, down: local.sentHistory, capacity: LocalSnapshot.historyLength,
+                                     upColor: p.accent, downColor: p.accent2, axis: p.sep)
             var foot = AttributedString("↓")
             foot.foregroundColor = p.accent
             foot.font = t.font(10, .bold)

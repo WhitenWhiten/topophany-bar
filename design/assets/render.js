@@ -287,13 +287,17 @@
   }
 
   // Two histories on one axis: down above the line, up below it, on one scale.
-  function mirror(down, up, w = 140, h = 22) {
+  // Newest at the right, as the CPU's bars: the width holds 60 samples, so
+  // before the history is full, the left is the axis alone.
+  function mirror(down, up, w = 140, h = 22, capacity = 60) {
     const mid = Math.round(h / 2);
     const peak = Math.max(...down, ...up) * 1.1;
+    const pitch = w / (Math.max(2, capacity, down.length, up.length) - 1);
     const area = (vals, sign) => {
-      const pts = vals.map((v, i) => [(i / (vals.length - 1)) * w, mid - sign * Math.min(1, v / peak) * (mid - 1)]);
+      const first = w - (vals.length - 1) * pitch;
+      const pts = vals.map((v, i) => [first + i * pitch, mid - sign * Math.min(1, v / peak) * (mid - 1)]);
       const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
-      return { line, fill: line + `L${w} ${mid}L0 ${mid}Z` };
+      return { line, fill: line + `L${w} ${mid}L${first.toFixed(1)} ${mid}Z` };
     };
     const a = area(down, 1), b = area(up, -1);
     return `<svg class="nv-mirror" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="${h}">

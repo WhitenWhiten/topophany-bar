@@ -514,10 +514,13 @@ struct BarHistory: View {
 }
 
 /// Two histories on one axis: `up` above the line, `down` below it, on a
-/// shared scale.
+/// shared scale. Newest at the right, as a bar history is: the width
+/// holds `capacity` samples, so before the history is full, the left is
+/// the axis alone.
 struct MirrorChart: View {
     var up: [Double]
     var down: [Double]
+    var capacity: Int
     var upColor: Color
     var downColor: Color
     var axis: Color
@@ -526,15 +529,17 @@ struct MirrorChart: View {
         Canvas { ctx, s in
             let mid = (s.height / 2).rounded()
             let peak = max(1e-9, (up + down).max() ?? 0) * 1.1
+            let pitch = s.width / Double(max(2, capacity, up.count, down.count) - 1)
             func area(_ values: [Double], _ sign: Double) -> (Path, Path) {
+                let first = s.width - Double(values.count - 1) * pitch
                 let pts = values.enumerated().map { i, v in
-                    CGPoint(x: Double(i) / Double(max(1, values.count - 1)) * s.width, y: mid - sign * min(1, v / peak) * (mid - 1))
+                    CGPoint(x: first + Double(i) * pitch, y: mid - sign * min(1, v / peak) * (mid - 1))
                 }
                 var line = Path()
                 line.addLines(pts)
                 var fill = line
                 fill.addLine(to: CGPoint(x: s.width, y: mid))
-                fill.addLine(to: CGPoint(x: 0, y: mid))
+                fill.addLine(to: CGPoint(x: first, y: mid))
                 fill.closeSubpath()
                 return (line, fill)
             }

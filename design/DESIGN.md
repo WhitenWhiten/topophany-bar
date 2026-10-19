@@ -165,7 +165,7 @@ The app reads these natively, every 2 s by default:
 | CPU | `host_processor_info` tick deltas | total, system, user; the last 60 samples as bars |
 | Memory | `host_statistics64`, `kern.memorystatus_level` | used %, pressure; app / wired / compressed (as Activity Monitor) as parts of one bar |
 | Storage | `volumeAvailableCapacityForImportantUsage` | used %, used of total |
-| Network | `getifaddrs` counters on the primary interface (`NWPathMonitor`) | ↓ / ↑ rate on one mirrored chart (↓ above the line, ↑ below), interface and address |
+| Network | `getifaddrs` counters on the primary interface (`NWPathMonitor`) | ↓ / ↑ rate on one mirrored chart (↓ above the line, ↑ below) over the same 60 samples as the CPU's bars, interface and address |
 | Battery | IOKit power sources | charge, state, time remaining (hidden on desktops) |
 
 Local readings never pass through `topo`, and nothing runs `top`. The `topo` client process the app starts samples nothing from the host, and section 11.3 removes `top` from `topo`'s own host check as well.
