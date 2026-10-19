@@ -69,6 +69,8 @@ public struct CellScene: Sendable {
     public var live: [LiveAge] = []
     /// Named y positions, such as where a pinned part ends.
     public var marks: [String: Double] = [:]
+    /// Named areas, such as a keycap and its label.
+    public var regions: [String: CGRect] = [:]
 
     public init(size: CGSize, metrics: CellMetrics, items: [CellItem] = [], live: [LiveAge] = []) {
         self.size = size

@@ -293,12 +293,14 @@ struct CellsPanel: View {
     var model: PanelModel
     var ctx: RenderContext
     var focusFirstAttention = false
+    @Environment(\.panelActions) private var actions
+    @State private var hover: String?
 
     static let columns = 48
     nonisolated static let radius = 12.0
 
     var body: some View {
-        let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention)
+        let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover)
         let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
         fitted(scene)
             .background(shape.fill(Color(CellsPalette(ctx.theme).ink)))
@@ -307,6 +309,33 @@ struct CellsPanel: View {
             .overlay(shape.stroke(Color.black.opacity(0.7), lineWidth: 0.5))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(CellsAccessibility.panel(model))
+            .overlay(alignment: .bottomLeading) { keys(scene) }
+    }
+
+    /// The footer's keycaps are buttons too, and `,` and `q` work alone, as
+    /// the footer shows them. The footer is always at the bottom.
+    func keys(_ scene: CellScene) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            key(scene, "open", tr("Open in Terminal"), nil) { actions.openTerminal() }
+            key(scene, "settings", tr("Settings"), KeyboardShortcut(",", modifiers: [])) { actions.openSettings() }
+            key(scene, "quit", tr("Quit"), KeyboardShortcut("q", modifiers: [])) { actions.quit() }
+        }
+    }
+
+    @ViewBuilder
+    func key(_ scene: CellScene, _ id: String, _ label: String, _ shortcut: KeyboardShortcut?,
+             action: @escaping @MainActor () -> Void) -> some View {
+        if let r = scene.regions[id] {
+            Button(action: action) { Color.clear.contentShape(Rectangle()) }
+                .buttonStyle(.plain)
+                .frame(width: r.width, height: r.height)
+                .onHover { inside in
+                    if inside { hover = id } else if hover == id { hover = nil }
+                }
+                .keyboardShortcut(shortcut)
+                .accessibilityLabel(label)
+                .offset(x: r.minX, y: r.maxY - scene.size.height)
+        }
     }
 
     /// The whole scene, or, when it is taller than the screen allows, the
@@ -337,7 +366,7 @@ struct CellsPanel: View {
             .clipped()
     }
 
-    static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false) -> CellScene {
+    static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false, hover: String? = nil) -> CellScene {
         let m = CellMetrics.panel
         let p = CellsPalette(ctx.theme)
         let width = Double(columns) * m.cell + 14
@@ -407,16 +436,27 @@ struct CellsPanel: View {
         w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 28), p.inkHigh, radius: 0))
         w.items.append(.fill(CGRect(x: 0, y: footTop, width: width, height: 1), p.line.opacity(0.7), radius: 0))
         w.y = footTop + 5
-        func key(_ k: String, _ label: String) -> [Seg] { [.key(" \(k) "), .t(" " + label + "  ", p.muted)] }
-        let keys = key("↵", tr("Open")) + key(",", tr("Settings")) + key("q", tr("Quit"))
-        let room = columns - keys.reduce(0) { $0 + $1.width }
+        func key(_ k: String, _ label: String, _ id: String) -> (id: String, segs: [Seg]) {
+            (id, [.key(" \(k) "), .t(" " + label + "  ", hover == id ? p.text : p.muted)])
+        }
+        let keys = [key("↵", tr("Open"), "open"), key(",", tr("Settings"), "settings"), key("q", tr("Quit"), "quit")]
+        let room = columns - keys.reduce(0) { $0 + $1.segs.reduce(0) { $0 + $1.width } }
         let conn: [Seg] = ch.isLive
             ? [.t(CellText.truncate(Words.join([ch.project, ch.updatedAt.map { Words.span(since: $0, now: ch.now, style: .compact) } ?? ""]), room), p.faint)]
             : [.t(CellText.truncate(ch.connection == .unreachable ? tr("unreachable") : ch.connectionText.lowercased(), room), p.down)]
-        w.line(keys, conn)
+        // Each keycap and its label is a button.
+        var regions: [String: CGRect] = [:]
+        var col = 0
+        for k in keys {
+            let n = k.segs.reduce(0) { $0 + $1.width }
+            regions[k.id] = CGRect(x: w.frame.x + Double(col) * w.cell - 2, y: w.y - 4, width: Double(n - 2) * w.cell + 4, height: w.lineHeight + 8)
+            col += n
+        }
+        w.line(keys.flatMap(\.segs), conn)
         w.y = footTop + 28
         var scene = CellScene(size: CGSize(width: width, height: w.y), metrics: m, items: w.items)
         scene.marks = marks
+        scene.regions = regions
         return scene
     }
 }
