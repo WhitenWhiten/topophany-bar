@@ -1,5 +1,6 @@
 #if DEBUG
 import AppKit
+import ApplicationServices
 import ServiceManagement
 import TopophanyKit
 import TopophanyWidgets
@@ -18,6 +19,7 @@ import TopophanyWidgets
 ///     click X Y             a click in Settings, in points from its top left
 ///     drag X Y DY [S]       a drag of DY points, over S seconds (default 0.6)
 ///     trace S               Settings' frame and This Mac's mode, for S seconds
+///     ax                    the open panel's accessibility tree
 ///     windows               each window's number and frame
 ///     handoff               what the widgets were last handed
 ///     login [on|off]        Open at login: set it, and report its status
@@ -86,6 +88,30 @@ enum DebugDriver {
                 lines.append("no hand-off")
             }
             try? lines.joined(separator: "\n").write(to: out.appending(path: "handoff.txt"), atomically: true, encoding: .utf8)
+        case "ax":
+            // What VoiceOver reads in the panel, asked for as an assistive
+            // app asks: each element's role, label and value, in order.
+            var lines: [String] = []
+            func attr(_ e: AXUIElement, _ name: String) -> AnyObject? {
+                var v: AnyObject?
+                return AXUIElementCopyAttributeValue(e, name as CFString, &v) == .success ? v : nil
+            }
+            func walk(_ e: AXUIElement, _ depth: Int) {
+                guard depth < 30 else { return }
+                let role = attr(e, kAXRoleAttribute) as? String ?? "?"
+                let label = attr(e, kAXDescriptionAttribute) as? String ?? attr(e, kAXTitleAttribute) as? String ?? ""
+                let value = attr(e, kAXValueAttribute).map { "\($0)" } ?? ""
+                if !label.isEmpty || !value.isEmpty {
+                    lines.append(String(repeating: "  ", count: depth) + "\(role) “\(label)” \(value)")
+                }
+                for c in attr(e, kAXChildrenAttribute) as? [AXUIElement] ?? [] { walk(c, depth + 1) }
+            }
+            let app = AXUIElementCreateApplication(getpid())
+            var windows: AnyObject?
+            let err = AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &windows)
+            lines.append("windows: \(err.rawValue)")
+            for w in windows as? [AXUIElement] ?? [] { walk(w, 0) }
+            try? lines.joined(separator: "\n").write(to: out.appending(path: "ax.txt"), atomically: true, encoding: .utf8)
         case "windows":
             var lines = NSApp.windows.map { "\($0.windowNumber) \($0.isVisible ? "visible" : "hidden") \($0.frame) \($0.title)" }
             if let b = d.statusButton {
