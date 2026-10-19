@@ -56,7 +56,7 @@ public enum SectionBuilder {
             case .applications where s.applications:
                 if let a = applications(r, only: s.applicationsOnly) { sections.append(.applications(a)) }
             case .servers where s.servers:
-                let cards = servers(r, nodes: s.serverNodes)
+                let cards = servers(r, nodes: s.serverNodes).map { zoned($0, s.placeZones) }
                 if !cards.isEmpty { sections.append(.servers(cards)) }
             case .zones where s.zones:
                 sections.append(.zones(zones(r, chosen: s.placeZones, pinned: s.serverNodes, here: input.here)))
@@ -69,7 +69,7 @@ public enum SectionBuilder {
                                                              readings: s.mac.readings, snapshot: input.local))))
                 case .server:
                     if let card = server(r, rowID: RowID.mac, node: s.mac.node) {
-                        var c = card
+                        var c = zoned(card, s.placeZones)
                         if !s.mac.resources {
                             c.cpu = .init(percent: nil, limit: nil, detail: "")
                             c.memory = c.cpu
@@ -243,6 +243,13 @@ public enum SectionBuilder {
             if let c = server(row, node: node, reading: r) { out.append(c) }
         }
         return out
+    }
+
+    /// The card with its place's time zone, for the time where it is.
+    static func zoned(_ c: ServerCardModel, _ chosen: [String: String]) -> ServerCardModel {
+        var c = c
+        if !c.isMissing { c.timeZone = PlaceZones.zone(for: c.place, chosen: chosen) }
+        return c
     }
 
     static func server(_ r: Reading, rowID: String, node: String) -> ServerCardModel? {

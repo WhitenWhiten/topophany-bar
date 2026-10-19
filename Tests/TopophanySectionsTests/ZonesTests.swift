@@ -153,6 +153,14 @@ func zonesPanel(_ scenario: FixtureEngine.Scenario, here: String = "America/Los_
         #expect(p.zones == nil)
     }
 
+    /// Server cards tell the time where they are, by the same zones.
+    @Test func serverCardsTellTheirTime() {
+        let p = zonesPanel(.clear) { $0.sections.placeZones = ["Los Angeles": ""] }
+        #expect(p.servers.map(\.id) == ["oracle-ny", "bwh-la"])
+        #expect(p.servers.map(\.localTime) == ["4:00 AM", nil])
+        if case .server(let mac, _)? = p.mac { #expect(mac.localTime == "1:00 AM") } else { Issue.record("no This Mac card") }
+    }
+
     @Test func daylightIsAClock() {
         #expect(ZonesSection.daylight(0) == 0)
         #expect(ZonesSection.daylight(12) == 1)

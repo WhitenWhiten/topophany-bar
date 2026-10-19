@@ -130,13 +130,21 @@
     return `<div class="nv-meter"><i class="${over ? 'over' : ''}" style="width:${v}%"></i>${limit && limit < 100 ? `<b style="left:${limit}%"></b>` : ''}</div>`;
   }
 
+  // The time where a server is, "9:30 AM", when its place has a zone.
+  const localTime = (place) => {
+    const z = window.TB_DATA.placeZones[place];
+    if (!z) return '';
+    const p = zoneParts(z, window.TB_DATA.now);
+    return p.time + ' ' + p.period;
+  };
+
   function nvServer(s, opts = {}) {
     const pill = s.withheld ? '<span class="pill p-unk">CACHED</span>'
       : `<span class="pill p-${TB.cls(s.health)}">${s.pill || { up: 'UP', degraded: 'WARN', down: 'DOWN' }[s.health] || 'UNKNOWN'}</span>`;
     const m = (label, r) => `<div class="nv-res"><div class="nv-res-top"><span>${label}</span><b>${!s.withheld && r.v > r.limit ? mark('degraded', 9) : ''}${s.withheld ? '—' : r.v.toFixed(0) + '%'}</b></div>${nvMeter(r.v, r.limit, s.withheld)}</div>`;
     return `<div class="nv-server">
       <div class="nv-server-head"><span class="nv-ico2">${opts.icon || I.server}</span>
-        <div class="nv-server-name"><b>${esc(s.name)}</b><span>${esc([s.kind, s.provider, s.place].join(' · '))}</span></div>${pill}</div>
+        <div class="nv-server-name"><b>${esc(s.name)}</b><span class="nv-sub"><em>${esc([s.kind, s.provider].join(' · '))}</em><i> · ${esc([s.place, localTime(s.place)].filter(Boolean).join(' · '))}</i></span></div>${pill}</div>
       <div class="nv-res3">${m('CPU', s.cpu)}${m('Memory', s.mem)}${m('Disk', s.disk)}</div>
       <div class="nv-server-foot"><span>${esc(s.services)}</span><span>${s.withheld ? 'last reading ' : ''}${esc(s.updated)}</span></div>
     </div>`;
@@ -517,7 +525,15 @@
 
   function tServerBody(s, p, w, opt = {}) {
     const out = [];
-    out.push(tl([S(s.kind, 'kind'), S(' · ', 'faint'), S(s.provider, 'muted'), S(' · ', 'faint'), S(s.place, 'muted')], [S(s.withheld ? 'last ' + s.updated : s.updated, 'faint')], '', w));
+    // What fits beside the age: the provider goes first; the kind and the
+    // time where it is stay.
+    const age = s.withheld ? 'last ' + s.updated : s.updated;
+    const t = opt.clock ? localTime(s.place) : '';
+    const head = (provider) => [S(s.kind, 'kind'), ...(provider ? [S(' · ', 'faint'), S(provider, 'muted')] : []), S(' · ', 'faint'), S(s.place, 'muted'),
+      ...(t ? [S(' · ', 'faint'), S(t)] : [])];
+    let first = head(s.provider);
+    if (width(first) > w - len(age) - 1) first = head('');
+    out.push(tl(first, [S(age, 'faint')], '', w));
     const barN = opt.bar || 20;
     const row = (label, r) => {
       const val = s.withheld ? '     —' : (r.v.toFixed(1) + '%').padStart(6);
@@ -591,7 +607,7 @@
       out.push(box(title('NEEDS ATTENTION', String(sc.attention.length + sc.more)), null, tAttentionBody(sc, IW, o.limit, { focus: true })));
     }
     if (o.sections.apps) out.push(box(title('SERVICES', '23 in 6 apps'), null, tAppsBody(sc, IW)));
-    if (o.sections.servers) sc.servers.forEach((s) => out.push(box(serverTitle(s), serverPill(s), tServerBody(s, p, IW))));
+    if (o.sections.servers) sc.servers.forEach((s) => out.push(box(serverTitle(s), serverPill(s), tServerBody(s, p, IW, { clock: true }))));
     if (o.sections.zones) {
       const z = tZonesBody(sc, p, IW);
       out.push(box(title('TIME ZONES', String(z.zones)), [S(' ' + z.servers + ' servers ', 'muted')], z.body));
@@ -600,7 +616,7 @@
     if (o.sections.mac && o.mac !== 'off') {
       if (o.mac === 'server') {
         const s = sc.mac;
-        out.push(box([...title('THIS MAC'), S(TB.glyph(s.withheld ? 'cached' : s.health), 'h-' + (s.withheld ? 'unk' : TB.cls(s.health))), S(' ' + s.name + ' ', 'b')], serverPill(s), tServerBody(s, p, IW, { observes: true })));
+        out.push(box([...title('THIS MAC'), S(TB.glyph(s.withheld ? 'cached' : s.health), 'h-' + (s.withheld ? 'unk' : TB.cls(s.health))), S(' ' + s.name + ' ', 'b')], serverPill(s), tServerBody(s, p, IW, { observes: true, clock: true })));
       } else {
         const lab = (t) => S(t.padEnd(7), 'muted');
         const n = 19;

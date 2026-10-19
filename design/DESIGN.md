@@ -121,6 +121,7 @@ Servers sit in different places, and an incident at 3 AM in one place is 6 PM in
   - Places without a zone (`anycast`, coordinates, unmatched names) are counted at the foot of the section: "2 without a time zone".
 - **Health:** the marks are `topo`'s and nothing else. A zone row has no health of its own. When the list isn't current, the clocks go on and every mark is withheld (◌).
 - **Without `servers.list`:** the pinned servers' cards stand in.
+- **Server cards** (Servers, and This Mac as a server) add the time where the server is after its place, by the same zones. It never truncates; the provider gives way first. Widgets leave it out, because they redraw too seldom to keep a clock.
 - **Widgets:** not offered; the section is the panel's.
 - **Terminal:** two lines per zone. The ribbon is one cell per stretch of hours, in the palette's own night and day tones, and now is the accent.
 

@@ -187,6 +187,8 @@ public struct ServerCardModel: Sendable, Hashable, Identifiable {
     /// When the readings were sampled.
     public var sampledAt: Date?
     public var now: Date
+    /// Its place's time zone, for the time where it is.
+    public var timeZone: TimeZone?
 
     public init(id: String, name: String, kind: String, provider: String, place: String, mark: Mark, pill: Pill,
                 isWithheld: Bool, isMissing: Bool = false, cpu: Meter, memory: Meter, disk: Meter, services: [Service],
@@ -212,6 +214,14 @@ public struct ServerCardModel: Sendable, Hashable, Identifiable {
 
     /// "host · Oracle · New York".
     public var subtitle: String { Words.join([kind, provider, place]) }
+
+    /// The time where it is, "5:17 AM", when its place has a time zone.
+    public var localTime: String? {
+        timeZone.map { z in
+            let t = Words.time(now, in: z)
+            return t.period.isEmpty ? t.time : "\(t.time) \(t.period)"
+        }
+    }
 
     /// "4s ago", or "last reading 3 min ago" when withheld.
     public var age: String {

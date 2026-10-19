@@ -509,7 +509,13 @@ struct CardsServer: View {
                     .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.fill2))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1)
-                    Text(card.isMissing ? card.place : card.subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
+                    // The time where it is never gives way; the provider, in
+                    // the middle, does first.
+                    HStack(spacing: 0) {
+                        Text(card.isMissing ? card.place : card.subtitle).lineLimit(1).truncationMode(.middle)
+                        if !card.isMissing, let time = card.localTime { Text(verbatim: " · " + time).fixedSize() }
+                    }
+                    .font(t.font(11)).foregroundStyle(p.l2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 PillView(pill: card.pill, palette: p, type: t)

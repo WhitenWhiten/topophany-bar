@@ -158,18 +158,35 @@ struct CellsBodies {
                bg: p.pillBackground(c.pill.mark))]
     }
 
+    /// `clock` adds the time where the server is: the panel's, which is
+    /// drawn every second, never a widget's.
     func server(_ w: inout CellWriter, _ c: ServerCardModel, bar: Int = 20, labelWidth: Int = 7, detail: Bool = true,
-                observes: Bool = false, short: Bool = false) {
+                observes: Bool = false, short: Bool = false, clock: Bool = false) {
         focusRow(&w, "server:" + c.id, lines: 4)
         let age = c.sampledAt.map { Words.ago($0, now: c.now, style: .compact) } ?? ""
         let ageText = c.isWithheld ? tr("last \(age)") : age
         if c.isMissing {
             w.line([.t(c.place, p.muted)])
         } else {
-            var segs: [Seg] = []
-            for (i, part) in [c.kind, c.provider, c.place].filter({ !$0.isEmpty }).enumerated() {
-                if !segs.isEmpty { segs.append(.t(" · ", p.faint)) }
-                segs.append(.t(part, i == 0 && part == c.kind ? p.kind : p.muted))
+            // What fits beside the age: the provider goes first, then the
+            // place shortens; the kind and the time stay.
+            let time = clock ? c.localTime : nil
+            let room = w.frame.columns - CellText.width(ageText) - 1
+            func line(_ provider: String, _ place: String) -> [Seg] {
+                var segs: [Seg] = []
+                for (i, part) in [c.kind, provider, place].enumerated() where !part.isEmpty {
+                    if !segs.isEmpty { segs.append(.t(" · ", p.faint)) }
+                    segs.append(.t(part, i == 0 ? p.kind : p.muted))
+                }
+                if let time { segs += [.t(" · ", p.faint), .t(time, p.text)] }
+                return segs
+            }
+            func width(_ segs: [Seg]) -> Int { segs.reduce(0) { $0 + $1.width } }
+            var segs = line(c.provider, c.place)
+            if width(segs) > room { segs = line("", c.place) }
+            if width(segs) > room {
+                let over = width(segs) - room
+                segs = line("", CellText.truncate(c.place, max(1, CellText.width(c.place) - over)))
             }
             w.line(segs, [.t(ageText, p.faint)])
         }
@@ -366,14 +383,14 @@ struct CellsPanel: View {
                 }
             case .servers(let cards):
                 for c in cards {
-                    w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: .panel) { b.server(&$0, c) }
+                    w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: .panel) { b.server(&$0, c, clock: true) }
                 }
             case .zones(let z):
                 w.box(title(tr("TIME ZONES"), "\(z.zones.count)"), [.t(" " + tr("\(z.serverCount) servers") + " ", p.muted)],
                       x0: x0, x1: x1, style: .panel) { b.zones(&$0, z) }
             case .mac(.server(let c, _)):
                 w.box(b.serverTitle(c, prefix: title(tr("THIS MAC")).dropLast()), b.serverPill(c), x0: x0, x1: x1, style: .panel) {
-                    b.server(&$0, c, observes: true)
+                    b.server(&$0, c, observes: true, clock: true)
                 }
             case .mac(.local(let l)):
                 w.box(title(tr("THIS MAC"), tr("local readings")), [.t(" " + l.model + " ", p.muted)], x0: x0, x1: x1, style: .panel) {

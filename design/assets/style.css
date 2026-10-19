@@ -248,6 +248,10 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .nv-server-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
 .nv-server-name b { font-size: 12.5px; font-weight: 600; }
 .nv-server-name span { font-size: 11px; color: var(--l2); }
+/* The time where it is never gives way; the rest does. */
+.nv-sub { display: flex; min-width: 0; white-space: nowrap; }
+.nv-sub em { font-style: normal; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.nv-sub i { font-style: normal; flex: none; }
 .nv-res3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 7px; }
 .nv-res-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 10.5px; color: var(--l2); margin-bottom: 5px; }
 .nv-res-top b { font-size: 12px; color: var(--l1); font-variant-numeric: tabular-nums; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; }
