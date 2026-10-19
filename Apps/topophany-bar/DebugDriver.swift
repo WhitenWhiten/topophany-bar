@@ -1,6 +1,7 @@
 #if DEBUG
 import AppKit
 import TopophanyKit
+import TopophanyWidgets
 
 /// Debug builds take commands as distributed notifications named
 /// `io.github.whitenwhiten.topophany-bar.debug`, the command as the object:
@@ -17,6 +18,7 @@ import TopophanyKit
 ///     drag X Y DY [S]       a drag of DY points, over S seconds (default 0.6)
 ///     trace S               Settings' frame and This Mac's mode, for S seconds
 ///     windows               each window's number and frame
+///     handoff               what the widgets were last handed
 @MainActor
 enum DebugDriver {
     static let name = Notification.Name("io.github.whitenwhiten.topophany-bar.debug")
@@ -62,6 +64,16 @@ enum DebugDriver {
         case "trace":
             guard let win = d.settingsWindow else { return }
             trace(win, model: d.model, seconds: num(1) ?? 2)
+        case "handoff":
+            let store = HandoffStore(appGroup: HandoffStore.bundleAppGroup)
+            var lines = ["group \(HandoffStore.bundleAppGroup ?? "none")", "directory \(store.directory?.path ?? "none")"]
+            if let h = store.read() {
+                lines += ["written \(h.writtenAt)", "frame \(h.frame?.count ?? 0) bytes", "running \(h.engineRunning)",
+                          "verdict \(h.panel().status.title)"]
+            } else {
+                lines.append("no hand-off")
+            }
+            try? lines.joined(separator: "\n").write(to: out.appending(path: "handoff.txt"), atomically: true, encoding: .utf8)
         case "windows":
             var lines = NSApp.windows.map { "\($0.windowNumber) \($0.isVisible ? "visible" : "hidden") \($0.frame) \($0.title)" }
             if let b = d.statusButton {
