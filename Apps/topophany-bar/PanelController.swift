@@ -225,12 +225,19 @@ struct PanelRoot: View {
     var body: some View {
         let s = model.settings.appearance
         let scheme: ColorScheme = s.panel == .light ? .light : s.panel == .dark ? .dark : systemScheme
+        // A theme with its own appearance keeps it; the rest follow the
+        // setting, or the system.
+        let window: ColorScheme? = switch model.theme.appearance {
+        case .light: .light
+        case .dark: .dark
+        case .system: s.panel == .system ? nil : scheme
+        }
         let ctx = RenderContext(theme: model.theme, colorScheme: scheme, backdrop: .live, textSize: s.textSize,
                                 focus: model.focus, reduceTransparency: reduceTransparency,
                                 increaseContrast: contrast == .increased, maxHeight: maxHeight())
         Renderers.renderer(for: model.theme).panel(model.panel, context: ctx)
             .environment(\.panelActions, actions)
             .environment(\.locale, L10n.locale)
-            .preferredColorScheme(model.theme.renderer == .cells ? .dark : (s.panel == .system ? nil : scheme))
+            .preferredColorScheme(window)
     }
 }
