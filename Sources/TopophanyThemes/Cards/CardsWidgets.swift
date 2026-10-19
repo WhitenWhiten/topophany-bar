@@ -195,6 +195,7 @@ struct WidgetStatus {
             Hatch(color: p.fill, line: 3, gap: 3)
                 .frame(height: 6)
                 .clipShape(Capsule())
+                .frame(height: StackBar.tickHeight)
         }
     }
 

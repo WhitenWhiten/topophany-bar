@@ -13,10 +13,6 @@
   const COLS = { s: 22, m: 51, l: 51, xl: 108 };
 
   // ------------------------------------------------------------- native
-  const stack = (c) => {
-    const seg = (n, k) => (n ? `<i class="seg s-${k}" style="flex:${n}"></i>` : '');
-    return `<div class="nv-stack">${seg(c.up, 'up')}${seg(c.warn, 'warn')}${seg(c.down, 'down')}${seg(c.unknown, 'unk')}</div>`;
-  };
   const legend = (c) => {
     const leg = (n, h, word) => `<span class="${n ? '' : 'zero'}">${C.mark(h, 9)}<b>${n}</b>${word}</span>`;
     return `<div class="nv-legend">${leg(c.up, 'up', 'up')}${leg(c.warn, 'degraded', 'warn')}${leg(c.down, 'down', 'down')}${leg(c.unknown, 'unknown', 'unknown')}</div>`;
@@ -24,11 +20,14 @@
   const offline = (sc) => sc.verdict.state === 'offline';
   const foot = (sc, wide) => `<div class="w-foot"><span>${C.I.scope}${sc.observers.live}/${sc.observers.total}${wide ? ' observers live' : ''}</span><span>${esc(sc.age)}</span></div>`;
 
-  function nStatusBlock(sc, big) {
+  // The status bar's width in each layout: the widget's, the left column's.
+  const BAR = { s: 142, m: 136, l: 336, xl: 350 };
+
+  function nStatusBlock(sc, big, size) {
     return `<div class="w-status ${big ? 'big' : ''}">
       <div class="w-top">${C.heroSymbol(sc.verdict.state)}${big ? `<div class="w-title"><b>${esc(sc.verdict.title)}</b><span>${esc(sc.verdict.sub)}</span></div>` : ''}<img class="w-mark" src="assets/mark.svg" alt=""></div>
       ${big ? '' : `<div class="w-title"><b>${esc(sc.verdict.title.replace('Evidence incomplete', 'Incomplete'))}</b><span>${esc(sc.short)}</span></div>`}
-      ${offline(sc) ? `<div class="nv-stack withheld"></div>` : stack(sc.counts)}
+      ${offline(sc) ? C.stackWithheld() : C.stack(sc.counts, BAR[size])}
       ${big && !offline(sc) ? legend(sc.counts) : ''}
     </div>`;
   }
@@ -59,15 +58,15 @@
     let body = '';
     const right = sc.attention.length ? nAttention(sc, size === 'm' ? 3 : 3) : nApps(sc, 6);
     if (kind === 'status') {
-      if (size === 's') body = `<div class="w-col">${nStatusBlock(sc)}${foot(sc)}</div>`;
-      if (size === 'm') body = `<div class="w-split"><div class="w-col w-left">${nStatusBlock(sc)}${foot(sc)}</div><div class="w-col w-right">${right}</div></div>`;
-      if (size === 'l') body = `<div class="w-col">${nStatusBlock(sc, true)}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${right}</div>${foot(sc, true)}</div>`;
+      if (size === 's') body = `<div class="w-col">${nStatusBlock(sc, false, 's')}${foot(sc)}</div>`;
+      if (size === 'm') body = `<div class="w-split"><div class="w-col w-left">${nStatusBlock(sc, false, 'm')}${foot(sc)}</div><div class="w-col w-right">${right}</div></div>`;
+      if (size === 'l') body = `<div class="w-col">${nStatusBlock(sc, true, 'l')}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${right}</div>${foot(sc, true)}</div>`;
       if (size === 'xl') {
         const servers = sc.servers.map((s) => {
           const x = nServerMini(s);
           return `<div class="w-srv"><div class="w-srv-h"><b>${esc(s.name)}</b>${x.pill}</div><div class="w-res3">${x.meters}</div></div>`;
         }).join('');
-        body = `<div class="w-split xl"><div class="w-col">${nStatusBlock(sc, true)}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${sc.attention.length ? nAttention(sc, 3) : nApps(sc, 4)}</div>${foot(sc, true)}</div>
+        body = `<div class="w-split xl"><div class="w-col">${nStatusBlock(sc, true, 'xl')}<div class="w-sec">${nSeen(sc)}</div><div class="w-sec">${sc.attention.length ? nAttention(sc, 3) : nApps(sc, 4)}</div>${foot(sc, true)}</div>
           <div class="w-col w-right">${sc.attention.length ? nApps(sc, 6) : ''}<h4 class="${sc.attention.length ? 'w-gap' : ''}">${C.I.server}Servers<em>2 pinned</em></h4>${servers}</div></div>`;
       }
     }

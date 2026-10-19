@@ -177,18 +177,26 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .nv-hero-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .nv-sym {
   width: 44px; height: 44px; border-radius: 12px; flex: none; display: grid; place-items: center;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 -1px 0 rgba(0, 0, 0, .12), 0 4px 14px -3px var(--glow);
+  box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .14), 0 .5px 1px rgba(0, 0, 0, var(--sym-shadow, .14));
 }
+.dark .nv-sym { --sym-shadow: .3; }
 .nv-sym svg { width: 44px; height: 44px; }
-.sym-clear { background: linear-gradient(180deg, #4ce57c, #1faf4c); --glow: rgba(48, 209, 88, .6); }
-.sym-degraded { background: linear-gradient(180deg, #ffb84d, #f48800); --glow: rgba(255, 159, 10, .55); }
-.sym-incidents { background: linear-gradient(180deg, #ff6e63, #e52f28); --glow: rgba(255, 69, 58, .6); }
-.sym-incomplete { background: linear-gradient(180deg, #a6a6ae, #74747b); --glow: rgba(140, 140, 150, .4); }
-.sym-offline { background: linear-gradient(180deg, #8f8f97, #5d5d64); --glow: rgba(0, 0, 0, .25); }
+/* Matte: the status color a shade deeper, so the white glyph holds. */
+.sym-clear { background: color-mix(in srgb, var(--up) 90%, #000); }
+.sym-degraded { background: color-mix(in srgb, var(--warn) 90%, #000); }
+.sym-incidents { background: color-mix(in srgb, var(--down) 90%, #000); }
+.sym-incomplete { background: #8a8a91; }
+.sym-offline { background: #6a6a71; }
 .nv-hero-t { min-width: 0; }
 .nv-hero-t b { display: block; font-size: 19px; font-weight: 650; letter-spacing: -.018em; line-height: 1.15; }
 .nv-hero-t span { display: block; font-size: 12px; color: var(--l2); margin-top: 2px; }
-.nv-stack { display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.nv-stack { display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; flex: 1; }
+.nv-runs { display: flex; align-items: center; height: 9px; margin-bottom: 8px; }
+.nv-ticks { display: flex; height: 9px; margin-bottom: 8px; }
+.nv-ticks i { flex: 1; border-radius: 1px; }
+.t-up { background: color-mix(in srgb, var(--up) 78%, transparent); }
+.t-warn { background: var(--warn); } .t-down { background: var(--down); }
+.t-unk { background: color-mix(in srgb, var(--unk) 14%, transparent); box-shadow: inset 0 0 0 1px var(--unk); }
 .seg { display: block; height: 100%; min-width: 4px; }
 .s-up { background: var(--up); } .s-warn { background: var(--warn); } .s-down { background: var(--down); }
 .s-unk { background: repeating-linear-gradient(135deg, var(--unk) 0 2px, transparent 2px 4px); }
@@ -353,7 +361,7 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 .w-status.big .w-top { align-items: center; gap: 12px; justify-content: flex-start; }
 .w-status.big .w-title { flex: 1; margin: 0; }
 .w-status.big .w-title b { font-size: 18px; }
-.w-status.big .nv-stack { margin: 12px 0 7px; }
+.w-status.big .nv-ticks, .w-status.big .nv-runs { margin: 12px 0 7px; }
 .nv-stack.withheld { background: repeating-linear-gradient(135deg, var(--fill) 0 3px, transparent 3px 6px); }
 .w-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--l3); }
 .w-foot span { display: inline-flex; align-items: center; gap: 4px; }

@@ -85,7 +85,7 @@
   }
   TB.mark = mark;
 
-  // The hero's symbol: a tile filled with the verdict's color and its glyph.
+  // The hero's symbol: a matte tile in the verdict's color, and its glyph.
   function heroSymbol(state) {
     const g = {
       clear: '<path d="M14.5 23.5l6 6 12-13" stroke-width="3.6"/>',
@@ -96,6 +96,26 @@
     }[state];
     return `<div class="nv-sym sym-${state}"><svg viewBox="0 0 47 47" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">${g}</svg></div>`;
   }
+
+  // Every configured check by health. One tick per check while each can be
+  // told apart (an unknown check a hollow tick); past that, runs of color
+  // with the unknown hatched. `width` is the bar's width in points.
+  function stack(c, width) {
+    const n = c.up + c.warn + c.down + c.unknown;
+    let fit = null;
+    for (const gap of [1.5, 1]) {
+      const tick = (width - gap * (n - 1)) / n;
+      if (tick >= (gap > 1 ? 2.2 : 1.6)) { fit = gap; break; }
+    }
+    if (fit) {
+      const t = (k, m) => `<i class="t-${k}"></i>`.repeat(m);
+      return `<div class="nv-ticks" style="gap:${fit}px">${t('up', c.up)}${t('warn', c.warn)}${t('down', c.down)}${t('unk', c.unknown)}</div>`;
+    }
+    const seg = (m, k) => (m ? `<i class="seg s-${k}" style="flex:${m}"></i>` : '');
+    return `<div class="nv-runs"><div class="nv-stack">${seg(c.up, 'up')}${seg(c.warn, 'warn')}${seg(c.down, 'down')}${seg(c.unknown, 'unk')}</div></div>`;
+  }
+  // The bar's place while nothing current is known: hatched, as tall as the ticks.
+  const stackWithheld = () => '<div class="nv-runs"><div class="nv-stack withheld"></div></div>';
 
   function spark(vals, w, h, cls, max) {
     const top = max || Math.max(...vals) * 1.15;
@@ -163,7 +183,7 @@
     return t ? ` style="${Object.entries(t).map(([k, v]) => `--${k}:${v}`).join(';')}"` : '';
   };
 
-  TB._cards = { mark, heroSymbol, spark, nvMeter, nvServer, nvLocal, fromArrows, mins, worst, I, battery };
+  TB._cards = { mark, heroSymbol, stack, stackWithheld, spark, nvMeter, nvServer, nvLocal, fromArrows, mins, worst, I, battery };
 
   TB.nativePanel = function (sc, o) {
     const L = window.TB_DATA.local;
@@ -181,7 +201,6 @@
     </header>`);
 
     // Status: always first, never optional.
-    const seg = (n, k) => (n ? `<i class="seg s-${k}" style="flex:${n}"></i>` : '');
     const leg = (n, h, word) => `<span class="${n ? '' : 'zero'}">${mark(h, 9)}<b>${n}</b>${word}</span>`;
     const offline = v.state === 'offline';
     out.push(`<section class="nv-card nv-hero hero-${v.state}">
@@ -189,7 +208,7 @@
         <div class="nv-hero-t"><b>${esc(v.title)}</b><span>${esc(v.sub)}</span></div></div>
       ${offline
         ? `<div class="nv-cached"><span class="pill p-unk">CACHED</span>Last snapshot ${esc(sc.updated)} said <b>${esc(sc.lastKnown.toLowerCase())}</b>. Nothing current is known.</div>`
-        : `<div class="nv-stack" title="${c.up} up · ${c.warn} warn · ${c.down} down · ${c.unknown} unknown">${seg(c.up, 'up')}${seg(c.warn, 'warn')}${seg(c.down, 'down')}${seg(c.unknown, 'unk')}</div>
+        : `${stack(c, 304)}
       <div class="nv-legend">${leg(c.up, 'up', 'up')}${leg(c.warn, 'degraded', 'warn')}${leg(c.down, 'down', 'down')}${leg(c.unknown, 'unknown', 'unknown')}</div>`}
       <div class="nv-meta"><span>${I.scope}${sc.observers.live}/${sc.observers.total} observers live</span><span>${offline ? 'Updated ' + esc(sc.updated) : 'Updated ' + esc(sc.updated.replace('s ago', ' s ago'))}</span></div>
     </section>`);

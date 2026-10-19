@@ -146,8 +146,8 @@ struct CardMark: View {
     }
 }
 
-/// The Status card's symbol: a tile filled with the verdict's color and
-/// its glyph.
+/// The Status card's symbol: a matte tile in the verdict's color, and its
+/// glyph.
 struct HeroSymbol: View {
     var status: StatusSection
     var size: Double
@@ -166,29 +166,24 @@ struct HeroSymbol: View {
         }
     }
 
-    var colors: (Color, Color, Color) {
+    /// The status color, a shade deeper so the white glyph holds; gray for
+    /// unknown and offline.
+    var fill: Color {
         switch status.mark {
-        case .up: (Color(rgb: 0x4CE57C), Color(rgb: 0x1FAF4C), Color(.sRGB, red: 48 / 255, green: 209 / 255, blue: 88 / 255, opacity: 0.6))
-        case .degraded: (Color(rgb: 0xFFB84D), Color(rgb: 0xF48800), Color(.sRGB, red: 1, green: 159 / 255, blue: 10 / 255, opacity: 0.55))
-        case .down: (Color(rgb: 0xFF6E63), Color(rgb: 0xE52F28), Color(.sRGB, red: 1, green: 69 / 255, blue: 58 / 255, opacity: 0.6))
-        case .unknown: (Color(rgb: 0xA6A6AE), Color(rgb: 0x74747B), Color(.sRGB, red: 140 / 255, green: 140 / 255, blue: 150 / 255, opacity: 0.4))
-        case .offline: (Color(rgb: 0x8F8F97), Color(rgb: 0x5D5D64), Color(white: 0, opacity: 0.25))
+        case .up, .degraded, .down: palette.color(status.mark).mix(with: .black, by: 0.1)
+        case .unknown: Color(rgb: 0x8A8A91)
+        case .offline: Color(rgb: 0x6A6A71)
         }
     }
 
     var body: some View {
-        let (top, bottom, glow) = colors
-        let r = size * 12 / 44
-        RoundedRectangle(cornerRadius: r, style: .continuous)
-            .fill(LinearGradient(colors: [top, bottom], startPoint: .top, endPoint: .bottom))
-            .overlay(alignment: .top) {
-                RoundedRectangle(cornerRadius: r, style: .continuous)
-                    .strokeBorder(LinearGradient(colors: [Color.white.opacity(0.35), .clear, Color.black.opacity(0.12)],
-                                                 startPoint: .top, endPoint: .bottom), lineWidth: 0.75)
-            }
-            .overlay { glyphView.padding(0) }
+        let shape = RoundedRectangle(cornerRadius: size * 12 / 44, style: .continuous)
+        shape
+            .fill(fill)
+            .overlay(shape.strokeBorder(Color.black.opacity(0.14), lineWidth: 0.5))
+            .overlay { glyphView }
             .frame(width: size, height: size)
-            .shadow(color: glow, radius: 7, x: 0, y: 4)
+            .shadow(color: .black.opacity(palette.isDark ? 0.3 : 0.14), radius: 1, y: 0.5)
             .accessibilityHidden(true)
     }
 
@@ -265,13 +260,64 @@ struct Hatch: View {
 }
 
 /// Every configured check by health: up, warn, down and unknown, in that
-/// order, the unknown hatched.
+/// order. One tick per check while each can be told apart, an unknown
+/// check a hollow tick; past that, runs of color with the unknown hatched.
 struct StackBar: View {
     var counts: (up: Int, warning: Int, down: Int, unknown: Int)
     var palette: CardsPalette
     var height = 6.0
+    /// The height it takes: ticks are taller than the runs they replace.
+    nonisolated static let tickHeight = 9.0
+
+    /// A tick's width and the gap after it, or nil when ticks would be too
+    /// thin to count.
+    static func ticks(_ n: Int, width: Double) -> (tick: Double, gap: Double)? {
+        guard n > 0 else { return nil }
+        for gap in [1.5, 1.0] {
+            let tick = (width - gap * Double(n - 1)) / Double(n)
+            if tick >= (gap > 1 ? 2.2 : 1.6) { return (tick, gap) }
+        }
+        return nil
+    }
+
+    var total: Int { counts.up + counts.warning + counts.down + counts.unknown }
 
     var body: some View {
+        GeometryReader { g in
+            if let t = Self.ticks(total, width: g.size.width) {
+                tickView(t)
+            } else {
+                runs.frame(height: height).frame(maxHeight: .infinity)
+            }
+        }
+        .frame(height: Self.tickHeight)
+    }
+
+    func tickView(_ t: (tick: Double, gap: Double)) -> some View {
+        let p = palette
+        let c = counts
+        return Canvas { ctx, s in
+            var x = 0.0
+            func draw(_ n: Int, _ body: (CGRect) -> Void) {
+                for _ in 0..<n {
+                    body(CGRect(x: x, y: 0, width: t.tick, height: s.height))
+                    x += t.tick + t.gap
+                }
+            }
+            let r = min(1, t.tick / 3)
+            // Up is quieter than trouble, so what needs a look stands out.
+            draw(c.up) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.up.opacity(0.78))) }
+            draw(c.warning) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.warn)) }
+            draw(c.down) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.down)) }
+            draw(c.unknown) {
+                ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.unknown.opacity(0.14)))
+                ctx.stroke(Path(roundedRect: $0.insetBy(dx: 0.5, dy: 0.5), cornerRadius: max(0, r - 0.5)),
+                           with: .color(p.unknown), lineWidth: 1)
+            }
+        }
+    }
+
+    var runs: some View {
         GeometryReader { g in
             let parts: [(Int, Color?, Bool)] = [(counts.up, palette.up, false), (counts.warning, palette.warn, false),
                                                 (counts.down, palette.down, false), (counts.unknown, nil, true)]
@@ -294,7 +340,6 @@ struct StackBar: View {
                 }
             }
         }
-        .frame(height: height)
         .clipShape(RoundedRectangle(cornerRadius: height / 2, style: .continuous))
     }
 }

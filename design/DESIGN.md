@@ -34,7 +34,7 @@ Out of scope for v1:
 1. **Shows, never decides.** Every state, count and health comes from `topo`, computed by `internal/view` exactly as the TUI computes it. The app sets no thresholds and infers no fault.
 2. **Blind is a state.** Freshness is separate from health. Past the publisher's lease or a row's `valid_until`, the row is withheld and the item turns ◌. Widgets get the same rule through their timeline (section 7.3). An old green never stays on screen.
 3. **Shape, then color.** Every status mark changes shape (● ▲ ✕ ○ ◌) as well as color. Shapes belong to the renderer, so no theme can remove that distinction.
-4. **Unknown is never zero.** Bars and ratios keep unknown in the denominator, drawn hatched. Unknown numbers are `null`.
+4. **Unknown is never zero.** Bars and ratios keep unknown in the denominator, drawn hollow or hatched. Unknown numbers are `null`.
 5. **Local is not evidence.** This Mac's local readings carry no health, are labeled "local readings", and never leave the Mac.
 6. **Beauty through restraint.** The panel is calm when things are calm: color appears only where something needs a look.
 
@@ -60,7 +60,7 @@ The header shows the mark, the project and view, Open in Terminal (⌘O) and Set
 
 1. **Status.** Fixed, always first, pinned when the panel scrolls.
    - The verdict.
-   - Every configured check by health, as a stacked bar with unknown hatched, plus a legend.
+   - Every configured check by health, plus a legend. Native draws one tick per check while each tick can be told apart, up quieter than trouble and unknown hollow; past that, a stacked bar with unknown hatched. The verdict's tile is matte: its status color, flat.
    - Observers live, and when the frame was updated.
    - Offline: a CACHED card with the last snapshot's verdict, and no bar.
 2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
