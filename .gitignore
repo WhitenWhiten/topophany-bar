@@ -8,3 +8,4 @@ build/
 xcuserdata/
 design/shots/*.png
 Tests/Snapshots/out/
+/.claude
