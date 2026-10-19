@@ -64,7 +64,7 @@
   }
   function nAttention(sc, n) {
     return `<h4>${C.I.alert}Needs attention<em>${sc.attention.length + sc.more}</em></h4>` + sc.attention.slice(0, n).map((a) =>
-      `<div class="w-row">${C.mark(a.health, 12)}<div><div class="t">${C.fromArrows(a.title)}</div><div class="s">${esc(a.from)} · ${C.mins(a.since)}</div></div></div>`).join('');
+      `<div class="w-row">${C.mark(a.health, 12)}<div><div class="t">${C.fromArrows(a.title)}</div><div class="s">${esc(a.from)} · ${a.since ? C.mins(a.since) : esc(a.kind)}</div></div></div>`).join('');
   }
   function nApps(sc, n = 6) {
     return `<h4>${C.I.apps}Applications<em>${sc.apps.length}</em></h4>` + sc.apps.slice(0, n).map((a) =>
@@ -75,7 +75,9 @@
     let chips;
     if (offline(sc)) chips = `<span class="chip">${C.mark('cached', 10)}Not known now</span>`;
     else if (!bad.length) chips = `<span class="chip chip-calm">${C.mark('up', 9)}All ${sc.seen.length} report no problem</span>`;
+    // Problems left out for room are counted as such, never as ok.
     else chips = bad.slice(0, 2).map((x) => `<span class="chip chip-${TB.cls(x.health)}">${C.mark(x.health, 10)}${esc(x.name)}<em>${esc(x.note)}</em></span>`).join('') +
+      (bad.length > 2 ? `<span class="chip chip-${TB.cls(bad[2].health)}">${C.mark(bad[2].health, 10)}+${bad.length - 2} more</span>` : '') +
       `<span class="chip chip-calm">${C.mark('up', 9)}${sc.seen.length - bad.length} others ok</span>`;
     return `<h4>${C.I.scope}Seen from</h4><div class="nv-chips">${chips}</div>`;
   }

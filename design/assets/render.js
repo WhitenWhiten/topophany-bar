@@ -187,7 +187,9 @@
   const stackWithheld = () => '<div class="nv-runs"><div class="nv-stack withheld"></div></div>';
 
   const SEV = { down: 0, degraded: 1, unknown: 2, cached: 3, up: 4 };
-  const worst = (a, b) => SEV[a.health] - SEV[b.health] || (parseInt(b.note) || 0) - (parseInt(a.note) || 0);
+  // Observers in topo's order (PROTOCOL.md §3.3): down, degraded, unknown,
+  // up, then by name.
+  const worst = (a, b) => SEV[a.health] - SEV[b.health] || a.name.localeCompare(b.name);
   // A title split at its arrows. fitRoutes() cuts it so both ends stay
   // readable, as the app's RouteLayout does.
   const fromArrows = (t) => {
@@ -534,7 +536,7 @@
     if (on.attention && sc.attention.length) {
       const rows = sc.attention.slice(0, o.limit).map((a) => `<div class="nv-row">
         <span class="nv-row-i">${mark(a.health, 14)}</span>
-        <div class="nv-row-m"><div class="t">${fromArrows(a.title)}</div><div class="s">${esc(a.kind)} · from ${esc(a.from)} · ${mins(a.since)}</div></div>
+        <div class="nv-row-m"><div class="t">${fromArrows(a.title)}</div><div class="s">${esc(a.kind)} · from ${esc(a.from)}${a.since ? ' · ' + mins(a.since) : ''}</div></div>
         <span class="pill plain p-${TB.cls(a.health)}">${esc(a.state.toUpperCase())}</span></div>`).join('');
       const rest = sc.attention.length - o.limit + sc.more;
       out.push(`<section class="nv-card"><h3>${I.alert}Needs attention<em>${sc.attention.length + sc.more}</em></h3>${rows}
@@ -722,9 +724,9 @@
 
   function tAttentionBody(sc, w, limit, opt = {}) {
     const rows = sc.attention.slice(0, limit).map((a, i) => {
-      const st = a.state === 'unknown' ? 'unknown' : a.state;
+      const st = a.state;
       const head = tl([tglyph(a.health), S(' '), S(troute(a.title.split(' → '), w - 3 - len(st) - 1), 'b')], [S(st, 'h-' + TB.cls(a.health) + ' b')], '', w);
-      const sub = tl([S('  ' + a.kind + ' · ' + a.from + ' · ' + a.since, 'muted')], [], '', w);
+      const sub = tl([S('  ' + [a.kind, a.from, a.since].filter(Boolean).join(' · '), 'muted')], [], '', w);
       return `<div class="trow ${i === 0 && opt.focus ? 'focus' : ''}">${head}${opt.compact ? '' : sub}</div>`;
     }).join('');
     const rest = sc.attention.length - limit + sc.more;
