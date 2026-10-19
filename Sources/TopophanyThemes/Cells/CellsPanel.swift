@@ -422,12 +422,15 @@ struct CellsPanel: View {
         }
     }
 
-    /// A band of the scene, from `top` to `bottom`.
+    /// A band of the scene, from `top` to `bottom`. Clipping only hides the
+    /// rest of the scene; the band's shape also keeps it from taking the
+    /// clicks and scrolls meant for the bands beside it.
     func slice(_ scene: CellScene, top: Double, bottom: Double) -> some View {
         CellCanvas(scene: scene)
             .offset(y: -top)
             .frame(width: scene.size.width, height: bottom - top, alignment: .top)
             .clipped()
+            .contentShape(Rectangle())
     }
 
     static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false, hover: String? = nil) -> CellScene {
