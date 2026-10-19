@@ -248,7 +248,7 @@ struct CellsWidget: View {
             let b = self.b
             if size == .small {
                 w.line([.mark(c.isWithheld ? .offline : c.mark, p), .t(" " + CellText.truncate(c.name, cols - 2), p.text, bold: true)])
-                let kind = c.kind.isEmpty ? tr("NODE") : c.kind.uppercased()
+                let kind = c.kind.isEmpty ? tr("NODE") : Words.kind(c.kind).uppercased(with: L10n.locale)
                 let p = self.p
                 let live = ctx.liveDates
                 var ages: [LiveAge] = []

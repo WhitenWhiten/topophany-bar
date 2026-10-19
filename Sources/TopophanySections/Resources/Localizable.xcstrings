@@ -2115,6 +2115,22 @@
         }
       }
     },
+    "container": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンテナ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容器"
+          }
+        }
+      }
+    },
     "degraded": {
       "localizations": {
         "ja": {
@@ -2127,6 +2143,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "降级"
+          }
+        }
+      }
+    },
+    "desktop": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デスクトップ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "台式机"
           }
         }
       }
@@ -2195,6 +2227,22 @@
         }
       }
     },
+    "external": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外部"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外部"
+          }
+        }
+      }
+    },
     "here": {
       "localizations": {
         "ja": {
@@ -2211,6 +2259,22 @@
         }
       }
     },
+    "host": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ホスト"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主机"
+          }
+        }
+      }
+    },
     "incident": {
       "localizations": {
         "ja": {
@@ -2223,6 +2287,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "事件"
+          }
+        }
+      }
+    },
+    "laptop": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートPC"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "笔记本"
           }
         }
       }
@@ -2579,6 +2659,22 @@
         }
       }
     },
+    "router": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ルーター"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路由器"
+          }
+        }
+      }
+    },
     "service": {
       "localizations": {
         "ja": {
@@ -2831,6 +2927,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@更新"
+          }
+        }
+      }
+    },
+    "vm": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VM"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虚拟机"
           }
         }
       }

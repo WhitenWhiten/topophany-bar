@@ -248,7 +248,7 @@ struct CellsBodies {
             let room = w.frame.columns - CellText.width(ageText) - 1
             func line(_ provider: String, _ place: String) -> [Seg] {
                 var segs: [Seg] = []
-                for (i, part) in [c.kind, provider, place].enumerated() where !part.isEmpty {
+                for (i, part) in [Words.kind(c.kind), provider, place].enumerated() where !part.isEmpty {
                     if !segs.isEmpty { segs.append(.t(" · ", p.faint)) }
                     segs.append(.t(part, i == 0 ? p.kind : p.muted))
                 }

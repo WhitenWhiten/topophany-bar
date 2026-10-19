@@ -170,6 +170,13 @@ public enum Words {
         case "link": tr("link")
         case "edge": tr("edge")
         case "platform": tr("platform")
+        case "host": tr("host")
+        case "vm": tr("vm")
+        case "container": tr("container")
+        case "router": tr("router")
+        case "external": tr("external")
+        case "laptop": tr("laptop")
+        case "desktop": tr("desktop")
         default: k
         }
     }
