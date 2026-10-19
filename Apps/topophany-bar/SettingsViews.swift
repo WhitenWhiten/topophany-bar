@@ -423,7 +423,7 @@ struct AppearanceSettings: View {
                     RowLabel("Text size")
                 }
             }
-            Section("Menu bar") {
+            Section {
                 LabeledContent {
                     Picker("", selection: model.binding(\.appearance.menuBar.show)) {
                         Text("Symbol").tag(TopophanyKit.Settings.Appearance.Show.symbol)
@@ -438,11 +438,19 @@ struct AppearanceSettings: View {
                     RowLabel("Status colors", "Off draws the badge in the menu bar’s own color; its shape still changes")
                 }
                 .toggleStyle(.switch)
+                Toggle(isOn: model.binding(\.appearance.menuBar.motion)) {
+                    RowLabel("Motion", "Turns while what it shows is current and rests when it isn’t; a change moves once")
+                }
+                .toggleStyle(.switch)
                 LabeledContent {
                     MenuBarPreview()
                 } label: {
                     RowLabel("Preview")
                 }
+            } header: {
+                Text("Menu bar")
+            } footer: {
+                Foot("Reduce Motion and Low Power Mode keep the item still.")
             }
         }
     }
@@ -546,24 +554,34 @@ struct MenuBarPreview: View {
             return SectionBuilder.panel(PanelInput(reading: r, engine: .running, settings: s)).status
         }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         let theme = model.theme
         let appearance = model.settings.appearance.menuBar
-        // Drawn as a dark menu bar shows it. With status colors off the item
-        // is a template image, which the menu bar tints white; nothing
-        // tints it here, so it is drawn in white rather than as a template.
-        TrailingFlow(spacing: 10, lineSpacing: 4, maxWidth: 340) {
-            ForEach(Array(Self.statuses.enumerated()), id: \.offset) { _, st in
-                Renderers.renderer(for: theme)
-                    .statusItem(StatusItemModel(status: st, appearance: appearance),
-                                context: StatusItemContext(theme: theme, menuBarIsDark: true, template: false))
-                    .foregroundStyle(.white)
+        let moves = appearance.motion && !reduceMotion
+        // Drawn as a dark menu bar shows it.
+        TimelineView(.animation(minimumInterval: 1 / 15, paused: !moves)) { t in
+            let time = t.date.timeIntervalSinceReferenceDate
+            let motion = StatusItemMotion(moves: moves, turn: moves ? time * StatusItemTurn.speed : 0, time: time)
+            TrailingFlow(spacing: 10, lineSpacing: 4, maxWidth: 340) {
+                ForEach(Array(Self.statuses.enumerated()), id: \.offset) { _, st in
+                    item(StatusItemModel(status: st, appearance: appearance), theme, motion)
+                }
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 4)
         .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color(white: 0.12)))
         .environment(\.colorScheme, .dark)
         .accessibilityHidden(true)
+    }
+
+    /// An item turning with the others while what it shows is current.
+    func item(_ m: StatusItemModel, _ theme: Theme, _ motion: StatusItemMotion) -> some View {
+        var motion = motion
+        if m.activity != .live { motion.turn = 0 }
+        return Renderers.renderer(for: theme)
+            .statusItem(m, context: StatusItemContext(theme: theme, menuBarIsDark: true, motion: motion))
     }
 }
 

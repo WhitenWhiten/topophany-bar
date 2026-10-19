@@ -8,7 +8,7 @@ import Testing
     {
       "schema": 1,
       "topo": { "path": "/opt/homebrew/bin/topo", "profile": "home", "observer": "", "interval": "5s" },
-      "appearance": { "theme": "native", "panel": "system", "menuBar": { "show": "count", "statusColors": true } },
+      "appearance": { "theme": "native", "panel": "system", "menuBar": { "show": "count", "statusColors": true, "motion": true } },
       "sections": [
         { "id": "status" },
         { "id": "seen" },
@@ -32,6 +32,7 @@ import Testing
         #expect(s.topo.interval == "5s")
         #expect(s.appearance.theme == "native")
         #expect(s.appearance.menuBar.show == .count)
+        #expect(s.appearance.menuBar.motion)
         #expect(s.sections.order == Sections.defaultOrder)
         #expect(s.sections.attentionLimit == 3)
         #expect(s.sections.servers == false)
@@ -44,6 +45,16 @@ import Testing
         #expect(s.language == .system)
     }
 
+    /// Motion is on unless turned off.
+    @Test func menuBarMotion() throws {
+        func menuBar(_ json: String) throws -> Settings.Appearance.MenuBar {
+            try JSONDecoder().decode(Settings.self, from: Data(#"{"appearance": {"menuBar": \#(json)}}"#.utf8)).appearance.menuBar
+        }
+        #expect(try menuBar("{}") == Settings.Appearance.MenuBar())
+        #expect(try menuBar("{}").motion)
+        #expect(try menuBar(#"{"motion": false}"#).motion == false)
+    }
+
     @Test func roundTrips() throws {
         var s = Settings()
         s.topo.observer = "seattle-macbook"
@@ -52,6 +63,7 @@ import Testing
         s.sections.mac.mode = .server
         s.sections.mac.node = "macbook"
         s.appearance.theme = "terminal"
+        s.appearance.menuBar.motion = false
         s.language = .zhHans
         let back = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(s))
         #expect(back == s)

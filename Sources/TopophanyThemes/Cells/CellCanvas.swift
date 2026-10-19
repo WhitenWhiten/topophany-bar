@@ -33,6 +33,9 @@ public enum CellGlyph: Sendable, Hashable {
     case enter
     /// A provider's logo, by its key: it reaches into the cell after it.
     case provider(String)
+    /// A braille pattern, its dots as the bits of its code point's last
+    /// byte: the TUI's spinner.
+    case braille(UInt8)
 }
 
 /// One thing a cell scene draws, positioned in points.
@@ -251,6 +254,17 @@ public struct CellCanvas: View {
             ctx.stroke(p, with: color, style: StrokeStyle(lineWidth: 0.09 * fs, lineCap: .round, lineJoin: .round))
         case .provider(let key):
             drawLogo(&ctx, key, x: x, y: y, color: c, metrics: m)
+        case .braille(let bits):
+            // Dots 1–3 and 7 down the left, 4–6 and 8 down the right; three
+            // rows sit on the middle when the fourth is empty.
+            let places = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (0, 3), (1, 3)]
+            let d = 0.16 * fs
+            let middle = bits & 0xC0 == 0 ? 1.0 : 1.5
+            for (bit, (col, row)) in places.enumerated() where bits & (1 << bit) != 0 {
+                let px = cx + (Double(col) - 0.5) * 0.3 * fs
+                let py = cy + (Double(row) - middle) * 0.24 * fs
+                ctx.fill(Path(ellipseIn: CGRect(x: px - d / 2, y: py - d / 2, width: d, height: d)), with: color)
+            }
         }
     }
 }

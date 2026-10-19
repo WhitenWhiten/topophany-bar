@@ -17,11 +17,10 @@ The HTML previews next to this file show the design:
 
 ## 1. Goal
 
-**At a glance, what does the collector conclude right now?** The menu bar item answers that and nothing else. One click opens a panel that says where the problem is, which vantage points see it, what is affected, and how this Mac is doing. Widgets pin the same cards to the desktop.
+**At a glance, what does the collector conclude right now?** The menu bar item answers that, and it moves only while the answer is current. One click opens a panel that says where the problem is, which vantage points see it, what is affected, and how this Mac is doing. Widgets pin the same cards to the desktop.
 
 Out of scope for v1:
 
-- an animated runner (the item shows status only)
 - local notifications (collector webhooks already alert)
 - RunCat or any file output (the stream replaces them)
 - loading user theme files (the format is designed in section 8)
@@ -49,10 +48,26 @@ Out of scope for v1:
 | `incomplete`, `no-evidence`, `no-checks` | ○ ring | gray | unknown checks | Incomplete | `○ INCOMPLETE` |
 | `cached`, lease lapsed, engine stopped | ◌ dashed ring | gray | none | Offline | `◌ OFFLINE` |
 
-- **Native:** a template-image globe with the badge cut into its corner.
+- **Native:** a globe in the menu bar's ink, with the badge cut into its corner.
 - **Terminal:** a chip in the theme's ink.
-- **Settings:** Show = Symbol, Count or Words (default Count). Status colors = on or off; with colors off the badge keeps its shape.
+- **Settings:** Show = Symbol, Count or Words (default Count). Status colors = on or off; with colors off the badge keeps its shape. Motion = on or off (default on).
 - **VoiceOver:** "Topophany: 5 incidents, updated 4 seconds ago."
+
+### 3.1 Motion
+
+The item moves only to say something.
+
+| When | Native | Terminal |
+|---|---|---|
+| What it shows is current | the globe turns west to east, a meridian every 2.4 s; meridians come round from the left and fade toward the rim | the glyph breathes toward the glow, as the TUI's live dot does |
+| Nothing current is known | the globe slows, no harder than it would from full speed in 2.4 s, and comes to rest on its still pose | the glyph rests on its tone |
+| `topo` starts, or starts again shortly | the dashed ring turns | the TUI's spinner, `⠋⠙⠹⠸`, in accent2 |
+| A change | the old badge shrinks away as the new one settles in, overshooting a little; the count or words roll, up for more and down for less | the new words type themselves in behind a cursor |
+| A change that needs more attention | one ripple from the badge, in its color | the chip's edge lights once in the new tone |
+
+- **More attention:** a worse mark (✕ over ▲ over the rest), or more needing attention under the same mark. Nothing else ripples.
+- **Still:** with Motion off, Reduce Motion or Low Power Mode, nothing moves and a change shows at once.
+- **Cost:** frames go to layers of the item's own, never to its image, which the system would lay out again each time. A turn repeats every meridian, so its 36 frames are drawn once and the system plays them; the app draws only while something else moves. Nothing is drawn for motion while the displays sleep or the item can't be seen.
 
 ## 4. The panel
 
@@ -231,7 +246,7 @@ The previews include two example user themes, **Aurora** (`cards`) and **Paper**
 | Yours (Settings, Edit Widget) | Fixed (topology + collector) |
 |---|---|
 | Theme; panel appearance; text size | What counts as up, warn, down or unknown |
-| Menu bar: Symbol, Count or Words; status colors | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
+| Menu bar: Symbol, Count or Words; status colors; motion | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
 | Sections on or off and their order (Status is fixed) | Freshness, staleness, publisher lease |
 | The time zone of each place | Each server's health in Time zones |
 | Attention rows (3 or 5); which applications; pinned servers | How groups add up (unknown always counted) |
@@ -245,7 +260,7 @@ Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On
 {
   "schema": 1,
   "topo": { "path": "/opt/homebrew/bin/topo", "profile": "home", "observer": "", "interval": "5s" },
-  "appearance": { "theme": "native", "panel": "system", "menuBar": { "show": "count", "statusColors": true } },
+  "appearance": { "theme": "native", "panel": "system", "menuBar": { "show": "count", "statusColors": true, "motion": true } },
   "sections": [
     { "id": "status" },
     { "id": "seen" },

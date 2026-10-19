@@ -5,27 +5,37 @@ import TopophanyKit
 import TopophanySections
 @testable import TopophanyThemes
 
-/// The menu bar item in every state and Show mode, on a menu bar strip.
+/// The menu bar item in every state and Show mode, on a menu bar strip, and
+/// its motion frame by frame.
 @MainActor
 @Suite(.serialized) struct StatusItemSnapshots {
     init() { L10n.force("en") }
 
+    func item(_ scenario: FixtureEngine.Scenario, show: TopophanyKit.Settings.Appearance.Show = .count, colors: Bool = true)
+        -> StatusItemModel {
+        var a = TopophanyKit.Settings.Appearance.MenuBar()
+        a.show = show
+        a.statusColors = colors
+        return StatusItemModel(status: previewPanel(scenario).status, appearance: a)
+    }
+
+    func drawn(_ model: StatusItemModel, theme: Theme, dark: Bool, motion: StatusItemMotion = .still) -> some View {
+        Renderers.renderer(for: theme).statusItem(model, context: StatusItemContext(theme: theme, menuBarIsDark: dark, motion: motion))
+    }
+
+    func bar<Content: View>(dark: Bool, @ViewBuilder _ content: () -> Content) -> some View {
+        HStack(spacing: 14) { content() }
+            .padding(.horizontal, 12)
+            .frame(height: 24)
+            .background(dark ? Color(white: 0.11, opacity: 0.85) : Color(white: 0.97, opacity: 0.85))
+    }
+
     func strip(theme: Theme, dark: Bool, colors: Bool = true, _ scenario: FixtureEngine.Scenario) -> some View {
-        let status = previewPanel(scenario).status
-        let r = Renderers.renderer(for: theme)
-        return HStack(spacing: 14) {
+        bar(dark: dark) {
             ForEach(TopophanyKit.Settings.Appearance.Show.allCases, id: \.self) { show in
-                var a = TopophanyKit.Settings.Appearance.MenuBar()
-                let _ = (a.show = show, a.statusColors = colors)
-                let template = theme.renderer == .cards && !colors
-                r.statusItem(StatusItemModel(status: status, appearance: a),
-                             context: StatusItemContext(theme: theme, menuBarIsDark: dark, template: template))
-                    .foregroundStyle(dark ? .white : .black)
+                drawn(item(scenario, show: show, colors: colors), theme: theme, dark: dark)
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 24)
-        .background(dark ? Color(white: 0.11, opacity: 0.85) : Color(white: 0.97, opacity: 0.85))
     }
 
     @Test func items() throws {
@@ -39,6 +49,57 @@ import TopophanySections
                 }
                 try snapshot("item-\(theme.id)-\(dark ? "dark" : "light")", OnDesktop(dark: dark, padding: 12) { rows })
             }
+        }
+    }
+
+    /// One step of the turn in eight frames, then the rest pose; the
+    /// spinner while `topo` starts.
+    @Test func turn() throws {
+        let blind = SectionBuilder.panel(PanelInput(reading: ReaderPolicy().evaluate(at: snapshotOrigin), engine: .starting,
+                                                    settings: previewSettings()))
+        let starting = StatusItemModel(status: blind.status, appearance: .init())
+        #expect(starting.activity == .connecting)
+        for theme in [ThemeStore.native, ThemeStore.terminal] {
+            for dark in [true, false] {
+                let rows = VStack(alignment: .leading, spacing: 0) {
+                    bar(dark: dark) {
+                        ForEach(0..<8, id: \.self) { f in
+                            drawn(item(.clear, show: .symbol), theme: theme, dark: dark, motion: .init(turn: Double(f) / 8))
+                        }
+                        drawn(item(.clear, show: .symbol), theme: theme, dark: dark)
+                    }
+                    bar(dark: dark) {
+                        ForEach(0..<8, id: \.self) { f in
+                            drawn(starting, theme: theme, dark: dark, motion: .init(time: Double(f) * 0.09))
+                        }
+                        drawn(starting, theme: theme, dark: dark)
+                    }
+                }
+                try snapshot("item-turn-\(theme.id)-\(dark ? "dark" : "light")", OnDesktop(dark: dark, padding: 12) { rows })
+            }
+        }
+    }
+
+    /// Changes as they settle, a frame every 0.08 s: worse, more of the
+    /// same, better, and words.
+    @Test func changes() throws {
+        let cases: [(StatusItemModel, StatusItemModel)] = [
+            (item(.clear), item(.degraded)),
+            (item(.degraded), item(.incidents)),
+            (item(.incidents), item(.clear)),
+            (item(.clear, show: .words), item(.incidents, show: .words)),
+        ]
+        for theme in [ThemeStore.native, ThemeStore.terminal] {
+            let rows = VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(cases.enumerated()), id: \.offset) { _, c in
+                    bar(dark: true) {
+                        ForEach(0..<12, id: \.self) { f in
+                            drawn(c.1, theme: theme, dark: true, motion: .init(change: .init(from: c.0, age: Double(f) * 0.08)))
+                        }
+                    }
+                }
+            }
+            try snapshot("item-changes-\(theme.id)", OnDesktop(dark: true, padding: 12) { rows })
         }
     }
 }

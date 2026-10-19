@@ -25,6 +25,9 @@
   .legend-row { display: flex; flex-wrap: wrap; gap: 18px; margin: 4px 0 16px; color: #9a9ea6; font-size: 12.5px; }
   .legend-row span { display: inline-flex; align-items: center; gap: 6px; }
   .rules { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .motion { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 10px; align-items: stretch; margin-bottom: 8px; }
+  .motion .strip { justify-content: flex-start; padding: 12px 16px; }
+  .motion .strip .mb-right { flex-direction: row; gap: 4px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -41,6 +44,10 @@
     <span>●&nbsp; clear</span><span>▲&nbsp; degraded</span><span>✖&nbsp; incidents or down</span><span>○&nbsp; incomplete evidence</span><span>◌&nbsp; offline: the collector or the engine stopped answering</span>
   </div>
   <div class="matrix" id="items"></div>
+
+  <h2>Motion</h2>
+  <p class="sub">The item moves only to say something. While what it shows is current, the globe turns west to east, a meridian every 2.4 s, and meridians fade toward the rim; when nothing current is known it slows and rests on the still pose. Terminal breathes its glyph toward the glow, as the TUI's live dot does. A change swaps the badge and rolls the count; one that needs more attention sends out one ripple. Motion off, Reduce Motion or Low Power Mode keep everything still.</p>
+  <div class="motion" id="motion"></div>
 
   <h2>The status card</h2>
   <p class="sub">The first card of the panel, in every state. It can't be hidden. The bar under the headline counts every configured check: unknown is hatched, never left out of the denominator. When the engine goes quiet, the card turns <b>CACHED</b> and says what the last snapshot said, rather than leaving an old green on screen.</p>
@@ -95,6 +102,20 @@
     g += `<div class="tile desk wall-dark">${TB.tuiPanel(sc, Object.assign({}, o, { theme: 'tui' }))}</div>`;
   });
   document.getElementById('heroes').innerHTML = g;
+
+  // A step of the turn in eight frames, then the still pose; and the item
+  // turning live beside each look.
+  const bar = (ap, items, label, note) => `<div class="rowh"><b>${label}</b><span>${note}</span></div>
+    <div class="strip wall-${ap}"><div class="mb mb-${ap}"><div class="mb-right">${items}</div></div></div>`;
+  const clear = D.scenarios.clear;
+  const frames = (o) => [0, 1, 2, 3, 4, 5, 6, 7].map((f) => TB.statusItem(clear, Object.assign({ text: 'symbol', turn: f / 8, motion: false }, o))).join('')
+    + TB.statusItem(clear, Object.assign({ text: 'symbol', motion: false }, o));
+  document.getElementById('motion').innerHTML =
+    bar('dark', frames({ theme: 'native', color: 'status' }), 'A turn, frame by frame', 'One meridian in eight frames, then the still pose.')
+    + bar('dark', D.order.map((k) => TB.statusItem(D.scenarios[k], { theme: 'native', text: 'count', color: 'status' })).join(''), 'Live, Native', 'Only a current verdict turns; offline rests.')
+    + bar('light', D.order.map((k) => TB.statusItem(D.scenarios[k], { theme: 'native', text: 'count', color: 'status' })).join(''), 'Live, light bar', '')
+    + bar('dark', D.order.map((k) => TB.statusItem(D.scenarios[k], { theme: 'tui', text: 'words' })).join(''), 'Live, Terminal', 'The glyph breathes while current.');
+  TB.animate(document);
 </script>
 </body>
 </html>

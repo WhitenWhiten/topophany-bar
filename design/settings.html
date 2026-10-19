@@ -156,8 +156,11 @@
     <div class="gt">Menu bar</div><div class="group">
       ${row('Show', 'The count is what needs attention; nothing when all clear', '<span class="segm"><span>Symbol</span><span class="on">Count</span><span>Words</span></span>')}
       ${row('Status colors', 'Off draws the badge in the menu bar’s own color; its shape still changes', sw(true))}
+      ${row('Motion', 'Turns while what it shows is current and rests when it isn’t; a change moves once', sw(true))}
       ${row('Preview', '', `<span class="prev mb-dark">${prev}</span>`)}
-    </div>`);
+    </div>
+    <p class="foot">Reduce Motion and Low Power Mode keep the item still.</p>`);
+  TB.animate(document);
 
   // Sections
   const sections = win('Sections', `

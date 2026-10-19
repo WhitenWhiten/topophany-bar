@@ -494,7 +494,7 @@
   TB.palettes = PALETTES;
   const pal = (o) => PALETTES[(o && o.palette) || 'terminal'];
   const paletteVars = (p) => Object.entries({
-    ink: p.ink, 'ink-hi': p.inkHi, sel: p.sel, key: p.key, line: p.line, track: p.track, text: p.text, muted: p.muted,
+    ink: p.ink, 'ink-hi': p.inkHi, sel: p.sel, key: p.key, line: p.line, track: p.track, text: p.text, muted: p.muted, glow: p.glow,
     faint: p.faint, acc: p.acc, acc2: p.acc2, kind: p.kind, up: p.up, warn: p.warn, down: p.down, unk: p.unk,
   }).map(([k, v]) => `--${k}:${v}`).join(';');
   TB.paletteVars = paletteVars;
@@ -775,16 +775,38 @@
     tStatusBody, tSeenBody, tAttentionBody, tAppsBody, tServerBody, serverTitle, serverPill, tZonesBody, tFleetBody };
 
   // -------------------------------------------------------- status item
-  // The template globe with a status badge cut into its corner.
+  // The globe's meridians at `turn`, in meridians from the still pose:
+  // front halves of ellipses, fading toward the rim. Seven go round, so at
+  // rest two stand either side of the middle.
+  TB.meridians = function (turn) {
+    const step = 2 * Math.PI / 7;
+    let out = '';
+    for (let k = 0; k < 7; k++) {
+      const lon = (turn + 0.5 + k) * step;
+      let t = Math.min(1, Math.max(0, (Math.cos(lon) - 0.5) / 0.4));
+      t = t * t * (3 - 2 * t);
+      if (t < 0.004) continue;
+      const rx = 7 * Math.sin(lon);
+      out += `<path d="M9 2A${Math.abs(rx).toFixed(3)} 7 0 0 ${rx >= 0 ? 1 : 0} 9 16" opacity="${t.toFixed(3)}"/>`;
+    }
+    return out;
+  };
+
+  // The globe with a status badge cut into its corner. `turn` turns the
+  // globe; `motion` lets the page's animator turn it while what it shows is
+  // current.
   TB.statusItem = function (sc, o) {
     const v = sc.verdict;
     const st = v.state === 'offline' ? 'cached' : v.health;
+    const live = v.state !== 'offline' && o.motion !== false;
     if (o.theme === 'tui') {
       const g = v.state === 'offline' ? '◌' : TB.glyph(v.health);
       const cls = v.state === 'offline' ? 'unk' : TB.cls(v.health);
       const text = o.text === 'symbol' ? '' : o.text === 'count'
         ? (v.count ? ' ' + v.count : '') : ' ' + v.tui.replace('INCOMPLETE EVIDENCE', 'INCOMPLETE');
-      return `<span class="mb-item ours titem ${o.pressed ? 'pressed' : ''}"><span class="tchip" style="${TB.paletteVars(TB.palettes[o.palette || 'terminal'])}"><span class="g h-${cls}">${g}</span>${esc(text)}</span></span>`;
+      const vars = TB.paletteVars(TB.palettes[o.palette || 'terminal']);
+      const chip = `<span class="tchip"><span class="g h-${cls}${live ? ' breathe' : ''}" data-g="${g}">${g}</span>${esc(text)}</span>`;
+      return `<span class="mb-item ours titem ${o.pressed ? 'pressed' : ''}" style="${vars}">${chip}</span>`;
     }
     const mono = o.color === 'mono';
     const id = 'm' + Math.random().toString(36).slice(2, 8);
@@ -793,13 +815,25 @@
       degraded: '<path d="M14.6 10.9l3.7 6.5h-7.4Z" fill="var(--b)" stroke="var(--b)" stroke-width=".8" stroke-linejoin="round"/>',
       down: '<rect x="11.1" y="11.1" width="7" height="7" rx="1.6" fill="var(--b)"/><path d="M13.1 13.1l3 3M16.1 13.1l-3 3" stroke="var(--bx)" stroke-width="1.15" stroke-linecap="round"/>',
       unknown: '<circle cx="14.6" cy="14.6" r="2.7" fill="none" stroke="var(--b)" stroke-width="1.3"/>',
-      cached: '<circle cx="14.6" cy="14.6" r="2.7" fill="none" stroke="var(--b)" stroke-width="1.3" stroke-dasharray="1.4 1.2"/>',
+      cached: '<circle cx="14.6" cy="14.6" r="2.7" fill="none" stroke="var(--b)" stroke-width="1.3" stroke-dasharray="1.3 1.123"/>',
     }[st];
     const words = { clear: 'All clear', degraded: 'Degraded', incidents: v.count + ' incidents', incomplete: 'Incomplete', offline: 'Offline' }[v.state];
     const text = o.text === 'symbol' ? '' : o.text === 'count' ? (v.count ? String(v.count) : '') : words;
     return `<span class="mb-item ours nitem b-${mono ? 'mono' : TB.cls(st)} ${o.pressed ? 'pressed' : ''}">
-      <svg viewBox="0 0 19 19" width="19" height="19"><defs><mask id="${id}"><rect width="19" height="19" fill="#fff"/><circle cx="14.6" cy="14.6" r="5.1" fill="#000"/></mask></defs>
-        <g mask="url(#${id})" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><ellipse cx="9" cy="9" rx="3" ry="7"/><path d="M2 9h14"/></g>${badge}</svg>${text ? `<span class="nitem-t">${esc(text)}</span>` : ''}</span>`;
+      <svg viewBox="0 0 19 19" width="19" height="19"${live ? ' data-live="1"' : ''}><defs><mask id="${id}"><rect width="19" height="19" fill="#fff"/><circle cx="14.6" cy="14.6" r="5.1" fill="#000"/></mask></defs>
+        <g mask="url(#${id})" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><path d="M2 9h14"/><g class="mer">${TB.meridians(o.turn || 0)}</g></g>${badge}</svg>${text ? `<span class="nitem-t">${esc(text)}</span>` : ''}</span>`;
+  };
+
+  // Turns every globe under `root` that's live, a meridian every 2.4 s, as
+  // the app does; nothing moves when the reader asks for reduced motion.
+  TB.animate = function (root) {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const frame = (ms) => {
+      const turn = ms / 1000 / 2.4;
+      root.querySelectorAll('svg[data-live] g.mer').forEach((g) => { g.innerHTML = TB.meridians(turn); });
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
   };
 
   // ----------------------------------------------------------- menu bar

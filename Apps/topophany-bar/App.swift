@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     #if DEBUG
-    var statusItemImage: NSImage? { statusItem?.button?.image }
+    var statusItemImage: NSImage? { statusItem?.frame }
     var statusButton: NSStatusBarButton? { statusItem?.button }
     var panelWindow: NSWindow? { panel?.window }
     var settingsWindow: NSWindow? { settings?.window }

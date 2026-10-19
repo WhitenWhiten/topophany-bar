@@ -64,18 +64,18 @@ public struct RenderContext: Sendable {
     }
 }
 
-/// What the menu bar item sits on.
+/// What the menu bar item sits on, and where its motion stands.
 public struct StatusItemContext: Sendable {
     public var theme: Theme
-    /// The menu bar's own appearance, which may differ from the panel's.
+    /// The menu bar's own appearance, which may differ from the panel's:
+    /// the item takes the ink the menu bar's own items take on it.
     public var menuBarIsDark: Bool
-    /// Drawn as a template image: one ink, the system tints it.
-    public var template: Bool
+    public var motion: StatusItemMotion
 
-    public init(theme: Theme, menuBarIsDark: Bool, template: Bool) {
+    public init(theme: Theme, menuBarIsDark: Bool, motion: StatusItemMotion = .still) {
         self.theme = theme
         self.menuBarIsDark = menuBarIsDark
-        self.template = template
+        self.motion = motion
     }
 }
 

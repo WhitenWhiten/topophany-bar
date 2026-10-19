@@ -125,6 +125,12 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: rgba(
 }
 .mb-light .tchip { box-shadow: inset 0 0 0 1px rgba(10, 16, 22, .5), 0 1px 2px rgba(0, 0, 0, .18); }
 .tchip .g { display: inline-block; width: 1ch; text-align: center; }
+/* the live glyph breathes toward the glow, as the TUI's live dot does */
+.tchip .g { position: relative; }
+.tchip .g.breathe::after { content: attr(data-g); position: absolute; inset: 0; color: var(--glow, #f0fdfa); opacity: 0;
+  animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .tchip .g.breathe::after { animation: none; } }
 .titem .h-up { color: var(--up, #4ade80); } .titem .h-warn { color: var(--warn, #fbbf24); }
 .titem .h-down { color: var(--down, #f87171); } .titem .h-unk { color: var(--muted, #8393a3); }
 

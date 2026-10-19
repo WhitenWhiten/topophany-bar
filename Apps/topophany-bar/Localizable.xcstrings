@@ -1161,6 +1161,22 @@
         }
       }
     },
+    "Motion": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "動き"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "动态效果"
+          }
+        }
+      }
+    },
     "Move Down": {
       "localizations": {
         "ja": {
@@ -1701,6 +1717,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "读数"
+          }
+        }
+      }
+    },
+    "Reduce Motion and Low Power Mode keep the item still.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「視差効果を減らす」と低電力モードでは、項目は静止します。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“减弱动态效果”和低电量模式下，项目保持静止。"
           }
         }
       }
@@ -2485,6 +2517,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "总计、系统和用户，附一分钟历史"
+          }
+        }
+      }
+    },
+    "Turns while what it shows is current and rests when it isn’t; a change moves once": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示が最新のあいだは回り、そうでないときは止まります。変化は一度だけ動きます"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所显示的内容为最新时转动，否则静止；有变化时动一次"
           }
         }
       }

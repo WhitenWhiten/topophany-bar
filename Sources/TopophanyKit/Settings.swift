@@ -81,15 +81,19 @@ public struct Settings: Sendable, Hashable, Codable {
         public struct MenuBar: Sendable, Hashable, Codable {
             public var show: Show = .count
             public var statusColors = true
+            /// The item moves: it turns while what it shows is current, and
+            /// its changes animate. Reduce Motion keeps it still regardless.
+            public var motion = true
 
             public init() {}
 
-            enum CodingKeys: String, CodingKey { case show, statusColors }
+            enum CodingKeys: String, CodingKey { case show, statusColors, motion }
 
             public init(from decoder: Decoder) throws {
                 let c = try decoder.container(keyedBy: CodingKeys.self)
                 show = c.text(.show).flatMap(Show.init(rawValue:)) ?? .count
                 statusColors = (try? c.decodeIfPresent(Bool.self, forKey: .statusColors)) ?? true
+                motion = (try? c.decodeIfPresent(Bool.self, forKey: .motion)) ?? true
             }
         }
 
