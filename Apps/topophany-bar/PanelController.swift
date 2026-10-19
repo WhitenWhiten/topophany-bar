@@ -270,7 +270,10 @@ struct PanelRoot: View {
         let ctx = RenderContext(theme: model.theme, colorScheme: scheme, backdrop: .live, textSize: s.textSize,
                                 focus: model.focus, reduceTransparency: reduceTransparency,
                                 increaseContrast: contrast == .increased, maxHeight: maxHeight())
+        // Built anew for a new language, which L10n already has: a section
+        // whose model didn't change keeps its words otherwise.
         Renderers.renderer(for: model.theme).panel(model.panel, context: ctx)
+            .id(model.settings.language)
             .environment(\.panelActions, actions)
             .environment(\.locale, L10n.locale)
             .preferredColorScheme(window)
