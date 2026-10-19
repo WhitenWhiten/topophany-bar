@@ -7,6 +7,17 @@ import TopophanyKit
 /// The catalogs: English plurals, and Japanese and Chinese where the code
 /// reads them.
 @Suite struct LocalizationTests {
+    /// A language the user chose keeps this Mac's region and 12- or 24-hour
+    /// choice; a forced one, as tests use, takes its language's own.
+    @Test func chosenLanguageKeepsThisMacsClock() {
+        let chosen = L10n.locale("ja", keepingThisMac: true)
+        #expect(chosen.language.languageCode == "ja")
+        #expect(chosen.region == Locale.current.region)
+        #expect(chosen.hourCycle == Locale.current.hourCycle)
+        let forced = L10n.locale("ja", keepingThisMac: false)
+        #expect(forced.identifier == "ja")
+    }
+
     @Test func englishPlurals() {
         L10n.with("en") {
             let s = StatusSection(kind: .verdict(.incidents), mark: .down, topoText: "1 INCIDENT",

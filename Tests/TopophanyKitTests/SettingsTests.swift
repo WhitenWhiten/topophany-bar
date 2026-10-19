@@ -19,7 +19,8 @@ import Testing
         { "id": "mac", "mode": "local", "readings": ["cpu", "memory", "storage", "network", "battery"], "every": "2s" }
       ],
       "openAtLogin": true,
-      "terminal": "com.mitchellh.ghostty"
+      "terminal": "com.mitchellh.ghostty",
+      "language": "system"
     }
     """#
 
@@ -39,6 +40,7 @@ import Testing
         #expect(s.sections.mac.mode == .local)
         #expect(s.sections.mac.readings == Sections.Reading.allCases)
         #expect(s.terminal == "com.mitchellh.ghostty")
+        #expect(s.language == .system)
     }
 
     @Test func roundTrips() throws {
@@ -49,6 +51,7 @@ import Testing
         s.sections.mac.mode = .server
         s.sections.mac.node = "macbook"
         s.appearance.theme = "terminal"
+        s.language = .zhHans
         let back = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(s))
         #expect(back == s)
         #expect(back.sections.order.first == .status)
@@ -62,6 +65,21 @@ import Testing
         #expect(s.sections.mac.mode == .off)
         #expect(s.sections.isEnabled(.mac) == false)
         #expect(s.appearance == Settings.Appearance())
+        #expect(s.language == .system)
+    }
+
+    /// The languages Topophany is translated into; any other follows the
+    /// system.
+    @Test func language() throws {
+        func decode(_ json: String) throws -> Settings.Language {
+            try JSONDecoder().decode(Settings.self, from: Data(json.utf8)).language
+        }
+        #expect(try decode(#"{"language":"ja"}"#) == .ja)
+        #expect(try decode(#"{"language":"zh-Hans"}"#) == .zhHans)
+        #expect(try decode(#"{"language":"fr"}"#) == .system)
+        #expect(try decode(#"{"language":7}"#) == .system)
+        #expect(Settings.Language.system.localization == nil)
+        #expect(Settings.Language.zhHans.localization == "zh-Hans")
     }
 
     /// A file that lacks a section, as one from before it existed would,

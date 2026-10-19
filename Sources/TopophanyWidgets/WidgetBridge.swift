@@ -25,11 +25,11 @@ public final class WidgetBridge {
     public func tick(panel: PanelModel, policy reader: ReaderPolicy, theme: Theme, settings: TopophanyKit.Settings,
                      at now: Date = Date()) {
         guard store.isAvailable else { return }
-        // A change of theme or of what widgets show reloads too, and so does
-        // a Server widget's card changing health.
+        // A change of theme, language or what widgets show reloads too, and
+        // so does a Server widget's card changing health.
         let extra = SectionBuilder.servers(reader.evaluate(at: now), nodes: needs.nodes)
             .map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
-        let look = theme.id + String(describing: settings.sections) + String(describing: needs) + extra
+        let look = theme.id + settings.language.rawValue + String(describing: settings.sections) + String(describing: needs) + extra
         let changedLook = look != lastLook
         guard policy.shouldReload(panel, at: now) || changedLook else { return }
         lastLook = look

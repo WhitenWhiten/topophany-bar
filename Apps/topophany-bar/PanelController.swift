@@ -193,7 +193,7 @@ final class PanelController: NSObject {
         if id.hasPrefix("attention:"), let a = model.panel.attention?.items.first(where: { "attention:" + $0.id == id }) {
             text = "\(a.title), \(a.pill.text)"
         } else if id == "attention:more", let a = model.panel.attention {
-            text = String(localized: "\(a.more) more in Topophany")
+            text = tr("\(a.more) more in Topophany")
         } else if id.hasPrefix("seen:"), let o = model.panel.seen?.problems?.first(where: { "seen:" + $0.id == id }) {
             text = "\(o.name), \(o.note)"
         } else if id.hasPrefix("app:"), let a = model.panel.applications?.rows.first(where: { "app:" + $0.id == id }) {
@@ -230,6 +230,7 @@ struct PanelRoot: View {
                                 increaseContrast: contrast == .increased, maxHeight: maxHeight())
         Renderers.renderer(for: model.theme).panel(model.panel, context: ctx)
             .environment(\.panelActions, actions)
+            .environment(\.locale, L10n.locale)
             .preferredColorScheme(model.theme.renderer == .cells ? .dark : (s.panel == .system ? nil : scheme))
     }
 }

@@ -1,15 +1,24 @@
 import Foundation
 import Synchronization
 
-/// Where the panel's words come from. They follow the system's languages
-/// unless a localization is forced, as snapshot tests do.
+/// Where the panel's words come from. They follow the system's languages,
+/// or the language the user chose, unless a localization is forced, as
+/// snapshot tests do.
 public enum L10n {
     private static let forced = Mutex<String?>(nil)
+    private static let preferred = Mutex<String?>(nil)
 
     /// Forces a localization (`en`, `ja` or `zh-Hans`), or `nil` to follow
     /// the system.
     public static func force(_ localization: String?) {
         forced.withLock { $0 = localization }
+    }
+
+    /// The user's language (`en`, `ja` or `zh-Hans`), or `nil` to follow the
+    /// system. Unlike a forced one, it keeps this Mac's region and its 12-
+    /// or 24-hour choice.
+    public static func prefer(_ localization: String?) {
+        preferred.withLock { $0 = localization }
     }
 
     /// A localization for one task and what it calls, ahead of the forced
@@ -20,7 +29,8 @@ public enum L10n {
         try $scoped.withValue(localization, operation: body)
     }
 
-    private static var chosen: String? { scoped ?? forced.withLock { $0 } }
+    private static var fixed: String? { scoped ?? forced.withLock { $0 } }
+    private static var chosen: String? { fixed ?? preferred.withLock { $0 } }
 
     public static var localization: String {
         chosen ?? Bundle.module.preferredLocalizations.first ?? "en"
@@ -30,9 +40,11 @@ public enum L10n {
     /// this Mac's region and its 12- or 24-hour choice. A forced
     /// localization takes its language's own, so snapshots don't depend on
     /// the Mac that draws them.
-    public static var locale: Locale {
+    public static var locale: Locale { locale(localization, keepingThisMac: fixed == nil) }
+
+    static func locale(_ localization: String, keepingThisMac: Bool) -> Locale {
         let base = Locale(identifier: localization)
-        guard chosen == nil else { return base }
+        guard keepingThisMac else { return base }
         var c = Locale.Components(locale: base)
         c.region = Locale.current.region
         c.hourCycle = Locale.current.hourCycle

@@ -12,10 +12,20 @@ public struct Settings: Sendable, Hashable, Codable {
     /// The bundle identifier of the terminal that opens the TUI; empty for
     /// the system's terminal for scripts.
     public var terminal = ""
+    /// The language of the panel, the menu bar item, widgets and Settings.
+    public var language: Language = .system
+
+    public enum Language: String, Sendable, Hashable, Codable, CaseIterable {
+        case system, en, ja, zhHans = "zh-Hans"
+
+        /// The localization to use, or `nil` to follow the system's
+        /// languages.
+        public var localization: String? { self == .system ? nil : rawValue }
+    }
 
     public init() {}
 
-    enum CodingKeys: String, CodingKey { case schema, topo, appearance, sections, openAtLogin, terminal }
+    enum CodingKeys: String, CodingKey { case schema, topo, appearance, sections, openAtLogin, terminal, language }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -26,6 +36,7 @@ public struct Settings: Sendable, Hashable, Codable {
         sections = (try? c.decodeIfPresent(Sections.self, forKey: .sections)) ?? d.sections
         openAtLogin = (try? c.decodeIfPresent(Bool.self, forKey: .openAtLogin)) ?? d.openAtLogin
         terminal = (try? c.decodeIfPresent(String.self, forKey: .terminal)) ?? d.terminal
+        language = c.text(.language).flatMap(Language.init(rawValue:)) ?? d.language
     }
 
     // MARK: topo

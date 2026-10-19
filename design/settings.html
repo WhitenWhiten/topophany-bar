@@ -34,6 +34,7 @@
   .gt { margin: 16px 4px 6px; font-size: 13px; font-weight: 650; }
   .gt em { font-style: normal; font-weight: 400; color: var(--l3); margin-left: 6px; font-size: 12px; }
   .group { background: rgba(255,255,255,.045); border-radius: 10px; box-shadow: inset 0 0 0 .5px rgba(255,255,255,.065); }
+  .group + .group { margin-top: 14px; }
   .grow { display: flex; align-items: center; gap: 12px; padding: 8px 12px; min-height: 42px; border-top: .5px solid var(--sep); }
   .grow:first-child { border-top: 0; }
   .grow .lab { flex: 1; min-width: 0; }
@@ -128,6 +129,9 @@
     <div class="gt">Startup</div><div class="group">
       ${row('Open at login', '', sw(true))}
       ${row('Open Topophany in', 'Where ⌘O and “more in Topophany” open the TUI', pop('Ghostty'))}
+    </div>
+    <div class="group">
+      ${row('Language', 'For the panel, the menu bar item, widgets and these settings', pop('Match System'))}
     </div>`);
 
   // Appearance, with the real panels as thumbnails

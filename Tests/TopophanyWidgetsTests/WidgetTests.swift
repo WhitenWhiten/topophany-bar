@@ -146,6 +146,12 @@ func temporaryStore() -> HandoffStore {
         bridge.tick(panel: panel(p), policy: p, theme: ThemeStore.terminal, settings: settings(), at: origin.addingTimeInterval(2))
         #expect(count.n == 2)
         #expect(store.read()?.decodedTheme.id == "terminal")
+        // A new language: the widgets draw their words again.
+        var japanese = settings()
+        japanese.language = .ja
+        bridge.tick(panel: panel(p), policy: p, theme: ThemeStore.terminal, settings: japanese, at: origin.addingTimeInterval(3))
+        #expect(count.n == 3)
+        #expect(store.read()?.decodedSettings.language == .ja)
     }
 
     @Test func silentWithoutAnAppGroup() {

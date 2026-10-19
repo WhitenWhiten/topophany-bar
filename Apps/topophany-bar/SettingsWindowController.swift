@@ -6,27 +6,26 @@ import TopophanySections
 @MainActor
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let model: AppModel
+    private let tabs = SettingsTabs()
 
     init(model: AppModel) {
         self.model = model
-        let tabs = SettingsTabs()
+        let tabs = self.tabs
         tabs.tabStyle = .toolbar
-        func tab<V: View>(_ title: String, _ symbol: String, _ view: V) -> NSTabViewItem {
+        func tab<V: View>(_ symbol: String, _ view: V) -> NSTabViewItem {
             let index = tabs.tabViewItems.count
-            let host = NSHostingController(rootView: view.environment(model)
+            let host = NSHostingController(rootView: Localized(content: view).environment(model)
                 .environment(\.fitSettings, SettingsFitter(tab: index, tabs: tabs)))
             // The window follows the forms' heights itself (SettingsTabs).
             host.sizingOptions = []
-            host.title = title
             let item = NSTabViewItem(viewController: host)
-            item.label = title
-            item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: title)
+            item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
             return item
         }
-        tabs.addTabViewItem(tab(String(localized: "General"), "gearshape", GeneralSettings()))
-        tabs.addTabViewItem(tab(String(localized: "Appearance"), "circle.lefthalf.filled", AppearanceSettings()))
-        tabs.addTabViewItem(tab(String(localized: "Sections"), "list.bullet", SectionsSettings()))
-        tabs.addTabViewItem(tab(String(localized: "This Mac"), "laptopcomputer", MacSettings()))
+        tabs.addTabViewItem(tab("gearshape", GeneralSettings()))
+        tabs.addTabViewItem(tab("circle.lefthalf.filled", AppearanceSettings()))
+        tabs.addTabViewItem(tab("list.bullet", SectionsSettings()))
+        tabs.addTabViewItem(tab("laptopcomputer", MacSettings()))
         let window = NSWindow(contentViewController: tabs)
         window.styleMask = [.titled, .closable]
         window.toolbarStyle = .preference
@@ -34,6 +33,20 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.setFrameAutosaveName("topophany-bar.settings")
         super.init(window: window)
         window.delegate = self
+        relabel()
+    }
+
+    /// Names the tabs, and the window after the one shown, in the language
+    /// the user chose.
+    func relabel() {
+        let titles = [tr("General"), tr("Appearance"), tr("Sections"), tr("This Mac")]
+        for (item, title) in zip(tabs.tabViewItems, titles) {
+            item.label = title
+            item.viewController?.title = title
+            item.image?.accessibilityDescription = title
+        }
+        let selected = tabs.selectedTabViewItemIndex
+        if titles.indices.contains(selected) { window?.title = titles[selected] }
     }
 
     @available(*, unavailable)

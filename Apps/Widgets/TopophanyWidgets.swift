@@ -142,6 +142,8 @@ enum Timelines {
                         family: WidgetFamily, key: String) -> [Entry] {
         let now = Date()
         let h = store.read()
+        // The language the user chose in the app, for every word drawn.
+        L10n.prefer(h?.decodedSettings.language.localization)
         var node: String?
         if case .server(let n, _) = kind { node = n }
         needs.record(key, .init(lists: family == .systemLarge || family == .systemExtraLarge, node: node, at: now))
@@ -223,6 +225,7 @@ struct WidgetView: View {
             r.widget(model, size: size, bounds: g.size, context: context)
         }
         .containerBackground(for: .widget) { r.widgetBackground(context: context) }
+        .environment(\.locale, L10n.locale)
         .widgetURL(WidgetLinks.panel)
     }
 }

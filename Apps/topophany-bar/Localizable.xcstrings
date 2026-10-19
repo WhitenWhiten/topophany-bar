@@ -825,6 +825,22 @@
         }
       }
     },
+    "For the panel, the menu bar item, widgets and these settings": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パネル、メニューバー項目、ウィジェット、この設定画面で使われます"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于面板、菜单栏项目、小组件和这些设置"
+          }
+        }
+      }
+    },
     "Found in %@; every reading comes from it": {
       "localizations": {
         "ja": {
@@ -965,6 +981,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "固定显示状态"
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "言語"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言"
           }
         }
       }

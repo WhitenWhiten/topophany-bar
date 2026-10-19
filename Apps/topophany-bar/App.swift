@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         model.onSettingsChange = { [weak self] old, new in
             if old.openAtLogin != new.openAtLogin { self?.applyLoginItem() }
+            if old.language != new.language { self?.settings?.relabel() }
         }
         model.start()
         applyLoginItem()

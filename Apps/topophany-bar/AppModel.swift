@@ -68,6 +68,7 @@ final class AppModel {
     init(store: SettingsStore = AppModel.defaultStore) {
         self.store = store
         let s = store.load()
+        L10n.prefer(s.language.localization)
         settings = s
         let r = ReaderPolicy().evaluate(at: Date())
         reading = r
@@ -176,13 +177,15 @@ final class AppModel {
         change(&s)
         guard s != settings else { return }
         let old = settings
+        L10n.prefer(s.language.localization)
         settings = s
         try? store.save(s)
         onSettingsChange?(old, s)
         if old.topo.path != s.topo.path || old.topo.source != s.topo.source {
             restartEngine()
             locate()
-        } else if request(old) != request(s) {
+        } else if request(old) != request(s) || old.language != s.language {
+            // `topo preview` names its network in the panel's language.
             send()
         }
         if old.sections.mac != s.sections.mac || old.sections.order != s.sections.order {

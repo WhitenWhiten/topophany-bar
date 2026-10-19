@@ -124,9 +124,9 @@ let refreshChoices = ["1s", "2s", "5s", "10s", "30s", "1m", "5m", "15m", "1h"]
 func everyText(_ d: String) -> String {
     guard let i = Interval(d) else { return d }
     let s = Int(i.seconds)
-    if s < 60 { return String(localized: "Every \(s) s") }
-    if s < 3600 { return String(localized: "Every \(s / 60) min") }
-    return String(localized: "Every \(s / 3600) h")
+    if s < 60 { return tr("Every \(s) s") }
+    if s < 3600 { return tr("Every \(s / 60) min") }
+    return tr("Every \(s / 3600) h")
 }
 
 // MARK: General
@@ -168,6 +168,18 @@ struct GeneralSettings: View {
                     .toggleStyle(.switch)
                 TerminalPicker()
             }
+            Section {
+                Picker(selection: model.binding(\.language)) {
+                    Text("Match System").tag(TopophanyKit.Settings.Language.system)
+                    Divider()
+                    // Each language in its own words, as the system lists them.
+                    Text(verbatim: "English").tag(TopophanyKit.Settings.Language.en)
+                    Text(verbatim: "日本語").tag(TopophanyKit.Settings.Language.ja)
+                    Text(verbatim: "简体中文").tag(TopophanyKit.Settings.Language.zhHans)
+                } label: {
+                    RowLabel("Language", "For the panel, the menu bar item, widgets and these settings")
+                }
+            }
         }
     }
 }
@@ -197,8 +209,8 @@ struct TerminalPicker: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.applicationBundle]
         panel.directoryURL = URL(filePath: "/Applications")
-        panel.prompt = String(localized: "Choose")
-        panel.message = String(localized: "Choose the terminal that opens the TUI. It's given a shell script to open.")
+        panel.prompt = tr("Choose")
+        panel.message = tr("Choose the terminal that opens the TUI. It's given a shell script to open.")
         guard panel.runModal() == .OK, let url = panel.url, let id = Bundle(url: url)?.bundleIdentifier else { return }
         model.update { $0.terminal = id }
     }
@@ -214,7 +226,7 @@ struct ProfileRow: View {
         if let list = model.profiles, !list.profiles.isEmpty {
             let chosen = model.settings.topo.profile
             Picker(selection: model.binding(\.topo.profile)) {
-                Text(list.active.map { String(localized: "Active: \(Self.title($0))") } ?? String(localized: "Active profile")).tag("")
+                Text(list.active.map { tr("Active: \(Self.title($0))") } ?? tr("Active profile")).tag("")
                 Divider()
                 ForEach(list.profiles) { p in Text(verbatim: Self.title(p)).tag(p.name) }
                 if !chosen.isEmpty, !list.profiles.contains(where: { $0.name == chosen }) {
@@ -301,7 +313,7 @@ struct TopoRow: View {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.treatsFilePackagesAsDirectories = true
-        panel.message = String(localized: "Choose the topo executable")
+        panel.message = tr("Choose the topo executable")
         panel.directoryURL = URL(filePath: "/opt/homebrew/bin")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         model.update { $0.topo.path = url.path }
@@ -338,13 +350,13 @@ struct EngineRow: View {
 
     var title: String {
         switch model.engineStatus {
-        case .starting: String(localized: "Starting")
-        case .running: String(localized: "Running")
-        case .restarting: String(localized: "Restarting")
-        case .unavailable(.notFound): String(localized: "topo not found")
-        case .unavailable(.upgradeNeeded), .unavailable(.unsupported): String(localized: "topo must be upgraded")
-        case .unavailable(.launchFailed): String(localized: "Could not start topo")
-        case .stopped: String(localized: "Stopped")
+        case .starting: tr("Starting")
+        case .running: tr("Running")
+        case .restarting: tr("Restarting")
+        case .unavailable(.notFound): tr("topo not found")
+        case .unavailable(.upgradeNeeded), .unavailable(.unsupported): tr("topo must be upgraded")
+        case .unavailable(.launchFailed): tr("Could not start topo")
+        case .stopped: tr("Stopped")
         }
     }
 
@@ -352,25 +364,25 @@ struct EngineRow: View {
         var parts: [String] = []
         switch model.engineStatus {
         case .running(let r):
-            if r.pid > 0 { parts.append(String(localized: "pid \(r.pid)")) }
+            if r.pid > 0 { parts.append(tr("pid \(r.pid)")) }
         case .restarting(let after, let attempt, let reason):
             parts.append(reason)
             _ = after
-            parts.append(String(localized: "attempt \(attempt)"))
+            parts.append(tr("attempt \(attempt)"))
         case .unavailable(.notFound):
-            parts.append(String(localized: "Install topo, or choose it above"))
+            parts.append(tr("Install topo, or choose it above"))
         case .unavailable(.upgradeNeeded):
-            parts.append(String(localized: "This topo has no monitor stream; upgrade it"))
+            parts.append(tr("This topo has no monitor stream; upgrade it"))
         case .unavailable(.unsupported(_, let version, let missing)):
-            parts.append(String(localized: "\(version) lacks \(missing.joined(separator: ", "))"))
+            parts.append(tr("\(version) lacks \(missing.joined(separator: ", "))"))
         case .unavailable(.launchFailed(_, let message)):
             parts.append(message)
         default:
             break
         }
-        if let at = model.lastFrameAt { parts.append(String(localized: "last frame \(Words.ago(at, now: now))")) }
+        if let at = model.lastFrameAt { parts.append(tr("last frame \(Words.ago(at, now: now))")) }
         if let lease = model.reading.frame?.publisherExpiresAt, model.reading.isLive {
-            parts.append(String(localized: "lease until \(lease.formatted(date: .omitted, time: .standard))"))
+            parts.append(tr("lease until \(lease.formatted(Date.FormatStyle(date: .omitted, time: .standard, locale: L10n.locale)))"))
         }
         if let last = model.diagnostics.last, parts.count < 2 { parts.append(last) }
         return parts.isEmpty ? " " : parts.joined(separator: " · ")
@@ -456,7 +468,7 @@ struct ThemeChoice: View {
                 HStack(spacing: 6) {
                     Image(systemName: selected ? "largecircle.fill.circle" : "circle")
                         .foregroundStyle(selected ? Color.accentColor : .secondary)
-                    Text(verbatim: theme.id == "terminal" ? String(localized: "Terminal") : String(localized: "Native"))
+                    Text(verbatim: theme.id == "terminal" ? tr("Terminal") : tr("Native"))
                         .fontWeight(.medium)
                 }
                 Text(theme.id == "terminal"
@@ -477,7 +489,17 @@ struct ThemeChoice: View {
 struct ThemeThumbnail: View {
     var theme: Theme
 
-    static let model: PanelModel = {
+    /// Its words are fixed when it is built: one per language.
+    static var models: [String: PanelModel] = [:]
+
+    static var model: PanelModel {
+        if let m = models[L10n.localization] { return m }
+        let m = build()
+        models[L10n.localization] = m
+        return m
+    }
+
+    static func build() -> PanelModel {
         var s = TopophanyKit.Settings()
         s.sections.applications = false
         s.sections.zones = false
@@ -486,7 +508,7 @@ struct ThemeThumbnail: View {
         let now = Date()
         let r = FixtureEngine.reading(.incidents, request: TemplateCompiler().request(for: s, revision: 0), origin: now, after: 4)
         return SectionBuilder.panel(PanelInput(reading: r, engine: .running, settings: s))
-    }()
+    }
 
     static let scale = 0.6
 
@@ -765,9 +787,9 @@ struct ApplicationsMenu: View {
             }
         } label: {
             if only.isEmpty {
-                Text(known.isEmpty ? String(localized: "All") : String(localized: "All \(known.count)"))
+                Text(known.isEmpty ? tr("All") : tr("All \(known.count)"))
             } else {
-                Text(known.isEmpty ? String(localized: "\(only.count) chosen") : String(localized: "\(only.count) of \(known.count)"))
+                Text(known.isEmpty ? tr("\(only.count) chosen") : tr("\(only.count) of \(known.count)"))
             }
         }
         .fixedSize()
@@ -921,7 +943,7 @@ struct ZonesPicker: View {
                             GridRow {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(verbatim: p.place).lineLimit(1)
-                                    Text(p.servers == 0 ? String(localized: "Not listed now") : String(localized: "\(p.servers) servers"))
+                                    Text(p.servers == 0 ? tr("Not listed now") : tr("\(p.servers) servers"))
                                         .font(.callout).foregroundStyle(.secondary)
                                 }
                                 ZoneMenu(place: p.place).gridColumnAlignment(.trailing)
@@ -953,10 +975,10 @@ struct ZoneMenu: View {
         Menu {
             if let suggested {
                 Button { choose(nil) } label: {
-                    item(chosen == nil, String(localized: "Suggested: \(PlaceZones.city(suggested))"))
+                    item(chosen == nil, tr("Suggested: \(PlaceZones.city(suggested))"))
                 }
             }
-            Button { choose("") } label: { item(chosen == "" || (chosen == nil && suggested == nil), String(localized: "None")) }
+            Button { choose("") } label: { item(chosen == "" || (chosen == nil && suggested == nil), tr("None")) }
             Divider()
             ForEach(PlaceZones.regions, id: \.region) { r in
                 Menu(Self.regionName(r.region)) {
@@ -973,9 +995,9 @@ struct ZoneMenu: View {
 
     func label(chosen: String?, suggested: String?) -> String {
         switch chosen {
-        case ""?: String(localized: "None")
+        case ""?: tr("None")
         case let z?: PlaceZones.city(z)
-        case nil: suggested.map { String(localized: "\(PlaceZones.city($0)) (suggested)") } ?? String(localized: "None")
+        case nil: suggested.map { tr("\(PlaceZones.city($0)) (suggested)") } ?? tr("None")
         }
     }
 
@@ -992,15 +1014,15 @@ struct ZoneMenu: View {
 
     static func regionName(_ r: String) -> String {
         switch r {
-        case "Africa": String(localized: "Africa")
-        case "America": String(localized: "Americas")
-        case "Antarctica": String(localized: "Antarctica")
-        case "Asia": String(localized: "Asia")
-        case "Atlantic": String(localized: "Atlantic")
-        case "Australia": String(localized: "Australia")
-        case "Europe": String(localized: "Europe")
-        case "Indian": String(localized: "Indian Ocean")
-        case "Pacific": String(localized: "Pacific")
+        case "Africa": tr("Africa")
+        case "America": tr("Americas")
+        case "Antarctica": tr("Antarctica")
+        case "Asia": tr("Asia")
+        case "Atlantic": tr("Atlantic")
+        case "Australia": tr("Australia")
+        case "Europe": tr("Europe")
+        case "Indian": tr("Indian Ocean")
+        case "Pacific": tr("Pacific")
         default: r
         }
     }
@@ -1105,8 +1127,8 @@ struct LocalReadingsSettings: View {
     }
 
     var automatic: String {
-        if let name = model.localInterfaceName { return String(localized: "Automatic (\(name))") }
-        return String(localized: "Automatic")
+        if let name = model.localInterfaceName { return tr("Automatic (\(name))") }
+        return tr("Automatic")
     }
 
     func reading(_ r: Sections.Reading, _ title: LocalizedStringKey, _ subtitle: LocalizedStringKey?) -> some View {
@@ -1182,7 +1204,7 @@ struct NodeRow: View {
                 if node.isEmpty { Text("Choose a node").tag("") }
                 ForEach(known) { s in
                     let title = Words.join([s.name, s.id, s.place])
-                    Text(verbatim: s.id == suggestion?.id ? String(localized: "\(title) (matches this Mac)") : title).tag(s.id)
+                    Text(verbatim: s.id == suggestion?.id ? tr("\(title) (matches this Mac)") : title).tag(s.id)
                 }
                 if !node.isEmpty, !known.contains(where: { $0.id == node }) {
                     Text("\(node) (not in the topology)").tag(node)

@@ -221,7 +221,7 @@ The previews include two example user themes, **Aurora** (`cards`) and **Paper**
 | Attention rows (3 or 5); which applications; pinned servers | How groups add up (unknown always counted) |
 | What each widget shows and its theme | Status glyphs and their meaning |
 | This Mac mode, readings, volume, interface, sample rate | No expressions or formulas |
-| `topo` path, profile, observer view, refresh (1 s to 1 h); open at login; terminal for the TUI | |
+| `topo` path, profile, observer view, refresh (1 s to 1 h); open at login; terminal for the TUI; language (system, English, Japanese, Simplified Chinese) | |
 
 Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On every change the app compiles them into a `topo` monitor template and sends it to the running engine.
 
@@ -240,7 +240,8 @@ Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On
     { "id": "mac", "mode": "local", "readings": ["cpu", "memory", "storage", "network", "battery"], "every": "2s" }
   ],
   "openAtLogin": true,
-  "terminal": "com.mitchellh.ghostty"
+  "terminal": "com.mitchellh.ghostty",
+  "language": "system"
 }
 ```
 
