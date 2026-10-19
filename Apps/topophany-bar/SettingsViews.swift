@@ -695,6 +695,7 @@ struct SectionLabel: View {
         case .seen: "scope"
         case .attention: "exclamationmark.triangle.fill"
         case .applications: "square.stack.3d.up.fill"
+        case .fleet: "square.grid.2x2.fill"
         case .servers: "server.rack"
         case .zones: "clock.fill"
         case .mac: "laptopcomputer"
@@ -707,6 +708,7 @@ struct SectionLabel: View {
         case .seen: Color(red: 0.37, green: 0.36, blue: 0.90)
         case .attention: Color(red: 1, green: 0.62, blue: 0.04)
         case .applications: Color(red: 0.04, green: 0.52, blue: 1)
+        case .fleet: Color(red: 0.35, green: 0.34, blue: 0.84)
         case .servers: Color(red: 0.56, green: 0.56, blue: 0.58)
         case .zones: Color(red: 0.19, green: 0.69, blue: 0.78)
         case .mac: Color(red: 0.39, green: 0.82, blue: 1)
@@ -719,6 +721,7 @@ struct SectionLabel: View {
         case .seen: RowLabel("Seen from", "Which observers see a problem, and that the others don’t")
         case .attention: RowLabel("Needs attention", "Open incidents first, then anything else that needs a look")
         case .applications: RowLabel("Applications", "Services folded into the applications you declare")
+        case .fleet: RowLabel("Fleet", "Every server, edge and platform topo lists, by who runs it")
         case .servers: RowLabel("Servers", "The Servers-tab card of each server you pin")
         case .zones: RowLabel("Time zones", "The time where your servers are, and each one’s health")
         case .mac: RowLabel("This Mac", "Set up under This Mac")

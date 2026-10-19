@@ -2115,6 +2115,22 @@
         }
       }
     },
+    "edge": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エッジ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "边缘"
+          }
+        }
+      }
+    },
     "endpoint": {
       "localizations": {
         "ja": {
@@ -2447,6 +2463,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "路径"
+          }
+        }
+      }
+    },
+    "platform": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プラットフォーム"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "平台"
           }
         }
       }

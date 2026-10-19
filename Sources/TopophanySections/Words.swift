@@ -138,6 +138,8 @@ public enum Words {
         case "observer": tr("observer")
         case "endpoint": tr("endpoint")
         case "link": tr("link")
+        case "edge": tr("edge")
+        case "platform": tr("platform")
         default: k
         }
     }

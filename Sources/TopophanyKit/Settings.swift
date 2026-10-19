@@ -116,14 +116,14 @@ public struct Settings: Sendable, Hashable, Codable {
 // MARK: sections
 
 public enum SectionID: String, Sendable, Hashable, Codable, CaseIterable {
-    case status, seen, attention, applications, servers, zones, mac
+    case status, seen, attention, applications, fleet, servers, zones, mac
 }
 
 /// The panel's sections: their order, and each one's choices. Status is
 /// always first. Stored as an ordered array of objects, as DESIGN.md §9
 /// shows.
 public struct Sections: Sendable, Hashable, Codable {
-    public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .applications, .servers, .zones, .mac]
+    public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .applications, .fleet, .servers, .zones, .mac]
 
     public enum MacMode: String, Sendable, Hashable, Codable, CaseIterable { case local, server, off }
     public enum Reading: String, Sendable, Hashable, Codable, CaseIterable { case cpu, memory, storage, network, battery }
@@ -157,6 +157,8 @@ public struct Sections: Sendable, Hashable, Codable {
     public var applications = true
     /// Applications to show by ID; empty for all.
     public var applicationsOnly: [String] = []
+    /// Fleet: every node `topo` lists, by who runs it.
+    public var fleet = true
     public var servers = false
     /// Pinned servers by node ID.
     public var serverNodes: [String] = []
@@ -176,6 +178,7 @@ public struct Sections: Sendable, Hashable, Codable {
         case .seen: seen
         case .attention: attention
         case .applications: applications
+        case .fleet: fleet
         case .servers: servers
         case .zones: zones
         case .mac: mac.mode != .off
@@ -188,6 +191,7 @@ public struct Sections: Sendable, Hashable, Codable {
         case .seen: seen = on
         case .attention: attention = on
         case .applications: applications = on
+        case .fleet: fleet = on
         case .servers: servers = on
         case .zones: zones = on
         case .mac: if !on { mac.mode = .off } else if mac.mode == .off { mac.mode = .local }
@@ -239,6 +243,7 @@ public struct Sections: Sendable, Hashable, Codable {
             case .applications:
                 applications = e.enabled ?? true
                 applicationsOnly = e.only ?? []
+            case .fleet: fleet = e.enabled ?? true
             case .servers:
                 servers = e.enabled ?? false
                 serverNodes = e.nodes ?? []
@@ -280,6 +285,7 @@ public struct Sections: Sendable, Hashable, Codable {
             case .applications:
                 e.enabled = applications
                 e.only = applicationsOnly
+            case .fleet: e.enabled = fleet
             case .servers:
                 e.enabled = servers
                 e.nodes = serverNodes

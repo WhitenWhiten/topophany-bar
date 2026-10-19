@@ -41,7 +41,7 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
         #expect(p.seen?.problems == [])
         #expect(p.seen?.calm == 11)
         #expect(p.attention == nil, "hidden when empty")
-        #expect(p.sections.map(\.id) == [.seen, .applications, .servers, .zones, .mac])
+        #expect(p.sections.map(\.id) == [.seen, .applications, .fleet, .servers, .zones, .mac])
         let apps = p.applications!
         #expect(apps.rows.map(\.name) == ["Proxy chain", "Code & backups", "Main site", "Personal cloud", "Remote access", "Serverless"])
         #expect(apps.serviceCount == 23)

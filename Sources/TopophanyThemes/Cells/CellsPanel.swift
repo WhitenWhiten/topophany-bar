@@ -147,6 +147,40 @@ struct CellsBodies {
         }
     }
 
+    // MARK: fleet
+
+    /// Two to a line, each column as wide as the other: the provider's logo,
+    /// who, and a mark per node at the column's end. Edges and platforms
+    /// lead, saying what they are where there's room.
+    func fleet(_ w: inout CellWriter, _ f: FleetSection, columns: Int = 2, marks: Int = 4) {
+        let gap = 2
+        let cw = (w.frame.columns - gap * (columns - 1)) / columns
+        func entry(_ g: FleetSection.Group) -> [Seg] {
+            var tail: [Seg] = g.nodes.prefix(marks).map { .mark($0.mark, p) }
+            if g.nodes.count > marks { tail.append(.t("+\(g.nodes.count - marks)", p.faint)) }
+            let logo = Seg.logo(g.provider, p)
+            let lead: [Seg] = logo.isEmpty ? [.t("  ", p.text)] : logo
+            let room = cw - 2 - tail.reduce(0) { $0 + $1.width } - 1
+            let tag = g.isEdge ? " " + Words.kind(g.kind) : ""
+            let fits = !tag.isEmpty && CellText.width(g.title) + CellText.width(tag) <= room
+            var segs = lead + [.t(CellText.truncate(g.title, max(1, room)), p.text)]
+            if fits { segs.append(.t(tag, p.faint)) }
+            let used = segs.reduce(0) { $0 + $1.width } + tail.reduce(0) { $0 + $1.width }
+            return segs + [.t(String(repeating: " ", count: max(1, cw - used)), p.text)] + tail
+        }
+        // Servers start a line of their own after the edges.
+        for part in [f.edges, f.servers] {
+            for row in stride(from: 0, to: part.count, by: columns) {
+                var segs: [Seg] = []
+                for (k, g) in part[row..<min(row + columns, part.count)].enumerated() {
+                    if k > 0 { segs.append(.t(String(repeating: " ", count: gap), p.text)) }
+                    segs += entry(g)
+                }
+                w.line(segs)
+            }
+        }
+    }
+
     // MARK: servers
 
     /// "● [logo] Oracle New York": the TUI leads a node's name with its
@@ -417,6 +451,9 @@ struct CellsPanel: View {
                 w.box(title(tr("SERVICES"), tr("\(a.serviceCount) in \(a.rows.count) apps")), x0: x0, x1: x1, style: .panel) {
                     b.applications(&$0, a)
                 }
+            case .fleet(let f):
+                w.box(title(tr("FLEET"), "\(f.nodeCount)"), [.t(" " + tr("\(f.providerCount) providers") + " ", p.muted)],
+                      x0: x0, x1: x1, style: .panel) { b.fleet(&$0, f) }
             case .servers(let cards):
                 for c in cards {
                     w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: .panel) { b.server(&$0, c, clock: true) }

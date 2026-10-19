@@ -101,6 +101,7 @@ extension PanelModel {
                 }, isCurrent: false))
             case .servers(let cards): return .servers(cards.map { $0.withheld(at: date) })
             case .zones(let z): return .zones(z.withheld())
+            case .fleet(let f): return .fleet(f.withheld())
             case .mac(.server(let c, let node)): return .mac(.server(c.withheld(at: date), node: node))
             case .mac(.local): return nil
             }

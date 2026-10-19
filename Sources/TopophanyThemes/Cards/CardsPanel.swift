@@ -304,6 +304,7 @@ struct CardsSection: View {
         case .seen(let s): CardsSeen(seen: s, p: p, t: t, focus: ctx.focus)
         case .attention(let a): CardsAttention(attention: a, p: p, t: t, focus: ctx.focus)
         case .applications(let a): CardsApplications(apps: a, p: p, t: t, focus: ctx.focus)
+        case .fleet(let f): CardsFleet(fleet: f, p: p, t: t)
         case .servers(let cards):
             Card(p: p) {
                 CardTitle(symbol: "server.rack", title: tr("Servers"), meta: tr("\(cards.count) pinned"), p: p, t: t)

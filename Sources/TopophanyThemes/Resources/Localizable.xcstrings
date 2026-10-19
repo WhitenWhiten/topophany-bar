@@ -384,6 +384,40 @@
         }
       }
     },
+    "%lld providers": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld provider"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld providers"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 社"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 家服务商"
+          }
+        }
+      }
+    },
     "%lld servers": {
       "localizations": {
         "en": {
@@ -833,6 +867,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "磁盘"
+          }
+        }
+      }
+    },
+    "FLEET": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机群"
+          }
+        }
+      }
+    },
+    "Fleet": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机群"
           }
         }
       }

@@ -63,6 +63,7 @@
     bolt: sv('<path d="M11 2.8 5.6 11h4l-1 6.2 5.8-8.4h-4.1Z" fill="currentColor" stroke-width="1"/>'),
     info: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 9v4.6"/><circle cx="10" cy="6.4" r=".5" fill="currentColor"/>'),
     clock: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 5.8V10l2.8 1.8"/>'),
+    fleet: sv('<rect x="3" y="3" width="5.8" height="5.8" rx="1.6"/><rect x="11.2" y="3" width="5.8" height="5.8" rx="1.6"/><rect x="3" y="11.2" width="5.8" height="5.8" rx="1.6"/><rect x="11.2" y="11.2" width="5.8" height="5.8" rx="1.6"/>'),
   };
   TB.icons = I;
 
@@ -335,6 +336,46 @@
     return `<section class="nv-card"><h3>${I.clock}Time zones<em>${Z.zones.length} zones · ${Z.servers} servers</em></h3><div class="nv-zones">${rows}</div>${foot}</section>`;
   }
 
+  // ---------------------------------------------------------------- fleet
+  // Every node topo lists, by who runs it: edges and platforms each on their
+  // own, first; then servers by provider, each provider where its first
+  // server was. Each node keeps topo's mark; a group has none of its own.
+  TB.fleet = function (sc) {
+    const edges = [], servers = [];
+    sc.listed.forEach((s) => {
+      if (s.kind === 'edge' || s.kind === 'platform') {
+        edges.push({ title: s.name, provider: s.provider, kind: s.kind, nodes: [s], edge: true });
+        return;
+      }
+      const p = TB.provider(s.provider);
+      const key = p ? p.key : norm(s.provider);
+      if (!key) { servers.push({ title: s.name, provider: '', kind: s.kind, nodes: [s] }); return; }
+      const g = servers.find((x) => x.key === key);
+      if (g) g.nodes.push(s);
+      else servers.push({ key, title: TB.providerName(s.provider), provider: s.provider, kind: s.kind, nodes: [s] });
+    });
+    const keys = new Set([...edges, ...servers].filter((g) => g.provider).map((g) => (TB.provider(g.provider) || {}).key || norm(g.provider)));
+    return { edges, servers, nodes: sc.listed.length, providers: keys.size, current: sc.verdict.state !== 'offline' };
+  };
+  // Who runs a group, small: the logo, the initials on a tile, or a kind.
+  function fleetGlyph(g) {
+    const p = TB.provider(g.provider);
+    if (p && window.TB_LOGOS[p.key]) return `<span class="fl-g">${TB.logo(p.key)}</span>`;
+    if (g.provider) {
+      const ini = initials(g.title);
+      return `<span class="fl-g fl-ini ${ini.length > 1 ? 'two' : ''}">${esc(ini)}</span>`;
+    }
+    return `<span class="fl-g fl-sym">${I[KIND_ICON[g.kind] || 'server'] || I.server}</span>`;
+  }
+  function nvFleet(sc) {
+    const F = TB.fleet(sc);
+    const health = (s) => (F.current ? s.health : 'cached');
+    const cell = (g) => `<div class="fl-c ${F.current ? '' : 'cached'}">${fleetGlyph(g)}<span class="fl-t">${esc(g.title)}</span>${g.edge ? `<em>${esc(g.kind)}</em>` : ''}<span class="fl-m">${g.nodes.slice(0, 6).map((s) => mark(health(s), 8)).join('')}${g.nodes.length > 6 ? `<em>+${g.nodes.length - 6}</em>` : ''}</span></div>`;
+    const grid = (gs) => `<div class="fl-grid">${gs.map(cell).join('')}</div>`;
+    return `<section class="nv-card"><h3>${I.fleet}Fleet<em>${F.nodes} servers · ${F.providers} providers</em></h3>${grid(F.edges)}${F.edges.length && F.servers.length ? '<div class="nv-sep fl-sep"></div>' : ''}${grid(F.servers)}</section>`;
+  }
+  TB._fleet = { nvFleet };
+
   // Token sets for the cards renderer. Native is the system's own; Aurora is an
   // example user theme that only overrides tokens.
   const TOKENS = {
@@ -410,6 +451,8 @@
       }).join('');
       out.push(`<section class="nv-card"><h3>${I.apps}Applications<em>23 services in 6</em></h3>${rows}</section>`);
     }
+
+    if (on.fleet) out.push(nvFleet(sc));
 
     if (on.servers) {
       out.push(`<section class="nv-card"><h3>${I.server}Servers<em>2 pinned</em></h3>${sc.servers.map((s) => nvServer(s)).join('<div class="nv-sep"></div>')}</section>`);
@@ -647,6 +690,34 @@
     return { body: out.join(''), zones: Z.zones.length, servers: Z.servers };
   }
 
+  // Fleet as the TUI would draw it: two to a line, logo, who, and a mark per
+  // node at the column's end; servers start a line of their own.
+  function tFleetBody(sc, p, w, marks = 4) {
+    const F = TB.fleet(sc);
+    const gap = 2;
+    const cw = Math.floor((w - gap) / 2);
+    const entry = (g) => {
+      const tail = g.nodes.slice(0, marks).map((s) => tglyph(F.current ? s.health : 'cached'));
+      if (g.nodes.length > marks) tail.push(S('+' + (g.nodes.length - marks), 'faint'));
+      const logo = TB.tlogo(g.provider, p);
+      const lead = logo.length ? logo : [S('  ')];
+      const room = cw - 2 - width(tail) - 1;
+      const tag = g.edge ? ' ' + g.kind : '';
+      const segs = [...lead, S(trunc(g.title, Math.max(1, room)))];
+      if (tag && len(g.title) + len(tag) <= room) segs.push(S(tag, 'faint'));
+      return [...segs, S(' '.repeat(Math.max(1, cw - width(segs) - width(tail)))), ...tail];
+    };
+    const out = [];
+    [F.edges, F.servers].forEach((part) => {
+      for (let i = 0; i < part.length; i += 2) {
+        const segs = entry(part[i]);
+        if (part[i + 1]) segs.push(S(' '.repeat(gap)), ...entry(part[i + 1]));
+        out.push(tl(segs, [], '', w));
+      }
+    });
+    return { body: out.join(''), nodes: F.nodes, providers: F.providers };
+  }
+
   TB.tuiPanel = function (sc, o) {
     const p = pal(o);
     const L = window.TB_DATA.local;
@@ -665,6 +736,10 @@
       out.push(box(title('NEEDS ATTENTION', String(sc.attention.length + sc.more)), null, tAttentionBody(sc, IW, o.limit, { focus: true })));
     }
     if (o.sections.apps) out.push(box(title('SERVICES', '23 in 6 apps'), null, tAppsBody(sc, IW)));
+    if (o.sections.fleet) {
+      const f = tFleetBody(sc, p, IW);
+      out.push(box(title('FLEET', String(f.nodes)), [S(' ' + f.providers + ' providers ', 'muted')], f.body));
+    }
     if (o.sections.servers) sc.servers.forEach((s) => out.push(box(serverTitle(s, p), serverPill(s), tServerBody(s, p, IW, { clock: true }))));
     if (o.sections.zones) {
       const z = tZonesBody(sc, p, IW);
@@ -697,7 +772,7 @@
 
   // Shared with the widgets, which draw the same sections at other sizes.
   TB._cells = { S, tl, draw, box, title, trunc, tglyph, bigDigits, tBar, sparks, pal, paletteVars, statusTint, tone,
-    tStatusBody, tSeenBody, tAttentionBody, tAppsBody, tServerBody, serverTitle, serverPill, tZonesBody };
+    tStatusBody, tSeenBody, tAttentionBody, tAppsBody, tServerBody, serverTitle, serverPill, tZonesBody, tFleetBody };
 
   // -------------------------------------------------------- status item
   // The template globe with a status badge cut into its corner.
@@ -764,6 +839,6 @@
 
   TB.defaults = () => ({
     theme: 'native', appearance: 'dark', text: 'count', color: 'status', mac: 'local', limit: 3,
-    sections: { seen: true, attention: true, apps: true, servers: false, zones: true, mac: true },
+    sections: { seen: true, attention: true, apps: true, fleet: true, servers: false, zones: true, mac: true },
   });
 })();

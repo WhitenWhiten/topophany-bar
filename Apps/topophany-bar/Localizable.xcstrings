@@ -825,6 +825,38 @@
         }
       }
     },
+    "Every server, edge and platform topo lists, by who runs it": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo が一覧にするすべてのサーバー、エッジ、プラットフォームを運営元ごとに"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 列出的所有服务器、边缘与平台，按服务商分组"
+          }
+        }
+      }
+    },
+    "Fleet": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フリート"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "机群"
+          }
+        }
+      }
+    },
     "For the panel, the menu bar item, widgets and these settings": {
       "localizations": {
         "ja": {

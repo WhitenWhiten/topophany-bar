@@ -66,9 +66,13 @@ The header shows the mark, the project and view, Open in Terminal (⌘O) and Set
 2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
 3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty.
 4. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
-5. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1).
-6. **Time zones.** The local time where the servers are. See section 5.1.
-7. **This Mac.** See section 5.
+5. **Fleet.** Every node `topo` lists (`servers.list`), by who runs it, two to a row with each provider's logo (section 4.1).
+   - **Edges and platforms first,** each on its own and saying what it is: what stands in front of everything else. A hairline, then servers: a provider's together, where its first server is in `topo`'s list, and a node that names no provider on its own, by its name and kind.
+   - **Marks:** one per node, `topo`'s. A group has no health of its own and is never tinted for its nodes; the app adds nothing up.
+   - **Without `servers.list`:** the pinned servers' cards stand in. When the list isn't current, the names stay and every mark is withheld (◌).
+6. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1).
+7. **Time zones.** The local time where the servers are. See section 5.1.
+8. **This Mac.** See section 5.
 
 Size:
 
@@ -247,6 +251,7 @@ Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On
     { "id": "seen" },
     { "id": "attention", "limit": 3 },
     { "id": "applications", "only": [] },
+    { "id": "fleet", "enabled": true },
     { "id": "servers", "enabled": false, "nodes": ["oracle-ny", "bwh-la"] },
     { "id": "zones", "enabled": true, "places": { "Seattle": "America/Los_Angeles" } },
     { "id": "mac", "mode": "local", "readings": ["cpu", "memory", "storage", "network", "battery"], "every": "2s" }
@@ -278,7 +283,8 @@ topophany-bar/
                         Settings, Engine protocol
     TopophanyEngine/    ProcessEngine; later EmbeddedEngine
     TopophanySections/  one model per section, built from frames: Status, SeenFrom, Attention, Applications,
-                        ServerCard, Zones, Local; PlaceZones (a place's suggested time zone)
+                        Fleet, ServerCard, Zones, Local; PlaceZones (a place's suggested time zone);
+                        Provider (who runs a node, by any of its names)
     TopophanyThemes/    Theme, Tokens, ThemeStore, ThemeValidator, Renderer protocol;
                         Cards/ (SwiftUI) and Cells/ (CellCanvas)
     TopophanyWidgets/   TimelineProvider (current and not-current entries), widget views per family

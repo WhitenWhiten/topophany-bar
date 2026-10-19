@@ -250,6 +250,20 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .nv-ico2 svg.av-logo { width: 15.7px; height: 15.7px; }
 .av-ini { font: 600 12.3px/1 ui-rounded, -apple-system, system-ui, sans-serif; letter-spacing: .01em; }
 .av-ini.two { font-size: 10.1px; }
+/* Fleet: two to a row, edges first; each node's mark at the column's end. */
+.fl-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 7px; }
+.fl-c { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; color: var(--l1); height: 15px; }
+.fl-c.cached { opacity: .55; }
+.fl-c .fl-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fl-c > em { font-style: normal; font-size: 10.5px; color: var(--l3); flex: none; margin-left: -1px; }
+.fl-m { margin-left: auto; display: flex; gap: 2.5px; align-items: center; flex: none; padding-left: 3px; }
+.fl-m em { font-style: normal; font-size: 10px; color: var(--l3); margin-left: 1px; }
+.fl-g { width: 14px; height: 14px; flex: none; display: grid; place-items: center; color: var(--l2); }
+.fl-g svg { width: 14px; height: 14px; }
+.fl-sym svg { width: 13px; height: 13px; }
+.fl-ini { border-radius: 4px; background: var(--fill); color: var(--l1); opacity: .8; font: 700 8.4px/1 ui-rounded, -apple-system, system-ui, sans-serif; }
+.fl-ini.two { font-size: 6.4px; letter-spacing: -.02em; }
+.nv-sep.fl-sep { margin: 7px 0; }
 .tlogo { display: inline-block; width: 2ch; height: 18px; vertical-align: top; position: relative; }
 .tlogo svg.logo { position: absolute; left: .06ch; top: calc(50% - .43em + .36px); width: .86em; height: .86em; }
 .nv-server-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }

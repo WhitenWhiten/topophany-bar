@@ -55,6 +55,8 @@ public enum SectionBuilder {
                 if let a = attention(r, limit: s.attentionLimit) { sections.append(.attention(a)) }
             case .applications where s.applications:
                 if let a = applications(r, only: s.applicationsOnly) { sections.append(.applications(a)) }
+            case .fleet where s.fleet:
+                if let f = fleet(r, pinned: s.serverNodes) { sections.append(.fleet(f)) }
             case .servers where s.servers:
                 let cards = servers(r, nodes: s.serverNodes).map { zoned($0, s.placeZones) }
                 if !cards.isEmpty { sections.append(.servers(cards)) }
@@ -231,6 +233,28 @@ public enum SectionBuilder {
         if unmonitored > 0 { return (tr("\(unmonitored) not monitored"), false) }
         if a.health == .up { return (tr("all up"), false) }
         return (Mark(a.health).word, false)
+    }
+
+    // MARK: fleet
+
+    /// Every node `topo` lists, by who runs it. Without a list from `topo`,
+    /// the pinned servers' cards stand in, as they do for Time zones.
+    public static func fleet(_ r: Reading, pinned: [String]) -> FleetSection? {
+        typealias Entry = (node: FleetSection.Node, kind: String, provider: String)
+        var current = true
+        var nodes: [Entry] = []
+        if let row = r.row(RowID.servers), case .servers(let l) = row.value {
+            nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: Mark($0.health), note: $0.note), $0.kind, $0.provider) }
+        } else if let row = r.row(RowID.servers), case .servers(let l) = r.lastValue(of: row) {
+            current = false
+            nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: .offline), $0.kind, $0.provider) }
+        } else {
+            let cards = servers(r, nodes: pinned).filter { !$0.isMissing }
+            current = !cards.contains { $0.isWithheld }
+            nodes = cards.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: $0.mark), $0.kind, $0.provider) }
+        }
+        guard !nodes.isEmpty else { return nil }
+        return FleetSection.grouping(nodes, isCurrent: current)
     }
 
     // MARK: servers
