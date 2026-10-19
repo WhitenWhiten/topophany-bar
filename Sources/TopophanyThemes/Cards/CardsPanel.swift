@@ -50,7 +50,7 @@ struct CardsPanel: View {
                 VStack(spacing: gap) { sections(p) }
                     .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
             }
-            .scrollIndicators(.automatic)
+            .scrollIndicators(.never)
             .scrollBounceBehavior(.basedOnSize)
             .frame(height: min(scrollHeight, max(120, (ctx.maxHeight ?? .infinity) - 230 * ctx.scale)))
             .onChange(of: ctx.focus) { _, focus in

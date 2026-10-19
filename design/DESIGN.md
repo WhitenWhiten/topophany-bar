@@ -119,7 +119,7 @@ Size:
 
 - **Native:** 344 pt wide, cards 6 pt apart. Rows that open something (attention entries, "*N* more") light faintly under the pointer, as far out as the keyboard's focus.
 - **Terminal:** 48 columns of SF Mono 12 inside 7 pt margins.
-- **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls, following the keyboard's focus as little as it must.
+- **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls, with no scroll bar, following the keyboard's focus as little as it must.
 
 Motion in the panel is quiet, and says only what happened:
 

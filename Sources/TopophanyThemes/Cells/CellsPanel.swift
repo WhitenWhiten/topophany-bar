@@ -507,7 +507,7 @@ struct CellsPanel: View {
                         slice(scene, top: top, bottom: footer)
                             .overlay(alignment: .topLeading) { focusAnchor(scene, top: top, bottom: footer) }
                     }
-                    .scrollIndicators(.automatic)
+                    .scrollIndicators(.never)
                     .frame(height: max(80, maxH - top - (h - footer)))
                     .onChange(of: ctx.focus) { _, focus in
                         guard let focus else { return }
