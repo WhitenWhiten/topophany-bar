@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         WidgetNeedsWatcher.start(model: model)
         #if DEBUG
         DebugSnapshots.run(delegate: self)
+        DebugDriver.start(delegate: self)
         #endif
     }
 
@@ -85,6 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var panelWindow: NSWindow? { panel?.window }
     var settingsWindow: NSWindow? { settings?.window }
     func openPanelForSnapshot() { if let b = statusItem?.button { panel?.open(from: b) } }
+    func closePanel() { panel?.close() }
     func panelKey(_ name: String) { panel?.press(name) }
     func selectSettingsTab(_ i: Int) { settings?.select(i) }
     #endif
