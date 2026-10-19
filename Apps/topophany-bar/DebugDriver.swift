@@ -1,5 +1,6 @@
 #if DEBUG
 import AppKit
+import ServiceManagement
 import TopophanyKit
 import TopophanyWidgets
 
@@ -19,6 +20,7 @@ import TopophanyWidgets
 ///     trace S               Settings' frame and This Mac's mode, for S seconds
 ///     windows               each window's number and frame
 ///     handoff               what the widgets were last handed
+///     login [on|off]        Open at login: set it, and report its status
 @MainActor
 enum DebugDriver {
     static let name = Notification.Name("io.github.whitenwhiten.topophany-bar.debug")
@@ -64,6 +66,16 @@ enum DebugDriver {
         case "trace":
             guard let win = d.settingsWindow else { return }
             trace(win, model: d.model, seconds: num(1) ?? 2)
+        case "login":
+            if w.count > 1 { d.model.update { $0.openAtLogin = w[1] == "on" } }
+            let status = switch SMAppService.mainApp.status {
+            case .enabled: "enabled"
+            case .notRegistered: "not registered"
+            case .requiresApproval: "requires approval"
+            case .notFound: "not found"
+            @unknown default: "unknown"
+            }
+            try? "\(status) (setting \(d.model.settings.openAtLogin))".write(to: out.appending(path: "login.txt"), atomically: true, encoding: .utf8)
         case "handoff":
             let store = HandoffStore(appGroup: HandoffStore.bundleAppGroup)
             var lines = ["group \(HandoffStore.bundleAppGroup ?? "none")", "directory \(store.directory?.path ?? "none")"]
