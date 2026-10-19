@@ -530,7 +530,7 @@ struct MenuBarPreview: View {
         // Drawn as a dark menu bar shows it. With status colors off the item
         // is a template image, which the menu bar tints white; nothing
         // tints it here, so it is drawn in white rather than as a template.
-        HStack(spacing: 10) {
+        TrailingFlow(spacing: 10, lineSpacing: 4, maxWidth: 340) {
             ForEach(Array(Self.statuses.enumerated()), id: \.offset) { _, st in
                 Renderers.renderer(for: theme)
                     .statusItem(StatusItemModel(status: st, appearance: appearance),
@@ -539,9 +539,75 @@ struct MenuBarPreview: View {
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 4)
-        .background(Capsule().fill(Color(white: 0.12)))
+        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color(white: 0.12)))
         .environment(\.colorScheme, .dark)
         .accessibilityHidden(true)
+    }
+}
+
+/// Rows that wrap when they run out of room, as even as that room allows,
+/// each against the trailing edge, as the previews' wrapping rows are. As
+/// wide as its widest row, and no wider than `maxWidth`, which is also its
+/// room when it is asked for its ideal size.
+struct TrailingFlow: Layout {
+    typealias Row = [(LayoutSubview, CGSize)]
+    var spacing: Double
+    var lineSpacing: Double
+    var maxWidth = Double.infinity
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = rows(subviews, room: proposal.width)
+        let width = rows.map { width($0) }.max() ?? 0
+        let height = rows.reduce(0) { $0 + height($1) } + lineSpacing * Double(max(0, rows.count - 1))
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(subviews, room: proposal.width ?? bounds.width) {
+            let h = height(row)
+            var x = bounds.maxX - width(row)
+            for (v, s) in row {
+                v.place(at: CGPoint(x: x, y: y + (h - s.height) / 2), proposal: ProposedViewSize(s))
+                x += s.width + spacing
+            }
+            y += h + lineSpacing
+        }
+    }
+
+    /// The fewest rows that fit, packed into the narrowest room that still
+    /// needs no more of them.
+    private func rows(_ subviews: Subviews, room proposed: CGFloat?) -> [Row] {
+        let items = subviews.map { ($0, $0.sizeThatFits(.unspecified)) }
+        let room = min(proposed.map { Double($0) } ?? .infinity, maxWidth)
+        let count = pack(items, room).count
+        var lo = items.map { Double($0.1.width) }.max() ?? 0, hi = min(room, width(items))
+        guard lo < hi else { return pack(items, room) }
+        for _ in 0..<20 {
+            let mid = (lo + hi) / 2
+            if pack(items, mid).count <= count { hi = mid } else { lo = mid }
+        }
+        return pack(items, hi)
+    }
+
+    private func pack(_ items: Row, _ room: Double) -> [Row] {
+        var rows: [Row] = []
+        for item in items {
+            if let last = rows.last, width(last) + spacing + item.1.width <= room {
+                rows[rows.count - 1].append(item)
+            } else {
+                rows.append([item])
+            }
+        }
+        return rows
+    }
+
+    private func width(_ row: Row) -> Double {
+        row.reduce(0) { $0 + $1.1.width } + spacing * Double(max(0, row.count - 1))
+    }
+
+    private func height(_ row: Row) -> Double {
+        row.map { Double($0.1.height) }.max() ?? 0
     }
 }
 
