@@ -20,6 +20,54 @@
         }
       }
     },
+    "Aurora": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オーロラ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "极光"
+          }
+        }
+      }
+    },
+    "Dusk": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "薄暮"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暮色"
+          }
+        }
+      }
+    },
+    "Linen": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リネン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "亚麻"
+          }
+        }
+      }
+    },
     "Native": {
       "localizations": {
         "ja": {
@@ -96,6 +144,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "单台服务器的卡片：CPU、内存和磁盘，对照其上限。"
+          }
+        }
+      }
+    },
+    "Paper": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ペーパー"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "纸张"
           }
         }
       }

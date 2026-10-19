@@ -18,14 +18,19 @@ struct TopophanyWidgetBundle: WidgetBundle {
 
 // MARK: configuration
 
+/// The menu bar's theme, or a built-in one by its ID.
 enum ThemeChoice: String, AppEnum {
-    case bar, native, terminal
+    case bar, native, aurora, linen, terminal, paper, dusk
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Theme"
     static let caseDisplayRepresentations: [ThemeChoice: DisplayRepresentation] = [
         .bar: "Same as the Menu Bar",
         .native: "Native",
+        .aurora: "Aurora",
+        .linen: "Linen",
         .terminal: "Terminal",
+        .paper: "Paper",
+        .dusk: "Dusk",
     ]
 }
 
@@ -133,8 +138,7 @@ enum Timelines {
     static func theme(_ choice: ThemeChoice, _ h: Handoff?) -> Theme {
         switch choice {
         case .bar: h?.decodedTheme ?? ThemeStore.native
-        case .native: ThemeStore.native
-        case .terminal: ThemeStore.terminal
+        default: ThemeStore().theme(choice.rawValue)
         }
     }
 
