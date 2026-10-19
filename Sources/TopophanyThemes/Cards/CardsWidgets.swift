@@ -680,7 +680,9 @@ struct WidgetServices: View {
                 HStack(spacing: 7) {
                     CardMark(mark: s.mark, size: 9, color: p.listColor(s.mark))
                     Text(s.name).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                    if !s.note.isEmpty { Text(s.note).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1) }
+                    // A note is a word or two that says why: whole, while the
+                    // name gives way.
+                    if !s.note.isEmpty { Text(s.note).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).fixedSize() }
                 }
                 .font(t.font(12))
                 .padding(.vertical, 2)
@@ -694,18 +696,33 @@ struct WidgetServices: View {
             if let o = card.observes.first {
                 VStack(spacing: 0) {
                     Rectangle().fill(p.sep).frame(height: 0.5)
-                    HStack(spacing: 4) {
-                        Image(systemName: "target").font(.system(size: 9.5))
-                        Text(tr("From here")).lineLimit(1).fixedSize()
-                        Spacer(minLength: 2)
-                        CardMark(mark: o.mark, size: 9, color: p.color(o.mark))
-                        Text(o.text).fontWeight(.medium).foregroundStyle(p.l1).lineLimit(1).minimumScaleFactor(0.85)
+                    // Its verdict comes last, so where the line is short the
+                    // rest gives way first: the symbol, then the words.
+                    ViewThatFits(in: .horizontal) {
+                        observes(o, symbol: true, label: true)
+                        observes(o, symbol: false, label: true)
+                        observes(o, symbol: true, label: false)
                     }
                     .font(t.font(10.5)).foregroundStyle(p.l2)
                     .padding(.top, 6)
                 }
-                .accessibilityElement(children: .combine)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(Words.join([tr("From here"), o.text])))
             }
+        }
+    }
+}
+
+extension WidgetServices {
+    /// What the observer on this node sees: "◎ From here ● 9 checks · all
+    /// pass", with or without its symbol and its words.
+    func observes(_ o: ServerCardModel.Observes, symbol: Bool, label: Bool) -> some View {
+        HStack(spacing: 4) {
+            if symbol { Image(systemName: "target").font(.system(size: 9.5)) }
+            if label { Text(tr("From here")).lineLimit(1).fixedSize() }
+            Spacer(minLength: 2)
+            CardMark(mark: o.mark, size: 9, color: p.color(o.mark))
+            Text(o.text).fontWeight(.medium).foregroundStyle(p.l1).lineLimit(1).fixedSize()
         }
     }
 }
