@@ -179,8 +179,9 @@ struct CardMark: View {
     }
 }
 
-/// The Status card's symbol: a matte tile in the verdict's color, and its
-/// glyph.
+/// The Status card's symbol: a flat tile tinted with the verdict's color,
+/// edged in it, and its glyph in the color itself. Calm enough to sit
+/// beside for hours; the glyph's shape says the state on its own.
 struct HeroSymbol: View {
     var status: StatusSection
     var size: Double
@@ -199,24 +200,25 @@ struct HeroSymbol: View {
         }
     }
 
-    /// The status color, a shade deeper so the white glyph holds; gray for
-    /// unknown and offline.
-    var fill: Color {
-        switch status.mark {
-        case .up, .degraded, .down: palette.color(status.mark).mix(with: .black, by: 0.1)
-        case .unknown: Color(rgb: 0x8A8A91)
-        case .offline: Color(rgb: 0x6A6A71)
-        }
+    var hasColor: Bool { status.mark == .up || status.mark == .degraded || status.mark == .down }
+
+    /// The glyph: the status color, a shade deeper on light so it holds on
+    /// its tint; the secondary ink for unknown and offline.
+    var ink: Color {
+        guard hasColor else { return palette.l2 }
+        let c = palette.color(status.mark)
+        return palette.isDark ? c : c.mix(with: .black, by: 0.12)
     }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: size * 12 / 44, style: .continuous)
+        let c = palette.color(status.mark)
+        let hc = palette.increaseContrast
         shape
-            .fill(fill)
-            .overlay(shape.strokeBorder(Color.black.opacity(0.14), lineWidth: 0.5))
+            .fill(hasColor ? c.opacity((palette.isDark ? 0.2 : 0.15) + (hc ? 0.1 : 0)) : palette.fill2)
+            .overlay(shape.strokeBorder(hasColor ? c.opacity(hc ? 0.6 : 0.3) : palette.sep, lineWidth: hc ? 1 : 0.75))
             .overlay { glyphView }
             .frame(width: size, height: size)
-            .shadow(color: .black.opacity(palette.isDark ? 0.3 : 0.14), radius: 1, y: 0.5)
             .settles(on: status.mark)
             .accessibilityHidden(true)
     }
@@ -225,9 +227,9 @@ struct HeroSymbol: View {
         Canvas { ctx, s in
             let k = s.width / 47
             ctx.scaleBy(x: k, y: k)
-            let white = GraphicsContext.Shading.color(.white)
+            let shade = GraphicsContext.Shading.color(ink)
             func stroke(_ p: Path, _ w: Double) {
-                ctx.stroke(p, with: white, style: StrokeStyle(lineWidth: w, lineCap: .round, lineJoin: .round))
+                ctx.stroke(p, with: shade, style: StrokeStyle(lineWidth: w, lineCap: .round, lineJoin: .round))
             }
             var p = Path()
             switch glyph {
@@ -240,7 +242,7 @@ struct HeroSymbol: View {
                 p.move(to: CGPoint(x: 23.5, y: 13.5))
                 p.addLine(to: CGPoint(x: 23.5, y: 24.5))
                 stroke(p, 3.8)
-                ctx.fill(Path(ellipseIn: CGRect(x: 21.2, y: 29.3, width: 4.6, height: 4.6)), with: white)
+                ctx.fill(Path(ellipseIn: CGRect(x: 21.2, y: 29.3, width: 4.6, height: 4.6)), with: shade)
             case .cross:
                 p.move(to: CGPoint(x: 16.5, y: 16.5))
                 p.addLine(to: CGPoint(x: 30.5, y: 30.5))
@@ -249,7 +251,7 @@ struct HeroSymbol: View {
                 stroke(p, 3.6)
             case .dots:
                 for x in [15.5, 23.5, 31.5] {
-                    ctx.fill(Path(ellipseIn: CGRect(x: x - 2.4, y: 21.1, width: 4.8, height: 4.8)), with: white)
+                    ctx.fill(Path(ellipseIn: CGRect(x: x - 2.4, y: 21.1, width: 4.8, height: 4.8)), with: shade)
                 }
             case .noSignal:
                 for (r, y) in [(15.0, 19.4), (9.6, 23.6), (4.4, 27.6)] {
@@ -339,8 +341,9 @@ struct StackBar: View {
                 }
             }
             let r = min(1, t.tick / 3)
-            // Up is quieter than trouble, so what needs a look stands out.
-            draw(c.up) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.up.opacity(0.78))) }
+            // Up is quieter than trouble, so what needs a look stands out:
+            // as quiet as the widgets' marks for up.
+            draw(c.up) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.up.opacity(p.increaseContrast ? 0.75 : 0.55))) }
             draw(c.warning) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.warn)) }
             draw(c.down) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(p.down)) }
             draw(c.unknown) {
@@ -411,22 +414,26 @@ struct Meter: View {
     }
 }
 
-/// A short state word: OPEN, AFFECTED, CACHED.
+/// A short state word: OPEN, AFFECTED, CACHED. Plain, it's the word alone
+/// in its color, for rows whose mark already says the state.
 struct PillView: View {
     var pill: Pill
     var palette: CardsPalette
     var type: CardsType
+    var plain = false
 
     var body: some View {
         Text(pill.text)
             .font(type.font(9.5, .bold))
-            .tracking(0.45)
+            .tracking(plain ? 0.6 : 0.45)
             .lineLimit(1)
             .fixedSize()
             .foregroundStyle(pill.mark == .unknown || pill.mark == .offline ? palette.l2 : palette.color(pill.mark))
-            .padding(.horizontal, 6)
+            .padding(.horizontal, plain ? 0 : 6)
             .padding(.vertical, 2)
-            .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(palette.tint(pill.mark)))
+            .background {
+                if !plain { RoundedRectangle(cornerRadius: 5, style: .continuous).fill(palette.tint(pill.mark)) }
+            }
     }
 }
 

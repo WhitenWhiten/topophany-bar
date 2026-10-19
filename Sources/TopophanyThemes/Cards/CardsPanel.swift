@@ -482,7 +482,7 @@ struct CardsAttention: View {
                     Text(subtitle(a)).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                PillView(pill: a.pill, palette: p, type: t)
+                PillView(pill: a.pill, palette: p, type: t, plain: true)
             }
             .contentShape(Rectangle())
         }

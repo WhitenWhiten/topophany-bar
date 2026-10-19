@@ -100,11 +100,12 @@ The header shows the mark, the project and view, Open in Terminal (⌘O) and Set
 
 1. **Status.** Fixed, always first, pinned when the panel scrolls.
    - The verdict.
-   - Every configured check by health, plus a legend. Native draws one tick per check while each tick can be told apart, up quieter than trouble and unknown hollow; past that, a stacked bar with unknown hatched. The verdict's tile is matte: its status color, flat.
+   - Every configured check by health, plus a legend. Native draws one tick per check while each tick can be told apart, up at about half strength so trouble stands out, and unknown hollow; past that, a stacked bar with unknown hatched.
+   - The verdict's tile is flat and calm: a tint of its status color, edged in it, with the glyph in the color itself. Nothing on it shines or casts a shadow.
    - Observers live, and when the frame was updated.
    - Offline: a CACHED card with the last snapshot's verdict, and no bar.
 2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
-3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty. A route too long for its row is cut so both ends stay readable: an end that fits half the room keeps its width, and the other takes the rest.
+3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty. Each row ends in its state word (OPEN, WARN), the word alone in its color: the row's mark already says the state, so it takes no chip. A route too long for its row is cut so both ends stay readable: an end that fits half the room keeps its width, and the other takes the rest.
 4. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
 5. **Fleet.** Every node `topo` lists (`servers.list`), by who runs it, two to a row with each provider's logo (section 4.1).
    - **Edges and platforms first,** each on its own and saying what it is: what stands in front of everything else. A hairline, then servers: a provider's together, where its first server is in `topo`'s list, and a node that names no provider on its own, by its name and kind.

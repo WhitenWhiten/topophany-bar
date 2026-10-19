@@ -145,16 +145,17 @@
   }
   TB.mark = mark;
 
-  // The hero's symbol: a matte tile in the verdict's color, and its glyph.
+  // The hero's symbol: a flat tile tinted with the verdict's color, edged in
+  // it, and its glyph in the color itself.
   function heroSymbol(state) {
     const g = {
       clear: '<path d="M14.5 23.5l6 6 12-13" stroke-width="3.6"/>',
-      degraded: '<path d="M23.5 13.5v11" stroke-width="3.8"/><circle cx="23.5" cy="31.6" r="2.3" fill="#fff" stroke="none"/>',
+      degraded: '<path d="M23.5 13.5v11" stroke-width="3.8"/><circle cx="23.5" cy="31.6" r="2.3" fill="currentColor" stroke="none"/>',
       incidents: '<path d="M16.5 16.5l14 14M30.5 16.5l-14 14" stroke-width="3.6"/>',
-      incomplete: '<circle cx="15.5" cy="23.5" r="2.4" fill="#fff" stroke="none"/><circle cx="23.5" cy="23.5" r="2.4" fill="#fff" stroke="none"/><circle cx="31.5" cy="23.5" r="2.4" fill="#fff" stroke="none"/>',
+      incomplete: '<circle cx="15.5" cy="23.5" r="2.4" fill="currentColor" stroke="none"/><circle cx="23.5" cy="23.5" r="2.4" fill="currentColor" stroke="none"/><circle cx="31.5" cy="23.5" r="2.4" fill="currentColor" stroke="none"/>',
       offline: '<path d="M13 19.4a15 15 0 0 1 21 0M16.6 23.6a9.6 9.6 0 0 1 13.8 0M20.4 27.6a4.4 4.4 0 0 1 6.2 0" stroke-width="2.6"/><path d="M14 13l19.6 20" stroke-width="2.8"/>',
     }[state];
-    return `<div class="nv-sym sym-${state}"><svg viewBox="0 0 47 47" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">${g}</svg></div>`;
+    return `<div class="nv-sym sym-${state}"><svg viewBox="0 0 47 47" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${g}</svg></div>`;
   }
 
   // Every configured check by health. One tick per check while each can be
@@ -523,7 +524,7 @@
       const rows = sc.attention.slice(0, o.limit).map((a) => `<div class="nv-row">
         <span class="nv-row-i">${mark(a.health, 14)}</span>
         <div class="nv-row-m"><div class="t">${fromArrows(a.title)}</div><div class="s">${esc(a.kind)} · from ${esc(a.from)} · ${mins(a.since)}</div></div>
-        <span class="pill p-${TB.cls(a.health)}">${esc(a.state.toUpperCase())}</span></div>`).join('');
+        <span class="pill plain p-${TB.cls(a.health)}">${esc(a.state.toUpperCase())}</span></div>`).join('');
       const rest = sc.attention.length - o.limit + sc.more;
       out.push(`<section class="nv-card"><h3>${I.alert}Needs attention<em>${sc.attention.length + sc.more}</em></h3>${rows}
         ${rest > 0 ? `<a class="nv-more">${rest} more in Topophany ${I.chevron}</a>` : ''}</section>`);
