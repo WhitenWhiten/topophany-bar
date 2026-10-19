@@ -2,40 +2,27 @@ import Foundation
 import SwiftUI
 import TopophanySections
 
-/// A zone's clock: drawn live in a widget, where WidgetKit turns it each
-/// minute without a reload; as of the model's time in a snapshot.
+/// A zone's clock: counting up live in a widget, where WidgetKit turns it
+/// each minute without a reload; as of the model's time in a snapshot. Its
+/// period turns with the hour, at an entry. A day past its reload, a dash.
 struct ZoneClock: View {
     enum Part { case time, period }
 
     var zone: ZonesSection.Zone
     var part: Part
     var live: Bool
+    /// The entry's time.
+    var at: Date
+    var isLongPast = false
 
     var body: some View {
-        if live {
-            // A date's text takes its time zone from the environment, not
-            // from its format.
-            Group {
-                switch part {
-                case .time: Text(.currentDate, format: Self.time(zone.timeZone))
-                case .period: Text(.currentDate, format: Self.period(zone.timeZone))
-                }
-            }
-            .environment(\.timeZone, zone.timeZone)
+        if isLongPast {
+            Text(verbatim: part == .time ? "—" : "")
+        } else if live, part == .time {
+            LiveZoneTime(zone: zone, at: at)
         } else {
             Text(verbatim: part == .time ? zone.time : zone.period)
         }
-    }
-
-    /// "6:30", or "18:30" on a 24-hour clock: as `Words.time` writes it.
-    static func time(_ tz: TimeZone) -> Date.FormatStyle {
-        Date.FormatStyle(locale: L10n.locale, timeZone: tz).hour(.defaultDigits(amPM: .omitted)).minute(.twoDigits)
-    }
-
-    /// "AM".
-    static func period(_ tz: TimeZone) -> Date.VerbatimFormatStyle {
-        Date.VerbatimFormatStyle(format: "\(dayPeriod: .standard(.abbreviated))", locale: L10n.locale, timeZone: tz,
-                                 calendar: Calendar(identifier: .gregorian))
     }
 }
 
@@ -114,6 +101,10 @@ struct WidgetZones: View {
         .accessibilityLabel(Text(spoken(l.shown)))
     }
 
+    func clock(_ z: ZonesSection.Zone, _ part: ZoneClock.Part) -> ZoneClock {
+        ZoneClock(zone: z, part: part, live: live, at: zones.now, isLongPast: zones.isLongPast)
+    }
+
     var meta: String { Words.join([tr("\(zones.zones.count) zones"), tr("\(zones.serverCount) servers")]) }
 
     /// Cut short, trouble first, so trouble left out still shows.
@@ -139,9 +130,9 @@ struct WidgetZones: View {
     func compactRow(_ z: ZonesSection.Zone) -> some View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 0) {
-                ZoneClock(zone: z, part: .time, live: live).font(t.mono(14, .semibold)).foregroundStyle(p.l1).fixedSize()
+                clock(z, .time).font(t.mono(14, .semibold)).foregroundStyle(p.l1).fixedSize()
                 if !z.period.isEmpty {
-                    ZoneClock(zone: z, part: .period, live: live).font(t.font(9, .medium)).foregroundStyle(p.l3)
+                    clock(z, .period).font(t.font(9, .medium)).foregroundStyle(p.l3)
                 }
             }
             // As wide as "12:00": every clock comes to two-digit hours.
@@ -157,10 +148,10 @@ struct WidgetZones: View {
 
     func time(_ z: ZonesSection.Zone) -> some View {
         VStack(alignment: .leading, spacing: 1) {
-            ZoneClock(zone: z, part: .time, live: live).font(t.mono(15, .semibold)).tracking(-0.15).foregroundStyle(p.l1)
+            clock(z, .time).font(t.mono(15, .semibold)).tracking(-0.15).foregroundStyle(p.l1)
             HStack(spacing: 0) {
                 if !z.period.isEmpty {
-                    ZoneClock(zone: z, part: .period, live: live)
+                    clock(z, .period)
                     Text(verbatim: " · ")
                 }
                 Text(z.zoneName)
@@ -173,8 +164,8 @@ struct WidgetZones: View {
     /// The time and its period on one line, for rows a line tall.
     func inlineTime(_ z: ZonesSection.Zone) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 2.5) {
-            ZoneClock(zone: z, part: .time, live: live).font(t.mono(14.5, .semibold)).tracking(-0.15).foregroundStyle(p.l1)
-            if !z.period.isEmpty { ZoneClock(zone: z, part: .period, live: live).font(t.font(9, .medium)).foregroundStyle(p.l3) }
+            clock(z, .time).font(t.mono(14.5, .semibold)).tracking(-0.15).foregroundStyle(p.l1)
+            if !z.period.isEmpty { clock(z, .period).font(t.font(9, .medium)).foregroundStyle(p.l3) }
         }
         .fixedSize()
     }
@@ -187,7 +178,7 @@ struct WidgetZones: View {
                 marks(z.servers, 8, size: 7.5)
             }
             // Long past a reload, its now would be an hour gone by.
-            if !zones.clocksOnly { DayRibbon(zone: z, dark: p.isDark, now: p.accent, contrast: p.increaseContrast, band: 3.5) }
+            if !zones.isLongPast { DayRibbon(zone: z, dark: p.isDark, now: p.accent, contrast: p.increaseContrast, band: 3.5) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -196,7 +187,7 @@ struct WidgetZones: View {
     func right(_ z: ZonesSection.Zone) -> some View {
         VStack(alignment: .trailing, spacing: 1) {
             Text(z.relative).font(t.mono(10.5, .medium)).foregroundStyle(z.isHere ? p.l2 : p.l3)
-            if !z.day.isEmpty, !zones.clocksOnly {
+            if !z.day.isEmpty, !zones.isLongPast {
                 Text(z.day).font(t.font(9.5)).foregroundStyle(p.l3)
             }
         }

@@ -15,17 +15,18 @@ public enum WidgetSchedule {
         h.writtenAt.addingTimeInterval(h.heartbeat + grace)
     }
 
-    /// A Time zones widget's clocks read live; its day ribbons move a step
-    /// this often. WidgetKit draws every entry ahead, so each one costs.
+    /// A Time zones widget's clocks count up live within each zone's hour;
+    /// its day ribbons move a step this often. WidgetKit draws every entry
+    /// ahead, so each one costs.
     public static let zonesStep: TimeInterval = 3600
     /// How far ahead its entries reach. Without a reload in that time, the
     /// last entry draws the clocks alone.
     public static let zonesSpan: TimeInterval = 24 * 3600
 
-    /// A Time zones widget's entries: one each hour, and one at each zone's
-    /// midnight, when its day turns; current until the next heartbeat plus
-    /// the grace and history after it, the clocks going on. Past the span,
-    /// the clocks alone.
+    /// A Time zones widget's entries: one at each hour of each zone, where
+    /// its clock is set again and, at midnight, its day turns; current
+    /// until the next heartbeat plus the grace and history after it, the
+    /// clocks going on. Past the span, places and offsets alone.
     public static func zonesEntries(_ h: Handoff?, at now: Date, here: TimeZone = .autoupdatingCurrent)
         -> [(date: Date, panel: PanelModel, isCurrent: Bool)] {
         guard let h else {
@@ -42,9 +43,11 @@ public enum WidgetSchedule {
         for zone in zones {
             var calendar = Calendar(identifier: .gregorian)
             calendar.timeZone = zone.timeZone
-            if let midnight = calendar.nextDate(after: now, matching: DateComponents(hour: 0, minute: 0), matchingPolicy: .nextTime),
-               midnight < end {
-                dates.insert(midnight)
+            var d = now
+            while let hour = calendar.nextDate(after: d, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime),
+                  hour < end {
+                dates.insert(hour)
+                d = hour
             }
         }
         if stale > now, stale < end { dates.insert(stale) }
@@ -55,7 +58,7 @@ public enum WidgetSchedule {
         var last = h.panel(zonesAt: end, here: here).withheld(at: end)
         last.sections = last.sections.map { s in
             guard case .zones(var z) = s else { return s }
-            z.clocksOnly = true
+            z.isLongPast = true
             return .zones(z)
         }
         out.append((end, last, false))

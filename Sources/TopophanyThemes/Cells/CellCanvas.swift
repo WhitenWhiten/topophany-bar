@@ -86,9 +86,9 @@ public struct LiveAge: Sendable {
 public struct LiveClock: Sendable {
     public var x: Double
     public var y: Double
-    public var timeZone: TimeZone
-    /// "AM" after the time, on a 12-hour clock.
-    public var period: Bool
+    public var zone: ZonesSection.Zone
+    /// The entry's time.
+    public var at: Date
     public var color: RGBA
 }
 
@@ -177,13 +177,10 @@ public struct CellCanvas: View {
             // Placed by padding, as layout, rather than shifted when drawn.
             ForEach(Array(scene.clocks.enumerated()), id: \.offset) { _, c in
                 HStack(spacing: 0) {
-                    Text(.currentDate, format: ZoneClock.time(c.timeZone))
-                    if c.period {
-                        Text(verbatim: " ")
-                        Text(.currentDate, format: ZoneClock.period(c.timeZone))
-                    }
+                    LiveZoneTime(zone: c.zone, at: c.at)
+                    // The period turns with the hour, at an entry.
+                    if !c.zone.period.isEmpty { Text(verbatim: " " + c.zone.period) }
                 }
-                .environment(\.timeZone, c.timeZone)
                 .font(Self.font(scene.metrics, bold: true))
                 .foregroundStyle(Color(c.color))
                 .lineLimit(1)

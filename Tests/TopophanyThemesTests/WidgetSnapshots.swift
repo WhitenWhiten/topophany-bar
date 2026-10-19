@@ -181,7 +181,8 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
                  relative: "+15時間", day: "明日"),
             zone("Asia/Tokyo", ["湖北", "东京"], [.up, .offline, .up, .up, .offline], here: false, hour: 3.43, time: "3:26",
                  name: "JST", relative: "+16時間", day: "明日"),
-        ], serverCount: 13, unplaced: 2, isCurrent: true, now: snapshotOrigin)
+        // Dated now, as an entry is: the clocks count up from it.
+        ], serverCount: 13, unplaced: 2, isCurrent: true, now: Date())
         var panel = previewPanel(.clear, settings: previewSettings(mac: .off))
         panel.sections = [.zones(z)]
         return WidgetModel(kind: .zones, panel: panel)

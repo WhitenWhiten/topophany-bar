@@ -243,8 +243,20 @@ func temporaryStore() -> HandoffStore {
         #expect(entries.count <= 24 + zs.count + 3)
         let last = try #require(entries.last)
         #expect(last.date == now.addingTimeInterval(WidgetSchedule.zonesSpan))
-        #expect(zones(last)?.clocksOnly == true)
-        #expect(entries.dropLast().allSatisfy { zones($0)?.clocksOnly == false })
+        #expect(zones(last)?.isLongPast == true)
+        #expect(entries.dropLast().allSatisfy { zones($0)?.isLongPast == false })
+    }
+
+    /// A clock counts within its zone's hour, so each zone's hours are
+    /// entries, on the half hour where it is offset by one.
+    @Test func entriesAtEachZonesHour() throws {
+        let kolkata = TimeZone(identifier: "Asia/Kolkata")!
+        let h = listed()
+        let entries = WidgetSchedule.zonesEntries(h, at: h.writtenAt, here: kolkata)
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = kolkata
+        let hours = entries.dropFirst().dropLast().filter { c.component(.minute, from: $0.date) == 0 }
+        #expect(hours.count == 24, "\(hours.count)")
     }
 
     /// Without a hand-off there's nothing to draw but history.

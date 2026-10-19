@@ -312,7 +312,7 @@ struct CellsBodies {
             let widest = 5 + (zone.period.isEmpty ? 0 : 1 + CellText.width(zone.period))
             return max(CellText.width(zone.clock), widest, min(CellText.width(zone.zoneName), 9))
         }.max() ?? 0
-        let rw = shown.map { max(CellText.width($0.relative), z.clocksOnly ? 0 : CellText.width($0.day)) }.max() ?? 0
+        let rw = shown.map { max(CellText.width($0.relative), z.isLongPast ? 0 : CellText.width($0.day)) }.max() ?? 0
         // Night is the darker of the palette's quiet tones, day the lighter.
         let dark = p.ink.r + p.ink.g + p.ink.b < 1.5
         let (night, day) = dark ? (p.track, p.muted) : (p.faint, p.track)
@@ -323,8 +323,10 @@ struct CellsBodies {
             return .ribbon(cells, midnights: ZonesSection.midnights(zone), now: p.accent)
         }
         func clock(_ zone: ZonesSection.Zone, _ w: inout CellWriter) -> Seg {
+            // A day past its reload, the clock would be wrong.
+            if z.isLongPast { return .t(CellText.pad("—", tw), p.faint) }
             guard live else { return .t(CellText.pad(zone.clock, tw), p.text, bold: true) }
-            w.clocks.append(LiveClock(x: w.frame.x, y: w.y, timeZone: zone.timeZone, period: !zone.period.isEmpty, color: p.text))
+            w.clocks.append(LiveClock(x: w.frame.x, y: w.y, zone: zone, at: z.now, color: p.text))
             return .t(String(repeating: " ", count: tw), p.text)
         }
         // Every mark in `room` cells, or as many as fit beside a count of
@@ -347,8 +349,8 @@ struct CellsBodies {
                        m + [.t(" ", p.text), relative(zone)])
                 // Long past a reload, its now would be an hour gone by.
                 w.line([.t(CellText.pad(CellText.truncate(zone.zoneName, tw), tw), p.faint), .t("  ", p.text)]
-                       + (z.clocksOnly ? [] : [ribbon(zone, width)]),
-                       z.clocksOnly ? [] : [.t(CellText.padLeft(zone.day, rw), p.faint)])
+                       + (z.isLongPast ? [] : [ribbon(zone, width)]),
+                       z.isLongPast ? [] : [.t(CellText.padLeft(zone.day, rw), p.faint)])
             }
         case .one(let withRibbon):
             // Places take what they need, leaving the ribbon eight cells,
@@ -356,7 +358,7 @@ struct CellsBodies {
             let markCells = shown.map { marks($0.servers, room: 8).reduce(0) { $0 + $1.width } }.max() ?? 0
             let both = n - tw - 1 - 1 - markCells - 1 - 1 - rw
             let places = shown.map { CellText.width($0.title) }.max() ?? 0
-            let ribbonCells = withRibbon && !z.clocksOnly ? both - min(places, max(10, both - 8)) : 0
+            let ribbonCells = withRibbon && !z.isLongPast ? both - min(places, max(10, both - 8)) : 0
             for zone in shown {
                 let m = marks(zone.servers, room: 8)
                 var right: [Seg] = m + [.t(String(repeating: " ", count: markCells - m.reduce(0) { $0 + $1.width }), p.text)]
