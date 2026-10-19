@@ -925,7 +925,9 @@ struct CardsLocal: View {
             out.append(AnyView(tile("cpu", tr("CPU"), Words.percent(c.total),
                                     BarHistory(values: local.cpuHistory, top: peak, capacity: LocalSnapshot.historyLength,
                                                color: p.accent, baseline: p.fill, style: p.style.meter),
-                                    tr("System \(Words.percent(c.system)) · User \(Words.percent(c.user))"))))
+                                    tr("System \(Words.percent(c.system)) · User \(Words.percent(c.user))"),
+                                    // Where tenths don't fit, whole percents, never a number cut.
+                                    shortFoot: tr("System \(Words.percent(c.system, digits: 0)) · User \(Words.percent(c.user, digits: 0))"))))
         }
         if let m = local.memory {
             let app = Words.gb(Int64(m.appBytes))
@@ -958,12 +960,15 @@ struct CardsLocal: View {
         return out
     }
 
-    func tile(_ symbol: String, _ label: String, _ value: String, _ graph: some View, _ foot: String, valueIsName: Bool = false) -> some View {
-        tile(symbol, label, value, graph, AttributedString(foot), valueIsName: valueIsName)
+    func tile(_ symbol: String, _ label: String, _ value: String, _ graph: some View, _ foot: String, shortFoot: String? = nil,
+              valueIsName: Bool = false) -> some View {
+        tile(symbol, label, value, graph, AttributedString(foot), shortFoot: shortFoot.map(AttributedString.init), valueIsName: valueIsName)
     }
 
+    /// A reading's tile: its label and value, its graph, and a foot line;
+    /// `shortFoot` stands in when the foot doesn't fit.
     func tile(_ symbol: String, _ label: String, _ value: String, _ graph: some View, _ foot: AttributedString,
-              valueIsName: Bool = false) -> some View {
+              shortFoot: AttributedString? = nil, valueIsName: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 HStack(spacing: 4) {
@@ -978,7 +983,17 @@ struct CardsLocal: View {
                     .lineLimit(1)
             }
             graph.frame(height: 22).frame(maxWidth: .infinity).padding(.top, 5).padding(.bottom, 3)
-            Text(foot).font(t.font(10)).foregroundStyle(p.l3).lineLimit(1)
+            Group {
+                if let shortFoot {
+                    ViewThatFits(in: .horizontal) {
+                        Text(foot)
+                        Text(shortFoot)
+                    }
+                } else {
+                    Text(foot)
+                }
+            }
+            .font(t.font(10)).foregroundStyle(p.l3).lineLimit(1)
         }
         .padding(EdgeInsets(top: 7, leading: 8, bottom: 6, trailing: 8))
         .frame(maxWidth: .infinity, alignment: .leading)

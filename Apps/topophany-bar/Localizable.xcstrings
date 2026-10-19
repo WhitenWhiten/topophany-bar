@@ -2734,7 +2734,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "合計、システム、ユーザー。直近 %lld 分の履歴付き"
+            "value": "合計、システム、ユーザ。直近 %lld 分の履歴付き"
           }
         },
         "zh-Hans": {

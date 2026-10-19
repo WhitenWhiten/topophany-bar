@@ -1564,7 +1564,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "システム %@ · ユーザー %@"
+            "value": "システム %@ · ユーザ %@"
           }
         },
         "zh-Hans": {
