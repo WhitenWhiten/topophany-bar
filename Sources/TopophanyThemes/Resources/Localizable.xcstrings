@@ -887,6 +887,38 @@
         }
       }
     },
+    "Download topo %@, the release this app was tested with, from GitHub": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリで検証済みのリリース topo %@ を GitHub からダウンロード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从 GitHub 下载已在本应用中测试的版本 topo %@"
+          }
+        }
+      }
+    },
+    "Download topo from its latest release on GitHub": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub の最新リリースから topo をダウンロード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从 GitHub 上的最新版本下载 topo"
+          }
+        }
+      }
+    },
     "FLEET": {
       "localizations": {
         "ja": {

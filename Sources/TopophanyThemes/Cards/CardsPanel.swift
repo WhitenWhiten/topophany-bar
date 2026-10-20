@@ -1,5 +1,6 @@
 import LocalReadings
 import SwiftUI
+import TopophanyKit
 import TopophanySections
 
 /// The Native look: the panel as cards on glass.
@@ -38,10 +39,10 @@ struct CardsPanel: View {
         VStack(spacing: gap) {
             CardsHeader(chrome: model.chrome, p: p, t: t)
             if ctx.maxHeight != nil {
-                if model.pinStatus { CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t) }
+                if model.pinStatus { CardsStatusCard(status: model.status, alert: model.alert, download: model.download, p: p, t: t) }
                 scrolling(p)
             } else {
-                CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t)
+                CardsStatusCard(status: model.status, alert: model.alert, download: model.download, p: p, t: t)
                 sections(p)
             }
             CardsFooter(chrome: model.chrome, p: p, t: t, leapUp: scrolls ? leapState.atEnd : nil, leap: leap)
@@ -67,7 +68,7 @@ struct CardsPanel: View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
                 VStack(spacing: gap) {
-                    if !model.pinStatus { CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t) }
+                    if !model.pinStatus { CardsStatusCard(status: model.status, alert: model.alert, download: model.download, p: p, t: t) }
                     sections(p)
                 }
                 .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
@@ -241,6 +242,39 @@ struct QuietButton: View {
     }
 }
 
+/// Downloads `topo` while none can run: in the accent, the one thing to do
+/// then. While it downloads, it says how far it has got.
+struct DownloadButton: View {
+    var offer: TopoOffer
+    var p: CardsPalette
+    var t: CardsType
+    @Environment(\.panelActions) private var actions
+    @State private var hover = false
+
+    var body: some View {
+        Button { actions.download(offer.build) } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.down.circle").font(.system(size: 10 * t.scale, weight: .medium))
+                Text(offer.title).monospacedDigit().contentTransition(.numericText())
+            }
+            .font(t.font(11, .medium))
+            .foregroundStyle(p.accent)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 8).padding(.vertical, 3.5)
+            .background(Capsule().fill(p.accent.opacity(hover && !offer.isDownloading ? 0.24 : 0.16)))
+            .contentShape(Capsule())
+            .animation(Highlight.easing(hover), value: hover)
+        }
+        .buttonStyle(PressStyle())
+        .disabled(offer.isDownloading)
+        .onHover { hover = $0 }
+        .help(offer.build == .tested ? tr("Download topo \(TopoBuild.testedVersion), the release this app was tested with, from GitHub")
+                                     : tr("Download topo from its latest release on GitHub"))
+        .accessibilityLabel(offer.title)
+    }
+}
+
 struct CardsFooter: View {
     var chrome: PanelChrome
     var p: CardsPalette
@@ -367,6 +401,7 @@ struct CardTitle: View {
 struct CardsStatusCard: View {
     var status: StatusSection
     var alert: MenuBarAlert = .unavailable
+    var download: TopoOffer?
     var p: CardsPalette
     var t: CardsType
 
@@ -387,17 +422,18 @@ struct CardsStatusCard: View {
                     HStack(spacing: 8) {
                         Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(1)
                             .contentTransition(.numericText()).settles(on: status.title)
-                        if alert != .unavailable {
+                        if alert != .unavailable || download != nil {
                             Spacer(minLength: 0)
-                            QuietButton(quiet: alert == .quiet, p: p, t: t)
+                            if alert != .unavailable { QuietButton(quiet: alert == .quiet, p: p, t: t) }
+                            if let download { DownloadButton(offer: download, p: p, t: t) }
                         }
                     }
-                    Text(status.subtitle).font(t.font(12)).foregroundStyle(p.l2).lineLimit(2)
+                    Text(download?.line ?? status.subtitle).font(t.font(12)).foregroundStyle(p.l2).lineLimit(2)
                 }
             }
             .padding(.bottom, 12)
-            // The words read as one; the Quiet button stays a button.
-            .accessibilityElement(children: alert == .unavailable ? .combine : .contain)
+            // The words read as one; a button stays a button.
+            .accessibilityElement(children: alert == .unavailable && download == nil ? .combine : .contain)
             if status.isBlind {
                 cached
             } else if let c = status.counts?.complete {

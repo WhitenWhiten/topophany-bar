@@ -111,18 +111,22 @@ public struct PanelActions: @unchecked Sendable {
     /// Quiets the menu bar's alert until it gets worse, or shows it again:
     /// whichever the alert is ready for when it's called.
     public var toggleQuiet: @MainActor () -> Void
+    /// Downloads `topo`, while none can run.
+    public var download: @MainActor (TopoBuild) -> Void
 
     public init(openTerminal: @escaping @MainActor () -> Void = {}, openSettings: @escaping @MainActor () -> Void = {},
                 quit: @escaping @MainActor () -> Void = {},
                 openAttention: @escaping @MainActor (AttentionSection.Item?) -> Void = { _ in },
                 focus: @escaping @MainActor (String?) -> Void = { _ in },
-                toggleQuiet: @escaping @MainActor () -> Void = {}) {
+                toggleQuiet: @escaping @MainActor () -> Void = {},
+                download: @escaping @MainActor (TopoBuild) -> Void = { _ in }) {
         self.openTerminal = openTerminal
         self.openSettings = openSettings
         self.quit = quit
         self.openAttention = openAttention
         self.focus = focus
         self.toggleQuiet = toggleQuiet
+        self.download = download
     }
 }
 

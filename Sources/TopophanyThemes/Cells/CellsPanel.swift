@@ -463,6 +463,7 @@ struct CellsPanel: View {
             .accessibilityLabel(CellsAccessibility.panel(model))
             .overlay(alignment: .bottomLeading) { keys(scene) }
             .overlay(alignment: .topLeading) { quietKey(scene) }
+            .overlay(alignment: .topLeading) { downloadKey(scene) }
     }
 
     /// The keycaps are buttons too, and `,`, `q` and `m` work alone, as the
@@ -489,6 +490,13 @@ struct CellsPanel: View {
     func quietKey(_ scene: CellScene) -> some View {
         key(scene, "quiet", model.alert == .quiet ? tr("Show the menu bar’s colors again") : tr("Quiet the menu bar until this gets worse"),
             KeyboardShortcut("m", modifiers: []), fromTop: true) { actions.toggleQuiet() }
+    }
+
+    /// `d` downloads topo while none can run.
+    func downloadKey(_ scene: CellScene) -> some View {
+        key(scene, "download", model.download?.title ?? "", KeyboardShortcut("d", modifiers: []), fromTop: true) {
+            if let d = model.download, !d.isDownloading { actions.download(d.build) }
+        }
     }
 
     @ViewBuilder
@@ -606,19 +614,25 @@ struct CellsPanel: View {
         // With nothing ever received there is no age, and "cached" stands
         // alone: Japanese and Chinese put the age before it.
         let age = st.isBlind ? (updated.isEmpty ? tr("cached") : tr("cached \(updated)")) : tr("updated \(updated)")
-        // Below the verdict, `m` quiets the menu bar's alert, or shows it again.
+        // Below the verdict, `m` quiets the menu bar's alert, or shows it
+        // again; while no topo can run, `d` downloads one.
         var quietRegion: CGRect?
+        var downloadRegion: CGRect?
         w.box(title(tr("STATUS")), [.t(" " + age + " ", p.muted)],
               x0: x0, x1: x1, style: .panel, tint: b.statusTint(st)) { w in
             b.status(&w, st, blockHeight: 54)
-            guard model.alert != .unavailable else { return }
-            let words = model.alert == .quiet ? tr("menu bar quiet until it gets worse · undo")
-                : tr("quiet the menu bar until it gets worse")
-            let text = " " + CellText.truncate(words, w.frame.columns - 4)
-            w.y += 4
-            quietRegion = CGRect(x: w.frame.x - 2, y: w.y - 4, width: Double(3 + CellText.width(text)) * w.cell + 4,
-                                 height: w.lineHeight + 8)
-            w.line([.key(" m "), .t(text, hover == "quiet" ? p.text : p.muted)])
+            func keycap(_ k: String, _ words: String, _ id: String) -> CGRect {
+                let text = " " + CellText.truncate(words, w.frame.columns - 4)
+                w.y += 4
+                let r = CGRect(x: w.frame.x - 2, y: w.y - 4, width: Double(3 + CellText.width(text)) * w.cell + 4, height: w.lineHeight + 8)
+                w.line([.key(" \(k) "), .t(text, hover == id ? p.text : p.muted)])
+                return r
+            }
+            if model.alert != .unavailable {
+                quietRegion = keycap("m", model.alert == .quiet ? tr("menu bar quiet until it gets worse · undo")
+                                                                : tr("quiet the menu bar until it gets worse"), "quiet")
+            }
+            if let d = model.download { downloadRegion = keycap("d", d.keyWords, "download") }
         }
         marks["status"] = w.y + 2
         for s in model.sections {
@@ -696,6 +710,7 @@ struct CellsPanel: View {
         // Each keycap and its label is a button.
         var regions: [String: CGRect] = [:]
         regions["quiet"] = quietRegion
+        regions["download"] = downloadRegion
         regions["focus"] = w.focused
         var col = 0
         for k in keys {
@@ -715,7 +730,7 @@ struct CellsPanel: View {
 /// What VoiceOver reads for a cell scene: the same words, as sentences.
 enum CellsAccessibility {
     static func panel(_ m: PanelModel) -> String {
-        var parts = [m.status.title, m.status.subtitle]
+        var parts = [m.status.title, m.download?.line ?? m.status.subtitle]
         if let s = m.seen, let problems = s.problems {
             parts.append(problems.isEmpty ? tr("All \(s.calm) observers report no problem")
                                           : problems.map { "\($0.name) \($0.note)" }.joined(separator: ", "))

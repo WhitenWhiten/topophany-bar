@@ -55,6 +55,14 @@ final class AppModel {
     @ObservationIgnored let topoOverride = UserDefaults.standard.string(forKey: "topo")
     /// Where `topo` was found, for Settings.
     private(set) var located: Result<TopoLocator.Found, EngineProblem>?
+    /// Every `topo` on this Mac, checked, for Settings to choose from.
+    private(set) var candidates: [TopoCandidate] = []
+    /// The copies the app downloaded, newest first.
+    private(set) var downloaded: [TopoDownloads.Installed] = []
+    /// Getting `topo` from its releases.
+    private(set) var fetch: TopoFetch = .idle
+    /// Where downloaded copies go: beside the settings file.
+    @ObservationIgnored let downloads: TopoDownloads
     @ObservationIgnored var onChange: (() -> Void)?
     @ObservationIgnored var widgets: WidgetBridge?
 
@@ -73,6 +81,7 @@ final class AppModel {
 
     init(store: SettingsStore = AppModel.defaultStore) {
         self.store = store
+        downloads = TopoDownloads(besideSettings: store.url)
         let s = store.load()
         L10n.prefer(s.language.localization)
         settings = s
@@ -139,15 +148,79 @@ final class AppModel {
     /// The interface local readings measure when none is chosen.
     var localInterfaceName: String? { local?.latest.network?.displayName }
 
-    /// Looks for `topo` again, and lists its profiles again, off the main
-    /// thread.
+    /// Looks for `topo` again, every copy of it, and lists its profiles
+    /// again, off the main thread.
     func locate() {
-        let setting = effectiveSettings.topo.path
+        let locator = TopoLocator(setting: effectiveSettings.topo.path, downloads: downloads)
         Task.detached {
-            let r = TopoLocator(setting: setting).locate()
-            await MainActor.run { self.located = r }
+            let r = locator.locate()
+            let installed = locator.downloads?.installed() ?? []
+            await MainActor.run {
+                self.located = r
+                self.downloaded = installed
+            }
+            let all = locator.candidates()
+            await MainActor.run { self.candidates = all }
         }
         if case .running(let r) = engineStatus, fixture == nil, capabilities?.profiles == true { loadProfiles(path: r.path) }
+    }
+
+    // MARK: getting topo
+
+    /// Downloads `topo` and runs it: the latest release, or the one this
+    /// app was tested with. Nothing reaches the network until this is asked.
+    func download(_ build: TopoBuild) {
+        guard !fetch.isDownloading else { return }
+        fetch = .downloading(build, version: build == .tested ? TopoRelease.tested.version : nil, fraction: nil)
+        refresh()
+        let downloads = self.downloads
+        Task {
+            do {
+                let release = build == .tested ? TopoRelease.tested : try await TopoRelease.latest()
+                fetch = .downloading(build, version: release.version, fraction: nil)
+                refresh()
+                let installed = try await downloads.install(release) { f in
+                    Task { @MainActor in
+                        guard case .downloading(build, let v, _) = self.fetch else { return }
+                        self.fetch = .downloading(build, version: v, fraction: f)
+                        self.refresh()
+                    }
+                }
+                fetch = .idle
+                use(installed.path)
+            } catch {
+                let problem = error as? TopoFetchProblem ?? .unreachable(error.localizedDescription)
+                // The latest couldn't be used: offer the tested release instead.
+                var next = build
+                if case .unusable = problem { next = .tested }
+                fetch = .failed(next: next, problem)
+                diagnostics.append("download: \(problem)")
+                refresh()
+            }
+        }
+    }
+
+    /// Runs the `topo` at `path`, or searches again when it's empty.
+    func use(_ path: String) {
+        if settings.topo.path == path {
+            restartEngine()
+            locate()
+        } else {
+            update { $0.topo.path = path }
+        }
+    }
+
+    /// Deletes a downloaded copy. When it's the one running, or chosen, the
+    /// app searches again, and says so if it finds none.
+    func deleteDownload(_ installed: TopoDownloads.Installed) {
+        let running = if case .running(let r) = engineStatus { r.path } else { "" }
+        try? downloads.delete(installed)
+        if settings.topo.path == installed.path {
+            update { $0.topo.path = "" }
+        } else if running == installed.path {
+            restartEngine()
+        }
+        locate()
     }
 
     private func loadProfiles(path: String) {
@@ -250,7 +323,7 @@ final class AppModel {
         if let fixture {
             e = FixtureEngine(scenario: fixture)
         } else {
-            e = ProcessEngine(configuration: .init(topoPath: effectiveSettings.topo.path))
+            e = ProcessEngine(configuration: .init(topoPath: effectiveSettings.topo.path, downloads: downloads))
         }
         engine = e
         let stream = e.start(currentRequest())
@@ -371,7 +444,7 @@ final class AppModel {
         reading = r
         quiet = quiet?.after(SectionBuilder.status(r, engine: engineCondition))
         panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: settings, local: local,
-                                                machineModel: machine.model, quiet: quiet))
+                                                machineModel: machine.model, quiet: quiet, fetch: fetch))
         let item = StatusItemModel(status: panel.status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)
         if item != statusItem { statusItem = item }
         widgets?.tick(panel: panel, policy: policy, theme: theme, settings: settings)

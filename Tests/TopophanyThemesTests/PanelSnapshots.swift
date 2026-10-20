@@ -156,10 +156,10 @@ import TopophanySections
     }
 
     /// The keycaps are buttons, within the footer; while there's an alert,
-    /// Status's `m` too.
+    /// Status's `m` too, and while no topo can run, its `d`.
     @Test func terminalKeycaps() throws {
         let ctx = RenderContext(theme: ThemeStore.terminal)
-        for model in [previewPanel(.clear), previewPanel(.offline), waitingPanel(.tooOld)] {
+        for model in [previewPanel(.clear), previewPanel(.offline)] {
             let s = CellsPanel.scene(model, ctx: ctx)
             #expect(Set(s.regions.keys) == ["open", "settings", "quit"])
             for r in s.regions.values { #expect(r.minY > s.marks["footer"]! && r.maxY < s.size.height) }
@@ -168,6 +168,10 @@ import TopophanySections
         let quiet = try #require(s.regions["quiet"])
         #expect(Set(s.regions.keys) == ["open", "settings", "quit", "quiet"])
         #expect(quiet.minY > s.marks["header"]! && quiet.maxY < s.marks["status"]!)
+        let old = CellsPanel.scene(waitingPanel(.tooOld), ctx: ctx)
+        let download = try #require(old.regions["download"])
+        #expect(Set(old.regions.keys) == ["open", "settings", "quit", "download"])
+        #expect(download.minY > old.marks["header"]! && download.maxY < old.marks["status"]!)
     }
 
     /// While the panel scrolls, and only then, the footer has the quick
@@ -194,6 +198,36 @@ import TopophanySections
         #expect(PanelLeap(offset: 1100, content: 2000, visible: 700).target(panel: 1000) == 1300)
         #expect(PanelLeap(offset: 1300, content: 2000, visible: 700).atEnd)
         #expect(PanelLeap(offset: 1300, content: 2000, visible: 700).target(panel: 1000) == 0)
+    }
+
+    /// While no topo can run: the offer to download one, as it goes and
+    /// when it fails, in every theme.
+    @Test func downloadPanels() throws {
+        func missing(_ fetch: TopoFetch, engine: EngineCondition = .notFound) -> PanelModel {
+            SectionBuilder.panel(PanelInput(reading: ReaderPolicy().evaluate(at: snapshotOrigin), engine: engine,
+                                            settings: previewSettings(), local: sampleLocal, here: snapshotHere, fetch: fetch))
+        }
+        let states: [(String, TopoFetch)] = [
+            ("ready", .idle),
+            ("downloading", .downloading(.latest, version: "1.4.0", fraction: 0.42)),
+            ("failed", .failed(next: .latest, .unreachable("offline"))),
+            ("tested", .failed(next: .tested, .unusable(version: "2.0.0", .upgradeNeeded(path: "/x")))),
+        ]
+        for (name, fetch) in states {
+            for dark in [true, false] {
+                try snapshot("panel-native-\(dark ? "dark" : "light")-download-\(name)", panel(missing(fetch), theme: ThemeStore.native, dark: dark))
+            }
+            try snapshot("panel-terminal-download-\(name)", OnDesktop(dark: true) {
+                CellsPanel(model: missing(fetch), ctx: RenderContext(theme: ThemeStore.terminal))
+            })
+        }
+        for theme in ThemeStore.builtIn where theme.id != "native" && theme.id != "terminal" {
+            try snapshot("panel-\(theme.id)-download-ready", panel(missing(.idle, engine: .tooOld), theme: theme, dark: theme.appearance != .light))
+        }
+        // `d` is a button where its keycap is drawn, and only then.
+        let terminal = RenderContext(theme: ThemeStore.terminal)
+        #expect(CellsPanel.scene(missing(.idle), ctx: terminal).regions["download"] != nil)
+        #expect(CellsPanel.scene(previewPanel(.offline), ctx: terminal).regions["download"] == nil)
     }
 
     /// The Quiet button, and the panel once the menu bar's alert is quiet.

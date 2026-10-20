@@ -144,7 +144,8 @@ final class PanelController: NSObject {
                      quit: { [weak self] in self?.actions?.quit() },
                      openAttention: { [weak self] item in self?.actions?.openAttention(item) },
                      focus: { [weak self] id in self?.model.focus = id },
-                     toggleQuiet: { [weak self] in self?.actions?.toggleQuiet() })
+                     toggleQuiet: { [weak self] in self?.actions?.toggleQuiet() },
+                     download: { [weak self] build in self?.model.download(build) })
     }
 
     private var screen: NSScreen? { anchor?.window?.screen ?? NSScreen.main }

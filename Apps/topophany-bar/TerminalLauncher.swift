@@ -113,7 +113,7 @@ enum TerminalLauncher {
         let path: String
         if case .running(let r) = model.engineStatus, model.fixture == nil {
             path = r.path
-        } else if case .success(let found) = TopoLocator(setting: model.effectiveSettings.topo.path).locate() {
+        } else if case .success(let found) = TopoLocator(setting: model.effectiveSettings.topo.path, downloads: model.downloads).locate() {
             path = found.path
         } else {
             NSSound.beep()

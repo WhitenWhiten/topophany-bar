@@ -25,9 +25,12 @@ public struct PanelInput: Sendable {
     public var here: TimeZone
     /// The menu bar's alert, if the user quieted it.
     public var quiet: QuietAlert?
+    /// Getting `topo` from its releases.
+    public var fetch: TopoFetch
 
     public init(reading: Reading, engine: EngineCondition, settings: Settings, local: LocalSnapshot? = nil,
-                machineModel: String = "Mac", here: TimeZone = .autoupdatingCurrent, quiet: QuietAlert? = nil) {
+                machineModel: String = "Mac", here: TimeZone = .autoupdatingCurrent, quiet: QuietAlert? = nil,
+                fetch: TopoFetch = .idle) {
         self.reading = reading
         self.engine = engine
         self.settings = settings
@@ -35,6 +38,7 @@ public struct PanelInput: Sendable {
         self.machineModel = machineModel
         self.here = here
         self.quiet = quiet
+        self.fetch = fetch
     }
 }
 
@@ -92,7 +96,8 @@ public enum SectionBuilder {
         let alert: MenuBarAlert = !input.settings.appearance.menuBar.statusColors || !QuietAlert.alerts(status) ? .unavailable
             : input.quiet == nil ? .shown : .quiet
         return PanelModel(chrome: chrome(r, status: status, observer: input.settings.topo.observer),
-                          status: status, sections: sections, pinStatus: s.pinStatus, alert: alert)
+                          status: status, sections: sections, pinStatus: s.pinStatus, alert: alert,
+                          download: TopoOffer(engine: input.engine, fetch: input.fetch))
     }
 
     // MARK: status

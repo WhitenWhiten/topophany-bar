@@ -49,6 +49,9 @@
         }
       }
     },
+    "%@ · %@": {
+      "shouldTranslate": false
+    },
     "%@%@h": {
       "localizations": {
         "ja": {
@@ -1091,6 +1094,22 @@
         }
       }
     },
+    "Couldn’t reach GitHub": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub に接続できません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法连接 GitHub"
+          }
+        }
+      }
+    },
     "DEGRADED": {
       "localizations": {
         "ja": {
@@ -1155,6 +1174,102 @@
         }
       }
     },
+    "Download topo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo をダウンロード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载 topo"
+          }
+        }
+      }
+    },
+    "Download topo %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ をダウンロード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载 topo %@"
+          }
+        }
+      }
+    },
+    "Downloading %lld%%": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダウンロード中 %lld%%"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在下载 %lld%%"
+          }
+        }
+      }
+    },
+    "Downloading topo %@ · %lld%%": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ をダウンロード中 · %lld%%"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在下载 topo %@ · %lld%%"
+          }
+        }
+      }
+    },
+    "Downloading topo %@…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ をダウンロード中…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在下载 topo %@…"
+          }
+        }
+      }
+    },
+    "Downloading…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダウンロード中…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在下载…"
+          }
+        }
+      }
+    },
     "Evidence incomplete": {
       "localizations": {
         "ja": {
@@ -1167,6 +1282,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "证据不完整"
+          }
+        }
+      }
+    },
+    "GitHub answered %lld": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub の応答: %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub 返回 %lld"
+          }
+        }
+      }
+    },
+    "GitHub’s answer can’t be read": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub の応答を読み取れません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取 GitHub 的响应"
           }
         }
       }
@@ -1263,6 +1410,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "最后一次快照（%@）显示**%@**。当前状态不明。"
+          }
+        }
+      }
+    },
+    "Looking for topo’s latest release…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo の最新リリースを確認中…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在查找 topo 的最新版本…"
           }
         }
       }
@@ -1779,18 +1942,18 @@
         }
       }
     },
-    "This topo has no monitor stream · upgrade it": {
+    "This topo has no monitor stream · download a newer one": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この topo には monitor stream がありません · アップグレードしてください"
+            "value": "この topo には monitor stream がありません · 新しいものをダウンロードしてください"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此 topo 没有 monitor stream · 请升级"
+            "value": "此 topo 没有 monitor stream · 请下载较新的版本"
           }
         }
       }
@@ -2175,6 +2338,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "故障"
+          }
+        }
+      }
+    },
+    "download topo %@, tested with this app": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリで検証済みの topo %@ をダウンロード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载已在本应用中测试的 topo %@"
+          }
+        }
+      }
+    },
+    "download topo from its latest release": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最新リリースから topo をダウンロード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从最新版本下载 topo"
           }
         }
       }
@@ -2755,6 +2950,102 @@
         }
       }
     },
+    "topo %@ didn’t match its checksum, so it wasn’t kept": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ はチェックサムと一致しなかったため、保存しませんでした"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ 与其校验和不符，因此未保留"
+          }
+        }
+      }
+    },
+    "topo %@ doesn’t speak what this app reads": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ はこのアプリが読み取る形式に対応していません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ 不支持本应用读取的格式"
+          }
+        }
+      }
+    },
+    "topo %@ has no build for this Mac": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ にはこの Mac 用のビルドがありません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ 没有适用于本机的版本"
+          }
+        }
+      }
+    },
+    "topo %@ has no checksum, so it wasn’t kept": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ にはチェックサムがないため、保存しませんでした"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ 没有校验和，因此未保留"
+          }
+        }
+      }
+    },
+    "topo %@’s archive can’t be opened": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ のアーカイブを開けません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开 topo %@ 的压缩包"
+          }
+        }
+      }
+    },
+    "topo couldn’t be saved": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo を保存できませんでした"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法保存 topo"
+          }
+        }
+      }
+    },
     "topo needs an upgrade": {
       "localizations": {
         "ja": {
@@ -2787,18 +3078,18 @@
         }
       }
     },
-    "topo not found · set its path in Settings": {
+    "topo not found · download it, or choose one in Settings": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "topo が見つかりません · 設定でパスを指定してください"
+            "value": "topo が見つかりません · ダウンロードするか、設定で選択してください"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未找到 topo · 请在设置中指定路径"
+            "value": "未找到 topo · 请下载，或在设置中选择"
           }
         }
       }
@@ -2879,6 +3170,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "无法读取 topo 的帧"
+          }
+        }
+      }
+    },
+    "try %@, tested with this app": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリで検証済みの %@ をお試しください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请试试已在本应用中测试的 %@"
+          }
+        }
+      }
+    },
+    "try again": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "もう一度お試しください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请重试"
           }
         }
       }

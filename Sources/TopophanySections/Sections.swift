@@ -360,14 +360,17 @@ public struct PanelModel: Sendable, Hashable {
     public var pinStatus: Bool
     /// Whether the menu bar's alert can be quieted, or shown again.
     public var alert: MenuBarAlert
+    /// While no `topo` can run, the offer to download one.
+    public var download: TopoOffer?
 
     public init(chrome: PanelChrome, status: StatusSection, sections: [Section], pinStatus: Bool = true,
-                alert: MenuBarAlert = .unavailable) {
+                alert: MenuBarAlert = .unavailable, download: TopoOffer? = nil) {
         self.chrome = chrome
         self.status = status
         self.sections = sections
         self.pinStatus = pinStatus
         self.alert = alert
+        self.download = download
     }
 
     public func section(_ id: SectionID) -> Section? { sections.first { $0.id == id } }
