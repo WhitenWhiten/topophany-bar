@@ -39,7 +39,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         model.onSettingsChange = { [weak self] old, new in
             if old.openAtLogin != new.openAtLogin { self?.applyLoginItem() }
-            if old.language != new.language { self?.settings?.relabel() }
+            if old.language != new.language {
+                self?.settings?.relabel()
+                if NSApp.mainMenu != nil, let self { NSApp.mainMenu = MainMenu.make(target: self) }
+            }
+        }
+        // Once a window has gone: another may open in its place.
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.windowClosed() }
         }
         model.start()
         applyLoginItem()
@@ -102,12 +109,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleQuiet() { model.toggleQuiet() }
     @objc private func openTUIFromMenu() { openTUI(focus: nil) }
-    @objc private func showSettingsFromMenu() { showSettings() }
+    @objc func showSettingsFromMenu() { showSettings() }
 
     func showSettings() {
         panel?.close()
         if settings == nil { settings = SettingsWindowController(model: model) }
+        comeForward()
         settings?.show()
+    }
+
+    /// An accessory app comes forward only while one of its windows is
+    /// open: with a Dock icon, and a menu bar for the keys a window
+    /// answers to.
+    private func comeForward() {
+        NSApp.mainMenu = MainMenu.make(target: self)
+        NSApp.setActivationPolicy(.regular)
+    }
+
+    /// Back to the menu bar alone once the last window has closed. The
+    /// panel and the item's own window have no title bar.
+    private func windowClosed() {
+        let open = NSApp.windows.contains { $0.isVisible && $0.styleMask.contains(.titled) }
+        guard !open, NSApp.activationPolicy() == .regular else { return }
+        NSApp.setActivationPolicy(.accessory)
+        NSApp.mainMenu = nil
     }
 
     func openTUI(focus: AttentionSection.Item?) {

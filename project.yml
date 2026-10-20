@@ -66,7 +66,7 @@ targets:
       path: Apps/topophany-bar/Info.plist
       properties:
         CFBundleDisplayName: Topophany
-        CFBundleName: topophany-bar
+        CFBundleName: Topophany
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSUIElement: true

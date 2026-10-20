@@ -52,6 +52,7 @@ Out of scope for v1:
 - **Terminal:** a chip in the theme's ink.
 - **Settings:** Show = Symbol, Count or Words (default Count). Status colors = on or off; with colors off the badge keeps its shape. Motion = on or off (default on). This Mac = any of CPU, Memory and Network (default none).
 - **VoiceOver:** "Topophany: 5 incidents, updated 4 seconds ago." With readings shown, a second line: "This Mac: CPU 17%, memory 72%, network 1.4 MB/s in, 344 kB/s out."
+- **While a window is open:** Settings brings the app forward, with a Dock icon and a menu bar: Settings… (⌘,), Hide and Quit (⌘Q); Close (⌘W); and Edit's undo, cut, copy, paste and select all for the fields. When the last one closes, the app is back in the menu bar alone.
 
 ### 3.1 Motion
 

@@ -4,7 +4,7 @@ import TopophanySections
 
 /// Settings: General, Appearance, Sections and This Mac, as toolbar tabs.
 @MainActor
-final class SettingsWindowController: NSWindowController, NSWindowDelegate {
+final class SettingsWindowController: NSWindowController {
     private let model: AppModel
     private let tabs = SettingsTabs()
 
@@ -32,7 +32,6 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("topophany-bar.settings")
         super.init(window: window)
-        window.delegate = self
         relabel()
     }
 
@@ -54,8 +53,6 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     func show() {
         model.locate()
-        // An accessory app comes forward only while a window is open.
-        NSApp.setActivationPolicy(.regular)
         if window?.isVisible != true { window?.center() }
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)
@@ -64,10 +61,6 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     func select(_ index: Int) {
         (window?.contentViewController as? NSTabViewController)?.selectedTabViewItemIndex = index
-    }
-
-    func windowWillClose(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
     }
 }
 
