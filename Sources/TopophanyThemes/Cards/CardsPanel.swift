@@ -9,6 +9,9 @@ struct CardsPanel: View {
     @Environment(\.panelActions) private var actions
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var scrollHeight: Double = 0
+    /// The panel's height, and the scroll's within it, as last laid out.
+    @State private var panelHeight: Double?
+    @State private var scrollFrame: Double = 0
     @State private var position = ScrollPosition(edge: .top)
     @State private var leapState = PanelLeap()
 
@@ -18,18 +21,24 @@ struct CardsPanel: View {
     /// Between cards; ruled sections meet at their rules.
     var gap: Double { p.style.surface == .matte ? 0 : 6 }
 
-    /// The most the scroll shows at once.
-    var scrollLimit: Double { max(120, (ctx.maxHeight ?? .infinity) - 230 * ctx.scale) }
+    /// The most the scroll shows at once: what the panel's height leaves
+    /// it.
+    var scrollLimit: Double {
+        // Everything else: header, footer, gaps, padding, and Status when
+        // pinned.
+        let fixed = panelHeight.map { $0 - scrollFrame } ?? (model.pinStatus ? 230 : 82) * ctx.scale
+        return max(120, (ctx.maxHeight ?? .infinity) - fixed)
+    }
 
     /// Whether the sections scroll: there's more of them than shows.
-    var scrolls: Bool { model.pinStatus && ctx.maxHeight != nil && scrollHeight > scrollLimit }
+    var scrolls: Bool { ctx.maxHeight != nil && scrollHeight > scrollLimit }
 
     var body: some View {
         let p = self.p
         VStack(spacing: gap) {
             CardsHeader(chrome: model.chrome, p: p, t: t)
-            if model.pinStatus, ctx.maxHeight != nil {
-                CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t)
+            if ctx.maxHeight != nil {
+                if model.pinStatus { CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t) }
                 scrolling(p)
             } else {
                 CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t)
@@ -38,6 +47,7 @@ struct CardsPanel: View {
             CardsFooter(chrome: model.chrome, p: p, t: t, leapUp: scrolls ? leapState.atEnd : nil, leap: leap)
         }
         .padding(8)
+        .onGeometryChange(for: Double.self) { $0.size.height } action: { panelHeight = $0 }
         .frame(width: 344 * ctx.scale)
         .background { CardsPanelBackground(ctx: ctx, p: p, radius: p.style.panelRadius) }
         .environment(\.colorScheme, ctx.effectiveScheme)
@@ -50,19 +60,24 @@ struct CardsPanel: View {
         }
     }
 
-    /// Status stays pinned; the rest scrolls when the panel would be taller
-    /// than the screen allows, and brings the keyboard's focus into view.
+    /// The sections scroll when the panel would be taller than it may be,
+    /// beneath Status when it's pinned and with it otherwise, and bring the
+    /// keyboard's focus into view.
     func scrolling(_ p: CardsPalette) -> some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
-                VStack(spacing: gap) { sections(p) }
-                    .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
+                VStack(spacing: gap) {
+                    if !model.pinStatus { CardsStatusCard(status: model.status, alert: model.alert, p: p, t: t) }
+                    sections(p)
+                }
+                .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
             }
             .scrollIndicators(.never)
             .scrollBounceBehavior(.basedOnSize)
             .scrollPosition($position)
             .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState = new }
             .frame(height: min(scrollHeight, scrollLimit))
+            .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollFrame = $0 }
             .mask { ScrollEdgeFade(top: scrolls && !leapState.atTop, bottom: scrolls && !leapState.atEnd) }
             .onChange(of: ctx.focus) { _, focus in
                 guard let focus else { return }

@@ -39,6 +39,13 @@ import TopophanySections
                                     OnDesktop(dark: dark) { CardsRenderer().panel(tall, context: ctx) })
             #expect(size.height <= 700 + 48 + 0.5, "\(size)")
         }
+        // Unpinned, Status scrolls with the rest.
+        var unpinned = tall
+        unpinned.pinStatus = false
+        let ctx = RenderContext(theme: ThemeStore.native, colorScheme: .dark, maxHeight: 700)
+        let size = try snapshot("panel-native-dark-incidents-scrolling-unpinned",
+                                OnDesktop(dark: true) { CardsRenderer().panel(unpinned, context: ctx) })
+        #expect(size.height <= 700 + 48 + 0.5, "\(size)")
     }
 
     /// A zone with more servers than its row holds: the one in trouble is
