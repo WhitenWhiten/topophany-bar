@@ -12,11 +12,14 @@ import TopophanyWidgets
 /// Output goes to `/tmp/topophany-bar-debug/`.
 ///
 ///     settings N            show Settings on tab N, floating
+///     about                 show About Topophany, floating
+///     mainmenu              the app's menu bar, as text
 ///     panel | close         open or close the panel
 ///     tui                   open the TUI, as ⌘O does
 ///     key up|down|return    a key in the panel
-///     type C [cmd]          C typed into the panel, through the app's event queue;
-///                           `space` for a space
+///     type [settings|#N] C [cmd]
+///                           C typed into the panel, Settings or window N,
+///                           through the app's event queue; `space` for a space
 ///     clickitem             a click on the menu bar item
 ///     mac off|local|server  This Mac's mode
 ///     click X Y [N]         a click in Settings, in points from its top left;
@@ -27,7 +30,8 @@ import TopophanyWidgets
 ///                           over S seconds (default 0.6)
 ///     trace S               Settings' frame and This Mac's mode, for S seconds
 ///     ax                    the open panel's accessibility tree
-///     windows               each window's number and frame
+///     windows               each window's number and frame, the key window,
+///                           and whether the app is active
 ///     handoff               what the widgets were last handed
 ///     login [on|off]        Open at login: set it, and report its status
 ///     language L            the language: system, en, ja or zh-Hans
@@ -73,15 +77,40 @@ enum DebugDriver {
             // Above other apps' windows, for recording the screen.
             d.settingsWindow?.level = .floating
             d.settingsWindow?.orderFrontRegardless()
+        case "about":
+            d.showAbout()
+            for win in NSApp.windows where win.isVisible && win.styleMask.contains(.titled) && win !== d.settingsWindow {
+                win.level = .floating
+                win.orderFrontRegardless()
+            }
+        case "mainmenu":
+            func keys(_ i: NSMenuItem) -> String {
+                guard !i.keyEquivalent.isEmpty else { return "" }
+                let m = i.keyEquivalentModifierMask
+                return " " + (m.contains(.option) ? "⌥" : "") + (m.contains(.shift) ? "⇧" : "")
+                    + (m.contains(.command) ? "⌘" : "") + i.keyEquivalent.uppercased()
+            }
+            var lines = NSApp.mainMenu == nil ? ["none"] : []
+            for top in NSApp.mainMenu?.items ?? [] {
+                lines.append(top.title)
+                lines += (top.submenu?.items ?? []).map { "  " + ($0.isSeparatorItem ? "—" : $0.title + keys($0)) }
+            }
+            try? lines.joined(separator: "\n").write(to: out.appending(path: "mainmenu.txt"), atomically: true, encoding: .utf8)
         case "panel": d.openPanelForSnapshot()
         case "close": d.closePanel()
         case "tui": d.openTUI(focus: nil)
         case "key": if w.count > 1 { d.panelKey(w[1]) }
         case "type":
-            let codes: [String: UInt16] = [",": 43, "q": 12, "o": 31, "m": 46, "space": 49]
-            guard w.count > 1, let code = codes[w[1]], let win = d.panelWindow else { return }
-            let c = w[1] == "space" ? " " : w[1]
-            guard let e = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: w.count > 2 ? .command : [],
+            let codes: [String: UInt16] = [",": 43, "q": 12, "o": 31, "m": 46, "space": 49,
+                                           "a": 0, "c": 8, "h": 4, "v": 9, "w": 13, "x": 7, "z": 6]
+            let settings = w.count > 1 && w[1] == "settings"
+            let number = w.count > 1 && w[1].hasPrefix("#") ? Int(w[1].dropFirst()) : nil
+            let k = settings || number != nil ? 1 : 0
+            let target = number.flatMap { n in NSApp.windows.first { $0.windowNumber == n } }
+            guard w.count > 1 + k, let code = codes[w[1 + k]],
+                  let win = target ?? (settings ? d.settingsWindow : d.panelWindow) else { return }
+            let c = w[1 + k] == "space" ? " " : w[1 + k]
+            guard let e = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: w.count > 2 + k ? .command : [],
                                            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: win.windowNumber,
                                            context: nil, characters: c, charactersIgnoringModifiers: c,
                                            isARepeat: false, keyCode: code) else { return }
@@ -185,7 +214,10 @@ enum DebugDriver {
             for w in windows as? [AXUIElement] ?? [] { walk(w, 0) }
             try? lines.joined(separator: "\n").write(to: out.appending(path: "ax.txt"), atomically: true, encoding: .utf8)
         case "windows":
-            var lines = NSApp.windows.map { "\($0.windowNumber) \($0.isVisible ? "visible" : "hidden") \($0.frame) \($0.title)" }
+            var lines = NSApp.windows.map {
+                "\($0.windowNumber) \($0.isVisible ? "visible" : "hidden")\($0.isKeyWindow ? " key" : "") \($0.frame) \($0.title)"
+            }
+            lines.append("app \(NSApp.isActive ? "active" : "inactive"), \(NSApp.activationPolicy() == .regular ? "regular" : "accessory")")
             if let b = d.statusButton {
                 lines.append("item image \(b.image?.size ?? .zero) button \(b.frame) inset \(b.alignmentRectInsets)")
             }
