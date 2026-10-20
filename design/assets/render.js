@@ -60,6 +60,7 @@
     net: sv('<path d="M6.6 15.4V4.8M3.9 7.5l2.7-2.7 2.7 2.7M13.4 4.6v10.6M10.7 12.5l2.7 2.7 2.7-2.7"/>'),
     power: sv('<path d="M10 3.2v6.4"/><path d="M6.1 5.6a6.1 6.1 0 1 0 7.8 0"/>'),
     chevron: sv('<path d="M8 5.5 12.5 10 8 14.5"/>'),
+    download: sv('<path d="M10 3.4v9M6.2 8.8l3.8 3.8 3.8-3.8M4.4 16.2h11.2"/>'),
     bellSlash: sv('<path d="M6.2 6.4a3.9 3.9 0 0 1 7.7.9v2.9l1.6 2.6H8.8M4.6 12.8h1.7l.9-1.5V9.4"/><path d="M8.4 15.3a1.7 1.7 0 0 0 3.2 0"/><path d="M3.6 3.6l12.8 12.8"/>'),
     bolt: sv('<path d="M11 2.8 5.6 11h4l-1 6.2 5.8-8.4h-4.1Z" fill="currentColor" stroke-width="1"/>'),
     info: sv('<circle cx="10" cy="10" r="7.2"/><path d="M10 9v4.6"/><circle cx="10" cy="6.4" r=".5" fill="currentColor"/>'),
@@ -510,14 +511,18 @@
     const offline = v.state === 'offline';
     // While the menu bar shows an alert in color, it can be quieted until it gets worse.
     const quiet = alertOf(sc, o) ? `<button class="nv-quiet${o.quiet ? ' on' : ''}" title="${o.quiet ? 'The menu bar stays quiet until this gets worse. Click to show its colors again.' : 'Quiet the menu bar until this gets worse'}">${I.bellSlash}${o.quiet ? 'Quieted' : 'Quiet'}</button>` : '';
+    // With no topo, or one too old, Download gets the latest release.
+    const fetching = o.fetch || 'ready';
+    const fetch = sc.missing ? `<button class="nv-quiet on" title="Download topo from its latest release on GitHub">${I.download}${fetching === 'downloading' ? 'Downloading 42%' : 'Download topo'}</button>` : '';
+    const sub = !sc.missing ? v.sub : { ready: v.sub, downloading: 'Downloading topo 1.3.0 · 42%', failed: 'Couldn’t reach GitHub · try again' }[fetching];
     out.push(`<section class="nv-card nv-hero hero-${v.state}">
       <div class="nv-hero-top">${heroSymbol(v.state)}
-        <div class="nv-hero-t"><div class="nv-hero-l"><b>${esc(v.title)}</b>${quiet}</div><span>${esc(v.sub)}</span></div></div>
+        <div class="nv-hero-t"><div class="nv-hero-l"><b>${esc(v.title)}</b>${quiet}${fetch}</div><span>${esc(sub)}</span></div></div>
       ${offline
-        ? `<div class="nv-cached"><span class="pill p-unk">CACHED</span>Last snapshot ${esc(sc.updated)} said <b>${esc(sc.lastKnown.toLowerCase())}</b>. Nothing current is known.</div>`
+        ? `<div class="nv-cached"><span class="pill p-unk">CACHED</span>${sc.lastKnown ? `Last snapshot ${esc(sc.updated)} said <b>${esc(sc.lastKnown.toLowerCase())}</b>. ` : ''}Nothing current is known.</div>`
         : `${stack(c, 304)}
       <div class="nv-legend">${leg(c.up, 'up', 'up')}${leg(c.warn, 'degraded', 'warn')}${leg(c.down, 'down', 'down')}${leg(c.unknown, 'unknown', 'unknown')}</div>`}
-      <div class="nv-meta"><span>${I.scope}${sc.observers.live}/${sc.observers.total} observers live</span><span>${offline ? 'Updated ' + esc(sc.updated) : 'Updated ' + esc(sc.updated.replace('s ago', ' s ago'))}</span></div>
+      <div class="nv-meta"><span>${I.scope}${sc.missing ? 'Observers not known now' : `${sc.observers.live}/${sc.observers.total} observers live`}</span><span>${sc.missing ? '' : offline ? 'Updated ' + esc(sc.updated) : 'Updated ' + esc(sc.updated.replace('s ago', ' s ago'))}</span></div>
     </section>`);
 
     if (o.heroOnly) return `<div class="nv ${o.appearance}"${tokenStyle(o)}><div class="nv-panel">${out.join('')}</div></div>`;
@@ -696,7 +701,8 @@
     out.push(`<div class="tblock"><span class="tb-sp"> </span>${big}<span class="tb-sp">  </span><div class="tb-lines"><div class="tl">${draw([S(lines[0])])}</div><div class="tl">${draw([S(lines[1], 'muted')])}</div><div class="tl"> </div></div></div>`);
     if (offline) {
       out.push(tl([S('╌'.repeat(w), 'faint')], [], '', w));
-      out.push(tl([S('◌', 'h-unk'), S(opt.short ? ' last: ' : ' last snapshot said ', 'muted'), S(sc.lastKnown.toLowerCase(), 'b')], [], '', w));
+      out.push(sc.lastKnown ? tl([S('◌', 'h-unk'), S(opt.short ? ' last: ' : ' last snapshot said ', 'muted'), S(sc.lastKnown.toLowerCase(), 'b')], [], '', w)
+        : tl([S('◌', 'h-unk'), S(' nothing current is known', 'muted')], [], '', w));
     } else {
       const share = (n) => Math.round((n / sc.configured) * w);
       const rule = [S('━'.repeat(share(c.up)), 'h-up'), S('━'.repeat(share(c.warn)), 'h-warn'), S('━'.repeat(share(c.down)), 'h-down'), S('━'.repeat(share(c.unknown)), 'h-unk')];
@@ -863,7 +869,11 @@
     // `m` quiets the menu bar's alert, or shows it again.
     const quietKey = ['degraded', 'incidents'].includes(v.state) && o.color !== 'mono'
       ? '<div class="tgap4"></div>' + tl([S(' m ', 'key'), S(o.quiet ? ' menu bar quiet until it gets worse · undo' : ' quiet the menu bar until it gets worse', 'muted')], [], '', IW) + '<div class="tgap4"></div>' : '';
-    out.push(box(title('STATUS'), [S(' ' + (offline ? 'cached ' : 'updated ') + sc.updated + ' ', 'muted')], tStatusBody(sc, p, IW) + quietKey, { tint: statusTint(sc, p), cls: 'status' }));
+    // `d` downloads topo when there's none, or it's too old.
+    const fetchWords = { ready: ' download topo from its latest release', downloading: ' downloading topo 1.3.0 · 42%', failed: ' couldn’t reach GitHub · try again' }[o.fetch || 'ready'];
+    const fetchKey = sc.missing ? '<div class="tgap4"></div>' + tl([S(' d ', 'key'), S(fetchWords, 'muted')], [], '', IW) + '<div class="tgap4"></div>' : '';
+    const age = offline ? (sc.updated ? 'cached ' + sc.updated : 'cached') : 'updated ' + sc.updated;
+    out.push(box(title('STATUS'), [S(' ' + age + ' ', 'muted')], tStatusBody(sc, p, IW) + quietKey + fetchKey, { tint: statusTint(sc, p), cls: 'status' }));
     if (o.heroOnly) return `<div class="tv" style="${paletteVars(p)}"><div class="tv-panel">${out.join('')}<div class="tgap"></div></div></div>`;
 
     if (o.sections.seen) out.push(box(title('SEEN FROM', String(sc.seen.length)), null, tSeenBody(sc, IW)));

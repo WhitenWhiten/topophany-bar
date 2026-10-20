@@ -19,7 +19,8 @@ cask "topophany-bar" do
   ]
 
   caveats <<~EOS
-    topophany-bar reads frames from `topo monitor stream`. Install topo and
-    run `topo login` first; the app finds topo on your PATH.
+    topophany-bar reads frames from `topo monitor stream`. It finds topo on
+    your PATH, or downloads it from topophany's releases when you ask. Run
+    `topo login`, or Sign In in its Settings, to save a profile.
   EOS
 end

@@ -42,12 +42,14 @@
   const D = window.TB_DATA;
   const st = Object.assign(TB.defaults(), { scenario: 'incidents', alert: 'shown' });
   const q = new URLSearchParams(location.search);
-  for (const k of ['theme', 'appearance', 'text', 'color', 'alert', 'mac', 'scenario']) if (q.get(k)) st[k] = q.get(k);
+  st.fetch = 'ready';
+  for (const k of ['theme', 'appearance', 'text', 'color', 'alert', 'mac', 'scenario', 'fetch']) if (q.get(k)) st[k] = q.get(k);
   if (q.get('servers')) st.sections.servers = q.get('servers') === '1';
   if (q.get('limit')) st.limit = +q.get('limit');
 
   const groups = [
-    ['scenario', 'Collector says', D.order.map((k) => [k, D.scenarios[k].label])],
+    ['scenario', 'Collector says', D.order.concat('missing').map((k) => [k, D.scenarios[k].label])],
+    ['fetch', 'Download (no topo)', [['ready', 'Ready'], ['downloading', 'Downloading'], ['failed', 'Failed']]],
     ['theme', 'Theme', [['native', 'Native'], ['aurora', 'Aurora'], ['linen', 'Linen'], ['tui', 'Terminal'], ['paper', 'Paper'], ['dusk', 'Dusk']]],
     ['appearance', 'Appearance', [['dark', 'Dark'], ['light', 'Light']]],
     ['text', 'Menu bar shows', [['symbol', 'Symbol'], ['count', 'Count'], ['words', 'Words']]],

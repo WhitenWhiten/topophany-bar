@@ -107,6 +107,7 @@ The header shows the mark, the project and view, Open in Terminal (⌘O) and Set
    - The verdict's tile is flat and calm: a tint of its status color, edged in it, with the glyph in the color itself. Nothing on it shines or casts a shadow.
    - Observers live, and when the frame was updated.
    - Offline: a CACHED card with the last snapshot's verdict, and no bar.
+   - While no `topo` can run (none found, or one too old): Download topo beside the verdict, in the accent (`d` in Terminal). It says how far the download has got, and why one failed (section 10.2.1).
 2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
 3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty. Each row ends in its state word (OPEN, WARN), the word alone in its color: the row's mark already says the state, so it takes no chip. A route too long for its row is cut so both ends stay readable: an end that fits half the room keeps its width, and the other takes the rest.
 4. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
@@ -337,7 +338,7 @@ A `cards` theme that follows the system gives its slots per appearance. `dark` a
 | Attention rows (3 or 5); which applications; pinned servers | How groups add up (unknown always counted) |
 | What each widget shows and its theme | Status glyphs and their meaning |
 | This Mac mode, readings, volume, interface, sample rate | No expressions or formulas |
-| `topo` path, profile, observer view, refresh (1 s to 1 h); open at login; terminal for the TUI; language (system, English, Japanese, Simplified Chinese) | |
+| `topo`: found, chosen or downloaded; profile, observer view, refresh (1 s to 1 h); open at login; terminal for the TUI; language (system, English, Japanese, Simplified Chinese) | |
 
 Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On every change the app compiles them into a `topo` monitor template and sends it to the running engine.
 
@@ -416,12 +417,24 @@ protocol Engine {
 ```
 
 - **ProcessEngine** (v1) runs `topo monitor stream` as a child process with pipes.
-  1. **Finding `topo`:** the path setting, then the login shell's `PATH`, then `/opt/homebrew/bin` and `/usr/local/bin`.
-  2. **Version check:** run `topo version`; if `topo` is too old to have `monitor stream`, offer the upgrade command.
+  1. **Finding `topo`:** the path setting, then the login shell's `PATH`, then `/opt/homebrew/bin` and `/usr/local/bin`, then the copies the app downloaded, newest first.
+  2. **Version check:** run `topo monitor stream --capabilities`; if `topo` is too old to have it, or lacks protocol 1 or a metric, offer to download one (section 10.2.1).
   3. **When the engine stops:** restart it after 1, 2, 4 … up to 30 s, and show ◌ until the next frame.
   4. **When the app quits:** stdin closes and `topo` exits.
 
   Spawning a user-installed binary rules out the App Sandbox, so v1 is distributed with a Developer ID, notarized, as a Homebrew cask.
+
+#### 10.2.1 Getting topo
+
+The app runs a `topo` that's already on the Mac, or one it downloads when the user asks. Nothing reaches the network until then.
+
+- **Where it's offered:** while no `topo` can run, as Download topo in the Status card and in Settings; and at any time in the menu of Settings' topo row: Download Latest, or the release this app was tested with.
+- **The latest:** GitHub's API names topophany's latest release and its archive for this Mac (`darwin_arm64` on Apple silicon, even under Rosetta, else `darwin_amd64`). The archive's SHA-256 comes from the API's `digest`, or else the release's `SHA256SUMS.txt`; without one it isn't downloaded.
+- **The tested release:** fixed in the app with its archives' SHA-256 (`TopoRelease.tested`), so it never depends on what the API says. It's the fallback when the latest doesn't work: when a downloaded latest lacks protocol 1, the offer becomes this release.
+- **Before it's kept:** the archive must match its hash, hold a regular file `topo`, and pass the version check. Then its folder, with topo's own license, goes to `topo/<version>/` beside the settings file, replacing a copy of the same version, and the path setting names it.
+- **Choosing:** Settings' topo row lists every `topo` on the Mac, once each however it's linked, with its version; one without `monitor stream` is shown and can't be chosen. Choose… picks any other file.
+- **Deleting:** any downloaded copy, even the one running or the only one. The app then searches again, and offers to download when it finds none.
+- **Signing in:** a `topo` with no saved profile can sign in from Settings. The app asks for the server, project and profile name, and runs `topo login` with them in the user's terminal, which asks for the token itself. The app never sees it.
 - **EmbeddedEngine** (later) links `libtopo`: the Go `monitor stream` core built with `-buildmode=c-archive` into an XCFramework. It exposes `topo_stream_start(request, callback)`, `topo_stream_update` and `topo_stream_stop`, and speaks the same request and frame JSON. This is for builds that can't start a process. Only that library build uses cgo, for its C exports; the `topo` binary stays CGO-free with zero modules.
 
 ### 10.3 Protocol

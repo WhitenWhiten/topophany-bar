@@ -19,8 +19,8 @@ It shows what `topo` concludes and never decides anything itself. Every state, c
 ## Requirements
 
 - macOS 26 or later.
-- `topo` with `monitor stream` (`topo monitor stream --capabilities` must print `"protocol":1`).
-- A saved client profile (`topo login`). The app never reads or stores a token; `topo` does.
+- `topo` with `monitor stream` (`topo monitor stream --capabilities` must print `"protocol":1`). Without one, the app downloads it from [topophany's releases](https://github.com/WhitenWhiten/topophany/releases) when you click Download topo, and checks its SHA-256 first.
+- A saved client profile (`topo login`, or Sign In in Settings, which runs it in your terminal). The app never reads or stores a token; `topo` does.
 
 ## Building
 

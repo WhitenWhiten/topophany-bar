@@ -182,7 +182,15 @@
     listed: listed().map((x) => Object.assign(x, { health: 'cached' })),
   };
 
-  const SHORT = { clear: '68 of 68 checks pass', degraded: '2 warn · 66 of 68 up', incidents: '5 down · 63 of 68 up', incomplete: '7 unknown · 61 of 68 up', offline: 'Last known: all clear' };
+  // No topo on this Mac, or one too old: nothing was ever received, and the
+  // Status card offers to download it.
+  S.missing = Object.assign({}, S.offline, {
+    key: 'missing', label: 'No topo', missing: true, lastKnown: null, updated: '',
+    verdict: { state: 'offline', health: 'cached', title: 'Offline', tui: 'OFFLINE', count: 0,
+      sub: 'topo not found · download it, or choose one in Settings', bigTop: 'topo not running', bigBottom: 'nothing current is known', big: '--' },
+  });
+
+  const SHORT = { missing: 'Nothing current is known', clear: '68 of 68 checks pass', degraded: '2 warn · 66 of 68 up', incidents: '5 down · 63 of 68 up', incomplete: '7 unknown · 61 of 68 up', offline: 'Last known: all clear' };
   Object.values(S).forEach((sc) => { sc.short = SHORT[sc.key]; sc.age = sc.live ? '1 min ago' : '3 min ago'; });
 
   // What a widget shows once its deadline passes and the app hasn't renewed

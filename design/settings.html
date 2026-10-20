@@ -89,6 +89,34 @@
   .mode .mi svg { width: 18px; height: 18px; }
   .mode b { display: block; font-weight: 600; }
   .mode span { display: block; font-size: 11.5px; color: var(--l2); margin-top: 2px; line-height: 1.35; }
+
+  /* Getting topo: the row's menu, the Download button and the sign-in form. */
+  .ell { display: inline-flex; align-items: center; gap: 2px; color: var(--l2); font-size: 13px; letter-spacing: 1px; }
+  .ell svg { width: 8px; height: 8px; }
+  .btn.prim { background: var(--acc); color: #fff; display: inline-flex; gap: 5px; align-items: center; }
+  .btn.prim svg { width: 12px; height: 12px; }
+  .grow .lab span.warn, .warn { color: #ff9f0a; }
+  .grow .lab .dot.off { background: #ff453a; box-shadow: 0 0 0 3px rgba(255,69,58,.2); }
+  .bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,.12); margin-top: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 42%; background: var(--acc); }
+  .sketches { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; margin-top: 18px; }
+  .menu { width: 290px; padding: 5px; border-radius: 10px; background: rgba(44,44,50,.97); box-shadow: 0 0 0 .5px rgba(0,0,0,.8), inset 0 0 0 .5px rgba(255,255,255,.14), 0 14px 40px rgba(0,0,0,.45); font-size: 13px; }
+  .menu .it { position: relative; padding: 3px 10px 3px 22px; border-radius: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .menu .it.chk::before { content: "✓"; position: absolute; left: 7px; font-size: 11px; top: 4px; }
+  .menu .it.hi { background: var(--acc); }
+  .menu .it.off { color: var(--l3); }
+  .menu .it .sub { color: var(--l2); }
+  .menu .it.hi .sub { color: rgba(255,255,255,.75); }
+  .menu .it.more::after { content: "›"; position: absolute; right: 10px; color: var(--l2); }
+  .menu .hd { padding: 4px 10px 2px; font-size: 11px; font-weight: 600; color: var(--l3); }
+  .menu .sp { height: .5px; margin: 5px 10px; background: rgba(255,255,255,.12); }
+  .form { width: 300px; padding: 14px; border-radius: 12px; background: rgba(44,44,50,.97); box-shadow: 0 0 0 .5px rgba(0,0,0,.8), inset 0 0 0 .5px rgba(255,255,255,.14), 0 14px 40px rgba(0,0,0,.45); }
+  .form b { display: block; font-weight: 650; margin-bottom: 10px; }
+  .form label { display: flex; align-items: center; gap: 8px; margin-top: 7px; color: var(--l2); font-size: 12px; }
+  .form label > span:first-child { width: 52px; text-align: right; flex: none; }
+  .form label .field { flex: 1; }
+  .form p { font-size: 11.5px; color: var(--l2); margin: 10px 0 12px; line-height: 1.4; }
+  .form .acts { display: flex; justify-content: flex-end; gap: 8px; }
 </style>
 </head>
 <body>
@@ -119,11 +147,13 @@
   const win = (title, body) => `<div class="win"><div class="win-bar"><div class="lights"><i></i><i></i><i></i></div><div class="win-title">${title}</div></div>${tabs(title)}<div class="win-body">${body}</div></div>`;
   const row = (lab, sub, ctl, pre = '') => `<div class="grow">${pre}<div class="lab"><b>${lab}</b>${sub ? `<span>${sub}</span>` : ''}</div>${ctl || ''}</div>`;
   const gi = (icon, color) => `<span class="gi" style="background:${color}">${icon}</span>`;
+  const ell = `<span class="ell">⋯<svg viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3 4 5.5 6.5 3"/></svg></span>`;
+  const down = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1.5v7M3 5.5l3 3 3-3M2 10.5h8"/></svg>';
 
   // General
   const general = win('General', `
     <div class="gt">Topophany</div><div class="group">
-      ${row('topo executable', 'Found on PATH; every reading comes from it', `<span class="field">/opt/homebrew/bin/topo</span><span class="ok">1.2.0 ✓</span>`)}
+      ${row('topo executable', 'Found on PATH; every reading comes from it', `<span class="field">/opt/homebrew/bin/topo</span><span class="ok">1.3.0 ✓</span>${ell}`)}
       ${row('Profile', 'Saved by <code>topo login</code>; the app never sees a token', pop('home — homelab'))}
       ${row('View', 'What the collector shows from', pop('All observers'))}
     </div>
@@ -137,6 +167,52 @@
     </div>
     <div class="group">
       ${row('Language', 'For the panel, the menu bar item, widgets and these settings', pop('Match System'))}
+    </div>`);
+
+  // General, before topo: none found, so Download gets the latest release.
+  // The topo row's menu lists every topo on this Mac; the sign-in form
+  // hands topo login to the terminal, which asks for the token itself.
+  const getting = win('General', `
+    <div class="gt">Topophany</div><div class="group">
+      ${row('topo executable', 'Not found on PATH, in /opt/homebrew/bin or /usr/local/bin', `<span class="btn prim">${down}Download topo</span>${ell}`)}
+      ${row('Profile', 'Saved by <code>topo login</code>; the app never sees a token', '<span class="val">Active profile</span>')}
+      ${row('View', 'What the collector shows from', pop('All observers'))}
+    </div>
+    <div class="gt">Engine <em>topo monitor stream</em></div><div class="group">
+      ${row('<i class="dot off"></i>topo not found', 'Download topo, or choose one above', '<span class="btn">Restart</span>')}
+    </div>
+    <div class="gt">Downloading</div><div class="group">
+      ${row('topo executable', 'Downloading topo 1.3.0 · 42%<div class="bar"><i></i></div>', ell)}
+      ${row('topo executable', '<span class="warn">Couldn’t reach GitHub · try again</span>', `<span class="btn prim">${down}Download topo</span>${ell}`)}
+    </div>
+    <div class="gt">Downloaded</div><div class="group">
+      ${row('topo executable', 'Downloaded by this app; every reading comes from it', `<span class="field">~/Library/…/topo/1.3.0/topo</span><span class="ok">1.3.0 ✓</span>${ell}`)}
+      ${row('Profile', 'No profile saved yet; topo keeps the token, never the app', '<span class="btn">Sign In…</span>')}
+    </div>
+    <div class="sketches">
+      <div class="menu">
+        <div class="it">Search Automatically</div>
+        <div class="sp"></div>
+        <div class="hd">On this Mac</div>
+        <div class="it">1.3.0 <span class="sub">— ~/.local/bin/topo</span></div>
+        <div class="it chk hi">1.3.0 <span class="sub">— Downloaded</span></div>
+        <div class="it off">1.1.0 — /usr/local/bin/topo (no monitor stream)</div>
+        <div class="sp"></div>
+        <div class="it">Choose…</div>
+        <div class="sp"></div>
+        <div class="it">Download Latest</div>
+        <div class="it">Download 1.3.0, Tested With This App</div>
+        <div class="sp"></div>
+        <div class="it more">Delete Download</div>
+      </div>
+      <div class="form">
+        <b>Sign in with topo login</b>
+        <label><span>Server</span><span class="field">https://collector.example.com</span></label>
+        <label><span>Project</span><span class="field">homelab</span></label>
+        <label><span>Profile</span><span class="field">default</span></label>
+        <p>Your terminal opens and runs topo login, which asks for the token there. The app never sees it.</p>
+        <div class="acts"><span class="btn">Cancel</span><span class="btn prim">Continue in Terminal</span></div>
+      </div>
     </div>`);
 
   // Appearance: each theme as a chip of its colors, as the panel would draw
@@ -220,6 +296,7 @@
 
   document.getElementById('wins').innerHTML = [
     [general, '<b>General.</b> The app starts <code>topo monitor stream</code> as its child process. topo holds the credentials; the app only reads frames.'],
+    [getting, '<b>Getting topo.</b> With none found, or one too old, Download fetches the latest release from GitHub, checks its SHA-256, and switches to it. The menu picks any topo on this Mac, the tested release, or a download to delete. A topo with no saved profile signs in with <code>topo login</code>, in the terminal.'],
     [appearance, '<b>Appearance.</b> Six themes, one meaning. Each shows its colors, as the panel would draw it now.'],
     [sections, '<b>Sections.</b> Status is fixed. The rest can be turned off and reordered.'],
     [local, '<b>This Mac: local readings.</b> RunCat-style live readings of the machine you’re on.'],
