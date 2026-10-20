@@ -265,6 +265,22 @@
         }
       }
     },
+    "About Topophany": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Topophany について"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于 Topophany"
+          }
+        }
+      }
+    },
     "Active profile": {
       "localizations": {
         "ja": {
@@ -1977,6 +1993,22 @@
         }
       }
     },
+    "Provider logos are their owners’ trademarks. [Acknowledgements](https://github.com/WhitenWhiten/topophany-bar/blob/main/THIRD-PARTY-NOTICES.md)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロバイダのロゴは各所有者の商標です。[謝辞](https://github.com/WhitenWhiten/topophany-bar/blob/main/THIRD-PARTY-NOTICES.md)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务商标志为其各自所有者的商标。[致谢](https://github.com/WhitenWhiten/topophany-bar/blob/main/THIRD-PARTY-NOTICES.md)"
+          }
+        }
+      }
+    },
     "Quiet Until It Gets Worse": {
       "localizations": {
         "ja": {
@@ -2021,6 +2053,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "由应用直接从 macOS 读取并实时显示，就像菜单栏里的仪表。"
+          }
+        }
+      }
+    },
+    "Reading from topo %@.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo %@ から情報を取得しています。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据来自 topo %@。"
           }
         }
       }
@@ -2649,6 +2697,22 @@
         }
       }
     },
+    "The menu bar item and desktop widgets for [Topophany](https://github.com/WhitenWhiten/topophany).": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "[Topophany](https://github.com/WhitenWhiten/topophany) のメニューバー項目とデスクトップウィジェット。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "[Topophany](https://github.com/WhitenWhiten/topophany) 的菜单栏项目和桌面小组件。"
+          }
+        }
+      }
+    },
     "The menu bar item keeps its badge’s shape, in its own color, until this gets worse.": {
       "localizations": {
         "ja": {
@@ -3173,6 +3237,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "文字"
+          }
+        }
+      }
+    },
+    "[Source](https://github.com/WhitenWhiten/topophany-bar) under the [PolyForm Noncommercial License 1.0.0](https://github.com/WhitenWhiten/topophany-bar/blob/main/LICENSE).": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "[ソースコード](https://github.com/WhitenWhiten/topophany-bar)は [PolyForm Noncommercial License 1.0.0](https://github.com/WhitenWhiten/topophany-bar/blob/main/LICENSE) で公開しています。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "[源代码](https://github.com/WhitenWhiten/topophany-bar)以 [PolyForm Noncommercial License 1.0.0](https://github.com/WhitenWhiten/topophany-bar/blob/main/LICENSE) 发布。"
           }
         }
       }

@@ -44,7 +44,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if NSApp.mainMenu != nil, let self { NSApp.mainMenu = MainMenu.make(target: self) }
             }
         }
-        // Once a window has gone: another may open in its place.
+        // Once a window has gone: another may open in its place, as About
+        // does when it's shown again.
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.windowClosed() }
         }
@@ -81,11 +82,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.stopNow()
     }
 
-    /// The menu bar item's right-click menu: quiet its alert, open the TUI
-    /// or Settings, quit.
+    /// The menu bar item's right-click menu: About, quiet its alert, open
+    /// the TUI or Settings, quit.
     func itemMenu() -> NSMenu {
         panel?.close()
         let menu = NSMenu()
+        let about = NSMenuItem(title: tr("About Topophany"), action: #selector(showAboutFromMenu), keyEquivalent: "")
+        about.target = self
+        menu.addItem(about)
+        menu.addItem(.separator())
         let alert = model.panel.alert
         let quiet = NSMenuItem(title: tr("Quiet Until It Gets Worse"), action: #selector(toggleQuiet), keyEquivalent: "")
         quiet.target = self
@@ -110,12 +115,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleQuiet() { model.toggleQuiet() }
     @objc private func openTUIFromMenu() { openTUI(focus: nil) }
     @objc func showSettingsFromMenu() { showSettings() }
+    @objc func showAboutFromMenu() { showAbout() }
 
     func showSettings() {
         panel?.close()
         if settings == nil { settings = SettingsWindowController(model: model) }
         comeForward()
         settings?.show()
+    }
+
+    /// The standard About panel, with the version of the `topo` running.
+    func showAbout() {
+        panel?.close()
+        comeForward()
+        var topo: String?
+        if case .running(let r) = model.engineStatus { topo = r.version }
+        About.show(topo: topo)
+        NSApp.activate()
     }
 
     /// An accessory app comes forward only while one of its windows is

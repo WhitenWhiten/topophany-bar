@@ -1,7 +1,7 @@
 import AppKit
 
-/// The menu bar the app has while one of its windows is open (Settings),
-/// in the language the user chose: the keys a window answers to,
+/// The menu bar the app has while one of its windows is open (Settings,
+/// About), in the language the user chose: the keys a window answers to,
 /// ⌘W, ⌘Q, and ⌘C and ⌘V in its fields. The panel answers ⌘O, ⌘, and ⌘Q
 /// itself.
 @MainActor
@@ -9,6 +9,8 @@ enum MainMenu {
     static func make(target: AppDelegate) -> NSMenu {
         let bar = NSMenu()
         bar.addItem(submenu(tr("Topophany"), [
+            item(tr("About Topophany"), #selector(AppDelegate.showAboutFromMenu), target: target),
+            .separator(),
             item(tr("Settings…"), #selector(AppDelegate.showSettingsFromMenu), ",", target: target),
             .separator(),
             item(tr("Hide Topophany"), #selector(NSApplication.hide(_:)), "h"),
