@@ -43,6 +43,9 @@ targets:
     platform: macOS
     sources:
       - path: Apps/topophany-bar
+      # Every copy of the app carries the logos' licenses.
+      - path: THIRD-PARTY-NOTICES.md
+        buildPhase: resources
     dependencies:
       - package: topophany-bar
         product: TopophanyKit
@@ -68,7 +71,7 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.utilities
-        NSHumanReadableCopyright: ""
+        NSHumanReadableCopyright: © 2026 Whiten
         TopophanyAppGroup: $(TOPOPHANY_APP_GROUP)
         CFBundleURLTypes:
           - CFBundleURLName: io.github.whitenwhiten.topophany-bar

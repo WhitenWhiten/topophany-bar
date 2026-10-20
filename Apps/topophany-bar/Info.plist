@@ -36,7 +36,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string></string>
+	<string>© 2026 Whiten</string>
 	<key>TopophanyAppGroup</key>
 	<string>$(TOPOPHANY_APP_GROUP)</string>
 </dict>

@@ -34,3 +34,9 @@ xcodebuild -project topophany-bar.xcodeproj -scheme topophany-bar -configuration
 ```
 
 Builds sign with the team in `project.yml` (`TOPOPHANY_TEAM`), with an App Group the app and the widgets share. Add `TOPOPHANY_SIGN=NO` to build ad hoc with no team or entitlements: the app runs, and macOS ignores the widgets. `scripts/release.sh` signs with Developer ID and notarizes.
+
+## License
+
+topophany-bar is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE): you may build it, run it and change it for any noncommercial purpose. Commercial use, including use at work for a company, needs a separate license; ask in an [issue](https://github.com/WhitenWhiten/topophany-bar/issues).
+
+The provider logos and what came with them are under their own licenses: see [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). [Topophany](https://github.com/WhitenWhiten/topophany) itself is under the MIT License.
