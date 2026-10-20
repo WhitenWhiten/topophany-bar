@@ -37,6 +37,12 @@ import TopophanyWidgets
 ///     language L            the language: system, en, ja or zh-Hans
 ///     fixture NAME          replay another fixture, in a copy launched
 ///                           with one
+///     download latest|tested
+///                           download topo, as the Download button does
+///     topos                 where topo was found, every copy and the
+///                           download, to topos.txt
+///     use PATH|auto         run that topo, or search again
+///     deletedownload V      delete the downloaded topo V
 ///     menu                  the menu bar item's right-click menu, as text
 ///     itemshot              the menu bar item as last drawn, to item.png
 ///     views                 the open panel's AppKit views and their frames,
@@ -168,6 +174,20 @@ enum DebugDriver {
             @unknown default: "unknown"
             }
             try? "\(status) (setting \(d.model.settings.openAtLogin))".write(to: out.appending(path: "login.txt"), atomically: true, encoding: .utf8)
+        case "download":
+            d.model.download(w.count > 1 && w[1] == "tested" ? .tested : .latest)
+        case "use":
+            if w.count > 1 { d.model.use(w[1] == "auto" ? "" : w[1]) }
+        case "deletedownload":
+            if w.count > 1, let i = d.model.downloaded.first(where: { $0.version == w[1] }) { d.model.deleteDownload(i) }
+        case "topos":
+            var lines = ["setting \(d.model.settings.topo.path.isEmpty ? "(search)" : d.model.settings.topo.path)",
+                         "located \(String(describing: d.model.located))", "engine \(d.model.engineStatus)",
+                         "fetch \(d.model.fetch)", "offer \(String(describing: d.model.panel.download))",
+                         "downloads \(d.model.downloads.directory.path)"]
+            lines += d.model.downloaded.map { "downloaded \($0.version) \($0.path)" }
+            lines += d.model.candidates.map { "candidate \(TopoRow.title($0)) · \($0.origin) · \($0.path)" }
+            try? lines.joined(separator: "\n").write(to: out.appending(path: "topos.txt"), atomically: true, encoding: .utf8)
         case "fixture":
             if w.count > 1, let s = FixtureEngine.Scenario(rawValue: w[1]) { d.model.replay(s) }
         case "menu":
