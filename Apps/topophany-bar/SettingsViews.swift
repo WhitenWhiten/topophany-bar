@@ -433,6 +433,18 @@ struct AppearanceSettings: View {
                 } label: {
                     RowLabel("Text size")
                 }
+                LabeledContent {
+                    HStack(spacing: 10) {
+                        if let h = model.settings.appearance.panelHeight {
+                            Text("Up to \(h) pt").monospacedDigit().foregroundStyle(.secondary)
+                            Button("Reset") { model.update { $0.appearance.panelHeight = nil } }
+                        } else {
+                            Text("Up to the screen’s height").foregroundStyle(.secondary)
+                        }
+                    }
+                } label: {
+                    RowLabel("Height", "Drag the panel’s bottom edge; double-click it to reset")
+                }
             }
             Section {
                 LabeledContent {
@@ -706,7 +718,7 @@ struct SectionsSettings: View {
             } footer: {
                 Foot("Each section is a row set in the template the app sends to `topo monitor stream`. What makes an entry up, warn or down is set in `topology.json` (for example `max_disk_percent`), not here.")
             }
-            Section("When the panel is taller than the screen") {
+            Section("When the panel scrolls") {
                 Toggle(isOn: model.binding(\.sections.pinStatus)) {
                     RowLabel("Keep Status pinned", "The rest scrolls beneath it")
                 }

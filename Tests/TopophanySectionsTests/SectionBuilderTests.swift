@@ -248,6 +248,28 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
         s.topo.observer = "seattle-macbook"
         #expect(panel(.clear, settings: s).chrome.view == "Seattle MacBook")
     }
+
+    /// The panel at its shortest keeps its own header, Status and footer,
+    /// with This Mac's four readings and two time zones between, whatever
+    /// the panel shows.
+    @Test func shortestPanel() throws {
+        var s = settings(mac: .off)
+        s.sections.zones = false
+        let p = panel(.incidents, settings: s)
+        let shortest = p.shortest
+        #expect(shortest.chrome == p.chrome)
+        #expect(shortest.status == p.status)
+        #expect(shortest.alert == p.alert)
+        #expect(shortest.pinStatus == p.pinStatus)
+        #expect(shortest.sections.map(\.id) == [.mac, .zones])
+        guard case .local(let l)? = shortest.mac else { Issue.record("no local readings"); return }
+        #expect(l.readings == [.cpu, .memory, .storage, .network])
+        #expect(l.cpu != nil && l.memory != nil && l.storage != nil && l.network != nil && l.battery == nil)
+        let zones = try #require(shortest.zones?.zones)
+        #expect(zones.count == 2)
+        #expect(zones.filter(\.isHere).count == 1)
+        #expect(Set(zones.map(\.id)).count == 2)
+    }
 }
 
 @Suite struct WordsTests {

@@ -380,3 +380,44 @@ public struct PanelModel: Sendable, Hashable {
     public var zones: ZonesSection? { if case .zones(let s)? = section(.zones) { s } else { nil } }
     public var mac: MacSection? { if case .mac(let s)? = section(.mac) { s } else { nil } }
 }
+
+// MARK: the shortest panel
+
+extension PanelModel {
+    /// The panel at its shortest: its own header, Status and footer, with
+    /// This Mac's four readings and two time zones between (DESIGN.md §4).
+    /// Laid out, it says how short the panel may be made. It is never
+    /// shown, so its readings, places and clocks only stand in.
+    public var shortest: PanelModel {
+        let now = chrome.now
+        let gb: UInt64 = 1 << 30
+        let sample = LocalSample(
+            at: now, cpu: CPUReading(total: 12, system: 4, user: 8, logicalCores: 8),
+            memory: MemoryReading(totalBytes: 16 * gb, appBytes: 6 * gb, wiredBytes: 2 * gb, compressedBytes: gb, usedBytes: 9 * gb,
+                                  usedPercent: 56, pressurePercent: 30),
+            storage: StorageReading(volumeName: "Macintosh HD", path: "/", totalBytes: Int64(512 * gb), availableBytes: Int64(256 * gb),
+                                    usedBytes: Int64(256 * gb), usedPercent: 50),
+            network: NetworkReading(interface: "en0", displayName: "Wi-Fi", address: "192.168.1.2", receivedPerSecond: 120_000,
+                                    sentPerSecond: 40_000))
+        let history = Array(repeating: 20.0, count: LocalSnapshot.historyLength)
+        let local = LocalSnapshot(machine: MachineInfo(model: "Mac", chip: "", hasBattery: false), latest: sample,
+                                  cpuHistory: history, receivedHistory: history, sentHistory: history)
+        let here = TimeZone.current
+        let away = TimeZone(identifier: here.identifier == "Asia/Tokyo" ? "Europe/London" : "Asia/Tokyo") ?? .gmt
+        func zone(_ tz: TimeZone, _ place: String, isHere: Bool) -> ZonesSection.Zone {
+            let t = Words.time(now, in: tz)
+            return ZonesSection.Zone(timeZone: tz, places: [place], servers: [.init(id: place, name: place, mark: .up)], isHere: isHere,
+                                     offset: tz.secondsFromGMT(for: now), hour: 12, time: t.time, period: t.period,
+                                     zoneName: Words.zoneName(tz, at: now),
+                                     relative: isHere ? tr("here") : Words.offset(seconds: tz.secondsFromGMT(for: now) - here.secondsFromGMT(for: now)),
+                                     day: "")
+        }
+        var m = self
+        m.sections = [
+            .mac(.local(LocalSection(model: local.machine.model, readings: [.cpu, .memory, .storage, .network], snapshot: local))),
+            .zones(ZonesSection(zones: [zone(here, "Seattle", isHere: true), zone(away, "Tokyo", isHere: false)], serverCount: 2,
+                                unplaced: 0, isCurrent: true, now: now)),
+        ]
+        return m
+    }
+}

@@ -116,17 +116,22 @@ public struct Settings: Sendable, Hashable, Codable {
         public var theme = "native"
         public var panel: Panel = .system
         public var textSize: TextSize = .default
+        /// The tallest the panel may be, in points, as its foot was left;
+        /// `nil` for as tall as the screen allows. The panel is never
+        /// shorter than Status, This Mac and two time zones need.
+        public var panelHeight: Int?
         public var menuBar = MenuBar()
 
         public init() {}
 
-        enum CodingKeys: String, CodingKey { case theme, panel, textSize, menuBar }
+        enum CodingKeys: String, CodingKey { case theme, panel, textSize, panelHeight, menuBar }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             theme = c.text(.theme) ?? "native"
             panel = c.text(.panel).flatMap(Panel.init(rawValue:)) ?? .system
             textSize = c.text(.textSize).flatMap(TextSize.init(rawValue:)) ?? .default
+            panelHeight = c.count(.panelHeight).flatMap { $0 > 0 ? $0 : nil }
             menuBar = (try? c.decodeIfPresent(MenuBar.self, forKey: .menuBar)) ?? MenuBar()
         }
     }

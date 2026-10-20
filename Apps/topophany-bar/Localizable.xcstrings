@@ -777,6 +777,22 @@
         }
       }
     },
+    "Drag the panel’s bottom edge; double-click it to reset": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パネルの下端をドラッグ。ダブルクリックでリセットします"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖动面板底边调整；双击底边重置"
+          }
+        }
+      }
+    },
     "Dusk": {
       "localizations": {
         "ja": {
@@ -1013,6 +1029,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "通用"
+          }
+        }
+      }
+    },
+    "Height": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "高さ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "高度"
           }
         }
       }
@@ -1929,6 +1961,22 @@
         }
       }
     },
+    "Reset": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リセット"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重置"
+          }
+        }
+      }
+    },
     "Restart": {
       "localizations": {
         "ja": {
@@ -2777,6 +2825,38 @@
         }
       }
     },
+    "Up to %lld pt": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pt まで"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最高 %lld pt"
+          }
+        }
+      }
+    },
+    "Up to the screen’s height": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画面の高さまで"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最高至屏幕高度"
+          }
+        }
+      }
+    },
     "Upgrade needed": {
       "localizations": {
         "ja": {
@@ -2841,18 +2921,18 @@
         }
       }
     },
-    "When the panel is taller than the screen": {
+    "When the panel scrolls": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "パネルが画面より高いとき"
+            "value": "パネルがスクロールするとき"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当面板高于屏幕时"
+            "value": "当面板滚动时"
           }
         }
       }

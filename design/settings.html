@@ -56,6 +56,7 @@
   .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.35); }
   .sw.on { background: var(--acc); }
   .sw.on::after { left: 15px; }
+  .val { color: var(--l2); white-space: nowrap; }
   .lock { color: var(--l3); font-size: 11.5px; display: inline-flex; gap: 5px; align-items: center; }
   .cb { width: 15px; height: 15px; border-radius: 4px; flex: none; background: rgba(255,255,255,.12); display: grid; place-items: center; }
   .cb.on { background: var(--acc); }
@@ -161,6 +162,7 @@
     <div class="gt">Panel</div><div class="group">
       ${row('Appearance', 'For themes that follow the system; the others keep their own', pop('Match System'))}
       ${row('Text size', '', pop('Default'))}
+      ${row('Height', 'Drag the panel’s bottom edge; double-click it to reset', '<span class="val">Up to the screen’s height</span>')}
     </div>
     <div class="gt">Menu bar</div><div class="group">
       ${row('Show', 'The count is what needs attention; nothing when all clear', '<span class="segm"><span>Symbol</span><span class="on">Count</span><span>Words</span></span>')}
@@ -185,7 +187,7 @@
       ${row('This Mac', 'Set up under This Mac', sw(true), handle + gi(I.laptop, '#64d2ff'))}
     </div>
     <p class="foot">Each section is a row set in the template the app sends to <code>topo monitor stream</code>. What makes an entry up, warn or down is set in <code>topology.json</code> (for example <code>max_disk_percent</code>), not here.</p>
-    <div class="gt">When the panel is taller than the screen</div><div class="group">
+    <div class="gt">When the panel scrolls</div><div class="group">
       ${row('Keep Status pinned', 'The rest scrolls beneath it', sw(true))}
     </div>`);
 

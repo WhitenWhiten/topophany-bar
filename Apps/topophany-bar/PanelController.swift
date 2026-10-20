@@ -27,6 +27,14 @@ final class PanelController: NSObject {
     private(set) var isOpen = false
     /// Counts each open and close, so a fade that finishes late does nothing.
     private var turn = 0
+    private let height = PanelHeight()
+    /// While the foot is dragged: where the pointer and the panel's height
+    /// were when it began, in points down from the top of the screens, and
+    /// whether it has moved since.
+    private var footDrag: (pointer: Double, height: Double, moved: Bool)?
+
+    /// The band at the panel's foot that drags its height.
+    static let footBand = 6.0
 
     init(model: AppModel) {
         self.model = model
@@ -58,6 +66,8 @@ final class PanelController: NSObject {
         turn += 1
         model.focus = nil
         model.refresh()
+        // Only a height the user chose can be too short.
+        height.shortest = model.settings.appearance.panelHeight == nil ? 0 : measureShortest()
         layout()
         onOpenChange?(true)
         let end = p.frame.origin
@@ -85,6 +95,8 @@ final class PanelController: NSObject {
         let closing = turn
         onOpenChange?(false)
         model.focus = nil
+        footDrag = nil
+        height.dragged = nil
         removeMonitors()
         NSAnimationContext.runAnimationGroup { c in
             c.duration = 0.12
@@ -117,6 +129,7 @@ final class PanelController: NSObject {
         // It fades in and out on its own.
         p.animationBehavior = .none
         p.isReleasedWhenClosed = false
+        p.foot = { [weak self] e in self?.foot(e) == true }
         let root = PanelRoot(model: model, actions: panelActions, maxHeight: { [weak self] in self?.maxHeight ?? 800 })
         let h = NSHostingView(rootView: root)
         h.sizingOptions = [.intrinsicContentSize]
@@ -136,10 +149,25 @@ final class PanelController: NSObject {
 
     private var screen: NSScreen? { anchor?.window?.screen ?? NSScreen.main }
 
-    private var maxHeight: Double {
+    /// The tallest the screen allows.
+    private var screenHeight: Double {
         guard let s = screen else { return 800 }
         let menuBar = s.frame.maxY - s.visibleFrame.maxY
         return s.frame.height - menuBar - 12
+    }
+
+    /// The tallest the panel may be: where its foot was left, never shorter
+    /// than the shortest panel, nor taller than the screen allows.
+    private var maxHeight: Double {
+        let chosen = height.dragged ?? model.settings.appearance.panelHeight.map(Double.init) ?? .infinity
+        return min(screenHeight, max(height.shortest, chosen))
+    }
+
+    /// The panel's height with Status, This Mac's four readings and two
+    /// time zones, as this theme and text size draw them.
+    private func measureShortest() -> Double {
+        let h = NSHostingView(rootView: PanelRoot(model: model, actions: PanelActions(), maxHeight: { nil }, shown: model.panel.shortest))
+        return h.fittingSize.height
     }
 
     private func layout() {
@@ -158,6 +186,44 @@ final class PanelController: NSObject {
         x = min(max(x, s.visibleFrame.minX + 8), s.visibleFrame.maxX - size.width - 8)
         let top = min(bf.minY, s.visibleFrame.maxY) - 5
         p.setFrame(NSRect(x: x.rounded(), y: (top - size.height).rounded(), width: size.width, height: size.height), display: true)
+    }
+
+    // MARK: the foot
+
+    /// The panel's foot sets its height, as a window's edge does: dragged,
+    /// how tall the panel may be; double-clicked, as tall as the screen
+    /// allows. Saved when the drag ends.
+    private func foot(_ e: NSEvent) -> Bool {
+        guard let p = panel, isOpen else { return false }
+        // Where the event happened, which a frame changed since doesn't move.
+        let y = e.cgEvent?.location.y ?? 0
+        switch e.type {
+        case .leftMouseDown where e.locationInWindow.y < Self.footBand:
+            if e.clickCount > 1 {
+                footDrag = nil
+                model.update { $0.appearance.panelHeight = nil }
+            } else {
+                height.shortest = measureShortest()
+                footDrag = (y, p.frame.height, false)
+            }
+            return true
+        case .leftMouseDragged:
+            guard let d = footDrag else { return false }
+            footDrag?.moved = true
+            height.dragged = min(screenHeight, max(height.shortest, d.height + y - d.pointer))
+            layout()
+            return true
+        case .leftMouseUp:
+            guard let d = footDrag else { return false }
+            footDrag = nil
+            if d.moved, let h = height.dragged {
+                height.dragged = nil
+                model.update { $0.appearance.panelHeight = h >= screenHeight ? nil : Int(h.rounded()) }
+            }
+            return true
+        default:
+            return false
+        }
     }
 
     // MARK: keyboard and clicks outside
@@ -251,8 +317,27 @@ final class PanelController: NSObject {
     }
 }
 
+/// What the panel's height comes from besides the settings. Observed, so
+/// the panel follows a change at once.
+@MainActor
+@Observable
+final class PanelHeight {
+    /// How short the panel may be made, as last measured.
+    var shortest = 0.0
+    /// While the foot is dragged, where it is; saved when it's let go.
+    var dragged: Double?
+}
+
 final class KeyPanel: NSPanel {
+    /// Takes the mouse at the panel's foot, before the views under it.
+    var foot: ((NSEvent) -> Bool)?
+
     override var canBecomeKey: Bool { true }
+
+    override func sendEvent(_ event: NSEvent) {
+        if foot?(event) == true { return }
+        super.sendEvent(event)
+    }
 }
 
 /// The panel's SwiftUI root: the theme's renderer, told what the system
@@ -260,7 +345,9 @@ final class KeyPanel: NSPanel {
 struct PanelRoot: View {
     var model: AppModel
     var actions: PanelActions
-    var maxHeight: () -> Double
+    var maxHeight: () -> Double?
+    /// Another panel than the model's, to measure.
+    var shown: PanelModel?
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.colorScheme) private var systemScheme
@@ -280,10 +367,16 @@ struct PanelRoot: View {
                                 increaseContrast: contrast == .increased, maxHeight: maxHeight(), leaps: model.leaps)
         // Built anew for a new language, which L10n already has: a section
         // whose model didn't change keeps its words otherwise.
-        Renderers.renderer(for: model.theme).panel(model.panel, context: ctx)
+        Renderers.renderer(for: model.theme).panel(shown ?? model.panel, context: ctx)
             .id(model.settings.language)
             .environment(\.panelActions, actions)
             .environment(\.locale, L10n.locale)
             .preferredColorScheme(window)
+            .overlay(alignment: .bottom) {
+                // The foot, where the panel's height is dragged.
+                Color.clear.frame(height: PanelController.footBand).contentShape(Rectangle())
+                    .pointerStyle(.frameResize(position: .bottom))
+                    .accessibilityHidden(true)
+            }
     }
 }

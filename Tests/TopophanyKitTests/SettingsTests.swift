@@ -66,6 +66,25 @@ import Testing
         #expect(m.readings == [.cpu])
     }
 
+    /// The panel's height, as its foot was left: absent, or anything but a
+    /// positive whole number, is as tall as the screen allows. It's how
+    /// the panel looks, so `topo` never hears of it.
+    @Test func panelHeight() throws {
+        func height(_ json: String) throws -> Int? {
+            try JSONDecoder().decode(Settings.self, from: Data(#"{"appearance": \#(json)}"#.utf8)).appearance.panelHeight
+        }
+        #expect(try height("{}") == nil)
+        #expect(try height(#"{"panelHeight": 640}"#) == 640)
+        #expect(try height(#"{"panelHeight": 0}"#) == nil)
+        #expect(try height(#"{"panelHeight": -20}"#) == nil)
+        #expect(try height(#"{"panelHeight": "tall"}"#) == nil)
+        var s = Settings()
+        #expect(!String(decoding: try JSONEncoder().encode(s), as: UTF8.self).contains("panelHeight"))
+        s.appearance.panelHeight = 600
+        #expect(try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(s)) == s)
+        #expect(TemplateCompiler().request(for: s, revision: 1) == TemplateCompiler().request(for: Settings(), revision: 1))
+    }
+
     @Test func roundTrips() throws {
         var s = Settings()
         s.topo.observer = "seattle-macbook"

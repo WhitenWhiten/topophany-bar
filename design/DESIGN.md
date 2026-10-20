@@ -119,7 +119,8 @@ Size:
 
 - **Native:** 344 pt wide, cards 6 pt apart. Rows that open something (attention entries, "*N* more") light faintly under the pointer, as far out as the keyboard's focus.
 - **Terminal:** 48 columns of SF Mono 12 inside 7 pt margins.
-- **Height:** never more than the screen minus the menu bar. Status stays pinned and the rest scrolls, with no scroll bar, following the keyboard's focus as little as it must. Unpinned, Status scrolls with the rest. In Native, where more lies beyond the scroll's top or bottom, the rows fade into the panel there.
+- **Height:** as tall as its content, up to the height the user leaves it at, and never more than the screen minus the menu bar. Status stays pinned and the rest scrolls, with no scroll bar, following the keyboard's focus as little as it must. Unpinned, Status scrolls with the rest. In Native, where more lies beyond the scroll's top or bottom, the rows fade into the panel there.
+- **Choosing the height:** drag the panel's bottom edge, as a window's; the height is saved when the drag ends. Double-clicking the edge, or Reset in Settings, gives the screen's height back. The panel is never made shorter than its header, Status and footer with This Mac's four readings and two time zones between, as the theme and text size draw them, whatever the panel shows.
 - **Quick scroll:** while the panel scrolls, a chevron beside Quit leaps about half the panel down, never further than the scroll shows at once, so no row passes unseen. At the end it points up and goes back to the top. Space does the same, unless a button has the keyboard (Full Keyboard Access), when Space presses that button.
 
 Motion in the panel is quiet, and says only what happened:
@@ -326,7 +327,7 @@ A `cards` theme that follows the system gives its slots per appearance. `dark` a
 
 | Yours (Settings, Edit Widget) | Fixed (topology + collector) |
 |---|---|
-| Theme; panel appearance; text size | What counts as up, warn, down or unknown |
+| Theme; panel appearance; text size; panel height | What counts as up, warn, down or unknown |
 | Menu bar: Symbol, Count or Words; status colors; motion; this Mac's readings; quiet its alert until it gets worse | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
 | Sections on or off and their order (Status is fixed) | Freshness, staleness, publisher lease |
 | The time zone of each place | Each server's health in Time zones |
@@ -358,6 +359,8 @@ Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On
   "language": "system"
 }
 ```
+
+Dragging the panel's edge adds `"panelHeight": 640` to `appearance`, in points. Absent, the panel may be as tall as the screen allows.
 
 ## 10. Architecture
 

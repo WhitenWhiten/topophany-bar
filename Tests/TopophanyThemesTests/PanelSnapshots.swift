@@ -48,6 +48,16 @@ import TopophanySections
         #expect(size.height <= 700 + 48 + 0.5, "\(size)")
     }
 
+    /// The shortest the panel may be made, in each renderer: Status, This
+    /// Mac's four readings and two time zones.
+    @Test func shortestPanels() throws {
+        let shortest = previewPanel(.incidents).shortest
+        for dark in [true, false] {
+            try snapshot("panel-native-\(dark ? "dark" : "light")-shortest", panel(shortest, theme: ThemeStore.native, dark: dark))
+        }
+        try snapshot("panel-terminal-shortest", panel(shortest, theme: ThemeStore.terminal, dark: true))
+    }
+
     /// A zone with more servers than its row holds: the one in trouble is
     /// among those drawn.
     @Test func crowdedZone() throws {
