@@ -229,7 +229,7 @@ struct ProfileRow: View {
             // topo lists profiles and has none: sign in with topo login.
             LabeledContent {
                 Button("Sign In…") { signingIn = true }
-                    .popover(isPresented: $signingIn, arrowEdge: .bottom) { SignInForm(open: $signingIn).environment(model) }
+                    .popover(isPresented: $signingIn, arrowEdge: .bottom) { Localized(content: SignInForm(open: $signingIn)).environment(model) }
             } label: {
                 RowLabel("Profile", "No profile saved yet; topo keeps the token, never the app")
             }
@@ -951,7 +951,7 @@ struct ApplicationsButton: View {
 
     var body: some View {
         Button("Choose…") { open = true }
-            .popover(isPresented: $open, arrowEdge: .bottom) { ApplicationsPicker().environment(model) }
+            .popover(isPresented: $open, arrowEdge: .bottom) { Localized(content: ApplicationsPicker()).environment(model) }
     }
 }
 
@@ -1037,7 +1037,7 @@ struct ServersButton: View {
 
     var body: some View {
         Button("Choose…") { open = true }
-            .popover(isPresented: $open, arrowEdge: .bottom) { ServersPicker().environment(model) }
+            .popover(isPresented: $open, arrowEdge: .bottom) { Localized(content: ServersPicker()).environment(model) }
     }
 }
 
@@ -1155,7 +1155,7 @@ struct ZonesButton: View {
 
     var body: some View {
         Button("Places…") { open = true }
-            .popover(isPresented: $open, arrowEdge: .bottom) { ZonesPicker().environment(model) }
+            .popover(isPresented: $open, arrowEdge: .bottom) { Localized(content: ZonesPicker()).environment(model) }
     }
 }
 
