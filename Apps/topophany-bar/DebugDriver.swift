@@ -130,12 +130,16 @@ enum DebugDriver {
                                               pressure: type == .leftMouseUp ? 0 : 1) { NSApp.postEvent(e, atStart: false) }
             }
         case "click":
+            // `click #N X Y` clicks in window N, such as a popover.
             let panel = w.count > 1 && w[1] == "panel"
-            let k = panel ? 1 : 0
-            guard let x = num(1 + k), let y = num(2 + k), let win = panel ? d.panelWindow : d.settingsWindow else { return }
+            let number = w.count > 1 && w[1].hasPrefix("#") ? Int(w[1].dropFirst()) : nil
+            let k = panel || number != nil ? 1 : 0
+            let target = number.flatMap { n in NSApp.windows.first { $0.windowNumber == n } }
+            guard let x = num(1 + k), let y = num(2 + k),
+                  let win = target ?? (panel ? d.panelWindow : d.settingsWindow) else { return }
             Task {
                 for n in 1...max(1, Int(num(3 + k) ?? 1)) {
-                    await drag(win, from: CGPoint(x: x, y: y), dy: 0, seconds: 0.05, activate: !panel && n == 1, clicks: n)
+                    await drag(win, from: CGPoint(x: x, y: y), dy: 0, seconds: 0.05, activate: k == 0 && n == 1, clicks: n)
                 }
             }
         case "drag":
