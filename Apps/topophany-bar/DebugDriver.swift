@@ -19,9 +19,12 @@ import TopophanyWidgets
 ///                           `space` for a space
 ///     clickitem             a click on the menu bar item
 ///     mac off|local|server  This Mac's mode
-///     click X Y             a click in Settings, in points from its top left
-///     click panel X Y       a click in the panel
-///     drag X Y DY [S]       a drag of DY points, over S seconds (default 0.6)
+///     click X Y [N]         a click in Settings, in points from its top left;
+///                           N in a row for a double click
+///     click panel X Y [N]   a click in the panel
+///     drag [panel] X Y DY [S]
+///                           a drag of DY points in Settings or the panel,
+///                           over S seconds (default 0.6)
 ///     trace S               Settings' frame and This Mac's mode, for S seconds
 ///     ax                    the open panel's accessibility tree
 ///     windows               each window's number and frame
@@ -93,11 +96,18 @@ enum DebugDriver {
             }
         case "click":
             let panel = w.count > 1 && w[1] == "panel"
-            guard let x = num(panel ? 2 : 1), let y = num(panel ? 3 : 2), let win = panel ? d.panelWindow : d.settingsWindow else { return }
-            Task { await drag(win, from: CGPoint(x: x, y: y), dy: 0, seconds: 0.05, activate: !panel) }
+            let k = panel ? 1 : 0
+            guard let x = num(1 + k), let y = num(2 + k), let win = panel ? d.panelWindow : d.settingsWindow else { return }
+            Task {
+                for n in 1...max(1, Int(num(3 + k) ?? 1)) {
+                    await drag(win, from: CGPoint(x: x, y: y), dy: 0, seconds: 0.05, activate: !panel && n == 1, clicks: n)
+                }
+            }
         case "drag":
-            guard let x = num(1), let y = num(2), let dy = num(3), let win = d.settingsWindow else { return }
-            Task { await drag(win, from: CGPoint(x: x, y: y), dy: dy, seconds: num(4) ?? 0.6) }
+            let panel = w.count > 1 && w[1] == "panel"
+            let k = panel ? 1 : 0
+            guard let x = num(1 + k), let y = num(2 + k), let dy = num(3 + k), let win = panel ? d.panelWindow : d.settingsWindow else { return }
+            Task { await drag(win, from: CGPoint(x: x, y: y), dy: dy, seconds: num(4 + k) ?? 0.6, activate: !panel) }
         case "views":
             var lines: [String] = []
             func walk(_ v: NSView, _ depth: Int) {
@@ -184,8 +194,9 @@ enum DebugDriver {
         }
     }
 
-    /// Mouse down, moves and up, posted to the app's own queue.
-    static func drag(_ win: NSWindow, from p: CGPoint, dy: Double, seconds: Double, activate: Bool = true) async {
+    /// Mouse down, moves and up, posted to the app's own queue; `clicks`
+    /// is the click's place in a run of them.
+    static func drag(_ win: NSWindow, from p: CGPoint, dy: Double, seconds: Double, activate: Bool = true, clicks: Int = 1) async {
         let steps = max(1, Int(seconds * 60))
         if activate {
             NSApp.activate()
@@ -197,7 +208,7 @@ enum DebugDriver {
             guard let e = NSEvent.mouseEvent(with: type, location: at, modifierFlags: [],
                                              timestamp: ProcessInfo.processInfo.systemUptime,
                                              windowNumber: win.windowNumber, context: nil, eventNumber: 0,
-                                             clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
+                                             clickCount: clicks, pressure: type == .leftMouseUp ? 0 : 1) else { return }
             NSApp.postEvent(e, atStart: false)
         }
         post(.leftMouseDown, p.y)
