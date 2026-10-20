@@ -4,7 +4,7 @@ cask "topophany-bar" do
   version "0.1.0"
   sha256 "REPLACE_WITH_SHA256"
 
-  url "https://github.com/WhitenWhiten/topophany-bar/releases/download/v#{version}/topophany-bar-#{version}.zip"
+  url "https://github.com/WhitenWhiten/topophany-bar/releases/download/v#{version}/topophany-bar-#{version}.dmg"
   name "Topophany Bar"
   desc "Menu bar item and desktop widgets for topo"
   homepage "https://github.com/WhitenWhiten/topophany-bar"
