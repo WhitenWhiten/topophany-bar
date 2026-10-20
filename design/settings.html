@@ -256,7 +256,7 @@
       ${row('Status', 'The verdict, checks by health, observers live', `<span class="lock">${lockI}Always first</span>`, gi(I.globe, '#30d158'))}
       ${row('Seen from', 'Which observers see a problem, and that the others don’t', sw(true), handle + gi(I.scope, '#5e5ce6'))}
       ${row('Needs attention', 'Open incidents first, then anything else that needs a look', pop('3 rows') + sw(true), handle + gi(I.alert, '#ff9f0a'))}
-      ${row('Applications', 'Services folded into the applications you declare', pop('All 6') + sw(true), handle + gi(I.apps, '#0a84ff'))}
+      ${row('Applications', 'Services folded into the applications you declare', '<span class="btn">Choose…</span>' + sw(true), handle + gi(I.apps, '#0a84ff'))}
       ${row('Fleet', 'Every server, edge and platform topo lists, by who runs it', sw(true), handle + gi(I.fleet, '#5957d6'))}
       ${row('Servers', 'The Servers-tab card of each server you pin', '<span class="btn">Choose…</span>' + sw(false), handle + gi(I.server, '#8e8e93'))}
       ${row('Time zones', 'The time where your servers are, and each one’s health', '<span class="btn">Places…</span>' + sw(true), handle + gi(I.clock, '#30b0c7'))}
