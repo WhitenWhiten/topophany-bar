@@ -1,13 +1,13 @@
 # A Homebrew cask for topophany-bar. Prepared, not submitted: fill in the
-# version, sha256 (scripts/release.sh prints it) and the release URL.
+# version and sha256 (scripts/release.sh prints it).
 cask "topophany-bar" do
   version "0.1.0"
   sha256 "REPLACE_WITH_SHA256"
 
-  url "https://github.com/OWNER/topophany-bar/releases/download/v#{version}/topophany-bar-#{version}.zip"
+  url "https://github.com/WhitenWhiten/topophany-bar/releases/download/v#{version}/topophany-bar-#{version}.zip"
   name "Topophany Bar"
   desc "Menu bar item and desktop widgets for topo"
-  homepage "https://github.com/OWNER/topophany-bar"
+  homepage "https://github.com/WhitenWhiten/topophany-bar"
 
   depends_on macos: ">= :tahoe"
 
