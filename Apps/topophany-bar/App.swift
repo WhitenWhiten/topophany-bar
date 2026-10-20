@@ -127,9 +127,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #endif
 
     func applyLoginItem() {
-        // A debug build run from the build folder doesn't register itself.
+        // macOS keeps one login item per bundle ID, the installed copy's: a
+        // debug build with a fixture, snapshots or a test settings file
+        // leaves it alone.
         #if DEBUG
-        if DebugSnapshots.directory != nil || model.fixture != nil { return }
+        if DebugSnapshots.directory != nil || model.fixture != nil
+            || UserDefaults.standard.string(forKey: "settings") != nil { return }
         #endif
         let service = SMAppService.mainApp
         if model.settings.openAtLogin {
