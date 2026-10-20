@@ -53,7 +53,7 @@ Out of scope for v1:
 - **Settings:** Show = Symbol, Count or Words (default Count). Status colors = on or off; with colors off the badge keeps its shape. Motion = on or off (default on). This Mac = any of CPU, Memory and Network (default none).
 - **VoiceOver:** "Topophany: 5 incidents, updated 4 seconds ago." With readings shown, a second line: "This Mac: CPU 17%, memory 72%, network 1.4 MB/s in, 344 kB/s out."
 - **Right-click menu:** About Topophany; Quiet Until It Gets Worse (section 3.3); Open in Terminal; Settings…; Quit Topophany.
-- **About:** the standard panel: the version, and credits that link to Topophany, this app's source and license, and the logos' acknowledgements, with the version of the `topo` running. In the copyright below them, the author's name links to their homepage, whiten.dev.
+- **About:** the standard panel: the version, and four short lines of credits. They link to Topophany, with the version of the `topo` running; to this app's source, license and acknowledgements, in one line; and to Topophany again, inviting a star. In the copyright below them, the author's name links to their homepage, whiten.dev.
 - **While a window is open:** Settings or About brings the app forward, with a Dock icon and a menu bar: About, Settings… (⌘,), Hide and Quit (⌘Q); Close (⌘W); and Edit's undo, cut, copy, paste and select all for the fields. When the last one closes, the app is back in the menu bar alone.
 
 ### 3.1 Motion
