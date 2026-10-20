@@ -6,6 +6,8 @@ It shows what `topo` concludes and never decides anything itself. Every state, c
 
 **Status:** v1, not yet released. macOS 26 or later.
 
+Like it? ★ [Star Topophany](https://github.com/WhitenWhiten/topophany), the project this bar is built on.
+
 ## Read first
 
 | | |
