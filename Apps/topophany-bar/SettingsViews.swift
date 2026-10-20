@@ -221,9 +221,19 @@ struct TerminalPicker: View {
 struct ProfileRow: View {
     @Environment(AppModel.self) private var model
 
+    @State private var signingIn = false
+
     var body: some View {
         let label = RowLabel("Profile", "Saved by `topo login`; the app never sees a token")
-        if let list = model.profiles, !list.profiles.isEmpty {
+        if model.profiles?.profiles.isEmpty == true {
+            // topo lists profiles and has none: sign in with topo login.
+            LabeledContent {
+                Button("Sign In…") { signingIn = true }
+                    .popover(isPresented: $signingIn, arrowEdge: .bottom) { SignInForm(open: $signingIn).environment(model) }
+            } label: {
+                RowLabel("Profile", "No profile saved yet; topo keeps the token, never the app")
+            }
+        } else if let list = model.profiles {
             let chosen = model.settings.topo.profile
             Picker(selection: model.binding(\.topo.profile)) {
                 Text(list.active.map { tr("Active: \(Self.title($0))") } ?? tr("Active profile")).tag("")
@@ -248,34 +258,152 @@ struct ProfileRow: View {
     static func title(_ p: ProfileList.Profile) -> String { p.project.isEmpty ? p.name : "\(p.name) — \(p.project)" }
 }
 
+/// Signs in with `topo login`, in the user's terminal: the app asks only
+/// where, and topo asks for the token there.
+struct SignInForm: View {
+    @Environment(AppModel.self) private var model
+    @Binding var open: Bool
+    @State private var server = ""
+    @State private var project = ""
+    @State private var profile = "default"
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Sign in with topo login").font(.headline)
+            Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 7) {
+                GridRow {
+                    Text("Server").foregroundStyle(.secondary).gridColumnAlignment(.trailing)
+                    TextField("", text: $server, prompt: Text(verbatim: "https://collector.example.com"))
+                }
+                GridRow {
+                    Text("Project").foregroundStyle(.secondary)
+                    TextField("", text: $project, prompt: Text(verbatim: "homelab"))
+                }
+                GridRow {
+                    Text("Profile").foregroundStyle(.secondary)
+                    TextField("", text: $profile)
+                }
+            }
+            .textFieldStyle(.roundedBorder)
+            Text("Your terminal opens and runs topo login, which asks for the token there. The app never sees it.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Spacer()
+                Button("Cancel") { open = false }.keyboardShortcut(.cancelAction)
+                Button("Continue in Terminal") {
+                    TerminalLauncher.login(model: model, server: trimmed(server), project: trimmed(project),
+                                           profile: trimmed(profile).isEmpty ? "default" : trimmed(profile))
+                    open = false
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(trimmed(server).isEmpty || trimmed(project).isEmpty)
+            }
+        }
+        .padding(14)
+        .frame(width: 330)
+        // Not the trailing alignment of the row it opens from.
+        .multilineTextAlignment(.leading)
+    }
+
+    func trimmed(_ s: String) -> String { s.trimmingCharacters(in: .whitespacesAndNewlines) }
+}
+
 /// The `topo` executable: where it is and whether it speaks protocol 1.
+/// Its menu runs any `topo` on this Mac, downloads one or deletes a
+/// downloaded copy; while none can run, Download does it in one click.
 struct TopoRow: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         LabeledContent {
             HStack(spacing: 8) {
-                if let path {
-                    Text(verbatim: (path as NSString).abbreviatingWithTildeInPath)
-                        .font(.callout.monospaced())
-                        .lineLimit(1).truncationMode(.middle)
-                        .padding(.horizontal, 7).padding(.vertical, 3)
-                        .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(.quaternary.opacity(0.6)))
-                }
-                version
-                Menu {
-                    Button("Choose…") { choose() }
-                    if !model.settings.topo.path.isEmpty {
-                        Button("Search Automatically") { model.update { $0.topo.path = "" } }
+                if !model.fetch.isDownloading {
+                    if let path {
+                        Text(verbatim: (path as NSString).abbreviatingWithTildeInPath)
+                            .font(.callout.monospaced())
+                            .lineLimit(1).truncationMode(.middle)
+                            .padding(.horizontal, 7).padding(.vertical, 3)
+                            .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(.quaternary.opacity(0.6)))
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
+                    version
+                    if let offer = model.panel.download {
+                        Button { model.download(offer.build) } label: {
+                            Label { Text(verbatim: offer.title) } icon: { Image(systemName: "arrow.down.circle") }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .fixedSize()
+                    }
                 }
-                .menuStyle(.button).buttonStyle(.borderless).fixedSize()
-                .accessibilityLabel(Text("Choose topo"))
+                menu
             }
         } label: {
-            RowLabel("topo executable", subtitle)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("topo executable")
+                switch model.fetch {
+                case .downloading(_, let v, let f):
+                    Text(verbatim: TopoOffer.downloading(v, f)).font(.callout).foregroundStyle(.secondary)
+                    ProgressView(value: f ?? 0).progressViewStyle(.linear).controlSize(.small).padding(.top, 4)
+                case .failed(let next, let p):
+                    Text(verbatim: TopoOffer.failed(p, next: next)).font(.callout).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                case .idle:
+                    // A path wraps whole, never at its slashes.
+                    Text(verbatim: subtitle.replacingOccurrences(of: "/", with: "/\u{2060}"))
+                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// Every `topo` on this Mac, the tested release and the latest, and
+    /// the downloaded copies to delete.
+    var menu: some View {
+        Menu {
+            Toggle("Search Automatically", isOn: Binding(get: { model.settings.topo.path.isEmpty },
+                                                          set: { if $0 { model.use("") } }))
+            if !model.candidates.isEmpty {
+                Divider()
+                Section("On this Mac") {
+                    ForEach(model.candidates) { c in
+                        Toggle(isOn: Binding(get: { model.settings.topo.path == c.path }, set: { if $0 { model.use(c.path) } })) {
+                            Text(verbatim: Self.title(c))
+                        }
+                        .disabled(!c.isUsable)
+                    }
+                }
+            }
+            Divider()
+            Button("Choose…") { choose() }
+            Divider()
+            Group {
+                Button("Download Latest") { model.download(.latest) }
+                Button("Download \(TopoBuild.testedVersion), Tested With This App") { model.download(.tested) }
+            }
+            .disabled(model.fetch.isDownloading)
+            if !model.downloaded.isEmpty {
+                Divider()
+                Menu("Delete Download") {
+                    ForEach(model.downloaded) { d in
+                        Button { model.deleteDownload(d) } label: { Text(verbatim: "topo \(d.version)") }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+        }
+        .menuStyle(.button).buttonStyle(.borderless).fixedSize()
+        .accessibilityLabel(Text("Choose topo"))
+    }
+
+    /// "1.3.0 — ~/.local/bin/topo", "1.3.0 — Downloaded", or why it can't
+    /// be used.
+    static func title(_ c: TopoCandidate) -> String {
+        let place = c.origin == .downloaded ? tr("Downloaded") : (c.path as NSString).abbreviatingWithTildeInPath
+        let named = c.version.map { "\($0) — \(place)" } ?? place
+        switch c.problem {
+        case nil: return named
+        case .upgradeNeeded?: return tr("\(named) (no monitor stream)")
+        case .unsupported?, .launchFailed?, .notFound?: return tr("\(named) (can’t be read)")
         }
     }
 
@@ -290,20 +418,22 @@ struct TopoRow: View {
         case .running(let r):
             Text(verbatim: "\(r.version) ✓").font(.callout).foregroundStyle(.green)
         case .unavailable(.upgradeNeeded), .unavailable(.unsupported):
-            Text("Upgrade needed").font(.callout).foregroundStyle(.orange)
+            Text("Too old").font(.callout).foregroundStyle(.orange)
         default:
             EmptyView()
         }
     }
 
-    var subtitle: LocalizedStringKey {
-        if model.fixture != nil { return "Replaying a fixture; topo is not running" }
+    var subtitle: String {
+        if model.fixture != nil { return tr("Replaying a fixture; topo is not running") }
         switch model.located {
-        case .success(let f)? where f.origin == "setting": return "Chosen here; every reading comes from it"
-        case .success(let f)? where f.origin == "PATH": return "Found on PATH; every reading comes from it"
-        case .success(let f)?: return "Found in \((f.path as NSString).deletingLastPathComponent); every reading comes from it"
-        case .failure?: return "Not found on PATH, in /opt/homebrew/bin or /usr/local/bin"
-        case nil: return "Looking for topo…"
+        case .success(let f)? where f.origin == "downloaded" || model.downloaded.contains(where: { $0.path == f.path }):
+            return tr("Downloaded by this app; every reading comes from it")
+        case .success(let f)? where f.origin == "setting": return tr("Chosen here; every reading comes from it")
+        case .success(let f)? where f.origin == "PATH": return tr("Found on PATH; every reading comes from it")
+        case .success(let f)?: return tr("Found in \((f.path as NSString).deletingLastPathComponent); every reading comes from it")
+        case .failure?: return tr("Not found on PATH, in /opt/homebrew/bin or /usr/local/bin")
+        case nil: return tr("Looking for topo…")
         }
     }
 
@@ -316,7 +446,7 @@ struct TopoRow: View {
         panel.message = tr("Choose the topo executable")
         panel.directoryURL = URL(filePath: "/opt/homebrew/bin")
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        model.update { $0.topo.path = url.path }
+        model.use(url.path)
     }
 }
 
@@ -370,9 +500,9 @@ struct EngineRow: View {
             _ = after
             parts.append(tr("attempt \(attempt)"))
         case .unavailable(.notFound):
-            parts.append(tr("Install topo, or choose it above"))
+            parts.append(tr("Download topo, or choose one above"))
         case .unavailable(.upgradeNeeded):
-            parts.append(tr("This topo has no monitor stream; upgrade it"))
+            parts.append(tr("This topo has no monitor stream; download a newer one above"))
         case .unavailable(.unsupported(_, let version, let missing)):
             parts.append(tr("\(version) lacks \(missing.joined(separator: ", "))"))
         case .unavailable(.launchFailed(_, let message)):

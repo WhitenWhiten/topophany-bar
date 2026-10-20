@@ -7,6 +7,22 @@
     "%@": {
       "shouldTranslate": false
     },
+    "%@ (can’t be read)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（読み取れません）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（无法读取）"
+          }
+        }
+      }
+    },
     "%@ (matches this Mac)": {
       "localizations": {
         "ja": {
@@ -19,6 +35,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@（与本机匹配）"
+          }
+        }
+      }
+    },
+    "%@ (no monitor stream)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（monitor stream なし）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（没有 monitor stream）"
           }
         }
       }
@@ -601,6 +633,22 @@
         }
       }
     },
+    "Cancel": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
     "Charge, state and time remaining": {
       "localizations": {
         "ja": {
@@ -745,6 +793,22 @@
         }
       }
     },
+    "Continue in Terminal": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ターミナルで続ける"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在终端中继续"
+          }
+        }
+      }
+    },
     "Copy": {
       "localizations": {
         "ja": {
@@ -837,6 +901,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "默认"
+          }
+        }
+      }
+    },
+    "Delete Download": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダウンロードを削除"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除下载"
+          }
+        }
+      }
+    },
+    "Download %@, Tested With This App": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリで検証済みの %@ をダウンロード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载已在本应用中测试的 %@"
+          }
+        }
+      }
+    },
+    "Download Latest": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最新版をダウンロード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载最新版本"
+          }
+        }
+      }
+    },
+    "Download topo, or choose one above": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo をダウンロードするか、上で選択してください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请下载 topo，或在上方选择"
+          }
+        }
+      }
+    },
+    "Downloaded": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダウンロード済み"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已下载"
+          }
+        }
+      }
+    },
+    "Downloaded by this app; every reading comes from it": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリでダウンロード済み。すべての情報はこの topo から取得します"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "由本应用下载；所有数据都来自它"
           }
         }
       }
@@ -1225,22 +1385,6 @@
         }
       }
     },
-    "Install topo, or choose it above": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "topo をインストールするか、上で選択してください"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请安装 topo，或在上方选择"
-          }
-        }
-      }
-    },
     "Keep Status pinned": {
       "localizations": {
         "ja": {
@@ -1545,6 +1689,22 @@
         }
       }
     },
+    "No profile saved yet; topo keeps the token, never the app": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存済みのプロファイルはまだありません。トークンを保管するのは topo で、アプリではありません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未保存配置文件；令牌由 topo 保管，而不是本应用"
+          }
+        }
+      }
+    },
     "Node": {
       "localizations": {
         "ja": {
@@ -1717,6 +1877,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "关闭后，徽标以菜单栏自身的颜色绘制；其形状仍会变化"
+          }
+        }
+      }
+    },
+    "On this Mac": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Mac 上"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机上"
           }
         }
       }
@@ -1989,6 +2165,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "配置"
+          }
+        }
+      }
+    },
+    "Project": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロジェクト"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "项目"
           }
         }
       }
@@ -2457,6 +2649,38 @@
         }
       }
     },
+    "Sign In…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サインイン…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录…"
+          }
+        }
+      }
+    },
+    "Sign in with topo login": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo login でサインイン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 topo login 登录"
+          }
+        }
+      }
+    },
     "Small": {
       "localizations": {
         "ja": {
@@ -2889,18 +3113,18 @@
         }
       }
     },
-    "This topo has no monitor stream; upgrade it": {
+    "This topo has no monitor stream; download a newer one above": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この topo には monitor stream がありません。アップグレードしてください"
+            "value": "この topo には monitor stream がありません。上で新しいものをダウンロードしてください"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此 topo 没有 monitor stream；请升级"
+            "value": "此 topo 没有 monitor stream；请在上方下载较新的版本"
           }
         }
       }
@@ -2949,6 +3173,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "各地点的时区"
+          }
+        }
+      }
+    },
+    "Too old": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "古すぎます"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本过旧"
           }
         }
       }
@@ -3113,22 +3353,6 @@
         }
       }
     },
-    "Upgrade needed": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "アップグレードが必要"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "需要升级"
-          }
-        }
-      }
-    },
     "View": {
       "localizations": {
         "ja": {
@@ -3237,6 +3461,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "文字"
+          }
+        }
+      }
+    },
+    "Your terminal opens and runs topo login, which asks for the token there. The app never sees it.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ターミナルが開いて topo login を実行し、そこでトークンを尋ねます。アプリがトークンを見ることはありません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "终端会打开并运行 topo login，并在那里询问令牌。本应用永远看不到它。"
           }
         }
       }

@@ -110,6 +110,17 @@ enum TerminalLauncher {
     }
 
     static func open(model: AppModel, focus: AttentionSection.Item?) {
+        run(model: model, arguments(model.effectiveSettings, focus: focus))
+    }
+
+    /// `topo login` for a profile, in the user's terminal, which asks for
+    /// the token itself.
+    static func login(model: AppModel, server: String, project: String, profile: String) {
+        run(model: model, ["login", "-server", server, "-project", project, "-profile", profile])
+    }
+
+    /// Runs the `topo` the app runs, with `args`, in the user's terminal.
+    static func run(model: AppModel, _ args: [String]) {
         let path: String
         if case .running(let r) = model.engineStatus, model.fixture == nil {
             path = r.path
@@ -119,7 +130,7 @@ enum TerminalLauncher {
             NSSound.beep()
             return
         }
-        let command = ([path] + arguments(model.effectiveSettings, focus: focus)).map(quote).joined(separator: " ")
+        let command = ([path] + args).map(quote).joined(separator: " ")
         // The script removes itself before it becomes topo.
         let script = "#!/bin/sh\nrm -f \"$0\"\nclear\nexec \(command)\n"
         let dir = FileManager.default.temporaryDirectory.appending(path: "topophany-bar")

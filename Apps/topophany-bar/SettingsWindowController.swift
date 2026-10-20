@@ -33,6 +33,10 @@ final class SettingsWindowController: NSWindowController {
         window.setFrameAutosaveName("topophany-bar.settings")
         super.init(window: window)
         relabel()
+        // Back from the terminal or Finder: look again for topo and profiles.
+        NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { [weak model] _ in
+            MainActor.assumeIsolated { model?.locate() }
+        }
     }
 
     /// Names the tabs, and the window after the one shown, in the language

@@ -226,7 +226,13 @@ final class AppModel {
     private func loadProfiles(path: String) {
         Task.detached {
             let list = ProcessEngine.profiles(path)
-            await MainActor.run { self.profiles = list }
+            await MainActor.run {
+                // The first profile saved, by topo login: topo reads it as
+                // it starts.
+                let signedIn = self.profiles?.profiles.isEmpty == true && list?.profiles.isEmpty == false
+                self.profiles = list
+                if signedIn { self.restartEngine() }
+            }
         }
     }
 
