@@ -422,7 +422,7 @@ protocol Engine {
   3. **When the engine stops:** restart it after 1, 2, 4 … up to 30 s, and show ◌ until the next frame.
   4. **When the app quits:** stdin closes and `topo` exits.
 
-  Spawning a user-installed binary rules out the App Sandbox, so v1 is distributed with a Developer ID, notarized, as a Homebrew cask.
+  Spawning a user-installed binary rules out the App Sandbox, so v1 is distributed with a Developer ID, notarized, on a disk image that the Homebrew cask also installs from. The image's window is the icon's world laid flat: the app and Applications on a dot-matrix Pacific, joined by the icon's arc of light, under one line of words (`scripts/make-dmg-background.swift`). It never scrolls, whatever bars Finder shows, and the names stay out of the way: Applications has none, and the app's sits on black, where Finder's black in Light vanishes and its white in Dark reads.
 
 #### 10.2.1 Getting topo
 
@@ -524,7 +524,7 @@ How the change is tested and kept safe:
    - the `cells` renderer on `CellCanvas`;
    - Settings, and the theme store with the built-in themes.
 4. **Widgets:** Status in four sizes, Server in two, the App Group hand-off and the not-current timeline.
-5. **Polish:** VoiceOver, Reduce Transparency and Increase Contrast, keyboard navigation, localization (en, ja, zh), signing, notarization and the cask.
+5. **Polish:** VoiceOver, Reduce Transparency and Increase Contrast, keyboard navigation, localization (en, ja, zh), signing, notarization, the disk image and the cask.
 
 Later: user theme files, EmbeddedEngine and `libtopo`, more renderers.
 
