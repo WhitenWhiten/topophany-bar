@@ -155,6 +155,7 @@ public enum SectionBuilder {
             switch row.row.reason {
             case "source_unavailable": return blind(.collectorUnreachable)
             case "source_expired": return blind(.snapshotExpired)
+            case "sample_expired": return blind(.verdictExpired)
             default: return blind(.unknown(reason: row.row.reason))
             }
         case .withheld(.expired):
@@ -449,6 +450,10 @@ public enum SectionBuilder {
         let connection: PanelChrome.Connection
         switch status.kind {
         case .verdict: connection = .connected
+        // These describe evidence from an answering collector. Its verdict
+        // can expire independently of the connection; keep withholding the
+        // values without claiming that the collector became unreachable.
+        case .blind(.verdictExpired), .blind(.snapshotExpired), .blind(.cached): connection = .connected
         case .blind(.starting): connection = .starting
         case .blind(.engineStopped(let at)): connection = .restarting(at: at)
         case .blind(.topoNotFound): connection = .notRunning(tr("topo not found"))

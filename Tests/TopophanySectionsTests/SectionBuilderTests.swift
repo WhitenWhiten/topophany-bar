@@ -161,6 +161,54 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
         let p = panel(.stale, after: 15)
         #expect(p.status.kind == .blind(.verdictExpired))
         #expect(p.status.mark == .offline)
+        #expect(p.chrome.connection == .connected, "a verdict deadline does not disconnect the collector")
+        #expect(p.status.counts == nil, "connection status must not extend evidence validity")
+    }
+
+    @Test func expiredEvidenceDoesNotFlapTheConnection() {
+        let s = settings()
+        let request = TemplateCompiler().request(for: s, revision: 1)
+        let initial = FixtureEngine.reading(.clear, request: request, origin: origin, after: 4).frame!
+        var policy = ReaderPolicy()
+        var sequence: UInt64 = 0
+        func receive(_ frame: Frame, after seconds: TimeInterval) -> PanelModel {
+            var next = frame
+            sequence += 1
+            next.sequence = sequence
+            let now = origin.addingTimeInterval(seconds)
+            next.generatedAt = now
+            next.publisherExpiresAt = now.addingTimeInterval(30)
+            policy.receive(next, at: now)
+            return SectionBuilder.panel(PanelInput(reading: policy.evaluate(at: now), engine: .running, settings: s))
+        }
+
+        #expect(receive(initial, after: 4).chrome.connection == .connected)
+        for (offset, reason, blind) in [
+            (5.0, "sample_expired", StatusSection.Blind.verdictExpired),
+            (6.0, "source_expired", .snapshotExpired),
+        ] {
+            var expired = initial
+            let index = expired.rows.firstIndex { $0.metric == "summary.verdict" }!
+            expired.rows[index].value = .none
+            expired.rows[index].reason = reason
+            expired.rows[index].freshness = "stale"
+            let p = receive(expired, after: offset)
+            #expect(p.status.kind == .blind(blind))
+            #expect(p.status.counts == nil)
+            #expect(p.chrome.connection == .connected)
+            #expect(receive(initial, after: offset + 0.5).chrome.connection == .connected)
+        }
+
+        var unavailable = initial
+        let index = unavailable.rows.firstIndex { $0.metric == "summary.verdict" }!
+        unavailable.rows[index].value = .none
+        unavailable.rows[index].reason = "source_unavailable"
+        #expect(receive(unavailable, after: 7).chrome.connection == .unreachable)
+        #expect(receive(initial, after: 8).chrome.connection == .connected)
+        let lapsed = SectionBuilder.panel(PanelInput(reading: policy.evaluate(at: origin.addingTimeInterval(38)),
+                                                   engine: .running, settings: s))
+        #expect(lapsed.status.kind == .blind(.leaseLapsed))
+        #expect(!lapsed.chrome.isLive, "a dead publisher must still disconnect")
     }
 
     @Test func stoppedAndRestarting() {
