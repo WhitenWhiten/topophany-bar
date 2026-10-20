@@ -105,7 +105,7 @@ import Testing
     @Test func missingAndUnknownFields() throws {
         let s = try JSONDecoder().decode(Settings.self, from: Data(#"{"future":1,"topo":{"interval":"90m"},"sections":[{"id":"mac","mode":"off"},{"id":"bogus"},{"id":"status"}]}"#.utf8))
         #expect(s.topo.interval == "1h")
-        #expect(s.sections.order == [.status, .seen, .attention, .applications, .fleet, .servers, .zones, .mac])
+        #expect(s.sections.order == [.status, .seen, .attention, .applications, .services, .fleet, .servers, .zones, .mac])
         #expect(s.sections.mac.mode == .off)
         #expect(s.sections.isEnabled(.mac) == false)
         #expect(s.appearance == Settings.Appearance())
@@ -132,11 +132,28 @@ import Testing
     @Test func missingSectionsTakeTheirPlace() throws {
         let old = #"{"sections":[{"id":"status"},{"id":"mac"},{"id":"seen"},{"id":"attention"},{"id":"servers"}]}"#
         let s = try JSONDecoder().decode(Settings.self, from: Data(old.utf8))
-        #expect(s.sections.order == [.status, .mac, .seen, .attention, .applications, .fleet, .servers, .zones])
+        #expect(s.sections.order == [.status, .mac, .seen, .attention, .applications, .services, .fleet, .servers, .zones])
         // Time zones and Fleet, newer than such a file, are on.
         #expect(s.sections.zones)
         #expect(s.sections.fleet)
         #expect(s.sections.placeZones.isEmpty)
+        // Services, newer still, are off until pinned.
+        #expect(!s.sections.services)
+        #expect(s.sections.serviceIDs.isEmpty)
+    }
+
+    /// Pinned services by ID, in the order they were pinned; off by default.
+    @Test func servicesRoundTrip() throws {
+        #expect(!Settings().sections.services)
+        #expect(!Settings().sections.isEnabled(.services))
+        var s = Settings()
+        s.sections.setEnabled(.services, true)
+        s.sections.serviceIDs = ["vless-entry", "main-site"]
+        let data = try JSONEncoder().encode(s)
+        let back = try JSONDecoder().decode(Settings.self, from: data)
+        #expect(back == s)
+        #expect(back.sections.isEnabled(.services))
+        #expect(String(decoding: data, as: UTF8.self).contains(#""ids":["vless-entry","main-site"]"#))
     }
 
     @Test func zonesRoundTrip() throws {
@@ -224,6 +241,30 @@ import Testing
         #expect(r.template.rows[5].select?.node == "macbook")
     }
 
+    /// Pinned services' cards, and a Service widget's, only from a `topo`
+    /// that offers `service.card`: an older one would refuse the request.
+    @Test func pinsServicesOnlyWhenTopoCardsThem() {
+        var s = Settings()
+        s.sections.seen = false
+        s.sections.attention = false
+        s.sections.applications = false
+        s.sections.services = true
+        s.sections.serviceIDs = ["vless-entry", "main-site", "vless-entry", "not valid!"]
+        let widgets = TemplateCompiler.WidgetNeeds(services: ["main-site", "workers-api"])
+        let old = TemplateCompiler().request(for: s, revision: 1, widgets: widgets)
+        #expect(old.template.rows.map(\.id) == ["status"])
+        let r = TemplateCompiler().request(for: s, revision: 1, widgets: widgets, serviceCards: true, listServices: true)
+        #expect(r.template.rows.map(\.id) == ["status", "service-1", "service-2", "widget-service-1", "services"])
+        #expect(r.template.rows[1].metric == "service.card")
+        #expect(r.template.rows[1].visual == "card")
+        #expect(r.template.rows[1].select == .init(service: "vless-entry"))
+        #expect(r.template.rows[3].select?.service == "workers-api")
+        #expect(r.template.rows[4].metric == "services.list")
+        // Off, nothing is asked for the panel.
+        s.sections.services = false
+        #expect(TemplateCompiler().request(for: s, revision: 1, serviceCards: true).template.rows.map(\.id) == ["status"])
+    }
+
     @Test func listsServersOnlyWhenAsked() {
         let s = Settings()
         #expect(!TemplateCompiler().request(for: s, revision: 1).template.rows.contains { $0.metric == "servers.list" })
@@ -291,6 +332,11 @@ import Testing
         let more = try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"metrics":[{"name":"servers.list","visual":"list"}],"profiles":true}"#.utf8))
         #expect(more.profiles)
         #expect(more.listsServers)
+        #expect(!more.cardsServices && !more.listsServices)
+        let services = try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"metrics":[{"name":"service.card","visual":"card"},{"name":"services.list","visual":"list"}]}"#.utf8))
+        #expect(services.cardsServices && services.listsServices)
+        // Neither is required: a topo without them draws everything else.
+        #expect(!Capabilities.required.contains("service.card"))
     }
 
     @Test func profiles() throws {

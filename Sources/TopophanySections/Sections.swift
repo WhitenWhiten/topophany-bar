@@ -335,6 +335,7 @@ public struct PanelModel: Sendable, Hashable {
         case seen(SeenFromSection)
         case attention(AttentionSection)
         case applications(ApplicationsSection)
+        case services([ServiceCardModel])
         case fleet(FleetSection)
         case servers([ServerCardModel])
         case zones(ZonesSection)
@@ -345,6 +346,7 @@ public struct PanelModel: Sendable, Hashable {
             case .seen: .seen
             case .attention: .attention
             case .applications: .applications
+            case .services: .services
             case .fleet: .fleet
             case .servers: .servers
             case .zones: .zones
@@ -379,6 +381,7 @@ public struct PanelModel: Sendable, Hashable {
     public var attention: AttentionSection? { if case .attention(let s)? = section(.attention) { s } else { nil } }
     public var applications: ApplicationsSection? { if case .applications(let s)? = section(.applications) { s } else { nil } }
     public var fleet: FleetSection? { if case .fleet(let s)? = section(.fleet) { s } else { nil } }
+    public var services: [ServiceCardModel] { if case .services(let s)? = section(.services) { s } else { [] } }
     public var servers: [ServerCardModel] { if case .servers(let s)? = section(.servers) { s } else { [] } }
     public var zones: ZonesSection? { if case .zones(let s)? = section(.zones) { s } else { nil } }
     public var mac: MacSection? { if case .mac(let s)? = section(.mac) { s } else { nil } }

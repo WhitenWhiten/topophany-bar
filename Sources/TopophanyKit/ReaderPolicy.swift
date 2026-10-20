@@ -108,7 +108,7 @@ public struct ReaderPolicy: Sendable {
         return r
     }
 
-    static func key(_ row: Row) -> String { "\(row.id)|\(row.metric)|\(row.select?.node ?? "")" }
+    static func key(_ row: Row) -> String { "\(row.id)|\(row.metric)|\(row.select?.node ?? row.select?.service ?? "")" }
 
     func availability(at now: Date) -> Reading.Availability {
         switch source {
@@ -137,6 +137,10 @@ public struct ReaderPolicy: Sendable {
         // even while the row is current; a renewed lease never renews them.
         if case .serverCard(let c) = row.value {
             return RowReading(row: row, status: .current, current: .serverCard(c.applyingDeadlines(at: now, tolerance: futureTolerance)))
+        }
+        // So do a service card's checks.
+        if case .serviceCard(let c) = row.value {
+            return RowReading(row: row, status: .current, current: .serviceCard(c.applyingDeadlines(at: now, tolerance: futureTolerance)))
         }
         return RowReading(row: row, status: .current)
     }

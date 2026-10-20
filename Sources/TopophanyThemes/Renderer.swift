@@ -223,6 +223,7 @@ public enum Renderers {
                 if a.more > 0 { ids.append("attention:more") }
             case .seen(let s): ids += (s.problems ?? []).map { "seen:" + $0.id }
             case .applications(let a): ids += a.rows.map { "app:" + $0.id }
+            case .services(let cards): ids += cards.map { "service:" + $0.id }
             case .servers(let cards): ids += cards.map { "server:" + $0.id }
             case .zones, .fleet: break
             case .mac(.server(let c, _)): ids.append("server:" + c.id)

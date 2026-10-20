@@ -311,6 +311,8 @@ final class PanelController: NSObject {
         } else if id.hasPrefix("server:") {
             let cards = model.panel.servers + (model.panel.mac.flatMap { if case .server(let c, _) = $0 { [c] } else { nil } } ?? [])
             if let c = cards.first(where: { "server:" + $0.id == id }) { text = "\(c.name), \(c.pill.text)" }
+        } else if id.hasPrefix("service:"), let c = model.panel.services.first(where: { "service:" + $0.id == id }) {
+            text = "\(c.name), \(c.pill.text), \(c.checksText)"
         }
         guard !text.isEmpty, let p = panel else { return }
         NSAccessibility.post(element: p, notification: .announcementRequested,

@@ -6,6 +6,7 @@
 <title>Playground · topophany-bar</title>
 <link rel="icon" href="assets/mark.svg">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/service.css">
 <style>
   .play { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 26px; align-items: start; }
   .rail { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 18px; }
@@ -38,6 +39,9 @@
 <script src="assets/providers.js"></script>
 <script src="assets/provider-logos.js"></script>
 <script src="assets/render.js"></script>
+<script src="assets/widgets.js"></script>
+<script src="assets/service-data.js"></script>
+<script src="assets/service.js"></script>
 <script>
   const D = window.TB_DATA;
   const st = Object.assign(TB.defaults(), { scenario: 'incidents', alert: 'shown' });
@@ -45,6 +49,7 @@
   st.fetch = 'ready';
   for (const k of ['theme', 'appearance', 'text', 'color', 'alert', 'mac', 'scenario', 'fetch']) if (q.get(k)) st[k] = q.get(k);
   if (q.get('servers')) st.sections.servers = q.get('servers') === '1';
+  st.sections.services = q.get('services') === '1';
   if (q.get('limit')) st.limit = +q.get('limit');
 
   const groups = [
@@ -58,7 +63,7 @@
     ['mac', 'This Mac', [['local', 'Local readings'], ['server', 'As a server'], ['off', 'Off']]],
     ['limit', 'Needs attention rows', [[3, '3'], [5, '5']]],
   ];
-  const sections = [['seen', 'Seen from'], ['attention', 'Needs attention'], ['apps', 'Applications'], ['fleet', 'Fleet'], ['servers', 'Servers (pinned)'], ['zones', 'Time zones'], ['mac', 'This Mac']];
+  const sections = [['seen', 'Seen from'], ['attention', 'Needs attention'], ['apps', 'Applications'], ['services', 'Services (pinned)'], ['fleet', 'Fleet'], ['servers', 'Servers (pinned)'], ['zones', 'Time zones'], ['mac', 'This Mac']];
 
   function rail() {
     const r = document.getElementById('rail');
@@ -70,12 +75,23 @@
     r.querySelectorAll('button').forEach((b) => b.onclick = () => { st[b.dataset.k] = b.dataset.k === 'limit' ? +b.dataset.v : b.dataset.v; draw(); });
     r.querySelectorAll('input[data-s]').forEach((c) => c.onchange = () => { st.sections[c.dataset.s] = c.checked; draw(); });
   }
+  // The two pinned services, as topo would send them in each scenario: the
+  // primary entry and the main site.
+  function pinned() {
+    if (!st.sections.services) return { services: [] };
+    const SD = window.SC_DATA;
+    const view = { clear: 'normal', degraded: 'transit', incidents: 'transit', incomplete: 'normal', offline: 'cached', stale: 'transit' }[st.scenario];
+    if (!view) return { services: [] };
+    const c = SD[view].cards;
+    const entry = view === 'cached' ? Object.assign({}, SD.transit.cards['vless-transit'], { note: 'cached', health: 'unknown' }) : c['vless-transit'] || SD.normal.cards.shortlink;
+    return { services: [entry, c.blog], stale: st.scenario === 'stale' || view === 'cached' };
+  }
   function draw() {
     rail();
     // A theme is a renderer family and a token set.
     const look = { native: { theme: 'native' }, tui: { theme: 'tui' }, aurora: { theme: 'native', tokens: 'aurora' }, linen: { theme: 'native', tokens: 'linen' },
       paper: { theme: 'tui', palette: 'paper' }, dusk: { theme: 'tui', palette: 'dusk' } }[st.theme];
-    TB.scene(document.getElementById('stage'), D.scenarios[st.scenario], Object.assign({}, st, look, { quiet: st.alert === 'quiet' }));
+    TB.scene(document.getElementById('stage'), D.scenarios[st.scenario], Object.assign({}, st, look, { quiet: st.alert === 'quiet' }, pinned()));
   }
   draw();
 </script>

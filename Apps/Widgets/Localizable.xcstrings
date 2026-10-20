@@ -4,6 +4,9 @@
     "%@": {
       "shouldTranslate": false
     },
+    "%@ · %@": {
+      "shouldTranslate": false
+    },
     "Applications": {
       "localizations": {
         "ja": {
@@ -148,6 +151,38 @@
         }
       }
     },
+    "One service's card, as in the Services tab.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 つのサービスのカード。Services タブと同じものです。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个服务的卡片，与 Services 标签页中的相同。"
+          }
+        }
+      }
+    },
+    "One service's card: who sees it from where, and how fast it answered.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 つのサービスのカード：どこから見えるか、どれだけ速く応答したか。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个服务的卡片：从哪里可见，响应有多快。"
+          }
+        }
+      }
+    },
     "Paper": {
       "localizations": {
         "ja": {
@@ -208,6 +243,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "服务器"
+          }
+        }
+      }
+    },
+    "Service": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サービス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务"
           }
         }
       }

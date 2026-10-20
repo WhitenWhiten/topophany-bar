@@ -18,7 +18,7 @@ func settings(limit: Int = 3, servers: Bool = true, mac: Sections.MacMode = .ser
 
 func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings s: Settings = settings(),
            engine: EngineCondition = .running) -> PanelModel {
-    let request = TemplateCompiler().request(for: s, revision: 1)
+    let request = TemplateCompiler().request(for: s, revision: 1, serviceCards: true)
     let reading = FixtureEngine.reading(scenario, request: request, origin: origin, after: after)
     return SectionBuilder.panel(PanelInput(reading: reading, engine: engine, settings: s))
 }
@@ -206,6 +206,146 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
         #expect(ny.age == "8 s ago")
         #expect(p.servers[1].servicesSummary == "6 services · all up")
         #expect(p.servers[1].memory.isOverLimit == false)
+    }
+
+    func pinned(_ ids: [String] = ["vless-entry", "main-site", "workers-api", "nightly-backup", "old-service"]) -> Settings {
+        var s = settings()
+        s.sections.services = true
+        s.sections.serviceIDs = ids
+        return s
+    }
+
+    /// Off until a service is pinned; then after Applications.
+    @Test func servicesSection() {
+        #expect(panel(.incidents).section(.services) == nil)
+        let p = panel(.incidents, settings: pinned())
+        #expect(p.sections.map(\.id) == [.seen, .attention, .applications, .services, .fleet, .servers, .zones, .mac])
+        #expect(p.services.map(\.id) == ["vless-entry", "main-site", "workers-api", "nightly-backup", "old-service"])
+    }
+
+    @Test func serviceCards() {
+        let p = panel(.incidents, settings: pinned())
+        let entry = p.services[0]
+        #expect(entry.name == "VLESS+Reality Entry (Primary)")
+        #expect(entry.subtitle == "Proxy chain · on BandwagonHost LA")
+        #expect(entry.pill.text == "WARN")
+        #expect(entry.mark == .degraded)
+        // Seen from: an observer a row, worst first, by its place.
+        #expect(entry.observers.map(\.label) == ["Seattle", "San Jose", "New York", "Frankfurt"])
+        #expect(entry.observers[0].marks == [.down])
+        #expect(entry.observers[0].p50 == 46)
+        #expect(entry.observers[0].up24h == 98.3)
+        guard case .samples(let samples) = entry.observers[0].history else { Issue.record("no samples"); return }
+        #expect(samples.count == 36)
+        #expect(samples.last == .fail)
+        #expect(entry.checks == [.down, .down, .up, .up])
+        #expect(entry.checksText == "4 checks · 2 failing")
+        #expect(entry.edge == nil)
+        #expect(entry.age == "8 s ago")
+
+        let site = p.services[1]
+        #expect(site.pill.text == "UP")
+        #expect(site.edge?.name == "Cloudflare")
+        #expect(site.colos == ["SJC", "FRA"])
+        #expect(site.checksText == "3 checks · all passing")
+        #expect(site.dependsOn.map(\.name) == ["PostgreSQL"])
+        #expect(site.knownAt?.host == "www.example.invalid")
+        #expect(site.endpoints.map(\.mark) == [.up, .up])
+
+        // Run on an edge, the edge is what stands in front.
+        #expect(p.services[2].edge?.provider == "Cloudflare")
+        #expect(p.services[2].host.kind == "edge")
+
+        let backup = p.services[3]
+        #expect(backup.isUnmonitored)
+        #expect(backup.observers.isEmpty)
+        #expect(backup.checksText == "not monitored")
+        #expect(backup.quiet == ("Not monitored", "no check measures it"))
+        #expect(backup.pill.text == "UNKNOWN")
+
+        let gone = p.services[4]
+        #expect(gone.isMissing)
+        #expect(gone.subtitle == "Not in the topology")
+        #expect(gone.mark == .unknown)
+    }
+
+    /// Scoped to an observer whose checks don't measure it, a service other
+    /// observers' checks do is not seen from here, not unmonitored.
+    @Test func serviceSeenElsewhere() {
+        let here = SectionBuilder.service(ServiceCard(id: "vless", name: "VLESS", health: .unknown, monitored: false, elsewhere: true),
+                                          withheld: false, now: origin)
+        #expect(here.isUnmonitored && here.isElsewhere)
+        #expect(here.quiet == ("Not seen from here", "others check it"))
+        #expect(here.checksText == "not seen from here")
+        let seen = SectionBuilder.service(ServiceCard(id: "blog", name: "Blog", health: .up, elsewhere: true), withheld: false, now: origin)
+        #expect(!seen.isElsewhere)
+        let unscoped = SectionBuilder.service(ServiceCard(id: "job", name: "Job", health: .unknown, monitored: false), withheld: false, now: origin)
+        #expect(!unscoped.isElsewhere && unscoped.quiet.title == "Not monitored")
+    }
+
+    /// Offline, the last card is history: names stay, every reading is
+    /// withheld, the samples too.
+    @Test func serviceCardsOffline() {
+        let p = panel(.offline, settings: pinned(["vless-entry"]))
+        let c = p.services[0]
+        #expect(c.isWithheld)
+        #expect(c.pill == .cached)
+        #expect(c.observers.allSatisfy { $0.history == .withheld && $0.p50 == nil && $0.up24h == nil })
+        #expect(c.observers.flatMap(\.marks).allSatisfy { $0 == .offline })
+        #expect(c.name == "VLESS+Reality Entry (Primary)")
+        #expect(c.age.hasPrefix("last reading"))
+    }
+
+    /// A check past its own deadline is drawn unknown, its numbers gone,
+    /// while the card's other checks stay current.
+    @Test func aCheckPastItsDeadline() {
+        let g = origin
+        let card = ServiceCard(
+            id: "blog", name: "Blog", health: .up,
+            seenFrom: [.init(observer: .init(id: "sj", name: "San Jose"), label: "San Jose", health: .up,
+                             checks: [.init(id: "a", name: "a", health: .up, sampledAt: g, validUntil: g.addingTimeInterval(5),
+                                            latency: .init(p50: 40, p95: 50), up24h: 99, colo: "SJC",
+                                            samples: .init(interval: 10, slots: [.init(.ok, elapsed: 40)]))]),
+                       .init(observer: .init(id: "fra", name: "Frankfurt"), label: "Frankfurt", health: .up,
+                             checks: [.init(id: "b", name: "b", health: .up, sampledAt: g, validUntil: g.addingTimeInterval(30),
+                                            latency: .init(p50: 300, p95: 350), up24h: 98, colo: "FRA",
+                                            samples: .init(interval: 10, slots: [.init(.ok, elapsed: 300)]))])])
+        let row = Row(id: "service-1", metric: "service.card", select: .init(service: "blog"), value: .serviceCard(card), health: .up,
+                      validUntil: g.addingTimeInterval(15))
+        var policy = ReaderPolicy()
+        policy.receive(Frame(instance: "i", sequence: 1, generatedAt: g, publisherExpiresAt: g.addingTimeInterval(30), rows: [row]), at: g)
+        let c = SectionBuilder.services(policy.evaluate(at: g.addingTimeInterval(8)), ids: ["blog"])[0]
+        #expect(!c.isWithheld)
+        #expect(c.observers[0].marks == [.unknown])
+        #expect(c.observers[0].p50 == nil)
+        #expect(c.observers[0].up24h == nil)
+        #expect(c.observers[0].history == .withheld)
+        #expect(c.observers[1].p50 == 300)
+        #expect(c.colos == ["FRA"])
+        #expect(c.checksText == "2 checks · 1 unknown")
+    }
+
+    /// A check whose history `topo` doesn't hold yet draws no samples;
+    /// one past its deadline, or in a view that isn't fresh, is withheld.
+    @Test func samplesNotHeldYet() {
+        let g = origin
+        func check(_ freshness: String) -> ServiceCard.Check {
+            .init(id: freshness, name: freshness, health: freshness == "fresh" ? .up : .unknown, freshness: freshness, sampledAt: g,
+                  validUntil: g.addingTimeInterval(30), latency: .init(p50: 40, p95: 50), up24h: 99,
+                  samples: .init(interval: 10, slots: nil))
+        }
+        let card = ServiceCard(id: "blog", name: "Blog", health: .up, seenFrom: [
+            .init(observer: .init(id: "a", name: "A"), label: "A", health: .up, checks: [check("fresh")]),
+            .init(observer: .init(id: "b", name: "B"), label: "B", health: .unknown, checks: [check("stale")]),
+        ])
+        let row = Row(id: "service-1", metric: "service.card", select: .init(service: "blog"), value: .serviceCard(card), health: .up,
+                      validUntil: g.addingTimeInterval(15))
+        var policy = ReaderPolicy()
+        policy.receive(Frame(instance: "i", sequence: 1, generatedAt: g, publisherExpiresAt: g.addingTimeInterval(30), rows: [row]), at: g)
+        let c = SectionBuilder.services(policy.evaluate(at: g.addingTimeInterval(4)), ids: ["blog"])[0]
+        #expect(c.observers.map(\.history) == [ServiceCardModel.History.none, .withheld])
+        #expect(c.observers[0].p50 == 40)
+        #expect(c.observers[1].p50 == nil)
     }
 
     @Test func waitingForTopo() {

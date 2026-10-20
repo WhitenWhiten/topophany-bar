@@ -72,6 +72,7 @@ public struct Handoff: Sendable, Codable {
         widgetSettings.sections.applications = true
         widgetSettings.sections.fleet = true
         widgetSettings.sections.servers = true
+        widgetSettings.sections.services = true
         // Widgets draw neither Time zones nor local readings.
         widgetSettings.sections.zones = false
         if widgetSettings.sections.mac.mode == .local { widgetSettings.sections.mac.mode = .off }
@@ -93,6 +94,23 @@ public struct Handoff: Sendable, Codable {
         let r = reading()
         guard let row = r.row(TemplateCompiler.RowID.servers), case .servers(let list) = r.lastValue(of: row) else { return [] }
         return list
+    }
+
+    /// The services `topo` last listed, for choosing a Service widget's.
+    public func services() -> [ServiceListEntry] {
+        let r = reading()
+        guard let row = r.row(TemplateCompiler.RowID.services), case .services(let list) = r.lastValue(of: row) else { return [] }
+        return list
+    }
+
+    /// The panel for a Service widget: its service's card is the one
+    /// service, whether or not the panel pins it.
+    public func panel(service id: String) -> PanelModel {
+        var p = panel()
+        let cards = SectionBuilder.services(reading(), ids: [id])
+        p.sections.removeAll { if case .services = $0 { true } else { false } }
+        p.sections.append(.services(cards))
+        return p
     }
 
     /// The panel for a Server widget: its node's card is the one server,

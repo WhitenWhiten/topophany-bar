@@ -1,6 +1,6 @@
 # topophany-bar
 
-A native macOS menu bar app and desktop widgets for [Topophany](https://github.com/WhitenWhiten/topophany). The status item shows, at a glance, what your collector concludes about your network. One click opens a panel with what needs attention, the vantage points that see it, your applications, pinned servers and this Mac. Widgets pin the same cards to the desktop.
+A native macOS menu bar app and desktop widgets for [Topophany](https://github.com/WhitenWhiten/topophany). The status item shows, at a glance, what your collector concludes about your network. One click opens a panel with what needs attention, the vantage points that see it, your applications, pinned services and servers, and this Mac. Widgets pin the same cards to the desktop.
 
 It shows what `topo` concludes and never decides anything itself. Every state, count and health comes from `topo monitor stream`, which the app runs as a child process.
 

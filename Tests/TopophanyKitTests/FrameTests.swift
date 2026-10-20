@@ -225,3 +225,90 @@ import Testing
         #expect(sequences(d.finish()) == [1])
     }
 }
+
+@Suite struct ServiceCardTests {
+    /// PROTOCOL.md §3.3's example, with a few of the shapes a card may take.
+    static let card = #"""
+    {"id":"blog","name":"Main Site (Caddy + Blog)","application":{"id":"main-site","name":"Main site"},"environment":"","runtime":"",
+     "health":"up","note":"","evidence":"inferred","reason":"all checks in this view pass","monitored":true,
+     "host":{"id":"app","name":"Oracle New York","kind":"host","provider":"Oracle","where":"New York","health":"up"},
+     "seen_from":[{"observer":{"id":"obs-relay","name":"San Jose DigitalOcean"},"label":"San Jose","health":"up",
+       "checks":[{"id":"r-app-web","name":"Relay to app web","kind":"http","endpoint":"app-web","health":"up","freshness":"fresh",
+         "sampled_at":"2026-10-18T13:30:33Z","valid_until":"2026-10-18T13:31:03Z",
+         "latency":{"p50_ms":231,"p95_ms":272},"up_24h":97.6,"first_byte":"origin 98 ms","colo":"SJC",
+         "samples":{"interval_seconds":15,"slots":[{"outcome":"ok","elapsed_ms":220},{"outcome":"fail","elapsed_ms":4000},
+           {"outcome":"none"},{"outcome":"policy"},{"outcome":"error"},{"outcome":"later"}]}},
+         {"id":"r-app-api","name":"Relay to app API","health":"warn","freshness":"never","latency":null,"up_24h":null,
+          "first_byte":"","colo":"","samples":{"interval_seconds":15,"slots":null}}]}],
+     "endpoints":[{"id":"app-web","network":"public","address":"https://www.example.invalid/","health":"up",
+       "via":[{"id":"cf","name":"Cloudflare","kind":"edge","provider":"Cloudflare"}]},
+       {"id":"app-web-local","network":"loopback","address":"http://127.0.0.1:8080/","health":"","via":[]}],
+     "answered_from":{"pops":["SJC 50%","FRA 50%"],"cache":["DYNAMIC 100%"]},
+     "depends_on":[{"id":"postgres","name":"PostgreSQL","health":"up","affected":false,"monitored":true,"host":"PostgreSQL Container"}],
+     "used_by":[],"runbook":"https://wiki.example.invalid/runbooks/blog","memo":"The public blog."}
+    """#
+
+    @Test func decodesTheExample() throws {
+        let c = try JSONDecoder().decode(ServiceCard.self, from: Data(Self.card.utf8))
+        #expect(c.application == .init(id: "main-site", name: "Main site"))
+        #expect(c.host?.place == "New York")
+        #expect(c.monitored == true)
+        let o = try #require(c.seenFrom.first)
+        #expect(o.observer.id == "obs-relay")
+        #expect(o.label == "San Jose")
+        let k = o.checks[0]
+        #expect(k.latency == .init(p50: 231, p95: 272))
+        #expect(k.up24h == 97.6)
+        #expect(k.colo == "SJC")
+        #expect(k.validUntil == Timestamp.parse("2026-10-18T13:31:03Z"))
+        #expect(k.samples?.interval == 15)
+        // Elapsed only for a pass; an outcome the app doesn't know is unknown.
+        #expect(k.samples?.slots == [.init(.ok, elapsed: 220), .init(.fail), .init(.none), .init(.policy), .init(.error), .init(.unknown)])
+        // Unknown is never zero: nothing said is nil, a health it doesn't
+        // know is unknown.
+        let quiet = o.checks[1]
+        #expect(quiet.health == .unknown)
+        #expect(quiet.latency == nil)
+        #expect(quiet.up24h == nil)
+        #expect(quiet.colo == nil)
+        #expect(quiet.samples?.slots == nil)
+        #expect(c.endpoints.map(\.health) == [.up, nil])
+        #expect(c.endpoints[0].via.first?.provider == "Cloudflare")
+        #expect(c.answeredFrom?.pops == ["SJC 50%", "FRA 50%"])
+        #expect(c.dependsOn.first?.host == "PostgreSQL Container")
+    }
+
+    @Test func decodesInARowAndTheList() throws {
+        let line = #"""
+        {"schema":1,"name":"stream","lifecycle":"running","generated_at":"2026-10-18T13:30:00Z","publisher_expires_at":"2026-10-18T13:30:30Z","rows":[
+         {"id":"service-1","metric":"service.card","visual":"card","select":{"service":"blog"},"value":\#(Self.card),
+          "health":"up","valid_until":"2026-10-18T13:30:20Z"},
+         {"id":"service-2","metric":"service.card","visual":"card","select":{"service":"gone"},"value":null,"health":"unknown",
+          "reason":"entity_missing"},
+         {"id":"services","metric":"services.list","visual":"list","value":[
+           {"id":"blog","name":"Main Site (Caddy + Blog)","application":"Main site","health":"up","note":"","monitored":true,
+            "host":{"id":"app","name":"Oracle New York","kind":"host","provider":"Oracle"}},
+           {"id":"backup-job","name":"Nightly Backup","application":"","health":"unknown","monitored":false}],
+          "text":"2 services","health":"unknown","valid_until":"2026-10-18T13:30:20Z"}]}
+        """#
+        let f = try JSONDecoder().decode(Frame.self, from: Data(line.utf8))
+        #expect(f.rows[0].select?.service == "blog")
+        guard case .serviceCard(let c) = f.rows[0].value else { Issue.record("not a card"); return }
+        #expect(c.id == "blog")
+        #expect(f.rows[1].value == .none)
+        #expect(f.rows[1].reason == "entity_missing")
+        guard case .services(let list) = f.rows[2].value else { Issue.record("not a list"); return }
+        #expect(list.map(\.id) == ["blog", "backup-job"])
+        #expect(list[0].application == "Main site")
+        #expect(list[0].host?.name == "Oracle New York")
+        #expect(list[1].monitored == false)
+        #expect(list[1].host == nil)
+    }
+
+    /// A request names the service it wants a card of.
+    @Test func selectsAService() throws {
+        let row = TemplateRow(id: "service-1", metric: "service.card", visual: "card", select: .init(service: "blog"))
+        let json = String(decoding: try JSONEncoder().encode(row), as: UTF8.self)
+        #expect(json.contains(#""select":{"service":"blog"}"#))
+    }
+}

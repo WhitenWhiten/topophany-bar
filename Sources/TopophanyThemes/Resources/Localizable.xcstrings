@@ -132,6 +132,22 @@
         }
       }
     },
+    "%@ up in 24 hours": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24 時間の稼働率 %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24 小时可用率 %@"
+          }
+        }
+      }
+    },
     "%@, %@": {
       "shouldTranslate": false
     },
@@ -168,6 +184,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld 个应用"
+          }
+        }
+      }
+    },
+    "%lld checks": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld check"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld checks"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld チェック"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 项检查"
           }
         }
       }
@@ -380,6 +430,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "已固定 %lld 台"
+          }
+        }
+      }
+    },
+    "%lld pinned services": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld pinned"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld pinned"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 件を固定"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已固定 %lld 项"
           }
         }
       }
@@ -659,6 +743,22 @@
         }
       }
     },
+    "24h": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24h"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24h"
+          }
+        }
+      }
+    },
     "All %lld observers report no problem": {
       "localizations": {
         "en": {
@@ -723,6 +823,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "全部 %lld 个均无问题"
+          }
+        }
+      }
+    },
+    "Answered from": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "応答元"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "响应来源"
           }
         }
       }
@@ -819,6 +935,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "CPU "
+          }
+        }
+      }
+    },
+    "Checks": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チェック"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查"
           }
         }
       }
@@ -1143,6 +1275,22 @@
         }
       }
     },
+    "No endpoint declared": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エンドポイント未宣言"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未声明端点"
+          }
+        }
+      }
+    },
     "No server chosen": {
       "localizations": {
         "ja": {
@@ -1155,6 +1303,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "未选择服务器"
+          }
+        }
+      }
+    },
+    "No service chosen": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サービス未選択"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未选择服务"
           }
         }
       }
@@ -1207,6 +1371,22 @@
         }
       }
     },
+    "Not monitored": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未監視"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未监控"
+          }
+        }
+      }
+    },
     "Not received yet": {
       "localizations": {
         "ja": {
@@ -1219,6 +1399,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "尚未收到"
+          }
+        }
+      }
+    },
+    "Not seen from here": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ここからは未計測"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此处未测量"
           }
         }
       }
@@ -1415,6 +1611,38 @@
         }
       }
     },
+    "Reached at": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続先"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "访问地址"
+          }
+        }
+      }
+    },
+    "Runs on": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稼働先"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行于"
+          }
+        }
+      }
+    },
     "SEEN FROM": {
       "localizations": {
         "ja": {
@@ -1427,6 +1655,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "观测来源"
+          }
+        }
+      }
+    },
+    "SERVICE": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サービス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务"
           }
         }
       }
@@ -1833,6 +2077,22 @@
         }
       }
     },
+    "depends on nothing": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "依存なし"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无依赖"
+          }
+        }
+      }
+    },
     "down": {
       "localizations": {
         "ja": {
@@ -1877,6 +2137,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "事件未知"
+          }
+        }
+      }
+    },
+    "last": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最終"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最后"
           }
         }
       }
@@ -1929,6 +2205,54 @@
         }
       }
     },
+    "needs": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "依存"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "依赖"
+          }
+        }
+      }
+    },
+    "no check measures it": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "計測するチェックなし"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无检查测量"
+          }
+        }
+      }
+    },
+    "no endpoint declared": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エンドポイント未宣言"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未声明端点"
+          }
+        }
+      }
+    },
     "no server chosen": {
       "localizations": {
         "ja": {
@@ -1941,6 +2265,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "未选择服务器"
+          }
+        }
+      }
+    },
+    "no service chosen": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サービス未選択"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未选择服务"
+          }
+        }
+      }
+    },
+    "none": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "なし"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无"
+          }
+        }
+      }
+    },
+    "not known": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不明"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知"
+          }
+        }
+      }
+    },
+    "not known now": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在は不明"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前未知"
           }
         }
       }
@@ -1961,6 +2349,22 @@
         }
       }
     },
+    "not monitored": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未監視"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未监控"
+          }
+        }
+      }
+    },
     "not received yet": {
       "localizations": {
         "ja": {
@@ -1973,6 +2377,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "尚未收到"
+          }
+        }
+      }
+    },
+    "not seen from here": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ここからは未計測"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此处未测量"
           }
         }
       }
@@ -1993,6 +2413,22 @@
         }
       }
     },
+    "on": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稼働先"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行于"
+          }
+        }
+      }
+    },
     "open in topo": {
       "localizations": {
         "ja": {
@@ -2005,6 +2441,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "在 topo 中打开"
+          }
+        }
+      }
+    },
+    "others check it": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "他の観測点が計測中"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他观测点在测"
+          }
+        }
+      }
+    },
+    "p50": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "p50"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "p50"
           }
         }
       }
@@ -2133,6 +2601,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@更新"
+          }
+        }
+      }
+    },
+    "used by %lld": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 件が依存"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "被 %lld 项依赖"
           }
         }
       }

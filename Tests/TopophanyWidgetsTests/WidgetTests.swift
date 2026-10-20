@@ -90,6 +90,24 @@ func temporaryStore() -> HandoffStore {
         #expect(handoff(.incidents).servers().isEmpty)
     }
 
+    /// A Service widget draws its service's card whether or not the panel
+    /// pins it, and lists the services topo listed for choosing one.
+    @Test func drawsTheServiceItShows() {
+        let p = FixtureEngine.policy(.incidents, request: TemplateCompiler().request(
+            for: settings(), revision: 1, widgets: .init(services: ["main-site"]), serviceCards: true, listServices: true),
+                                     origin: origin, after: 4)
+        let h = Handoff(policy: p, theme: ThemeStore.native, settings: settings(), engineRunning: true, at: origin.addingTimeInterval(4))
+        let m = WidgetModel(kind: .service(id: "main-site"), panel: h.panel(service: "main-site"))
+        #expect(m.service?.name == "Main Site (Caddy + Blog)")
+        #expect(m.service?.pill.text == "UP")
+        #expect(h.services().count == 23)
+        #expect(h.services().first?.application == "Proxy chain")
+        // Not current, it is history.
+        let stale = m.notCurrent(at: origin.addingTimeInterval(47 * 60))
+        #expect(stale.service?.isWithheld == true)
+        #expect(stale.service?.observers.allSatisfy { $0.history == .withheld } == true)
+    }
+
     @Test func emptyWithoutAnAppGroup() {
         let store = HandoffStore(appGroup: nil)
         #expect(!store.isAvailable)
@@ -244,5 +262,23 @@ func temporaryStore() -> HandoffStore {
     @Test func withoutAHandoff() {
         let e = WidgetSchedule.zonesEntries(nil, at: origin, here: here)
         #expect(e.count == 1 && !e[0].isCurrent)
+    }
+}
+
+@Suite struct WidgetNeedsTests {
+    /// What the widgets drew lately widens the app's request: a Server
+    /// widget's node, a Service widget's service.
+    @Test func recordsServersAndServices() {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "topophany-bar-tests-\(UUID().uuidString)")
+        let store = WidgetNeedsStore(directory: dir)
+        store.record("server-small-oracle-ny", .init(lists: false, node: "oracle-ny", at: origin))
+        store.record("service-small-main-site", .init(lists: false, node: nil, service: "main-site", at: origin))
+        store.record("service-medium-main-site", .init(lists: false, node: nil, service: "main-site", at: origin))
+        let needs = store.needs(at: origin.addingTimeInterval(60))
+        #expect(needs.nodes == ["oracle-ny"])
+        #expect(needs.services == ["main-site"])
+        #expect(!needs.lists)
+        // A widget not drawn for long has been removed.
+        #expect(store.needs(at: origin.addingTimeInterval(WidgetNeedsStore.forgetAfter + 1)) == .none)
     }
 }

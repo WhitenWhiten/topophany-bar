@@ -265,4 +265,51 @@ import Testing
         #expect(late.observes[1].counts == HealthCounts(up: 0, warning: 0, down: 0, unknown: 3))
         #expect(late.observes[1].lastSeen == g)
     }
+
+    /// Each check of a service card keeps its own deadline, even while the
+    /// row is current; past it, the check keeps its identity and times, and
+    /// its readings are withheld.
+    @Test func serviceCardsKeepEachChecksDeadline() throws {
+        let g = clock.now()
+        func check(_ id: String, valid: TimeInterval) -> ServiceCard.Check {
+            .init(id: id, name: id, kind: "http", endpoint: "web", health: .down, freshness: "fresh", sampledAt: g,
+                  validUntil: g.addingTimeInterval(valid), latency: .init(p50: 46, p95: 50), up24h: 98.3, firstByte: "origin 9 ms",
+                  colo: "SJC", samples: .init(interval: 10, slots: [.init(.ok, elapsed: 44), .init(.fail)]))
+        }
+        let card = ServiceCard(id: "blog", name: "Blog", health: .degraded,
+                               seenFrom: [.init(observer: .init(id: "sj", name: "San Jose"), label: "San Jose", health: .down,
+                                                checks: [check("early", valid: 5), check("late", valid: 20)])])
+        let row = Row(id: "service-1", metric: "service.card", select: .init(service: "blog"), value: .serviceCard(card),
+                      health: .degraded, validUntil: g.addingTimeInterval(15))
+        var p = ReaderPolicy()
+        p.receive(frame(at: g, rows: [row]), at: g)
+
+        guard case .serviceCard(let fresh) = p.evaluate(at: g.addingTimeInterval(4)).row("service-1")?.value else {
+            Issue.record("no card")
+            return
+        }
+        #expect(fresh == card)
+
+        let r = p.evaluate(at: g.addingTimeInterval(8))
+        #expect(r.row("service-1")?.isCurrent == true, "a check's deadline never expires the card")
+        guard case .serviceCard(let late) = r.row("service-1")?.value else { Issue.record("no card"); return }
+        let k = late.seenFrom[0].checks[0]
+        #expect(k.id == "early")
+        #expect(k.health == .unknown)
+        #expect(k.freshness == "stale")
+        #expect(k.latency == nil)
+        #expect(k.up24h == nil)
+        #expect(k.colo == nil)
+        #expect(k.samples == .init(interval: 10, slots: nil))
+        #expect(k.sampledAt == g)
+        #expect(k.validUntil == g.addingTimeInterval(5))
+        #expect(k.firstByte == "origin 9 ms")
+        #expect(late.seenFrom[0].checks[1] == card.seenFrom[0].checks[1])
+        #expect(late.health == .degraded)
+
+        // Past the row's own deadline, the whole card is withheld.
+        #expect(p.evaluate(at: g.addingTimeInterval(15)).row("service-1")?.value == RowValue.none)
+        // And its last value is kept by service, as history.
+        #expect(p.lastValues.keys.contains("service-1|service.card|blog"))
+    }
 }

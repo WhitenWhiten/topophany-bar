@@ -138,6 +138,24 @@ final class AppModel {
     /// Whether to ask for `servers.list`: when this `topo` offers it.
     private var listServers: Bool { fixture != nil || capabilities?.listsServers == true }
 
+    /// Whether to ask for pinned services' cards: when this `topo` offers
+    /// `service.card`. An older one draws everything else.
+    var cardsServices: Bool { fixture != nil || capabilities?.cardsServices == true }
+
+    /// Whether to ask for `services.list`, for choosing services.
+    private var listServices: Bool { fixture != nil || capabilities?.listsServices == true }
+
+    /// Services with a card, from the latest list `topo` sent, for choosing
+    /// services; without one, the services the applications list.
+    var knownServices: [ServiceListEntry] {
+        if let row = reading.row(TemplateCompiler.RowID.services), case .services(let list) = reading.lastValue(of: row) {
+            return list
+        }
+        return knownApplications.flatMap { a in
+            a.services.map { ServiceListEntry(id: $0.id, name: $0.name, application: a.name, health: $0.health, monitored: $0.monitored) }
+        }
+    }
+
     /// The applications in the latest list `topo` sent.
     var knownApplications: [Application] {
         guard let row = reading.row(TemplateCompiler.RowID.applications),
@@ -288,7 +306,7 @@ final class AppModel {
 
     private func request(_ s: TopophanyKit.Settings) -> Request {
         var r = TemplateCompiler().request(for: effective(s), revision: 0, widgets: widgetNeeds, lang: L10n.previewLanguage,
-                                           listServers: listServers)
+                                           listServers: listServers, serviceCards: cardsServices, listServices: listServices)
         r.requestID = ""
         return r
     }
@@ -296,7 +314,8 @@ final class AppModel {
     private func currentRequest() -> Request {
         revision += 1
         return TemplateCompiler().request(for: effectiveSettings, revision: revision, widgets: widgetNeeds,
-                                          lang: L10n.previewLanguage, listServers: listServers)
+                                          lang: L10n.previewLanguage, listServers: listServers, serviceCards: cardsServices,
+                                          listServices: listServices)
     }
 
     private func send() {
@@ -374,9 +393,9 @@ final class AppModel {
         Task.detached {
             let caps = try? ProcessEngine.check(path).get()
             await MainActor.run {
-                let listed = self.listServers
+                let asked = [self.listServers, self.cardsServices, self.listServices]
                 self.capabilities = caps
-                if self.listServers != listed { self.send() }
+                if [self.listServers, self.cardsServices, self.listServices] != asked { self.send() }
                 if caps?.profiles == true { self.loadProfiles(path: path) } else { self.profiles = nil }
             }
         }

@@ -62,6 +62,9 @@ public enum SectionBuilder {
                 if let a = attention(r, limit: s.attentionLimit) { sections.append(.attention(a)) }
             case .applications where s.applications:
                 if let a = applications(r, only: s.applicationsOnly) { sections.append(.applications(a)) }
+            case .services where s.services:
+                let cards = services(r, ids: s.serviceIDs)
+                if !cards.isEmpty { sections.append(.services(cards)) }
             case .fleet where s.fleet:
                 if let f = fleet(r, pinned: s.serverNodes) { sections.append(.fleet(f)) }
             case .servers where s.servers:

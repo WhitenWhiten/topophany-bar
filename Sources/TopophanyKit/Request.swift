@@ -70,11 +70,13 @@ public struct TemplateRow: Sendable, Hashable, Codable {
         public var check: String?
         public var collector: String?
         public var node: String?
+        public var service: String?
 
-        public init(check: String? = nil, collector: String? = nil, node: String? = nil) {
+        public init(check: String? = nil, collector: String? = nil, node: String? = nil, service: String? = nil) {
             self.check = check
             self.collector = collector
             self.node = node
+            self.service = service
         }
     }
 
@@ -126,6 +128,13 @@ public struct Capabilities: Sendable, Hashable, Decodable {
 
     /// Whether `servers.list` is offered, for choosing nodes.
     public var listsServers: Bool { metrics.contains { $0.name == "servers.list" } }
+
+    /// Whether `service.card` is offered, for pinned services and Service
+    /// widgets. A `topo` without it draws everything else.
+    public var cardsServices: Bool { metrics.contains { $0.name == "service.card" } }
+
+    /// Whether `services.list` is offered, for choosing services.
+    public var listsServices: Bool { metrics.contains { $0.name == "services.list" } }
 
     /// The metrics the panel draws.
     public static let required = ["summary.verdict", "observers.verdicts", "attention.list", "applications.list", "server.card"]

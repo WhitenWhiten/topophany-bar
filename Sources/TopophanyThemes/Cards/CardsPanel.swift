@@ -513,6 +513,14 @@ struct CardsSection: View {
         case .attention(let a): CardsAttention(attention: a, p: p, t: t, focus: ctx.focus)
         case .applications(let a): CardsApplications(apps: a, p: p, t: t, focus: ctx.focus)
         case .fleet(let f): CardsFleet(fleet: f, p: p, t: t)
+        case .services(let cards):
+            Card(p: p) {
+                CardTitle(symbol: "waveform.path.ecg", title: tr("Services"), meta: tr("\(cards.count) pinned services"), p: p, t: t)
+                ForEach(Array(cards.enumerated()), id: \.element.id) { i, c in
+                    if i > 0 { Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 10) }
+                    CardsService(card: c, p: p, t: t, focused: ctx.focus == "service:" + c.id)
+                }
+            }
         case .servers(let cards):
             Card(p: p) {
                 CardTitle(symbol: "server.rack", title: tr("Servers"), meta: tr("\(cards.count) pinned"), p: p, t: t)

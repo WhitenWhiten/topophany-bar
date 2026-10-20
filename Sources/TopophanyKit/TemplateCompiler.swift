@@ -14,6 +14,9 @@ public struct TemplateCompiler: Sendable {
         public static let servers = "servers"
         public static func server(_ index: Int) -> String { "server-\(index + 1)" }
         public static func extra(_ index: Int) -> String { "widget-server-\(index + 1)" }
+        public static let services = "services"
+        public static func service(_ index: Int) -> String { "service-\(index + 1)" }
+        public static func extraService(_ index: Int) -> String { "widget-service-\(index + 1)" }
     }
 
     /// What widgets on the desktop need beyond the panel's own sections.
@@ -22,10 +25,13 @@ public struct TemplateCompiler: Sendable {
         public var lists: Bool
         /// Nodes shown by Server widgets.
         public var nodes: [String]
+        /// Services shown by Service widgets.
+        public var services: [String]
 
-        public init(lists: Bool = false, nodes: [String] = []) {
+        public init(lists: Bool = false, nodes: [String] = [], services: [String] = []) {
             self.lists = lists
             self.nodes = nodes
+            self.services = services
         }
 
         public static let none = WidgetNeeds()
@@ -36,9 +42,11 @@ public struct TemplateCompiler: Sendable {
     public init() {}
 
     /// `listServers` adds `servers.list`, for choosing nodes, when `topo`
-    /// offers it.
+    /// offers it. `serviceCards` asks for pinned services' cards and Service
+    /// widgets' only when `topo` offers `service.card`, and `listServices`
+    /// adds `services.list`, for choosing services.
     public func request(for settings: Settings, revision: Int, widgets: WidgetNeeds = .none, lang: String? = nil,
-                        listServers: Bool = false) -> Request {
+                        listServers: Bool = false, serviceCards: Bool = false, listServices: Bool = false) -> Request {
         let s = settings.sections
         var rows = [TemplateRow(id: RowID.status, metric: "summary.verdict", visual: "status")]
         for id in s.order {
@@ -52,6 +60,10 @@ public struct TemplateCompiler: Sendable {
                 rows.append(TemplateRow(id: RowID.attention, metric: "attention.list", visual: "list", limit: min(20, limit)))
             case .applications where s.applications || widgets.lists:
                 rows.append(TemplateRow(id: RowID.applications, metric: "applications.list", visual: "list"))
+            case .services where s.services && serviceCards:
+                for (i, service) in Self.unique(s.serviceIDs).enumerated() {
+                    rows.append(Self.serviceCard(RowID.service(i), service))
+                }
             case .servers where s.servers || widgets.lists:
                 for (i, node) in Self.unique(s.serverNodes).enumerated() {
                     rows.append(Self.card(RowID.server(i), node))
@@ -66,7 +78,14 @@ public struct TemplateCompiler: Sendable {
         for (i, node) in Self.unique(widgets.nodes).filter({ !requested.contains($0) }).enumerated() {
             rows.append(Self.card(RowID.extra(i), node))
         }
+        if serviceCards {
+            let pinned = Set(rows.compactMap(\.select?.service))
+            for (i, service) in Self.unique(widgets.services).filter({ !pinned.contains($0) }).enumerated() {
+                rows.append(Self.serviceCard(RowID.extraService(i), service))
+            }
+        }
         if listServers { rows.append(TemplateRow(id: RowID.servers, metric: "servers.list", visual: "list")) }
+        if listServices { rows.append(TemplateRow(id: RowID.services, metric: "services.list", visual: "list")) }
         let t = settings.topo
         let preview = t.source == "preview"
         return Request(
@@ -84,12 +103,17 @@ public struct TemplateCompiler: Sendable {
         TemplateRow(id: id, metric: "server.card", visual: "card", select: .init(node: node))
     }
 
+    static func serviceCard(_ id: String, _ service: String) -> TemplateRow {
+        TemplateRow(id: id, metric: "service.card", visual: "card", select: .init(service: service))
+    }
+
+    /// Valid IDs, each once, in order.
     static func unique(_ nodes: [String]) -> [String] {
         var seen = Set<String>()
         return nodes.filter { validNode($0) && seen.insert($0).inserted }
     }
 
-    /// A topology ID, as `config.ID` accepts one.
+    /// A topology ID, as `config.ID` accepts one: a node's or a service's.
     public static func validNode(_ s: String) -> Bool {
         guard let first = s.unicodeScalars.first, s.utf8.count <= 96 else { return false }
         func alnum(_ c: Unicode.Scalar) -> Bool { c.isASCII && (CharacterSet.alphanumerics.contains(c)) }

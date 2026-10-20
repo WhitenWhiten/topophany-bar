@@ -73,6 +73,9 @@ enum Seg {
     case bar(cells: Int, percent: Double?, limit: Double?, color: RGBA, withheld: Bool)
     /// The TUI's sparks: one block per reading.
     case sparks([Double], top: Double, RGBA)
+    /// A check's recent samples in `cells` cells, newest at the right, on
+    /// the track; withheld, the track striped; none held, nothing.
+    case samples(ServiceCardModel.History, cells: Int)
     case pill(String, fg: RGBA, bg: RGBA)
     case key(String)
     /// ━ in runs of color.
@@ -90,6 +93,7 @@ enum Seg {
         case .logo: 2
         case .bar(let n, _, _, _, _): n
         case .sparks(let v, _, _): v.count
+        case .samples(_, let n): n
         case .rule(let parts): parts.reduce(0) { $0 + $1.0 }
         case .dashes(let n, _): n
         case .ribbon(let cells, _, _): cells.count
@@ -217,6 +221,8 @@ struct CellWriter {
                                        diameter: d, columns: 1, rows: k))
                 }
             }
+        case .samples(let history, let n):
+            drawSamples(history, cells: n, x: x, y: y)
         case .pill(let str, let fg, let bg):
             items.append(.fill(CGRect(x: x, y: y, width: w, height: lineHeight), bg, radius: 0))
             items.append(.text(x: x, y: y, str, fg, bold: true))
@@ -243,6 +249,80 @@ struct CellWriter {
                 items.append(.fill(CGRect(x: x + w * m - 0.5, y: top, width: 1, height: h), p.ink, radius: 0))
             }
             items.append(.fill(CGRect(x: x + w / 2 - 1, y: top - 4, width: 2, height: h + 8), now, radius: 0))
+        }
+    }
+
+    /// Recent samples as the TUI draws them on a card: a passing one as
+    /// tall as it took against the slowest shown, in the palette's meter and
+    /// never a full cell, so rows stay apart; a failure its mark (✖ failed,
+    /// ▲ against policy, ○ otherwise), and `·` where none was taken.
+    mutating func drawSamples(_ history: ServiceCardModel.History, cells n: Int, x: Double, y: Double) {
+        let p = palette
+        let full = metrics.fontSize * 1.18
+        let band = CGRect(x: x, y: y + lineHeight / 2 - full / 2, width: Double(n) * cell, height: full)
+        let samples: [ServiceCardModel.Sample]
+        switch history {
+        case .samples(let s): samples = s
+        case .none: return
+        case .withheld:
+            items.append(.stripes(band.insetBy(dx: 0, dy: full * 0.18), p.track, period: cell))
+            return
+        }
+        let shown = Array(samples.suffix(n))
+        let first = n - shown.count
+        let top = max(1, shown.compactMap { if case .ok(let v) = $0 { v } else { nil } }.max() ?? 1)
+        let ok = p.accent.mix(p.muted, 0.28)
+        let d = 0.16 * metrics.fontSize
+        switch p.meter {
+        case .blocks: items.append(.fill(band, p.track, radius: 0))
+        case .shade: items.append(.fill(CGRect(x: band.minX, y: band.maxY - 1, width: band.width, height: 1), p.faint.opacity(0.6), radius: 0))
+        case .braille: break
+        }
+        // Dusk draws a dot matrix in its meters' own grid: two columns of
+        // four dots a cell, unlit as the track, so a cell no sample lights
+        // reads as empty rather than as a dot of its own.
+        let mh = 10 * metrics.fontSize / 12
+        let mr = CGRect(x: x, y: y + lineHeight / 2 - mh / 2 + 0.5, width: Double(n) * cell, height: mh)
+        let px = (mr.width - d) / Double(max(1, 2 * n - 1)), py = (mh - d) / 3
+        func matrix(_ i: Int, cells: Int = 1, lit k: Int = 0) {
+            let left = mr.minX + Double(2 * i) * px, wide = d + Double(2 * cells - 1) * px
+            items.append(.dots(CGRect(x: left, y: mr.minY, width: wide, height: mh), p.line, diameter: d, columns: 2 * cells, rows: 4))
+            if k > 0 {
+                let h = d + Double(k - 1) * py
+                items.append(.dots(CGRect(x: left, y: mr.maxY - h, width: wide, height: h), p.accent, diameter: d, columns: 2 * cells, rows: k))
+            }
+        }
+        if p.meter == .braille, first > 0 {
+            matrix(0, cells: first)
+        }
+        for (i, s) in shown.enumerated() {
+            let cx = x + Double(first + i) * cell
+            switch s {
+            case .ok(let v):
+                let share = min(1, v / top)
+                switch p.meter {
+                case .blocks:
+                    let h = full * Double(max(1, min(7, Int((share * 6).rounded()) + 1))) / 8
+                    items.append(.fill(CGRect(x: cx, y: band.maxY - h, width: cell + 0.05, height: h), ok, radius: 0))
+                case .shade:
+                    let h = max(1, full * 7 / 8 * share)
+                    items.append(.fill(CGRect(x: cx + cell / 2 - 0.5, y: band.maxY - h, width: 1, height: h), ok, radius: 0))
+                case .braille:
+                    matrix(first + i, lit: max(1, min(4, Int((share * 4).rounded()))))
+                }
+            case .none:
+                if p.meter == .braille {
+                    matrix(first + i)
+                } else {
+                    items.append(.text(x: cx, y: y, "·", p.faint, bold: false))
+                }
+            case .fail:
+                items.append(.glyph(x: cx, y: y, .mark(.down), p.down))
+            case .policy:
+                items.append(.glyph(x: cx, y: y, .mark(.degraded), p.warn))
+            case .error, .unknown:
+                items.append(.glyph(x: cx, y: y, .mark(.unknown), p.unknown))
+            }
         }
     }
 

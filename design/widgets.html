@@ -6,6 +6,7 @@
 <title>Widgets · topophany-bar</title>
 <link rel="icon" href="assets/mark.svg">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/service.css">
 <style>
   .deskw { position: relative; width: 100%; padding: 70px 0 44px; }
   .wgrid { width: 1140px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
@@ -36,6 +37,10 @@
   .cfg .pop { padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,.1); font-size: 12.5px; }
   .cfg .done { margin-top: 10px; text-align: right; }
   .cfg .done span { padding: 3px 14px; border-radius: 7px; background: #0a84ff; color: #fff; font-weight: 500; }
+  .themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 22px; }
+  .themes .deskw { padding: 54px 18px 30px; }
+  .themes h5 { position: absolute; top: 40px; left: 0; right: 0; margin: 0; text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.7); z-index: 2; }
+  .themes .wall-light h5 { color: rgba(0,0,0,.55); }
   .cfgs { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; margin-top: 18px; }
 </style>
 </head>
@@ -60,9 +65,19 @@
   <div class="scenes2"><div class="deskw desk wall-light" id="d3"></div><div class="deskw desk wall-light" id="d4"></div></div>
   <div class="scenes2"><div class="deskw desk wall-light" id="d5"></div><div class="deskw desk wall-dark" id="d6"></div></div>
 
+  <h2>The Service widget</h2>
+  <p class="sub">One service's card, in small and medium, as the Server widget is for a node. The small one is the panel's card condensed: three observers with their latency in place of the three meters, each with a mark per check and its recent samples, a passing one rising as tall as it took and a failing one hanging below the line. The medium one adds how it is reached, where it runs, what it depends on, and where the edge in front answered from. Here the primary entry is failing from two of four observers.</p>
+  <div class="deskw desk wall-dark" id="s1"></div>
+  <div style="height:22px"></div>
+  <div class="deskw desk wall-dark" id="s2"></div>
+  <div class="themes" id="sthemes"></div>
+
   <h2>Every state</h2>
   <p class="sub">The small Status widget in the five states the panel has, plus <b>Not current</b>. That one appears when the app has stopped renewing the widget, for example because it quit. It shows the last verdict as history, never as now.</p>
   <div class="matrix" id="states"></div>
+
+  <p class="sub">The small Service widget for a service that is up, affected by a path, failing from some observers, down, not monitored, and not current: marks withheld, numbers gone, the samples hatched.</p>
+  <div class="matrix" id="sstates"></div>
 
   <h2>Monochrome rendering</h2>
   <p class="sub">When another app is in front, macOS draws desktop widgets without their background or color. Every status mark has its own shape, so the widget still says what it said in color.</p>
@@ -84,6 +99,7 @@
   <div class="cfgs">
     <div class="cfg"><h6>Status</h6><div class="r"><span>Right side (medium)</span><span class="pop">Needs attention ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
     <div class="cfg"><h6>Server</h6><div class="r"><span>Server</span><span class="pop">Oracle New York ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
+    <div class="cfg"><h6>Service</h6><div class="r"><span>Service</span><span class="pop">VLESS+Reality Entry (Primary) ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
   </div>
 </div>
 <script src="assets/data.js"></script>
@@ -91,6 +107,8 @@
 <script src="assets/provider-logos.js"></script>
 <script src="assets/render.js"></script>
 <script src="assets/widgets.js"></script>
+<script src="assets/service-data.js"></script>
+<script src="assets/service.js"></script>
 <script>
   const D = window.TB_DATA;
   const sc = D.scenarios.incidents;
@@ -126,7 +144,33 @@
   document.getElementById('modes').innerHTML = [
     ['Full color', ''], ['Monochrome (another app in front)', 'vibrant'],
   ].map(([t, mode]) => `<div class="deskw desk wall-dark"><h5>${t}</h5><div class="mode-row">${TB.widget('status', 's', sc, { theme: 'native', appearance: 'dark', mode })}${TB.widget('status', 'm', sc, { theme: 'native', appearance: 'dark', mode })}</div>
-     <div class="mode-row" style="margin-top:18px">${TB.widget('status', 's', sc, { theme: 'tui', mode })}${TB.widget('status', 'm', sc, { theme: 'tui', mode })}</div></div>`).join('');
+     <div class="mode-row" style="margin-top:18px">${TB.widget('status', 's', sc, { theme: 'tui', mode })}${TB.widget('status', 'm', sc, { theme: 'tui', mode })}</div>
+     <div class="mode-row" style="margin-top:18px">${TB.serviceWidget('s', window.SC_DATA.transit.cards['vless-transit'], { theme: 'native', appearance: 'dark', mode })}${TB.serviceWidget('s', window.SC_DATA.transit.cards['vless-transit'], { theme: 'tui', mode })}</div></div>`).join('');
+
+  // The Service widget: the primary entry failing from two observers, the
+  // main site down behind the edge, and a Worker that is up.
+  const SD = window.SC_DATA;
+  const tr = SD.transit.cards, ok = SD.normal.cards, og = SD.origin.cards;
+  const sdesk = (id, o, list) => {
+    const el = document.getElementById(id);
+    const item = TB.statusItem(sc, Object.assign({ text: 'count', color: 'status' }, o));
+    el.innerHTML = TB.menubar(o.appearance, item, { clock: 'Sun Oct 18&nbsp;&nbsp;6:31 AM' }) +
+      `<div class="wgrid small">${list.map(([size, c, x]) => TB.serviceWidget(size, c, Object.assign({}, o, x || {}))).join('')}</div>`;
+  };
+  const sset = [['s', tr['vless-transit']], ['m', tr['vless-transit']], ['s', og.blog], ['m', ok.shortlink]];
+  sdesk('s1', { theme: 'native', appearance: 'dark' }, sset);
+  sdesk('s2', { theme: 'tui', appearance: 'dark' }, sset);
+  document.getElementById('sthemes').innerHTML = [
+    ['Native · light', { theme: 'native', appearance: 'light' }, 'light'], ['Aurora', { theme: 'native', appearance: 'dark', tokens: 'aurora' }, 'dark'],
+    ['Linen · light', { theme: 'native', appearance: 'light', tokens: 'linen' }, 'light'], ['Linen · dark', { theme: 'native', appearance: 'dark', tokens: 'linen' }, 'dark'],
+    ['Paper', { theme: 'tui', appearance: 'light', palette: 'paper' }, 'light'], ['Dusk', { theme: 'tui', appearance: 'dark', palette: 'dusk' }, 'dark'],
+  ].map(([t, o, wall]) => `<div class="deskw desk wall-${wall}"><h5>${t}</h5><div class="wgrid small">${TB.serviceWidget('m', tr['vless-transit'], o)}</div></div>`).join('');
+  const sstates = [['Up', ok.blog], ['Affected', tr['egress-a']], ['Failing from some', tr['vless-transit']], ['Down', og.memos], ['Not monitored', ok['backup-job']], ['Not current', ok.blog, { stale: true, age: '47 min ago' }]];
+  let sm = '<div></div>' + sstates.map(([t]) => `<div class="mh">${t}</div>`).join('');
+  [['Native · dark', { theme: 'native', appearance: 'dark' }, 'dark'], ['Native · light', { theme: 'native', appearance: 'light' }, 'light'], ['Terminal', { theme: 'tui' }, 'dark']].forEach(([t, o, wall]) => {
+    sm += `<div class="rowh"><b>${t}</b></div>` + sstates.map(([, c, x]) => `<div class="wtile desk wall-${wall}">${TB.serviceWidget('s', c, Object.assign({}, o, x || {}))}</div>`).join('');
+  });
+  document.getElementById('sstates').innerHTML = sm;
 </script>
 </body>
 </html>

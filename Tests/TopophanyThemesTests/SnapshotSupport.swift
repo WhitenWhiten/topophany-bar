@@ -75,11 +75,14 @@ struct OnDesktop<Content: View>: View {
 
 let snapshotOrigin = Timestamp.parse("2026-10-18T13:30:00Z")!
 
-func previewSettings(mac: Sections.MacMode = .local, servers: Bool = false, limit: Int = 3) -> TopophanyKit.Settings {
+func previewSettings(mac: Sections.MacMode = .local, servers: Bool = false, limit: Int = 3,
+                     services: Bool = false) -> TopophanyKit.Settings {
     var s = TopophanyKit.Settings()
     s.sections.attentionLimit = limit
     s.sections.servers = servers
     s.sections.serverNodes = ["oracle-ny", "bwh-la"]
+    s.sections.services = services
+    s.sections.serviceIDs = ["vless-entry", "main-site"]
     s.sections.mac.mode = mac
     s.sections.mac.node = "macbook"
     return s
@@ -120,7 +123,7 @@ let snapshotHere = TimeZone(identifier: "America/Los_Angeles")!
 
 func previewPanel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings: TopophanyKit.Settings = previewSettings(),
                   engine: EngineCondition = .running) -> PanelModel {
-    let request = TemplateCompiler().request(for: settings, revision: 1, listServers: true)
+    let request = TemplateCompiler().request(for: settings, revision: 1, listServers: true, serviceCards: true, listServices: true)
     let reading = FixtureEngine.reading(scenario, request: request, origin: snapshotOrigin, after: after)
     return SectionBuilder.panel(PanelInput(reading: reading, engine: engine, settings: settings, local: sampleLocal, here: snapshotHere))
 }

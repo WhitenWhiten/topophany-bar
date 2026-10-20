@@ -25,6 +25,8 @@ public struct WidgetModel: Sendable, Hashable {
         case status
         /// One server's card; `isMac` when it is this Mac's node.
         case server(node: String, isMac: Bool)
+        /// One service's card.
+        case service(id: String)
         /// The time where the servers are, with each one's mark.
         case zones
     }
@@ -58,6 +60,12 @@ public struct WidgetModel: Sendable, Hashable {
         guard case .server(let node, _) = kind else { return nil }
         if case .server(let c, _)? = panel.mac, c.id == node { return c }
         return panel.servers.first { $0.id == node }
+    }
+
+    /// The service a Service widget shows.
+    public var service: ServiceCardModel? {
+        guard case .service(let id) = kind else { return nil }
+        return panel.services.first { $0.id == id }
     }
 
     /// What a Time zones widget shows.
@@ -106,6 +114,7 @@ extension PanelModel {
                     .init(id: $0.id, name: $0.name, mark: .offline, services: $0.services.map { _ in .offline },
                           note: tr("cached"), noteNeedsLook: false)
                 }, isCurrent: false))
+            case .services(let cards): return .services(cards.map { $0.withheld(at: date) })
             case .servers(let cards): return .servers(cards.map { $0.withheld(at: date) })
             case .zones(let z): return .zones(z.withheld())
             case .fleet(let f): return .fleet(f.withheld())

@@ -13,6 +13,7 @@ struct TopophanyWidgetBundle: WidgetBundle {
     var body: some Widget {
         StatusWidget()
         ServerWidget()
+        ServiceWidget()
         ZonesWidget()
     }
 }
@@ -122,6 +123,60 @@ struct ServerWidgetIntent: WidgetConfigurationIntent {
     var theme: ThemeChoice
 }
 
+/// A service a widget can show: the panel's pinned services, then every
+/// other service `topo` lists, by the names it last sent.
+struct ServiceEntity: AppEntity {
+    var id: String
+    var name: String
+    var application: String
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Service"
+    static let defaultQuery = ServiceQuery()
+
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(name)", subtitle: application.isEmpty ? "\(id)" : "\(application) · \(id)")
+    }
+}
+
+struct ServiceQuery: EntityQuery {
+    func entities(for identifiers: [String]) async throws -> [ServiceEntity] {
+        let all = Self.known()
+        return identifiers.map { id in all.first { $0.id == id } ?? ServiceEntity(id: id, name: id, application: "") }
+    }
+
+    func suggestedEntities() async throws -> [ServiceEntity] { Self.known() }
+
+    func defaultResult() async -> ServiceEntity? { Self.known().first }
+
+    static func known() -> [ServiceEntity] {
+        guard let h = HandoffStore(appGroup: HandoffStore.bundleAppGroup).read() else { return [] }
+        let s = h.decodedSettings.sections
+        let panel = h.panel()
+        let listed = h.services()
+        var out: [ServiceEntity] = []
+        for id in s.serviceIDs where !out.contains(where: { $0.id == id }) {
+            let card = panel.services.first { $0.id == id && !$0.isMissing }
+            let entry = listed.first { $0.id == id }
+            out.append(ServiceEntity(id: id, name: card?.name ?? entry?.name ?? id, application: card?.application ?? entry?.application ?? ""))
+        }
+        for service in listed where !out.contains(where: { $0.id == service.id }) {
+            out.append(ServiceEntity(id: service.id, name: service.name, application: service.application))
+        }
+        return out
+    }
+}
+
+struct ServiceWidgetIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Service"
+    static let description = IntentDescription("One service's card: who sees it from where, and how fast it answered.")
+
+    @Parameter(title: "Service")
+    var service: ServiceEntity?
+
+    @Parameter(title: "Theme", default: .bar)
+    var theme: ThemeChoice
+}
+
 struct ZonesWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Time Zones"
     static let description = IntentDescription("The time where your servers are, and each one’s health.")
@@ -158,10 +213,12 @@ enum Timelines {
         // The language the user chose in the app, for every word drawn.
         L10n.prefer(h?.decodedSettings.language.localization)
         var node: String?
+        var service: String?
         if case .server(let n, _) = kind { node = n }
-        needs.record(key, .init(lists: family == .systemLarge || family == .systemExtraLarge, node: node, at: now))
+        if case .service(let id) = kind { service = id }
+        needs.record(key, .init(lists: family == .systemLarge || family == .systemExtraLarge, node: node, service: service, at: now))
         let theme = theme(choice, h)
-        return WidgetSchedule.entries(h, at: now, server: node).map { e in
+        return WidgetSchedule.entries(h, at: now, server: node, service: service).map { e in
             Entry(date: e.date, model: WidgetModel(kind: kind, right: right, panel: e.panel, isCurrent: e.isCurrent), theme: theme)
         }
     }
@@ -217,6 +274,26 @@ struct ServerProvider: AppIntentTimelineProvider {
         let node = c.node ?? NodeQuery.known().first
         return Timelines.entries(kind: .server(node: node?.id ?? "", isMac: node?.isMac ?? false), right: .automatic,
                                  theme: c.theme, family: context.family, key: "server-\(context.family)-\(node?.id ?? "")")
+    }
+}
+
+struct ServiceProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> Entry {
+        Timelines.entries(kind: .service(id: ""), right: .automatic, theme: .bar, family: context.family, key: "placeholder")[0]
+    }
+
+    func snapshot(for configuration: ServiceWidgetIntent, in context: Context) async -> Entry {
+        timeline(configuration, context)[0]
+    }
+
+    func timeline(for configuration: ServiceWidgetIntent, in context: Context) async -> Timeline<Entry> {
+        Timeline(entries: timeline(configuration, context), policy: .never)
+    }
+
+    func timeline(_ c: ServiceWidgetIntent, _ context: Context) -> [Entry] {
+        let service = c.service ?? ServiceQuery.known().first
+        return Timelines.entries(kind: .service(id: service?.id ?? ""), right: .automatic, theme: c.theme, family: context.family,
+                                 key: "service-\(context.family)-\(service?.id ?? "")")
     }
 }
 
@@ -293,6 +370,18 @@ struct ServerWidget: Widget {
         }
         .configurationDisplayName("Server")
         .description("One server's card, as in the Servers tab.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
+    }
+}
+
+struct ServiceWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: "service", intent: ServiceWidgetIntent.self, provider: ServiceProvider()) { entry in
+            WidgetView(entry: entry)
+        }
+        .configurationDisplayName("Service")
+        .description("One service's card, as in the Services tab.")
         .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }

@@ -647,6 +647,10 @@ struct CellsPanel: View {
                 w.box(title(tr("SERVICES"), tr("\(a.serviceCount) in \(a.rows.count) apps")), x0: x0, x1: x1, style: .panel) {
                     b.applications(&$0, a)
                 }
+            case .services(let cards):
+                for c in cards {
+                    w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: .panel) { b.service(&$0, c) }
+                }
             case .fleet(let f):
                 w.box(title(tr("FLEET"), "\(f.nodeCount)"), [.t(" " + tr("\(f.providerCount) providers") + " ", p.muted)],
                       x0: x0, x1: x1, style: .panel) { b.fleet(&$0, f) }

@@ -299,6 +299,22 @@
         }
       }
     },
+    "A service that isn't in the topology shows as such.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "トポロジーにないサービスは、その旨が表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不在拓扑中的服务会如实标明。"
+          }
+        }
+      }
+    },
     "About Topophany": {
       "localizations": {
         "ja": {
@@ -1723,6 +1739,22 @@
         }
       }
     },
+    "No application": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリケーションなし"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无应用"
+          }
+        }
+      }
+    },
     "No profile saved yet; topo keeps the token, never the app": {
       "localizations": {
         "ja": {
@@ -2119,6 +2151,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "已固定的服务器"
+          }
+        }
+      }
+    },
+    "Pinned services": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "固定したサービス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已固定的服务"
           }
         }
       }
@@ -2555,6 +2603,22 @@
         }
       }
     },
+    "Service ID, as in topology.json": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サービス ID（topology.json と同じ）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务 ID（与 topology.json 中一致）"
+          }
+        }
+      }
+    },
     "Services": {
       "localizations": {
         "ja": {
@@ -2923,6 +2987,22 @@
         }
       }
     },
+    "The card of each service you pin: who sees it, and how fast": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "固定した各サービスのカード：どこから見えるか、どれだけ速いか"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你固定的每个服务的卡片：从哪里可见，响应多快"
+          }
+        }
+      }
+    },
     "The count is what needs attention; nothing when all clear": {
       "localizations": {
         "ja": {
@@ -3111,6 +3191,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "这是其他所有人看到的本机卡片，从采集器读取。如果节点上没有主机检查，其资源会显示为 *未知*，而绝不是零。"
+          }
+        }
+      }
+    },
+    "This topo doesn’t send service cards. Pinned services appear once it does.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この topo はサービスカードを送りません。送るようになると、固定したサービスが表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 topo 不发送服务卡片。它开始发送后，已固定的服务就会出现。"
           }
         }
       }
@@ -3591,6 +3687,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "macOS 玻璃材质、SF Pro 和系统颜色，与旁边的应用一致。"
+          }
+        }
+      }
+    },
+    "not monitored": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未監視"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未监控"
+          }
+        }
+      }
+    },
+    "on %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ で稼働"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行于 %@"
           }
         }
       }

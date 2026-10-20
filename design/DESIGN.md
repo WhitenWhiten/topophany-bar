@@ -10,9 +10,9 @@ The HTML previews next to this file show the design:
 | Page | What it shows |
 |---|---|
 | `index.html` | overview, the three looks, widgets, themes, architecture |
-| `playground.html` | every state, theme and setting, live |
+| `playground.html` | every state, theme and setting, live, pinned services included |
 | `states.html` | the status item and status card in all five states |
-| `widgets.html` | four sizes, both themes, every state, monochrome rendering |
+| `widgets.html` | four sizes, both themes, every state, monochrome rendering; the Service widget |
 | `settings.html` | the Settings window |
 
 ## 1. Goal
@@ -25,7 +25,7 @@ Out of scope for v1:
 - RunCat or any file output (the stream replaces them)
 - loading user theme files (the format is designed in section 8)
 - the embedded engine (section 10.2)
-- history charts beyond the local sparklines
+- history charts beyond the local sparklines and a service card's recent samples (section 4.2)
 - Windows and Linux
 
 ## 2. Principles
@@ -111,13 +111,14 @@ The header shows the mark, the project and view, Open in Terminal (⌘O) and Set
 2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
 3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty. Each row ends in its state word (OPEN, WARN), the word alone in its color: the row's mark already says the state, so it takes no chip. A route too long for its row is cut so both ends stay readable: an end that fits half the room keeps its width, and the other takes the rest.
 4. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
-5. **Fleet.** Every node `topo` lists (`servers.list`), by who runs it, two to a row with each provider's logo (section 4.1).
+5. **Services.** Off by default. The card of each pinned service: the observers that see it, how fast it answered them lately and how much of the day it was up. See section 4.2.
+6. **Fleet.** Every node `topo` lists (`servers.list`), by who runs it, two to a row with each provider's logo (section 4.1).
    - **Edges and platforms first,** each on its own and saying what it is: what stands in front of everything else. A hairline, then servers: a provider's together, where its first server is in `topo`'s list, and a node that names no provider on its own, by its name and kind.
    - **Marks:** one per node, `topo`'s. A group has no health of its own and is never tinted for its nodes; the app adds nothing up.
    - **Without `servers.list`:** the pinned servers' cards stand in. When the list isn't current, the names stay and every mark is withheld (◌).
-6. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1).
-7. **Time zones.** The local time where the servers are. See section 5.1.
-8. **This Mac.** See section 5.
+7. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1).
+8. **Time zones.** The local time where the servers are. See section 5.1.
+9. **This Mac.** See section 5.
 
 Size:
 
@@ -156,6 +157,17 @@ A node's provider is who runs it: a company that rents servers, or an edge or a 
 - **Meaning:** none. A logo never says how a node is doing.
 
 `design/assets/providers.js` holds the names, colors, outlines and glyphs. `scripts/make-providers.py` turns it into Swift, and the outlines into `provider-logos.js` for the previews, so both draw the same shapes.
+
+### 4.2 Service cards
+
+A pinned service's card is one family with the Server card: the same head, pill and foot, and in place of CPU, memory and disk, the observers that see the service. `topo` sends it as a `service.card` row, built from the card the Services tab draws; the app adds nothing to it. `design/assets/service.js` draws it in the previews.
+
+- **Head:** the tile of the node it runs on (its provider's logo, section 4.1), its name, and its application and host: "Proxy chain · on BandwagonHost LA". The pill says its state: UP, WARN, DOWN, UNKNOWN, AFFECTED or CACHED.
+- **Seen from:** a row per observer, in `topo`'s order (worst first), at most three: a mark per check, the observer's place (its name where two share a place), the worst check's recent samples, its median latency over the day (p50) and the day's share up (24h). A row per observer rather than per check, so two paths from one place never read as duplicate rows, and a path that fails beside one that passes stays in sight.
+- **Recent samples:** the one history chart beyond This Mac's sparklines, because it says when something broke. Native: a passing sample rises from a baseline as tall as it took, against the slowest shown, in the accent at half strength; a failure hangs below the line in its color (down, warning for a policy failure, gray otherwise), so trouble differs in place as well as color. No sample, no mark. Terminal: the TUI's blocks, `▁` to `▇` and never a full cell so rows stay apart, in the palette's meter (Paper's hairlines, Dusk's braille); `✖ ▲ ○` for failures and `·` where none was taken, on the track.
+- **Foot:** how many checks and how many fail, the edge in front by its logo and the colos it answered from (`☁ SJC · FRA`), and the age. Terminal: what it depends on (`→`) and the edge (`⇠`).
+- **Honesty:** each check keeps its own deadline (`docs/PROTOCOL.md` §5). Past it, the check's mark turns unknown and its numbers go, its samples hatched, while the rest of the card stays. While `topo` holds no samples for a check yet, none are drawn. Not monitored, and not in the topology, say so.
+- **Choosing:** Settings › Sections › Services › Choose…: every service `topo` lists (`services.list`), under its application. Nothing is pinned until you pin it. A `topo` without `service.card` draws everything else, and Settings says why the section is empty.
 
 ## 5. This Mac
 
@@ -223,6 +235,7 @@ Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary
 |---|---|---|---|---|
 | **Status** | verdict, a mark per check, observers, age | Status, plus Needs attention (or Applications when nothing needs attention) | Status with legend, Seen from, Needs attention | Large, plus Applications and Fleet |
 | **Server** | one node: CPU, memory and disk against limits, state, age | plus its services and what it observes from there | n/a | n/a |
+| **Service** | one service: three observers, each with a mark per check, its latency and recent samples; state, age | plus how it is reached, where it runs, what it depends on, and where the edge in front answered from | n/a | n/a |
 | **Time zones** | each zone's time, its places and marks | plus each zone's day ribbon, offset and name | each zone on a taller row, with its day | n/a |
 
 - **A mark per check.** In a narrow column (the small widget, and the medium widget's left), the bar's ticks wrap into a grid: every check as its mark, filled a column at a time in the bar's order, so trouble gathers at the right as it does on the bar. Up is quieter than trouble. Past what can be read, the stacked bar.
@@ -230,7 +243,7 @@ Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary
 - **The mark** sits small and a little muted in the corner: it says whose widget it is without competing with the verdict.
 - **Fleet.** The extra large widget shows as many groups as fit. The rest are counted in a last cell that keeps their nodes' marks, trouble first, so trouble left out still shows.
 
-Every widget is built from the same section models and the same renderer as the panel, in the same theme. In the cells renderer they become the TUI's boxes at 11 pt. In **Edit Widget**, users choose what a widget shows (the medium widget's right side; the server, including This Mac) and its theme (default: the same as the bar). They never choose what it means. Clicking a widget opens the panel; clicking an attention row opens the TUI on it.
+Every widget is built from the same section models and the same renderer as the panel, in the same theme. In the cells renderer they become the TUI's boxes at 11 pt. In **Edit Widget**, users choose what a widget shows (the medium widget's right side; the server, including This Mac; the service) and its theme (default: the same as the bar). They never choose what it means. Clicking a widget opens the panel; clicking an attention row opens the TUI on it.
 
 ### 7.2 Data
 
@@ -335,7 +348,7 @@ A `cards` theme that follows the system gives its slots per appearance. `dark` a
 | Menu bar: Symbol, Count or Words; status colors; motion; this Mac's readings; quiet its alert until it gets worse | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
 | Sections on or off and their order (Status is fixed) | Freshness, staleness, publisher lease |
 | The time zone of each place | Each server's health in Time zones |
-| Attention rows (3 or 5); which applications; pinned servers | How groups add up (unknown always counted) |
+| Attention rows (3 or 5); which applications; pinned services and servers | How groups add up (unknown always counted) |
 | What each widget shows and its theme | Status glyphs and their meaning |
 | This Mac mode, readings, volume, interface, sample rate | No expressions or formulas |
 | `topo`: found, chosen or downloaded; profile, observer view, refresh (1 s to 1 h); open at login; terminal for the TUI; language (system, English, Japanese, Simplified Chinese) | |
@@ -353,6 +366,7 @@ Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On
     { "id": "seen" },
     { "id": "attention", "limit": 3 },
     { "id": "applications", "only": [] },
+    { "id": "services", "enabled": false, "ids": ["vless-entry", "main-site"] },
     { "id": "fleet", "enabled": true },
     { "id": "servers", "enabled": false, "nodes": ["oracle-ny", "bwh-la"] },
     { "id": "zones", "enabled": true, "places": { "Seattle": "America/Los_Angeles" } },
@@ -487,6 +501,8 @@ Each is computed from `internal/view`, so the bar and the TUI agree.
 | `attention.list` | `list` + `limit` | open ledger records, then `NeedsAttention` rows by `AttentionRank`, plus `more` |
 | `applications.list` | `list` | per application: `id`, `name`, `health`, services, attention and unmonitored counts |
 | `server.card` | `card`, `select.node` | from `Fleet().Card`: resources against limits, services, `observes` |
+| `service.card` | `card`, `select.service` | from `Fleet().ServiceCard`: `seen_from` by observer, each check with its own deadline, latency, share up and recent samples; endpoints, colos, dependencies |
+| `services.list` | `list` | per service: `id`, `name`, application, `health`, host; for choosing |
 
 ### 11.3 macOS host check without `top`
 

@@ -876,6 +876,7 @@ struct SectionLabel: View {
         case .seen: "scope"
         case .attention: "exclamationmark.triangle.fill"
         case .applications: "square.stack.3d.up.fill"
+        case .services: "waveform.path.ecg"
         case .fleet: "square.grid.2x2.fill"
         case .servers: "server.rack"
         case .zones: "clock.fill"
@@ -889,6 +890,7 @@ struct SectionLabel: View {
         case .seen: Color(red: 0.37, green: 0.36, blue: 0.90)
         case .attention: Color(red: 1, green: 0.62, blue: 0.04)
         case .applications: Color(red: 0.04, green: 0.52, blue: 1)
+        case .services: Color(red: 1, green: 0.22, blue: 0.37)
         case .fleet: Color(red: 0.35, green: 0.34, blue: 0.84)
         case .servers: Color(red: 0.56, green: 0.56, blue: 0.58)
         case .zones: Color(red: 0.19, green: 0.69, blue: 0.78)
@@ -902,6 +904,7 @@ struct SectionLabel: View {
         case .seen: RowLabel("Seen from", "Which observers see a problem, and that the others don’t")
         case .attention: RowLabel("Needs attention", "Open incidents first, then anything else that needs a look")
         case .applications: RowLabel("Applications", "Services folded into the applications you declare")
+        case .services: RowLabel("Services", "The card of each service you pin: who sees it, and how fast")
         case .fleet: RowLabel("Fleet", "Every server, edge and platform topo lists, by who runs it")
         case .servers: RowLabel("Servers", "The Servers-tab card of each server you pin")
         case .zones: RowLabel("Time zones", "The time where your servers are, and each one’s health")
@@ -934,6 +937,8 @@ struct SectionControls: View {
             .labelsHidden().fixedSize()
         case .applications:
             ApplicationsButton()
+        case .services:
+            ServicesButton()
         case .servers:
             ServersButton()
         case .zones:
@@ -1143,6 +1148,139 @@ struct ServersPicker: View {
         model.update { s in
             if !s.sections.serverNodes.contains(n) { s.sections.serverNodes.append(n) }
             s.sections.servers = true
+        }
+        draft = ""
+    }
+}
+
+/// The services pinned, by ID.
+struct ServicesButton: View {
+    @Environment(AppModel.self) private var model
+    @State private var open = false
+
+    var body: some View {
+        Button("Choose…") { open = true }
+            .popover(isPresented: $open, arrowEdge: .bottom) { Localized(content: ServicesPicker()).environment(model) }
+    }
+}
+
+/// Every service `topo` lists, under its application, ticked when pinned;
+/// pinned services it doesn't list come last. Pinned ones show in the order
+/// they were pinned.
+struct ServicesPicker: View {
+    @Environment(AppModel.self) private var model
+    @State private var draft = ""
+
+    var body: some View {
+        let ids = model.settings.sections.serviceIDs
+        let known = model.knownServices
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Pinned services").font(.headline)
+            if known.isEmpty {
+                typed(ids)
+            } else {
+                listed(known, pinned: ids)
+            }
+            if !model.cardsServices {
+                Foot("This topo doesn’t send service cards. Pinned services appear once it does.")
+            }
+        }
+        .multilineTextAlignment(.leading)
+        .padding(14)
+        .frame(width: 340)
+    }
+
+    /// The services by application, in `topo`'s order.
+    func listed(_ known: [ServiceListEntry], pinned: [String]) -> some View {
+        let missing = pinned.filter { id in !known.contains { $0.id == id } }
+        var apps: [String] = []
+        for s in known where !apps.contains(s.application) { apps.append(s.application) }
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(apps, id: \.self) { app in
+                    Text(verbatim: app.isEmpty ? tr("No application") : app)
+                        .font(.callout.weight(.semibold)).foregroundStyle(.secondary)
+                        .padding(.top, app == apps.first ? 0 : 4)
+                    ForEach(known.filter { $0.application == app }) { s in
+                        Toggle(isOn: pinBinding(s.id)) {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(verbatim: s.name).lineLimit(1)
+                                Text(verbatim: Words.join([s.id, s.host.map { tr("on \($0.name)") } ?? "",
+                                                           s.monitored == false ? tr("not monitored") : ""]))
+                                    .font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                        }
+                        .toggleStyle(.checkbox)
+                    }
+                }
+                ForEach(missing, id: \.self) { id in
+                    Toggle(isOn: pinBinding(id)) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(verbatim: id).font(.body.monospaced()).lineLimit(1)
+                            Text("Not in the topology").font(.callout).foregroundStyle(.secondary)
+                        }
+                    }
+                    .toggleStyle(.checkbox)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxHeight: 360)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    func pinBinding(_ id: String) -> Binding<Bool> {
+        Binding(get: { model.settings.sections.serviceIDs.contains(id) },
+                set: { on in
+                    model.update { s in
+                        s.sections.serviceIDs.removeAll { $0 == id }
+                        if on {
+                            s.sections.serviceIDs.append(id)
+                            s.sections.services = true
+                        }
+                    }
+                })
+    }
+
+    /// Service IDs typed in, before `topo` lists any.
+    @ViewBuilder func typed(_ ids: [String]) -> some View {
+        if ids.isEmpty {
+            Text("None yet").foregroundStyle(.secondary)
+        }
+        ForEach(ids, id: \.self) { id in
+            HStack {
+                Text(verbatim: name(id)).lineLimit(1)
+                if name(id) != id { Text(verbatim: id).font(.callout.monospaced()).foregroundStyle(.secondary) }
+                Spacer()
+                Button {
+                    model.update { $0.sections.serviceIDs.removeAll { $0 == id } }
+                } label: {
+                    Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(Text("Unpin \(name(id))"))
+            }
+        }
+        Divider()
+        HStack {
+            TextField("", text: $draft, prompt: Text("Service ID, as in topology.json"))
+                .font(.body.monospaced())
+                .onSubmit(add)
+            Button("Pin", action: add).disabled(!TemplateCompiler.validNode(draft.trimmingCharacters(in: .whitespaces)))
+        }
+        Text("A service that isn't in the topology shows as such.").font(.callout).foregroundStyle(.secondary)
+    }
+
+    func name(_ id: String) -> String {
+        model.panel.services.first { $0.id == id && !$0.isMissing }?.name ?? id
+    }
+
+    func add() {
+        let id = draft.trimmingCharacters(in: .whitespaces)
+        guard TemplateCompiler.validNode(id) else { return }
+        model.update { s in
+            if !s.sections.serviceIDs.contains(id) { s.sections.serviceIDs.append(id) }
+            s.sections.services = true
         }
         draft = ""
     }

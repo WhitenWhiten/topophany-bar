@@ -128,6 +128,26 @@ func frames(_ events: [EngineEvent]) -> [Frame] {
         await e.stop()
     }
 
+    /// A service's card by the service the request selects; one the
+    /// topology doesn't have is missing, as `topo` answers.
+    @Test func fitsServiceCardsToTheRequest() async {
+        var s = Settings()
+        s.sections.services = true
+        s.sections.serviceIDs = ["main-site", "gone"]
+        let e = FixtureEngine(scenario: .clear, clock: ManualClock(t), tick: nil)
+        var it = e.start(TemplateCompiler().request(for: s, revision: 1, serviceCards: true, listServices: true)).makeAsyncIterator()
+        let f = frames(await take(4, from: &it)).last!
+        #expect(f.rows.map(\.id) == ["status", "seen", "attention", "apps", "service-1", "service-2", "services"])
+        guard case .serviceCard(let c) = f.row("service-1")?.value else { Issue.record("no card"); return }
+        #expect(c.id == "main-site")
+        #expect(f.row("service-1")?.select?.service == "main-site")
+        #expect(f.row("service-2")?.value == RowValue.none)
+        #expect(f.row("service-2")?.reason == "entity_missing")
+        guard case .services(let list) = f.row("services")?.value else { Issue.record("no list"); return }
+        #expect(list.count == 23)
+        await e.stop()
+    }
+
     @Test func staleStopsWritingAndTheLeaseLapses() async {
         let clock = ManualClock(t)
         let e = FixtureEngine(scenario: .stale, clock: clock, tick: nil)

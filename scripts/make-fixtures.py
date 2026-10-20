@@ -94,6 +94,51 @@ LISTED = [
 ]
 SERVICE_NAMES = {sid: name for _, _, svcs in APPS for sid, name in svcs}
 SERVICE_NAMES["topo-worker"] = "Topophany worker"
+# The node each service runs on, for services.list and service.card.
+SERVICE_HOSTS = {sid: node for node, s in SERVERS.items() for sid in s["services"]}
+SERVICE_HOSTS.update({"gitea": "fra-hetzner", "restic": "fra-hetzner", "nextcloud": "oracle-la", "immich": "oracle-la",
+                      "vaultwarden": "azure-ny", "syncthing": "oracle-la", "jellyfin": "seattle-pc",
+                      "ssh-bastion": "sj-vultr", "workers-api": "cloudflare", "pages": "cloudflare",
+                      "r2-gateway": "cloudflare", "queue": "cloudflare"})
+
+# Service cards, as topo preview's homelab draws them: who checks each
+# service from where, its latency over the day and its share up. Per check:
+# observer, check ID, kind, endpoint, p50 and p95 ms, share up, colo and
+# first byte. A scenario says which checks fail, and how.
+SERVICE_CARDS = {
+    "vless-entry": dict(
+        app=("proxy", "Proxy chain"), reason="all checks in this view pass",
+        checks=[("seattle-windows", "w-entry-443", "BandwagonHost entry port", "tls", "entry", 46, 50, 98.3, "", ""),
+                ("san-jose", "r-entry-443", "Relay contrast BandwagonHost 443", "tls", "entry", 17, 18, 97.6, "", ""),
+                ("ny-oracle", "s-entry-443", "Overseas contrast BandwagonHost 443", "tls", "entry", 113, 124, 98.6, "", ""),
+                ("frankfurt", "j-entry-443", "Remote entry 443", "tls", "entry", 266, 289, 99.0, "", "")],
+        endpoints=[("entry", "public", "192.0.2.10:443", [])],
+        depends=[], used_by=["exit-a", "exit-b"], runbook="https://wiki.example.invalid/runbooks/entry",
+        memo="Primary entry for the proxy chain. Some networks block it now and then; the Azure entry is the fallback."),
+    "main-site": dict(
+        app=("site", "Main site"), reason="all checks in this view pass",
+        checks=[("san-jose", "r-app-web", "Relay to app web", "http", "app-web", 231, 272, 97.6, "SJC", "origin p50 99 ms · p95 128 ms"),
+                ("ny-oracle", "s-web-local", "App web local", "http", "app-web-local", 51, 80, 98.6, "", ""),
+                ("frankfurt", "j-blog", "Visitor to app blog", "http", "app-web", 319, 358, 98.6, "FRA", "origin p50 123 ms · p95 152 ms")],
+        endpoints=[("app-web", "public", "https://www.example.invalid/", [("cloudflare", "Cloudflare", "edge", "Cloudflare")]),
+                   ("app-web-local", "loopback", "http://127.0.0.1:8080/", [])],
+        depends=[("postgres", "PostgreSQL", "PostgreSQL Container")], used_by=[],
+        answered=dict(pops=["SJC 50%", "FRA 50%"], cache=["DYNAMIC 100%"]),
+        runbook="https://wiki.example.invalid/runbooks/blog",
+        memo="The public blog. Cloudflare in front, Caddy on the Oracle box behind it; posts live in Postgres."),
+    "workers-api": dict(
+        app=("serverless", "Serverless"), runtime="workers", reason="all checks in this view pass",
+        checks=[("frankfurt", "j-worker", "Workers API", "http", "worker", 54, 79, 99.0, "FRA", ""),
+                ("san-jose", "r-worker", "Relay to Workers API", "http", "worker", 54, 84, 97.2, "SJC", "")],
+        endpoints=[("worker", "public", "https://api.example.invalid/healthz", [])],
+        depends=[], used_by=[], answered=dict(pops=["FRA 51%", "SJC 49%"], cache=[]),
+        runbook="", memo="A Worker with a KV store."),
+    "nightly-backup": dict(
+        app=("code", "Code & backups"), reason="registered, not monitored", checks=[], endpoints=[],
+        depends=[("restic", "Restic Backups", "Hetzner Frankfurt")], used_by=[], runbook="",
+        memo="Registered only; it doesn't fake heartbeats without real receipts."),
+}
+SLOTS = 36
 
 # --------------------------------------------------------------- scenarios
 
@@ -102,7 +147,7 @@ SERVICE_NAMES["topo-worker"] = "Topophany worker"
 SCENARIOS = {
     "clear": dict(
         verdict=("clear", "●", "ALL CLEAR", dict(up=68, warning=0, down=0, unknown=0), 0),
-        observers={}, services={}, attention=[], attention_total=0, servers={}),
+        observers={}, services={}, attention=[], attention_total=0, servers={}, checks={}),
     "degraded": dict(
         verdict=("degraded", "▲", "DEGRADED", dict(up=66, warning=2, down=0, unknown=0), 0),
         observers={"seattle-macbook": dict(warning=1), "seattle-windows": dict(warning=1)},
@@ -113,7 +158,7 @@ SCENARIOS = {
             dict(kind="path", id="exit-candidates", title="Seattle Windows → Exit Candidates (BandwagonHost · Azure)",
                  observer="seattle-windows", health="degraded", state="warn"),
         ],
-        attention_total=2, servers={}),
+        attention_total=2, servers={}, checks={"w-entry-443": ("policy", 14)}),
     "incidents": dict(
         verdict=("incidents", "✖", "5 INCIDENTS", dict(up=63, warning=0, down=5, unknown=0), 5),
         observers={"seattle-windows": dict(down=3), "seattle-macbook": dict(down=1), "san-jose": dict(down=1)},
@@ -133,7 +178,8 @@ SCENARIOS = {
         attention_total=17,
         servers={"bwh-la": dict(health="degraded", note="affected",
                                 services={"vless-entry": "degraded", "exit-a": "degraded", "relay": "degraded"},
-                                affected={"vless-entry", "exit-a", "relay"})}),
+                                affected={"vless-entry", "exit-a", "relay"})},
+        checks={"w-entry-443": ("fail", 24), "r-entry-443": ("fail", 24)}),
     "incomplete": dict(
         verdict=("incomplete", "○", "INCOMPLETE EVIDENCE", dict(up=61, warning=0, down=0, unknown=7), 0),
         observers={"honolulu": dict(unknown=7, live=False, last_seen=-180)},
@@ -144,7 +190,7 @@ SCENARIOS = {
             dict(kind="path", id="transit-internet", title="Honolulu → Transit → Internet", observer="honolulu",
                  health="unknown", state="unknown"),
         ],
-        attention_total=2, servers={}),
+        attention_total=2, servers={}, checks={}),
 }
 
 # ----------------------------------------------------------------- frames
@@ -157,6 +203,11 @@ ROWS = [
     dict(id="server-1", label="", metric="server.card", visual="card", select={"node": "oracle-ny"}),
     dict(id="server-2", label="", metric="server.card", visual="card", select={"node": "bwh-la"}),
     dict(id="mac", label="", metric="server.card", visual="card", select={"node": "macbook"}),
+    dict(id="service-1", label="", metric="service.card", visual="card", select={"service": "vless-entry"}),
+    dict(id="service-2", label="", metric="service.card", visual="card", select={"service": "main-site"}),
+    dict(id="service-3", label="", metric="service.card", visual="card", select={"service": "workers-api"}),
+    dict(id="service-4", label="", metric="service.card", visual="card", select={"service": "nightly-backup"}),
+    dict(id="services", label="", metric="services.list", visual="list", select={}),
     dict(id="servers", label="", metric="servers.list", visual="list", select={}),
 ]
 
@@ -260,6 +311,90 @@ def server_card(sc, node, t, valid):
                 observes=observes)
 
 
+def listed(node):
+    return next(l for l in LISTED if l[0] == node)
+
+
+def slots(check, p50, failing):
+    """The newest SLOTS samples, oldest first: passing ones near the median,
+    one failure in the history, and the scenario's failures at the end."""
+    seed = sum(ord(c) * (i + 7) for i, c in enumerate(check))
+    out = []
+    for i in range(SLOTS):
+        seed = (seed * 1103515245 + 12345) % (1 << 31)
+        jitter = 0.84 + 0.34 * (seed % 1000) / 1000
+        out.append(dict(outcome="ok", elapsed_ms=max(1, round(p50 * jitter))))
+    out[seed % 9 + 6] = dict(outcome="fail")
+    if failing:
+        outcome, n = failing
+        for i in range(SLOTS - n, SLOTS):
+            out[i] = dict(outcome=outcome)
+    return out
+
+
+def service_card(sc, sid, t):
+    d = SERVICE_CARDS[sid]
+    host = listed(SERVICE_HOSTS[sid])
+    sampled = t - timedelta(seconds=4)
+    by = {}
+    order = []
+    for oid, cid, name, kind, ep, p50, p95, up, colo, first in d["checks"]:
+        failing = sc["checks"].get(cid)
+        health = {"fail": "down", "policy": "degraded"}[failing[0]] if failing else "up"
+        check = dict(id=cid, name=name, kind=kind, endpoint=ep, health=health, freshness="fresh",
+                     sampled_at=ts(sampled), valid_until=ts(sampled + timedelta(seconds=30)),
+                     latency=dict(p50_ms=p50, p95_ms=p95), up_24h=up, first_byte=first, colo=colo,
+                     samples=dict(interval_seconds=10, slots=slots(cid, p50, failing)))
+        if oid not in by:
+            by[oid] = []
+            order.append(oid)
+        by[oid].append(check)
+    places = {}
+    for oid in order:
+        node = next(o[2] for o in OBSERVERS if o[0] == oid)
+        places[oid] = listed(node)[4]
+    seen = []
+    for oid in order:
+        checks = sorted(by[oid], key=lambda c: SEVERITY[c["health"]])
+        shared = sum(1 for o in order if places[o] == places[oid]) > 1
+        name = observer_name(oid)
+        label = name.replace(places[oid], "").strip() if shared else places[oid]
+        seen.append(dict(observer=dict(id=oid, name=name), label=label, health=checks[0]["health"], checks=checks))
+    seen.sort(key=lambda o: SEVERITY[o["health"]])
+    healths = [c["health"] for o in seen for c in o["checks"]]
+    monitored = bool(d["checks"])
+    health = worst(healths) if monitored else "unknown"
+    if monitored and health != "up" and "up" in healths:
+        health = "degraded"
+    reason = d["reason"] if health == "up" or not monitored else "some access checks pass; others fail, degrade or lack current evidence"
+    endpoints = []
+    for eid, network, address, via in d["endpoints"]:
+        hs = [c["health"] for o in seen for c in o["checks"] if c["endpoint"] == eid]
+        endpoints.append(dict(id=eid, network=network, address=address, health=worst(hs) if hs else "",
+                              via=[dict(id=i, name=n, kind=k, provider=pr) for i, n, k, pr in via]))
+    return dict(id=sid, name=SERVICE_NAMES[sid], application=dict(id=d["app"][0], name=d["app"][1]), environment="",
+                runtime=d.get("runtime", ""), health=health, note="", evidence="inferred" if monitored else "unknown",
+                reason=reason, monitored=monitored,
+                host=dict(id=host[0], name=host[1], kind=host[2], provider=host[3], where=host[4],
+                          health=sc["servers"].get(host[0], {}).get("health", "up")),
+                seen_from=seen, endpoints=endpoints, answered_from=d.get("answered"),
+                depends_on=[dict(id=i, name=n, health="up", affected=False, monitored=True, host=h) for i, n, h in d["depends"]],
+                used_by=[dict(id=i, name=SERVICE_NAMES[i], health=service_health(sc, i), affected=False, monitored=True,
+                              host=listed(SERVICE_HOSTS[i])[1]) for i in d["used_by"]],
+                runbook=d["runbook"], memo=d["memo"])
+
+
+def service_entries(sc):
+    out = []
+    for _, app, svcs in APPS:
+        for sid, name in svcs:
+            host = listed(SERVICE_HOSTS[sid])
+            out.append(dict(id=sid, name=name, application=app, health=service_health(sc, sid), note="",
+                            monitored=sid not in UNMONITORED,
+                            host=dict(id=host[0], name=host[1], kind=host[2], provider=host[3])))
+    return out
+
+
 def server_entries(sc):
     out = []
     for node, name, kind, provider, where in LISTED:
@@ -305,9 +440,14 @@ def running(key, sc, seq, t, extra_rows=()):
         row(ROWS[2], att, "%d need attention" % att["total"], worst(i["health"] for i in att["items"]), t, valid),
         row(ROWS[3], apps, "%d applications" % len(apps), worst(a["health"] for a in apps), t, valid),
     ]
-    for tpl in ROWS[4:-1]:
+    for tpl in ROWS[4:7]:
         card = server_card(sc, tpl["select"]["node"], t, valid)
         rows.append(row(tpl, card, card["health"], card["health"], t, valid))
+    for tpl in ROWS[7:11]:
+        card = service_card(sc, tpl["select"]["service"], t)
+        rows.append(row(tpl, card, card["health"], card["health"], t, valid))
+    services = service_entries(sc)
+    rows.append(row(ROWS[11], services, "%d services" % len(services), worst(e["health"] for e in services), t, valid))
     rows += list(extra_rows)
     listed = server_entries(sc)
     rows.append(row(ROWS[-1], listed, "%d servers" % len(listed), worst(s["health"] for s in listed), t, valid))

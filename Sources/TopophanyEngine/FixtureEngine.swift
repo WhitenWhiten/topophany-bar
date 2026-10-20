@@ -9,7 +9,8 @@ import TopophanyKit
 /// later ones when the clock reaches them. A looping fixture repeats the
 /// frames after the anchor. Each frame is fitted to the running request, as
 /// `topo` would answer it: its rows in the request's order and IDs, the
-/// attention list cut to the request's limit, an unknown node missing.
+/// attention list cut to the request's limit, an unknown node or service
+/// missing.
 public final class FixtureEngine: Engine {
     public enum Scenario: String, CaseIterable, Sendable {
         case clear, degraded, incidents, incomplete, offline, stale, stopped
@@ -234,25 +235,32 @@ public final class FixtureEngine: Engine {
 
     static func rows(_ fixture: [JSONValue], for template: Template) -> [JSONValue] {
         func string(_ v: JSONValue?) -> String? { if case .string(let s)? = v { s } else { nil } }
-        func node(_ row: [String: JSONValue]) -> String? {
-            if case .object(let sel)? = row["select"] { return string(sel["node"]) }
+        func selected(_ row: [String: JSONValue], _ key: String) -> String? {
+            if case .object(let sel)? = row["select"] { return string(sel[key]) }
             return nil
         }
+        let cards = ["server.card", "service.card"]
         let objects = fixture.compactMap { if case .object(let o) = $0 { o } else { nil } }
         return template.rows.map { t in
             let match = objects.first { o in
-                string(o["metric"]) == t.metric && (t.metric != "server.card" || node(o) == t.select?.node)
+                guard string(o["metric"]) == t.metric else { return false }
+                switch t.metric {
+                case "server.card": return selected(o, "node") == t.select?.node
+                case "service.card": return selected(o, "service") == t.select?.service
+                default: return true
+                }
             }
             var row = match ?? [
                 "value": .null, "text": .string("unknown"), "health": .string("unknown"),
                 "freshness": .string("unavailable"),
-                "reason": .string(t.metric == "server.card" ? "entity_missing" : "source_unavailable"),
+                "reason": .string(cards.contains(t.metric) ? "entity_missing" : "source_unavailable"),
             ]
             row["id"] = .string(t.id)
             row["metric"] = .string(t.metric)
             row["visual"] = .string(t.visual)
             var sel: [String: JSONValue] = [:]
             if let n = t.select?.node { sel["node"] = .string(n) }
+            if let n = t.select?.service { sel["service"] = .string(n) }
             row["select"] = .object(sel)
             if t.metric == "attention.list" {
                 let limit = t.limit ?? 5

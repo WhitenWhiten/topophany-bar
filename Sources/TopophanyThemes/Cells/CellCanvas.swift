@@ -341,6 +341,25 @@ public enum CellText {
 
     public static func width(_ s: String) -> Int { s.reduce(0) { $0 + width($1) } }
 
+    /// Words in lines of at most `n` cells, at most `lines` of them, the
+    /// last cut with "…" where the rest doesn't fit.
+    public static func wrap(_ s: String, _ n: Int, lines: Int) -> [String] {
+        var out: [String] = []
+        var line = ""
+        let words = s.split(separator: " ").map(String.init)
+        for (i, word) in words.enumerated() {
+            let next = line.isEmpty ? word : line + " " + word
+            if width(next) <= n || line.isEmpty {
+                line = next
+                continue
+            }
+            if out.count == lines - 1 { return out + [truncate(words[i...].reduce(line) { $0 + " " + $1 }, n)] }
+            out.append(line)
+            line = word
+        }
+        return line.isEmpty ? out : out + [truncate(line, n)]
+    }
+
     /// At most `n` cells, ending in "…" when cut.
     public static func truncate(_ s: String, _ n: Int) -> String {
         guard width(s) > n else { return s }

@@ -53,15 +53,15 @@ public enum WidgetSchedule {
     }
 
     /// The two entries of a reload: now, then not current. A Server widget
-    /// passes its node.
-    public static func entries(_ h: Handoff?, at now: Date, server node: String? = nil)
+    /// passes its node, and a Service widget its service.
+    public static func entries(_ h: Handoff?, at now: Date, server node: String? = nil, service: String? = nil)
         -> [(date: Date, panel: PanelModel, isCurrent: Bool)] {
         guard let h else {
             let empty = SectionBuilder.panel(PanelInput(reading: ReaderPolicy().evaluate(at: now), engine: .stopped,
                                                         settings: TopophanyKit.Settings()))
             return [(now, empty.withheld(at: now), false)]
         }
-        let panel = node.map { h.panel(server: $0) } ?? h.panel()
+        let panel = node.map { h.panel(server: $0) } ?? service.map { h.panel(service: $0) } ?? h.panel()
         let stale = notCurrent(after: h)
         if stale <= now { return [(now, panel.withheld(at: now), false)] }
         return [(now, panel, true), (stale, panel.withheld(at: stale), false)]
@@ -83,6 +83,7 @@ public struct WidgetReloadPolicy: Sendable {
         if let s = p.seen { parts.append("seen:" + (s.problems?.map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",") ?? "?")) }
         if let a = p.attention { parts.append("att:\(a.total):" + a.items.prefix(3).map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")) }
         if let a = p.applications { parts.append("apps:" + a.rows.map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")) }
+        parts += p.services.map { "svc:\($0.id)=\($0.mark.rawValue)" }
         parts += p.servers.map { "srv:\($0.id)=\($0.mark.rawValue)" }
         if case .server(let c, _)? = p.mac { parts.append("mac:\(c.id)=\(c.mark.rawValue)") }
         return parts.joined(separator: "|")

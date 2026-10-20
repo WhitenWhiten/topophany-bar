@@ -134,6 +134,8 @@
 <script src="assets/render.js"></script>
 <script>
   const I = TB.icons;
+  // A pulse for Services, as the panel's section titles it.
+  const pulse = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 10.4h3.1l1.9-4.2 3.1 8.6 2.3-6.1 1.4 1.7h3"/></svg>';
   const D = window.TB_DATA;
   const chev = '<svg viewBox="0 0 9 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5 4.5 2l3 3M1.5 9l3 3 3-3"/></svg>';
   const pop = (t) => `<span class="pop">${t}${chev}</span>`;
@@ -257,6 +259,7 @@
       ${row('Seen from', 'Which observers see a problem, and that the others don’t', sw(true), handle + gi(I.scope, '#5e5ce6'))}
       ${row('Needs attention', 'Open incidents first, then anything else that needs a look', pop('3 rows') + sw(true), handle + gi(I.alert, '#ff9f0a'))}
       ${row('Applications', 'Services folded into the applications you declare', '<span class="btn">Choose…</span>' + sw(true), handle + gi(I.apps, '#0a84ff'))}
+      ${row('Services', 'The card of each service you pin: who sees it, and how fast', '<span class="btn">Choose…</span>' + sw(false), handle + gi(pulse, '#ff385e'))}
       ${row('Fleet', 'Every server, edge and platform topo lists, by who runs it', sw(true), handle + gi(I.fleet, '#5957d6'))}
       ${row('Servers', 'The Servers-tab card of each server you pin', '<span class="btn">Choose…</span>' + sw(false), handle + gi(I.server, '#8e8e93'))}
       ${row('Time zones', 'The time where your servers are, and each one’s health', '<span class="btn">Places…</span>' + sw(true), handle + gi(I.clock, '#30b0c7'))}

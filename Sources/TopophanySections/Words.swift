@@ -105,6 +105,16 @@ public enum Words {
         String(format: "%d:%02d", minutes / 60, minutes % 60)
     }
 
+    /// A latency: "46 ms".
+    public static func ms(_ v: Double) -> String {
+        "\(Int(v.rounded())) ms"
+    }
+
+    /// A share of the day: "98.3%", and "100%" from 99.95 up.
+    public static func share(_ v: Double) -> String {
+        v >= 99.95 ? "100%" : String(format: "%.1f%%", v)
+    }
+
     public static func percent(_ v: Double, digits: Int = 1) -> String {
         String(format: "%.\(digits)f%%", v)
     }

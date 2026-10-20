@@ -442,6 +442,22 @@
         }
       }
     },
+    "%lld failing": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 件失敗"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 项失败"
+          }
+        }
+      }
+    },
     "%lld h": {
       "localizations": {
         "ja": {
@@ -1574,6 +1590,38 @@
         }
       }
     },
+    "Not known now": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在は不明"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前未知"
+          }
+        }
+      }
+    },
+    "Not monitored": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未監視"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未监控"
+          }
+        }
+      }
+    },
     "Not renewed by topophany-bar": {
       "localizations": {
         "ja": {
@@ -1586,6 +1634,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "topophany-bar 未续期"
+          }
+        }
+      }
+    },
+    "Not seen from here": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ここからは未計測"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此处未测量"
           }
         }
       }
@@ -2134,6 +2198,22 @@
         }
       }
     },
+    "all passing": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべて合格"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部通过"
+          }
+        }
+      }
+    },
     "all up": {
       "localizations": {
         "ja": {
@@ -2502,6 +2582,22 @@
         }
       }
     },
+    "last %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最終 %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最后 %@"
+          }
+        }
+      }
+    },
     "last known %@": {
       "localizations": {
         "ja": {
@@ -2626,6 +2722,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "从未"
+          }
+        }
+      }
+    },
+    "no check measures it": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "計測するチェックなし"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无检查测量"
+          }
+        }
+      }
+    },
+    "no checks": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チェックなし"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无检查"
           }
         }
       }
@@ -2758,6 +2886,22 @@
         }
       }
     },
+    "not seen from here": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ここからは未計測"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此处未测量"
+          }
+        }
+      }
+    },
     "nothing current is known": {
       "localizations": {
         "ja": {
@@ -2802,6 +2946,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "已配置 %lld 项"
+          }
+        }
+      }
+    },
+    "on %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ で稼働"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行于 %@"
+          }
+        }
+      }
+    },
+    "others check it": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "他の観測点が計測中"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他观测点在测"
           }
         }
       }

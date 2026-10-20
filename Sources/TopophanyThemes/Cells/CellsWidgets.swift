@@ -31,6 +31,7 @@ struct CellsWidget: View {
         switch model.kind {
         case .status: l.status(size)
         case .server: l.server(size)
+        case .service: l.service(size)
         case .zones: l.zones(size)
         }
         return CellScene(size: bounds, metrics: m, items: l.w.items, live: l.w.live)

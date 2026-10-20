@@ -19,6 +19,7 @@ struct CardsWidget: View {
             switch model.kind {
             case .status: status(p)
             case .server: server(p)
+            case .service: service(p)
             case .zones:
                 if let z = model.zones {
                     WidgetZones(zones: z, size: size, room: CGSize(width: bounds.width - 28, height: bounds.height - 28),
@@ -128,6 +129,32 @@ struct CardsWidget: View {
     }
 
     var isMac: Bool { if case .server(_, true) = model.kind { true } else { false } }
+
+    // MARK: Service
+
+    @ViewBuilder func service(_ p: CardsPalette) -> some View {
+        let card = model.service ?? servicePlaceholder
+        let left = WidgetServiceCard(card: card, p: p, t: t, ctx: ctx)
+        if size == .small {
+            left
+        } else {
+            HStack(alignment: .top, spacing: 16) {
+                left.frame(width: 136)
+                WidgetServiceReach(card: card, p: p, t: t)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+        }
+    }
+
+    /// A service whose card hasn't arrived: its ID, and nothing else known.
+    var servicePlaceholder: ServiceCardModel {
+        let id = if case .service(let s) = model.kind { s } else { "" }
+        return ServiceCardModel(id: id, name: id.isEmpty ? tr("No service chosen") : id, application: "",
+                                host: .init(name: "", kind: "", provider: ""), hostMark: .offline, mark: .offline,
+                                pill: .cached, isWithheld: true, isMissing: true, observers: [], checks: [],
+                                placeholder: id.isEmpty ? tr("Choose one in Edit Widget") : tr("Not received yet"),
+                                sampledAt: nil, now: model.status.now)
+    }
 
     /// A node whose card hasn't arrived: its ID, and nothing else known.
     var placeholder: ServerCardModel {

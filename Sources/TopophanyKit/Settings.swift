@@ -140,14 +140,14 @@ public struct Settings: Sendable, Hashable, Codable {
 // MARK: sections
 
 public enum SectionID: String, Sendable, Hashable, Codable, CaseIterable {
-    case status, seen, attention, applications, fleet, servers, zones, mac
+    case status, seen, attention, applications, services, fleet, servers, zones, mac
 }
 
 /// The panel's sections: their order, and each one's choices. Status is
 /// always first. Stored as an ordered array of objects, as DESIGN.md §9
 /// shows.
 public struct Sections: Sendable, Hashable, Codable {
-    public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .applications, .fleet, .servers, .zones, .mac]
+    public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .applications, .services, .fleet, .servers, .zones, .mac]
 
     public enum MacMode: String, Sendable, Hashable, Codable, CaseIterable { case local, server, off }
     public enum Reading: String, Sendable, Hashable, Codable, CaseIterable { case cpu, memory, storage, network, battery }
@@ -181,6 +181,10 @@ public struct Sections: Sendable, Hashable, Codable {
     public var applications = true
     /// Applications to show by ID; empty for all.
     public var applicationsOnly: [String] = []
+    /// Services: the card of each pinned service.
+    public var services = false
+    /// Pinned services by ID, in the order they were pinned.
+    public var serviceIDs: [String] = []
     /// Fleet: every node `topo` lists, by who runs it.
     public var fleet = true
     public var servers = false
@@ -202,6 +206,7 @@ public struct Sections: Sendable, Hashable, Codable {
         case .seen: seen
         case .attention: attention
         case .applications: applications
+        case .services: services
         case .fleet: fleet
         case .servers: servers
         case .zones: zones
@@ -215,6 +220,7 @@ public struct Sections: Sendable, Hashable, Codable {
         case .seen: seen = on
         case .attention: attention = on
         case .applications: applications = on
+        case .services: services = on
         case .fleet: fleet = on
         case .servers: servers = on
         case .zones: zones = on
@@ -236,6 +242,7 @@ public struct Sections: Sendable, Hashable, Codable {
         var limit: Int?
         var only: [String]?
         var nodes: [String]?
+        var ids: [String]?
         var places: [String: String]?
         var mode: String?
         var readings: [String]?
@@ -267,6 +274,9 @@ public struct Sections: Sendable, Hashable, Codable {
             case .applications:
                 applications = e.enabled ?? true
                 applicationsOnly = e.only ?? []
+            case .services:
+                services = e.enabled ?? false
+                serviceIDs = e.ids ?? []
             case .fleet: fleet = e.enabled ?? true
             case .servers:
                 servers = e.enabled ?? false
@@ -309,6 +319,9 @@ public struct Sections: Sendable, Hashable, Codable {
             case .applications:
                 e.enabled = applications
                 e.only = applicationsOnly
+            case .services:
+                e.enabled = services
+                e.ids = serviceIDs
             case .fleet: e.enabled = fleet
             case .servers:
                 e.enabled = servers

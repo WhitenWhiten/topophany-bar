@@ -98,6 +98,7 @@ The template is `topo monitor`'s schema 1, validated as today, with these additi
 
 - **Row field `limit`:** an int, 1 to 20; default 5; only for `attention.list`.
 - **Selector `node`:** a topology node ID (`config.ID`); only for `server.card`, where it is required.
+- **Selector `service`:** a topology service ID; only for `service.card`, where it is required.
 - **New visuals:** `status`, `list` and `card`. Each metric allows exactly one visual (table below); `text` and `bar` keep their meaning for the existing metrics.
 - **`bar.row`:** must still reference a row. The consumer points it at the `summary.verdict` row.
 
@@ -109,6 +110,8 @@ The template is `topo monitor`'s schema 1, validated as today, with these additi
 | `applications.list` | `list` | none | client, collector, preview |
 | `server.card` | `card` | `node` (required) | client, collector, preview |
 | `servers.list` (new) | `list` | none | client, collector, preview |
+| `service.card` (new) | `card` | `service` (required) | client, collector, preview |
+| `services.list` (new) | `list` | none | client, collector, preview |
 
 The existing metrics (`summary.status`, `check.status`, `host.*`, …) remain valid in stream requests with their current sources. `preview` behaves as `client` for source checks.
 
@@ -275,6 +278,55 @@ All times are RFC 3339 UTC. Every count is an integer ≥ 0. Every percentage is
 - **The row's `health`:** the worst entry's. **`text`:** for example `"14 servers"`.
 - **The row's `valid_until`:** the earliest deadline of the source envelope and the listed nodes' states, as for `server.card`'s node state.
 
+#### `service.card` (new)
+
+```json
+{"id":"blog","name":"Main Site (Caddy + Blog)","application":{"id":"main-site","name":"Main site"},"environment":"","runtime":"",
+ "health":"up","note":"","evidence":"inferred","reason":"all checks in this view pass","monitored":true,"elsewhere":false,
+ "host":{"id":"app","name":"Oracle New York","kind":"host","provider":"Oracle","where":"New York","health":"up"},
+ "seen_from":[{"observer":{"id":"obs-relay","name":"San Jose DigitalOcean"},"label":"San Jose","health":"up",
+   "checks":[{"id":"r-app-web","name":"Relay to app web","kind":"http","endpoint":"app-web","health":"up","freshness":"fresh",
+     "sampled_at":"2026-10-18T13:30:33Z","valid_until":"2026-10-18T13:31:03Z",
+     "latency":{"p50_ms":231,"p95_ms":272},"up_24h":97.6,"first_byte":"origin 98 ms","colo":"SJC",
+     "samples":{"interval_seconds":15,"slots":[{"outcome":"ok","elapsed_ms":220},{"outcome":"fail"},{"outcome":"none"}]}}]}],
+ "endpoints":[{"id":"app-web","network":"public","address":"https://www.example.invalid/","health":"up",
+   "via":[{"id":"cf","name":"Cloudflare","kind":"edge","provider":"Cloudflare"}]}],
+ "answered_from":{"pops":["SJC 50%","FRA 50%"],"cache":["DYNAMIC 100%"]},
+ "depends_on":[{"id":"postgres","name":"PostgreSQL","health":"up","affected":false,"monitored":true,"host":"PostgreSQL Container"}],
+ "used_by":[],"runbook":"https://wiki.example.invalid/runbooks/blog","memo":"The public blog."}
+```
+
+- **Built from `View.Fleet().ServiceCard(service)`,** the card the Services tab draws. The app adds nothing: no thresholds, no grouping, no share of its own.
+  - `health` and `note` (`affected`, `cached` or `""`) are the service's state as the Services tab shows it. `evidence` and `reason` are its state's own words.
+  - `monitored` is `false` when no check measures the service. Then `seen_from` is empty.
+  - `elsewhere` is `true` when the view is scoped to one observer and another observer's checks measure the service. With `monitored` `false`, the card says it is not seen from here, not that it is unmonitored.
+  - `host` is the node the service runs on, with that node's state as `health`. Its `where` is the node's place: its location's label, its parent's where it has none, `anycast` for an edge, else `""`.
+- **`seen_from`:** the service's checks by observer, the observer with the worst check first, at most 8. Each observer's `checks` are worst first, at most 4. `health` is its worst check's.
+  - **`label`** is the observer node's place, or, where two observers in the card share a place, the observer's name without it ("Windows"). It is for display; `observer.id` identifies.
+  - **`latency`** and **`up_24h`** come from the check's 24 h rollup: the median and 95th percentile of the passing samples, and the share of measured time up. `null` when the rollup has no such samples.
+  - **`first_byte`** is `view.FirstByteLine` of that rollup, `""` when there is none. **`colo`** is the colo the edge in front named in the check's newest response: always a string while current, `""` when none, and `null` once withheld at the check's deadline.
+  - **`samples`:** always an object with `interval_seconds`. Its `slots` are the check's most recent samples, oldest first, newest last, at most 40: `outcome` is `ok`, `fail`, `policy`, `error`, `unknown` or `none` (no sample taken in that interval), as `view.Strip` lays them out; `elapsed_ms` only for `ok`.
+  - **`samples.slots` is `null`** while `topo` holds no samples for the check, as well as after the check's deadline. A consumer draws no samples then, never an empty or `none` strip.
+  - **Where the history comes from:** `topo` reads it for at most 4 checks per fetch from a collector (`preview`: all at once), then extends it from each snapshot's newest sample. On a client source, a check's `slots` may be `null` in the first frame or two.
+  - **Each check's `valid_until`** is its own, and in a fresh frame never earlier than the row's: the row's deadline covers all of the service's checks. The checks' deadlines matter once a row is held past a renewal (section 5). At a check's deadline, the check's `health` becomes `unknown`, `freshness` becomes `stale`, and `latency`, `up_24h`, `colo` and `samples.slots` are withheld (`null`). Keep its identity, `sampled_at`, the original `valid_until` and the rest of the card. One check's deadline never expires the card.
+- **`endpoints`:** how the service is reached, in topology order: `health` is `""` where no check targets the address. `via` is the edges and proxies in front, client side first, each `{id, name, kind, provider}`.
+- **`answered_from`:** `pops` and `cache` only: the colos the edge in front answered from over 24 h, at most 6, and the cache statuses it reported, as shares of the service's checks' rollups added up, largest first. A service's colos only come from rollups. `null` when nothing in front names a colo.
+- **`depends_on` and `used_by`:** the services this one depends on and those that depend on it, at most 16 each, with their state; `affected` as in `server.card`'s services.
+- **An unknown service:** `value: null`, `health: "unknown"`, `reason: "entity_missing"`.
+- **The row's `valid_until`:** the earliest deadline of the source envelope, the service's state, its host's state and the displayed dependencies' states. The checks' readings use their own deadlines.
+
+#### `services.list` (new)
+
+```json
+[{"id":"blog","name":"Main Site (Caddy + Blog)","application":"Main site","health":"up","note":"","monitored":true,"elsewhere":false,
+  "host":{"id":"app","name":"Oracle New York","kind":"host","provider":"Oracle"}}]
+```
+
+- **One entry per service,** in the Services tab's order (by application, then topology order), at most 256. Every `id` is a valid `service.card` `service`. It's for choosing services; a consumer draws a service's card from `service.card`.
+- **`application`** is the application's name, `""` for none. **`health`, `note`, `monitored` and `elsewhere`** are as in `service.card`. **`host`** is `{id, name, kind, provider}`: `service.card`'s without `where` and `health`. In a cached view, every `health` is `unknown`.
+- **The row's `health`:** the worst entry's. **`text`:** for example `"23 services"`.
+- **The row's `valid_until`:** the earliest deadline of the source envelope and the listed services' states.
+
 ## 4. When frames are written
 
 These are the same rules as `topo monitor` output today, with the pipe as the sink:
@@ -291,7 +343,7 @@ These are the same rules as `topo monitor` output today, with the pipe as the si
 These are the rules `topo monitor preview` applies, and topophany-bar's `ReaderPolicy` implements them:
 
 - **Every second, check deadlines** against the consumer's clock. When `publisher_expires_at` has passed, everything is unavailable and the status item shows ◌. When a row's `valid_until` has passed, that row's value is withheld.
-- **For `server.card`, also apply each resource and nested observer deadline** as specified in section 3.3, even when the row itself remains current. A renewed publisher lease never renews these nested deadlines.
+- **For `server.card`, also apply each resource and nested observer deadline,** and **for `service.card`, each check's deadline,** as specified in section 3.3, even when the row itself remains current. A renewed publisher lease never renews these nested deadlines.
 - **Treat implausibly future timestamps as unavailable.** A timestamp is implausible when it lies more than 5 minutes beyond the consumer's clock.
 - **Never extend a row's validity** because a later frame renewed the lease without changing that row.
 - **Treat the process exiting, or stdout closing, as unavailable at once.**

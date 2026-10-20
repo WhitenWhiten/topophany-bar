@@ -28,10 +28,12 @@ public final class WidgetBridge {
                      at now: Date = Date()) {
         guard store.isAvailable else { return }
         // A change of theme, language or what widgets show reloads too, and
-        // so does a Server widget's card changing health, or with a Time
+        // so does a Server or Service widget's card changing health, or with a Time
         // zones widget, any listed server's.
         let reading = reader.evaluate(at: now)
         var extra = SectionBuilder.servers(reading, nodes: needs.nodes)
+            .map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
+        extra += ";" + SectionBuilder.services(reading, ids: needs.services)
             .map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
         if zones, let fleet = SectionBuilder.fleet(reading, pinned: settings.sections.serverNodes) {
             extra += ";" + fleet.groups.flatMap(\.nodes).map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
