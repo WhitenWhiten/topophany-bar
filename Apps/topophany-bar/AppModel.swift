@@ -138,11 +138,11 @@ final class AppModel {
     /// Whether to ask for `servers.list`: when this `topo` offers it.
     private var listServers: Bool { fixture != nil || capabilities?.listsServers == true }
 
-    /// Applications by ID and name, from the latest list `topo` sent.
-    var knownApplications: [(id: String, name: String)] {
+    /// The applications in the latest list `topo` sent.
+    var knownApplications: [Application] {
         guard let row = reading.row(TemplateCompiler.RowID.applications),
               case .applications(let list) = reading.lastValue(of: row) else { return [] }
-        return list.map { ($0.id, $0.name) }
+        return list
     }
 
     /// The interface local readings measure when none is chosen.

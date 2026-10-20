@@ -119,22 +119,6 @@
         }
       }
     },
-    "%lld chosen": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 件を選択"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已选 %lld 个"
-          }
-        }
-      }
-    },
     "%lld more in Topophany": {
       "localizations": {
         "ja": {
@@ -147,22 +131,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Topophany 中另有 %lld 项"
-          }
-        }
-      }
-    },
-    "%lld of %lld": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%2$lld 件中 %1$lld 件"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%2$lld 个中的 %1$lld 个"
           }
         }
       }
@@ -197,6 +165,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld 台服务器"
+          }
+        }
+      }
+    },
+    "%lld services": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld service"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld services"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld サービス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个服务"
           }
         }
       }
@@ -361,38 +363,6 @@
         }
       }
     },
-    "All": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "すべて"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "全部"
-          }
-        }
-      }
-    },
-    "All %lld": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "すべて（%lld）"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "全部（%lld）"
-          }
-        }
-      }
-    },
     "All observers": {
       "localizations": {
         "ja": {
@@ -485,6 +455,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "应用"
+          }
+        }
+      }
+    },
+    "Applications appear once topo lists them.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo がアプリケーションを一覧にすると表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 列出应用后，这里会显示它们。"
+          }
+        }
+      }
+    },
+    "Applications shown": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示するアプリケーション"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示的应用"
           }
         }
       }
@@ -3445,6 +3447,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "哪些观测点发现了问题，以及其余观测点没有发现"
+          }
+        }
+      }
+    },
+    "With every one ticked, the section also shows applications declared later.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてにチェックを入れると、後から宣言したアプリケーションも表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部勾选时，之后声明的应用也会显示。"
           }
         }
       }

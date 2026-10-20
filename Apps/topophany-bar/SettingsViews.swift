@@ -933,7 +933,7 @@ struct SectionControls: View {
             }
             .labelsHidden().fixedSize()
         case .applications:
-            ApplicationsMenu()
+            ApplicationsButton()
         case .servers:
             ServersButton()
         case .zones:
@@ -945,38 +945,88 @@ struct SectionControls: View {
 }
 
 /// Which applications the section shows: all, or those ticked.
-struct ApplicationsMenu: View {
+struct ApplicationsButton: View {
+    @Environment(AppModel.self) private var model
+    @State private var open = false
+
+    var body: some View {
+        Button("Choose…") { open = true }
+            .popover(isPresented: $open, arrowEdge: .bottom) { ApplicationsPicker().environment(model) }
+    }
+}
+
+/// Every application `topo` lists, in its order, ticked when the section
+/// shows it; chosen IDs it doesn't list come last. None ticked would mean
+/// all, so the last one ticked stays ticked: the section's switch hides it.
+struct ApplicationsPicker: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         let known = model.knownApplications
         let only = model.settings.sections.applicationsOnly
-        Menu {
-            Button {
-                model.update { $0.sections.applicationsOnly = [] }
-            } label: {
-                if only.isEmpty { Label("All", systemImage: "checkmark") } else { Text("All") }
+        let missing = only.filter { id in !known.contains { $0.id == id } }
+        let ticked = only.isEmpty ? known.map(\.id) : known.map(\.id).filter { only.contains($0) }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Applications shown").font(.headline)
+                Spacer()
+                Button("Show All") { model.update { $0.sections.applicationsOnly = [] } }
+                    .disabled(only.isEmpty)
             }
-            if !known.isEmpty { Divider() }
-            ForEach(known, id: \.id) { a in
-                Button {
-                    model.update { s in
-                        var set = s.sections.applicationsOnly.isEmpty ? known.map(\.id) : s.sections.applicationsOnly
-                        if let i = set.firstIndex(of: a.id) { set.remove(at: i) } else { set.append(a.id) }
-                        s.sections.applicationsOnly = set.count == known.count ? [] : set
-                    }
-                } label: {
-                    if only.isEmpty || only.contains(a.id) { Label(a.name, systemImage: "checkmark") } else { Text(a.name) }
-                }
-            }
-        } label: {
-            if only.isEmpty {
-                Text(known.isEmpty ? tr("All") : tr("All \(known.count)"))
+            if known.isEmpty && missing.isEmpty {
+                Text("Applications appear once topo lists them.").foregroundStyle(.secondary)
             } else {
-                Text(known.isEmpty ? tr("\(only.count) chosen") : tr("\(only.count) of \(known.count)"))
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(known) { a in
+                            Toggle(isOn: shownBinding(a.id, known)) {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(verbatim: a.name).lineLimit(1)
+                                    Text(verbatim: Words.join([a.id, a.environment, tr("\(a.services.count) services")]))
+                                        .font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                                }
+                            }
+                            .toggleStyle(.checkbox)
+                            .disabled(ticked == [a.id])
+                        }
+                        ForEach(missing, id: \.self) { id in
+                            Toggle(isOn: shownBinding(id, known)) {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(verbatim: id).font(.body.monospaced()).lineLimit(1)
+                                    Text("Not listed now").font(.callout).foregroundStyle(.secondary)
+                                }
+                            }
+                            .toggleStyle(.checkbox)
+                            .disabled(only == [id])
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 360)
+                .fixedSize(horizontal: false, vertical: true)
+                Foot("With every one ticked, the section also shows applications declared later.")
             }
         }
-        .fixedSize()
+        // A popover takes its row's trailing alignment otherwise.
+        .multilineTextAlignment(.leading)
+        .padding(14)
+        .frame(width: 340)
+    }
+
+    func shownBinding(_ id: String, _ known: [Application]) -> Binding<Bool> {
+        Binding(get: {
+                    let only = model.settings.sections.applicationsOnly
+                    return only.isEmpty || only.contains(id)
+                },
+                set: { on in
+                    model.update { s in
+                        var set = s.sections.applicationsOnly.isEmpty ? known.map(\.id) : s.sections.applicationsOnly
+                        set.removeAll { $0 == id }
+                        if on { set.append(id) }
+                        let all = !known.isEmpty && known.allSatisfy { set.contains($0.id) }
+                        s.sections.applicationsOnly = all ? [] : set
+                    }
+                })
     }
 }
 
