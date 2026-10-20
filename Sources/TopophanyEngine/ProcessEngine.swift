@@ -22,10 +22,14 @@ public final class ProcessEngine: Engine {
         public var unavailableRetry: TimeInterval = 30
         /// `PATH` from the login shell; replaced in tests.
         public var shellPath: @Sendable () -> String?
+        /// The copies the app downloaded, searched last.
+        public var downloads: TopoDownloads?
 
-        public init(topoPath: String, shellPath: @escaping @Sendable () -> String? = { TopoLocator.loginShellPATH() }) {
+        public init(topoPath: String, shellPath: @escaping @Sendable () -> String? = { TopoLocator.loginShellPATH() },
+                    downloads: TopoDownloads? = nil) {
             self.topoPath = topoPath
             self.shellPath = shellPath
+            self.downloads = downloads
         }
     }
 
@@ -117,7 +121,7 @@ public final class ProcessEngine: Engine {
 
     private func supervise() {
         var attempt = 0
-        let locator = TopoLocator(setting: configuration.topoPath, shellPath: shellPath)
+        let locator = TopoLocator(setting: configuration.topoPath, shellPath: shellPath, downloads: configuration.downloads)
         while !stopping {
             yield(.status(.starting))
             let found: TopoLocator.Found
