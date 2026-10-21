@@ -72,6 +72,12 @@
   <div class="deskw desk wall-dark" id="s2"></div>
   <div class="themes" id="sthemes"></div>
 
+  <h2>The Map widget</h2>
+  <p class="sub">The panel's map across the whole widget, in its view and framing, or the panel's. The small one marks each place and names those that need a look; the medium names every place; the large and extra large name each node beside its place. The geo map's land is a dither of fine dots, fading toward the edges; the virtual one wires the places together west to east.</p>
+  <div class="deskw desk wall-dark" id="m1"></div>
+  <div style="height:22px"></div>
+  <div class="deskw desk wall-dark" id="m2"></div>
+
   <h2>Every state</h2>
   <p class="sub">The small Status widget in the five states the panel has, plus <b>Not current</b>. That one appears when the app has stopped renewing the widget, for example because it quit. It shows the last verdict as history, never as now.</p>
   <div class="matrix" id="states"></div>
@@ -100,6 +106,7 @@
     <div class="cfg"><h6>Status</h6><div class="r"><span>Right side (medium)</span><span class="pop">Needs attention ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
     <div class="cfg"><h6>Server</h6><div class="r"><span>Server</span><span class="pop">Oracle New York ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
     <div class="cfg"><h6>Service</h6><div class="r"><span>Service</span><span class="pop">VLESS+Reality Entry (Primary) ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
+    <div class="cfg"><h6>Map</h6><div class="r"><span>Map</span><span class="pop">Same as the Panel ⌄</span></div><div class="r"><span>Framing</span><span class="pop">Same as the Panel ⌄</span></div><div class="r"><span>Theme</span><span class="pop">Same as the bar ⌄</span></div><div class="done"><span>Done</span></div></div>
   </div>
 </div>
 <script src="assets/data.js"></script>
@@ -107,6 +114,8 @@
 <script src="assets/provider-logos.js"></script>
 <script src="assets/render.js"></script>
 <script src="assets/widgets.js"></script>
+<script src="assets/land.js"></script>
+<script src="assets/map.js"></script>
 <script src="assets/service-data.js"></script>
 <script src="assets/service.js"></script>
 <script>
@@ -160,6 +169,15 @@
   const sset = [['s', tr['vless-transit']], ['m', tr['vless-transit']], ['s', og.blog], ['m', ok.shortlink]];
   sdesk('s1', { theme: 'native', appearance: 'dark' }, sset);
   sdesk('s2', { theme: 'tui', appearance: 'dark' }, sset);
+  // The Map widget: geo at every size, then virtual and the whole world.
+  const mdesk = (id, o, list) => {
+    const el = document.getElementById(id);
+    const item = TB.statusItem(sc, Object.assign({ text: 'count', color: 'status' }, o));
+    el.innerHTML = TB.menubar(o.appearance, item, { clock: 'Sun Oct 18&nbsp;&nbsp;6:31 AM' }) +
+      `<div class="wgrid">${list.map(([size, x]) => TB.widget('map', size, sc, Object.assign({}, o, x || {}))).join('')}</div>`;
+  };
+  mdesk('m1', { theme: 'native', appearance: 'dark' }, [['xl', { mapFrame: 'world' }], ['l'], ['s'], ['m'], ['m', { mapMode: 'virtual' }]]);
+  mdesk('m2', { theme: 'tui', appearance: 'dark' }, [['xl', { mapMode: 'virtual' }], ['l'], ['s'], ['m'], ['m', { mapMode: 'virtual' }]]);
   document.getElementById('sthemes').innerHTML = [
     ['Native · light', { theme: 'native', appearance: 'light' }, 'light'], ['Aurora', { theme: 'native', appearance: 'dark', tokens: 'aurora' }, 'dark'],
     ['Linen · light', { theme: 'native', appearance: 'light', tokens: 'linen' }, 'light'], ['Linen · dark', { theme: 'native', appearance: 'dark', tokens: 'linen' }, 'dark'],

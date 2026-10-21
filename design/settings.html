@@ -148,6 +148,7 @@
     `<div class="tab ${t === on ? 'on' : ''}">${i}<span>${t}</span></div>`).join('')}</div>`;
   const win = (title, body) => `<div class="win"><div class="win-bar"><div class="lights"><i></i><i></i><i></i></div><div class="win-title">${title}</div></div>${tabs(title)}<div class="win-body">${body}</div></div>`;
   const row = (lab, sub, ctl, pre = '') => `<div class="grow">${pre}<div class="lab"><b>${lab}</b>${sub ? `<span>${sub}</span>` : ''}</div>${ctl || ''}</div>`;
+  const mapI = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 5.2l5-2.2v11.8l-5 2.2zM8.3 3l3.4 1.8v12.2L8.3 15.2zM13 4.8l5-2.2v11.8l-5 2.2z"/></svg>';
   const gi = (icon, color) => `<span class="gi" style="background:${color}">${icon}</span>`;
   const ell = `<span class="ell">⋯<svg viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3 4 5.5 6.5 3"/></svg></span>`;
   const down = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1.5v7M3 5.5l3 3 3-3M2 10.5h8"/></svg>';
@@ -262,6 +263,7 @@
       ${row('Status', 'The verdict, checks by health, observers live', `<span class="lock">${lockI}Always first</span>`, gi(I.globe, '#30d158'))}
       ${row('Seen from', 'Which observers see a problem, and that the others don’t', sw(true), handle + gi(I.scope, '#5e5ce6'))}
       ${row('Needs attention', 'Open incidents first, then anything else that needs a look', pop('3 rows') + sw(true), handle + gi(I.alert, '#ff9f0a'))}
+      ${row('Map', 'Where your servers are, and the lines between them', pop('Geo, fitted') + sw(true), handle + gi(mapI, '#a3855e'))}
       ${row('Applications', 'Services folded into the applications you declare', '<span class="btn">Choose…</span>' + sw(true), handle + gi(I.apps, '#0a84ff'))}
       ${row('Services', 'The card of each service you pin: who sees it, and how fast', '<span class="btn">Choose…</span>' + sw(false), handle + gi(pulse, '#ff385e'))}
       ${row('Fleet', 'Every server, edge and platform topo lists, by who runs it', sw(true), handle + gi(I.fleet, '#5957d6'))}

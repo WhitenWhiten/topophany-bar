@@ -535,3 +535,24 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .wdg.tv.vibrant .tbox { border: 0; padding: 16px 0 0; margin-top: 4px; }
 .wdg.tv.vibrant .tbox-t { top: 0; left: -1ch; right: 0; }
 .wdg.tv.vibrant .tbox-t > span { background: transparent; }
+
+/* ------------------------------------------------------------------ map */
+/* DESIGN.md §4.3. The map is drawn into its canvas by map.js. */
+.map-cv { display: block; }
+.nv-map .map-cv { margin: 0 -11px; }
+.map-sw { margin-left: auto; display: inline-flex; gap: 1px; padding: 1.5px; border-radius: 6px; background: var(--fill2); }
+.map-sw b { font-size: 10px; font-weight: 500; color: var(--l3); padding: 1.5px 7px; border-radius: 5px; }
+.map-sw b.on { font-weight: 600; color: var(--l1); background: rgba(255, 255, 255, .12); }
+.nv.light .map-sw b.on { background: rgba(255, 255, 255, .9); box-shadow: 0 .5px .5px rgba(0, 0, 0, .08); }
+.map-foot { display: flex; gap: 6px; margin-top: 7px; font-size: 10.5px; color: var(--l3); white-space: nowrap; }
+.map-foot i, .map-w-f i { display: inline-flex; gap: 2.5px; vertical-align: -1px; margin-left: 4px; }
+.map-foot .r { margin-left: auto; }
+.tv .map-tl { position: relative; }
+.wdg.nv.map-w { display: flex; flex-direction: column; padding: 0; }
+.map-w-h { display: flex; align-items: center; gap: 6px; height: 30px; padding: 10px 14px 0; font-size: 11.5px; color: var(--l2); }
+.map-w-h svg { width: 14px; height: 14px; }
+.map-w-h b { font-weight: 600; }
+.map-w-h span { color: var(--l3); font-size: 11px; margin-left: auto; }
+.map-w-h .w-mark { margin-left: auto; width: 16px; height: 16px; }
+.map-w-h span + .w-mark { margin-left: 6px; }
+.map-w-f { display: flex; justify-content: space-between; align-items: center; height: 26px; padding: 0 14px 8px; font-size: 10.5px; color: var(--l3); }

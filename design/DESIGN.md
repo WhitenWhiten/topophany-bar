@@ -114,15 +114,16 @@ Sections run in this default order:
    - While no `topo` can run (none found, or one too old): Download topo beside the verdict, in the accent (`d` in Terminal). It says how far the download has got, and why one failed (section 10.2.1).
 2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
 3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty. Each row ends in its state word (OPEN, WARN), the word alone in its color: the row's mark already says the state, so it takes no chip. A route too long for its row is cut so both ends stay readable: an end that fits half the room keeps its width, and the other takes the rest.
-4. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
-5. **Services.** Off by default. The card of each pinned service: the observers that see it, how fast it answered them lately and how much of the day it was up. See section 4.2.
-6. **Fleet.** Every node `topo` lists (`servers.list`), by who runs it, two to a row with each provider's logo (section 4.1).
+4. **Map.** Where the nodes are and what joins them, as the TUI's geo map draws it, or the places wired together. See section 4.3.
+5. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
+6. **Services.** Off by default. The card of each pinned service: the observers that see it, how fast it answered them lately and how much of the day it was up. See section 4.2.
+7. **Fleet.** Every node `topo` lists (`servers.list`), by who runs it, two to a row with each provider's logo (section 4.1).
    - **Edges and platforms first,** each on its own and saying what it is: what stands in front of everything else. A hairline, then servers: a provider's together, where its first server is in `topo`'s list, and a node that names no provider on its own, by its name and kind.
    - **Marks:** one per node, `topo`'s. A group has no health of its own and is never tinted for its nodes; the app adds nothing up.
    - **Without `servers.list`:** the pinned servers' cards stand in. When the list isn't current, the names stay and every mark is withheld (◌).
-7. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1).
-8. **Time zones.** The local time where the servers are. See section 5.1.
-9. **This Mac.** See section 5.
+8. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1).
+9. **Time zones.** The local time where the servers are. See section 5.1.
+10. **This Mac.** See section 5.
 
 Size:
 
@@ -172,6 +173,22 @@ A pinned service's card is one family with the Server card: the same head, pill 
 - **Foot:** how many checks and how many fail, the edge in front by its logo and the colos it answered from (`☁ SJC · FRA`), and the age. Terminal: what it depends on (`→`) and the edge (`⇠`).
 - **Honesty:** each check keeps its own deadline (`docs/PROTOCOL.md` §5). Past it, the check's mark turns unknown and its numbers go, its samples hatched, while the rest of the card stays. While `topo` holds no samples for a check yet, none are drawn. Not monitored, and not in the topology, say so.
 - **Choosing:** Settings › Sections › Services › Choose…: every service `topo` lists (`services.list`), under its application. Nothing is pinned until you pin it. A `topo` without `service.card` draws everything else, and Settings says why the section is empty.
+
+### 4.3 The map
+
+The map draws `topo`'s `map.graph`: the nodes `View.Graph()` places, the lines between them, and each one's signal, as the TUI's maps draw them. The app only places them. It never infers a line, a health or a route.
+
+- **Two views.** **Geo**, the default, puts each place where it is. **Virtual geo** draws the places as small cards in longitude's order, west to east, each column ordered by latitude, wired to one another; nodes without a location become pills beside what they link to. The switch sits at the card's title (`geo virtual` in Terminal's border), and Settings › Sections › Map sets which view the panel opens in.
+- **Framing.** **Fit**, the default, frames every place as the TUI's fit mode does: the smallest arc of longitude holding them, its horizontal scale cos(latitude) so a mid-latitude network keeps its shape, and any gap over 60° folded to a narrow seam headed by the degrees it holds (`53°`), so an ocean doesn't take the width from the places. **World** shows the whole world once, centred on them. Antarctica is left out unless a node is there.
+- **What it says.** In the panel and the small and medium widgets, places only: "Seattle", "San Jose · Los Angeles" where two would sit on one another, "Tokyo +2" where room is short. A place takes the mark of its worst node. The large and extra large widgets have room for more, and name each node beside its place. Never a full list of services or servers.
+- **Lines.** An arc bowed north between two places, in the color of its signal: up a quiet green, carried fainter, affected and degraded the warning color, down red, unknown or withheld dotted gray. A declared link is solid and a hop a path implies dashed. A path hop shows when it needs a look, or when it's the viewing observer's own; containment never. Worse lines are drawn last, on top.
+- **Dither.** Land is a field of dots on an 8×8 ordered (Bayer) dither, in the theme's ink: brighter near the places, fading toward the edges. The dots keep to the map as it moves. In Terminal, land is shaded cell by cell under a lattice of braille dots with a dotted coast, as the TUI draws it, and the places, arcs and names are the TUI's.
+- **Magnifying.** In the panel, the scroll wheel (or a pinch) zooms about the pointer, up to 8×, and a drag moves the magnified map; a trackpad's sideways scroll moves it too. A scroll that began away from the map keeps scrolling the panel, and at the map's framing a scroll that would zoom out scrolls the panel, so the panel still scrolls past the map. Click the map, or reach it with ↑↓ and press ↵, to select it: ↑ zooms in, ↓ out, Esc lets it go. Double-click, or the zoom chip (`2.5×`), goes back to the framing. Merged places come apart as they're magnified. The panel opens framed every time.
+- **Without a location.** Counted beneath the map with their marks, trouble first ("4 without a location ○ ○ ● ●"); in virtual geo, drawn as pills.
+- **Honesty.** Each mark and line is `topo`'s signal, never the app's. When the row lapses, the last graph stays as history with every mark withheld (◌), every line gray and the paths gone, "not current" beneath. A graph too large for `topo` to send says so.
+- **Without `map.graph`.** An older `topo`: the places `servers.list` names (else the pinned servers'), placed where their names say (`topo`'s gazetteer, then the city a time zone is named for), with each server's mark and no lines, "placed by name" beneath. A place the app can't find is counted as without a location. Settings says why.
+
+`Sources/TopophanyThemes/Map/` holds the layout both renderers share (`GeoView`, the TUI's framing; `GeoScene`, its sites and arcs; `VirtualScene`), and `Resources/land.bin` the land: Natural Earth 1:110m, a 720×360 bit mask, the same as `design/assets/land.bin`.
 
 ## 5. This Mac
 
@@ -241,19 +258,20 @@ Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary
 | **Server** | one node: CPU, memory and disk against limits, state, age | plus its services and what it observes from there | n/a | n/a |
 | **Service** | one service: three observers, each with a mark per check, its latency and recent samples; state, age | plus how it is reached, where it runs, what it depends on, and where the edge in front answered from | n/a | n/a |
 | **Time zones** | each zone's time, its places and marks | plus each zone's day ribbon, offset and name | each zone on a taller row, with its day | n/a |
+| **Map** | the map, each place's mark, a short name where it fits | the map with its places named | plus each node named beside its place | the same, wider |
 
 - **A mark per check.** In a narrow column (the small widget, and the medium widget's left), the bar's ticks wrap into a grid: every check as its mark, filled a column at a time in the bar's order, so trouble gathers at the right as it does on the bar. Up is quieter than trouble. Past what can be read, the stacked bar.
 - **Room to spare** spreads between the blocks, up to twice their usual gap, instead of pooling above the foot.
 - **The mark** sits small and a little muted in the corner: it says whose widget it is without competing with the verdict.
 - **Fleet.** The extra large widget shows as many groups as fit. The rest are counted in a last cell that keeps their nodes' marks, trouble first, so trouble left out still shows.
 
-Every widget is built from the same section models and the same renderer as the panel, in the same theme. In the cells renderer they become the TUI's boxes at 11 pt. In **Edit Widget**, users choose what a widget shows (the medium widget's right side; the server, including This Mac; the service) and its theme (default: the same as the bar). They never choose what it means. Clicking a widget opens the panel; clicking an attention row opens the TUI on it.
+Every widget is built from the same section models and the same renderer as the panel, in the same theme. In the cells renderer they become the TUI's boxes at 11 pt. In **Edit Widget**, users choose what a widget shows (the medium widget's right side; the server, including This Mac; the service; the map's view and framing, by default the panel's) and its theme (default: the same as the bar). They never choose what it means. Clicking a widget opens the panel; clicking an attention row opens the TUI on it.
 
 ### 7.2 Data
 
 A widget extension runs in its own process and can't attach to the app's pipe. The app is the only reader of `topo`. After each frame it keeps the latest frame and the theme in its App Group container, and asks WidgetKit to reload:
 
-- **At once** when the verdict state changes, or a widget-visible row changes health. With a Time zones widget on the desktop, that is every listed server.
+- **At once** when the verdict state changes, or a widget-visible row changes health. With a Time zones widget on the desktop, that is every listed server; with a Map widget, every node and line on the map.
 - **On a heartbeat** of 30 min while nothing changes.
 
 Local readings are not offered in widgets, because a widget can't refresh often enough to show them live.
@@ -352,7 +370,7 @@ A `cards` theme that follows the system gives its slots per appearance. `dark` a
 | Menu bar: Symbol, Count or Words; status colors; motion; this Mac's readings; quiet its alert until it gets worse | Thresholds (`max_cpu_percent` and others, in `topology.json`) |
 | Sections on or off and their order (Status is fixed) | Freshness, staleness, publisher lease |
 | The time zone of each place | Each server's health in Time zones |
-| Attention rows (3 or 5); which applications; pinned services and servers | How groups add up (unknown always counted) |
+| Attention rows (3 or 5); which applications; pinned services and servers; the map's view and framing | How groups add up (unknown always counted) |
 | What each widget shows and its theme | Status glyphs and their meaning |
 | This Mac mode, readings, volume, interface, sample rate | No expressions or formulas |
 | `topo`: found, chosen or downloaded; profile, observer view, refresh (1 s to 1 h); open at login; terminal for the TUI; language (system, English, Japanese, Simplified Chinese) | |
@@ -369,6 +387,7 @@ Settings live in `~/Library/Application Support/topophany-bar/settings.json`. On
     { "id": "status" },
     { "id": "seen" },
     { "id": "attention", "limit": 3 },
+    { "id": "map", "enabled": true, "mode": "geo", "frame": "fit" },
     { "id": "applications", "only": [] },
     { "id": "services", "enabled": false, "ids": ["vless-entry", "main-site"] },
     { "id": "fleet", "enabled": true },
@@ -405,10 +424,11 @@ topophany-bar/
                         Settings, Engine protocol
     TopophanyEngine/    ProcessEngine; later EmbeddedEngine
     TopophanySections/  one model per section, built from frames: Status, SeenFrom, Attention, Applications,
-                        Fleet, ServerCard, Zones, Local; PlaceZones (a place's suggested time zone);
+                        Fleet, ServerCard, Zones, Map, Local; PlaceZones (a place's suggested time zone);
+                        MapPlaces (where a place is, by its name);
                         Provider (who runs a node, by any of its names)
     TopophanyThemes/    Theme, Tokens, ThemeStore, ThemeValidator, Renderer protocol;
-                        Cards/ (SwiftUI) and Cells/ (CellCanvas)
+                        Cards/ (SwiftUI) and Cells/ (CellCanvas); Map/ (the map's layout, shared)
     TopophanyWidgets/   TimelineProvider (current and not-current entries), widget views per family
     LocalReadings/      Sampler protocol; Mach and IOKit samplers
   Apps/
@@ -507,6 +527,7 @@ Each is computed from `internal/view`, so the bar and the TUI agree.
 | `server.card` | `card`, `select.node` | from `Fleet().Card`: resources against limits, services, `observes` |
 | `service.card` | `card`, `select.service` | from `Fleet().ServiceCard`: `seen_from` by observer, each check with its own deadline, latency, share up and recent samples; endpoints, colos, dependencies |
 | `services.list` | `list` | per service: `id`, `name`, application, `health`, host; for choosing |
+| `map.graph` | `map` | from `View.Graph()`: nodes with their place, coordinates and signal; links, path hops and colos with theirs |
 
 ### 11.3 macOS host check without `top`
 

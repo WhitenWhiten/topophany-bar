@@ -167,6 +167,7 @@
   const len = (s) => [...s].length;
 
   TB.widget = function (kind, size, sc, o) {
+    if (kind === 'map') return TB.mapWidget(size, sc, o);
     return (o.theme === 'tui' ? terminal : native)(kind, size, sc, o);
   };
   TB.widgetSize = SIZE;

@@ -548,6 +548,8 @@
         ${rest > 0 ? `<a class="nv-more">${rest} more in Topophany ${I.chevron}</a>` : ''}</section>`);
     }
 
+    if (on.map && TB.nvMap && !sc.missing) out.push(TB.nvMap(sc, o));
+
     if (on.apps) {
       const rows = sc.apps.map((a) => {
         const h = a.cached ? 'cached' : a.health || 'up';
@@ -880,6 +882,7 @@
     if (o.sections.attention && sc.attention.length) {
       out.push(box(title('NEEDS ATTENTION', String(sc.attention.length + sc.more)), null, tAttentionBody(sc, IW, o.limit, { focus: true })));
     }
+    if (o.sections.map && TB.tvMap && !sc.missing) out.push(TB.tvMap(sc, o, TB._cells));
     if (o.sections.apps) out.push(box(title('SERVICES', '23 in 6 apps'), null, tAppsBody(sc, IW)));
     if (o.sections.fleet) {
       const f = tFleetBody(sc, p, IW);
@@ -1063,6 +1066,7 @@
 
   TB.defaults = () => ({
     theme: 'native', appearance: 'dark', text: 'count', color: 'status', mac: 'local', limit: 3,
-    sections: { seen: true, attention: true, apps: true, fleet: true, servers: false, zones: true, mac: true },
+    sections: { seen: true, attention: true, map: true, apps: true, fleet: true, servers: false, zones: true, mac: true },
+    mapMode: 'geo', mapFrame: 'fit',
   });
 })();

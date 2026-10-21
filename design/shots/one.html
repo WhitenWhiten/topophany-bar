@@ -9,7 +9,8 @@
      snapshots. Query: what=panel|hero|widget|item, scenario, theme
      (native|tui), tokens (aurora|linen, over native), palette (paper|dusk,
      over tui), appearance (dark|light), mac, servers, limit, kind, size,
-     quiet (1 for the menu bar's alert quieted). */
+     quiet (1 for the menu bar's alert quieted), map (0 to hide it),
+     mapMode (geo|virtual), mapFrame (fit|world). */
   html, body { margin: 0; background: #fff !important; }
   #stage { display: inline-block; padding: 24px; border-radius: 0; box-shadow: none; }
   #stage.desk::before, #stage.desk::after { display: none; }
@@ -23,6 +24,8 @@
 <script src="../assets/provider-logos.js"></script>
 <script src="../assets/render.js"></script>
 <script src="../assets/widgets.js"></script>
+<script src="../assets/land.js"></script>
+<script src="../assets/map.js"></script>
 <script>
   const q = new URLSearchParams(location.search);
   const D = window.TB_DATA;
@@ -30,6 +33,9 @@
     mac: q.get('mac') || 'local', limit: +(q.get('limit') || 3), text: q.get('text') || 'count', color: q.get('color') || 'status',
     tokens: q.get('tokens') || '', palette: q.get('palette') || '', quiet: q.get('quiet') === '1' });
   if (q.get('servers')) o.sections.servers = q.get('servers') === '1';
+  if (q.get('map')) o.sections.map = q.get('map') === '1';
+  if (q.get('mapMode')) o.mapMode = q.get('mapMode');
+  if (q.get('mapFrame')) o.mapFrame = q.get('mapFrame');
   const sc = D.scenarios[q.get('scenario') || 'incidents'];
   const el = document.getElementById('stage');
   const wall = o.theme === 'tui' && q.get('what') !== 'item' ? (q.get('wall') || 'dark') : o.appearance;
