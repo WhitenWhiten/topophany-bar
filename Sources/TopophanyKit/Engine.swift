@@ -20,6 +20,8 @@ public enum EngineEvent: Sendable {
     /// stdout ended; the process may still be exiting. Its evidence is
     /// unavailable immediately, independently of stderr and reaping.
     case sourceEnded
+    /// The supervisor's successful probe, before the first request is sent.
+    case capabilities(Capabilities)
     /// A line `topo` wrote to stderr, or a line that wasn't a frame. Shown,
     /// never parsed.
     case diagnostic(String)

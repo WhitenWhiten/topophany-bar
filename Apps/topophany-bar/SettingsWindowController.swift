@@ -63,7 +63,8 @@ final class SettingsWindowController: NSWindowController {
 
     func show() {
         model.setSettingsVisible(true)
-        model.locate()
+        // Becoming key performs the scan; repeated show calls on the same
+        // key window need no second scan.
         if window?.isVisible != true { window?.center() }
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)

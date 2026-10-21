@@ -90,6 +90,34 @@ func config(_ path: String, backoff: TimeInterval = 0.2) -> ProcessEngine.Config
 }
 
 @Suite(.serialized) struct ProcessEngineTests {
+    @Test func firstRequestUsesProbedCapabilities() async throws {
+        let captured = FileManager.default.temporaryDirectory.appending(path: "requests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: captured) }
+        let body = FakeTopo.script.replacingOccurrences(of: "seq=$((seq+1))",
+                                                        with: "printf '%s\\n' \"$line\" >> '\(captured.path)'\nseq=$((seq+1))")
+        let engine = ProcessEngine(configuration: config(try FakeTopo.install(body)))
+        let first = TemplateCompiler().request(for: Settings(), revision: 1, listServers: true, serviceCards: true,
+                                               listServices: true, mapGraph: true)
+        #expect(first.template.rows.contains { $0.metric == "map.graph" })
+        let rec = Recorder(engine.start(first))
+        #expect(await rec.wait { frames($0).contains { $0.requestID == first.requestID } })
+        #expect(rec.all.contains { if case .capabilities = $0 { true } else { false } })
+        var second = first
+        second.requestID = "changed"
+        try await engine.update(second)
+        #expect(await rec.wait { frames($0).contains { $0.requestID == "changed" } })
+        await engine.stop()
+        await rec.finished()
+        let lines = try Data(contentsOf: captured).split(separator: 0x0A)
+        #expect(lines.count == 2)
+        for line in lines {
+            let sent = try JSONDecoder().decode(Request.self, from: Data(line))
+            #expect(!sent.template.rows.contains { ["map.graph", "servers.list", "services.list", "service.card"].contains($0.metric) })
+            #expect(sent.template.rows.contains { $0.metric == "summary.verdict" })
+        }
+        #expect(first.template.rows.contains { $0.metric == "map.graph" })
+    }
+
     @Test func stdoutEndsEvidenceBeforeAnUncooperativeProcessExits() async throws {
         let body = FakeTopo.script.replacingOccurrences(of: "echo \"fake topo started\" >&2",
                                                         with: "exec 1>&-\ntrap '' TERM\nexec /bin/sleep 30")

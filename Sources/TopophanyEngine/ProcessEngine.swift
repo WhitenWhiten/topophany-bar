@@ -38,6 +38,7 @@ public final class ProcessEngine: Engine {
         var continuation: AsyncStream<EngineEvent>.Continuation?
         var stdin: FileHandle?
         var process: Process?
+        var capabilities: Capabilities?
         var stopping = false
         var started = false
     }
@@ -81,11 +82,11 @@ public final class ProcessEngine: Engine {
     /// Writes the request to the running process. A process that has just
     /// ended gets it when it is restarted.
     public func update(_ request: Request) async throws {
-        let line = try request.line()
-        let stdin = state.withLock { s -> FileHandle? in
+        let (stdin, supported) = state.withLock { s -> (FileHandle?, Request) in
             s.request = request
-            return s.stdin
+            return (s.stdin, s.capabilities.map { request.supported(by: $0) } ?? request)
         }
+        let line = try supported.line()
         try? stdin?.write(contentsOf: line)
     }
 
@@ -145,18 +146,20 @@ public final class ProcessEngine: Engine {
             case .success(let f):
                 found = f
             }
-            let version: String
+            let capabilities: Capabilities
             switch Self.check(found.path) {
             case .failure(let problem):
                 yield(.status(.unavailable(problem)))
                 pause(configuration.unavailableRetry)
                 continue
             case .success(let caps):
-                version = caps.version
+                capabilities = caps
             }
             if stopping { break }
+            state.withLock { $0.capabilities = capabilities }
+            yield(.capabilities(capabilities))
             let began = clock.now()
-            let reason = runOnce(path: found.path, version: version)
+            let reason = runOnce(path: found.path, capabilities: capabilities)
             if stopping { break }
             if clock.now().timeIntervalSince(began) >= configuration.healthyAfter { attempt = 0 }
             let delay = min(configuration.maximumBackoff, configuration.minimumBackoff * pow(2, Double(attempt)))
@@ -183,6 +186,10 @@ public final class ProcessEngine: Engine {
     /// `topo monitor stream --capabilities`: protocol 1 and every metric the
     /// panel draws.
     public static func check(_ path: String, timeout: TimeInterval = 10) -> Result<Capabilities, EngineProblem> {
+        CapabilitiesCache.shared.check(path, timeout: timeout)
+    }
+
+    static func probe(_ path: String, timeout: TimeInterval) -> Result<Capabilities, EngineProblem> {
         guard let out = Subprocess.run(path, ["monitor", "stream", "--capabilities"], timeout: timeout) else {
             return .failure(.launchFailed(path: path, message: "topo didn't answer --capabilities"))
         }
@@ -208,7 +215,7 @@ public final class ProcessEngine: Engine {
     }
 
     /// Runs one process to its end. Returns why it ended.
-    private func runOnce(path: String, version: String) -> String {
+    private func runOnce(path: String, capabilities: Capabilities) -> String {
         let p = Process()
         p.executableURL = URL(filePath: path)
         p.arguments = ["monitor", "stream"]
@@ -238,10 +245,10 @@ public final class ProcessEngine: Engine {
             return s.request
         }
         if stopping { try? input.fileHandleForWriting.close() }
-        if let request, let line = try? request.line(), !stopping {
+        if let request, let line = try? request.supported(by: capabilities).line(), !stopping {
             try? input.fileHandleForWriting.write(contentsOf: line)
         }
-        yield(.status(.running(.init(pid: p.processIdentifier, path: path, version: version, startedAt: clock.now()))))
+        yield(.status(.running(.init(pid: p.processIdentifier, path: path, version: capabilities.version, startedAt: clock.now()))))
 
         let stdoutFinished = DispatchSemaphore(value: 0)
         let stderrFinished = DispatchSemaphore(value: 0)

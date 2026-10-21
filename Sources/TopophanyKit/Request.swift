@@ -44,6 +44,15 @@ public struct Request: Sendable, Hashable, Codable {
         d.append(0x0A)
         return d
     }
+
+    /// Keep optional metrics only when the executable offers them. The
+    /// same rule applies to the first request and subsequent updates.
+    public func supported(by capabilities: Capabilities) -> Request {
+        var r = self
+        let metrics = Set(capabilities.metrics.map(\.name))
+        r.template.rows.removeAll { !metrics.contains($0.metric) }
+        return r
+    }
 }
 
 /// `topo monitor`'s template schema 1, with the stream's additions.

@@ -45,6 +45,9 @@ final class AppModel {
     @ObservationIgnored private var widgetNeeds = TemplateCompiler.WidgetNeeds.none
     @ObservationIgnored private var panelVisible = false
     @ObservationIgnored private var settingsVisible = false
+    @ObservationIgnored private var locateTask: Task<Void, Never>?
+    @ObservationIgnored private var profilesTask: Task<Void, Never>?
+    @ObservationIgnored private var profilesRevision = 0
     @ObservationIgnored let machine = MachineInfo.current()
     /// Replays a fixture instead of running `topo`, for development:
     /// `-fixture incidents`.
@@ -141,19 +144,13 @@ final class AppModel {
         return out
     }
 
-    /// Whether to ask for `servers.list`: when this `topo` offers it.
-    private var listServers: Bool { fixture != nil || capabilities?.listsServers == true }
-
     /// Whether to ask for pinned services' cards: when this `topo` offers
     /// `service.card`. An older one draws everything else.
-    var cardsServices: Bool { fixture != nil || capabilities?.cardsServices == true }
-
-    /// Whether to ask for `services.list`, for choosing services.
-    private var listServices: Bool { fixture != nil || capabilities?.listsServices == true }
+    var cardsServices: Bool { fixture != nil || (capabilities?.cardsServices ?? true) }
 
     /// Whether to ask for `map.graph`: when this `topo` draws a map.
     /// Without it, the map places servers by name.
-    var mapGraph: Bool { fixture != nil || capabilities?.drawsMap == true }
+    var mapGraph: Bool { fixture != nil || (capabilities?.drawsMap ?? true) }
 
     /// Services with a card, from the latest list `topo` sent, for choosing
     /// services; without one, the services the applications list.
@@ -179,18 +176,27 @@ final class AppModel {
     /// Looks for `topo` again, every copy of it, and lists its profiles
     /// again, off the main thread.
     func locate() {
-        let locator = TopoLocator(setting: effectiveSettings.topo.path, downloads: downloads)
-        Task.detached {
-            let r = locator.locate()
-            let installed = locator.downloads?.installed() ?? []
-            await MainActor.run {
-                self.located = r
-                self.downloaded = installed
+        guard locateTask == nil else { return }
+        let path = effectiveSettings.topo.path
+        let refreshProfiles = engineStatus.isRunning
+        let downloads = self.downloads
+        locateTask = Task { [weak self] in
+            let (found, installed, all) = await Task.detached {
+                // One shell for both phases of this scan.
+                let shellPath = TopoLocator.loginShellPATH()
+                let locator = TopoLocator(setting: path, shellPath: { shellPath }, downloads: downloads)
+                return (locator.locate(), downloads.installed(), locator.candidates())
+            }.value
+            guard let self else { return }
+            self.locateTask = nil
+            guard self.effectiveSettings.topo.path == path else { self.locate(); return }
+            self.located = found
+            self.downloaded = installed
+            self.candidates = all
+            if refreshProfiles, case .running(let r) = self.engineStatus, self.fixture == nil, self.capabilities?.profiles == true {
+                self.loadProfiles(path: r.path)
             }
-            let all = locator.candidates()
-            await MainActor.run { self.candidates = all }
         }
-        if case .running(let r) = engineStatus, fixture == nil, capabilities?.profiles == true { loadProfiles(path: r.path) }
     }
 
     // MARK: getting topo
@@ -252,15 +258,17 @@ final class AppModel {
     }
 
     private func loadProfiles(path: String) {
-        Task.detached {
-            let list = ProcessEngine.profiles(path)
-            await MainActor.run {
-                // The first profile saved, by topo login: topo reads it as
-                // it starts.
-                let signedIn = self.profiles?.profiles.isEmpty == true && list?.profiles.isEmpty == false
-                self.profiles = list
-                if signedIn { self.restartEngine() }
-            }
+        guard profilesTask == nil else { return }
+        profilesRevision += 1
+        let revision = profilesRevision
+        profilesTask = Task { [weak self] in
+            let list = await Task.detached { ProcessEngine.profiles(path) }.value
+            guard let self, self.profilesRevision == revision else { return }
+            self.profilesTask = nil
+            guard !Task.isCancelled, case .running(let r) = self.engineStatus, r.path == path else { return }
+            let signedIn = self.profiles?.profiles.isEmpty == true && list?.profiles.isEmpty == false
+            self.profiles = list
+            if signedIn { self.restartEngine() }
         }
     }
 
@@ -316,8 +324,7 @@ final class AppModel {
 
     private func request(_ s: TopophanyKit.Settings) -> Request {
         var r = TemplateCompiler().request(for: effective(s), revision: 0, widgets: widgetNeeds, lang: L10n.previewLanguage,
-                                           listServers: listServers, serviceCards: cardsServices, listServices: listServices,
-                                           mapGraph: mapGraph)
+                                           listServers: true, serviceCards: true, listServices: true, mapGraph: true)
         r.requestID = ""
         return r
     }
@@ -325,8 +332,8 @@ final class AppModel {
     private func currentRequest() -> Request {
         revision += 1
         return TemplateCompiler().request(for: effectiveSettings, revision: revision, widgets: widgetNeeds,
-                                          lang: L10n.previewLanguage, listServers: listServers, serviceCards: cardsServices,
-                                          listServices: listServices, mapGraph: mapGraph)
+                                          lang: L10n.previewLanguage, listServers: true, serviceCards: true,
+                                          listServices: true, mapGraph: true)
     }
 
     private func send() {
@@ -355,6 +362,11 @@ final class AppModel {
     }
 
     private func startEngine() {
+        engineStatus = .starting
+        capabilities = nil
+        profilesRevision += 1
+        profilesTask?.cancel()
+        profilesTask = nil
         let e: any Engine
         if let fixture {
             e = FixtureEngine(scenario: fixture)
@@ -383,7 +395,7 @@ final class AppModel {
             case .running:
                 policy.sourceStarted()
                 restartAt = nil
-                if case .running(let r) = s, fixture == nil { loadCapabilities(path: r.path) }
+                if case .running(let r) = s, fixture == nil, capabilities?.profiles == true { loadProfiles(path: r.path) }
             case .restarting(let after, _, _):
                 policy.sourceEnded(at: now)
                 restartAt = now.addingTimeInterval(after)
@@ -401,6 +413,10 @@ final class AppModel {
             return
         case .sourceEnded:
             policy.sourceEnded(at: now)
+        case .capabilities(let caps):
+            capabilities = caps
+            if !caps.profiles { profiles = nil }
+            return
         }
         refresh()
     }
@@ -408,18 +424,6 @@ final class AppModel {
     private func appendDiagnostics(_ lines: [String]) {
         diagnostics.append(contentsOf: lines)
         if diagnostics.count > 50 { diagnostics.removeFirst(diagnostics.count - 50) }
-    }
-
-    private func loadCapabilities(path: String) {
-        Task.detached {
-            let caps = try? ProcessEngine.check(path).get()
-            await MainActor.run {
-                let asked = [self.listServers, self.cardsServices, self.listServices, self.mapGraph]
-                self.capabilities = caps
-                if [self.listServers, self.cardsServices, self.listServices, self.mapGraph] != asked { self.send() }
-                if caps?.profiles == true { self.loadProfiles(path: path) } else { self.profiles = nil }
-            }
-        }
     }
 
     var engineCondition: EngineCondition {
