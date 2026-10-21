@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds, signs and notarizes a release, then writes the disk image and the
-# cask's sha256. Prepared, not yet run: it needs a Developer ID Application
+# cask's sha256. It needs a Developer ID Application
 # identity for the project's team (TOPOPHANY_TEAM in project.yml) and a
 # notarytool keychain profile.
 #
@@ -9,6 +9,8 @@
 # The app is notarized and stapled before it goes in the image, so a copy
 # dragged out of it opens offline; then the image is signed with the same
 # certificate, notarized and stapled. Set NOTARIZE=0 to stop after signing.
+# Extra arguments are passed to xcodebuild. NOTARY_KEYCHAIN optionally selects
+# the keychain containing NOTARY_PROFILE (used by GitHub Actions).
 set -eu
 : "${VERSION:?set VERSION}"
 NOTARIZE="${NOTARIZE:-1}"
@@ -16,12 +18,19 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/build/release"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 cd "$ROOT"
+notarize() {
+  if [ -n "${NOTARY_KEYCHAIN:-}" ]; then
+    xcrun notarytool submit "$1" --keychain-profile "$NOTARY_PROFILE" --keychain "$NOTARY_KEYCHAIN" --wait
+  else
+    xcrun notarytool submit "$1" --keychain-profile "$NOTARY_PROFILE" --wait
+  fi
+}
 xcodegen generate
 rm -rf "$OUT" && mkdir -p "$OUT"
 xcodebuild -project topophany-bar.xcodeproj -scheme topophany-bar -configuration Release \
   -archivePath "$OUT/topophany-bar.xcarchive" archive \
   MARKETING_VERSION="$VERSION" TOPOPHANY_SIGN=YES TOPOPHANY_IDENTITY_YES="Developer ID Application" \
-  OTHER_CODE_SIGN_FLAGS="--timestamp"
+  OTHER_CODE_SIGN_FLAGS="--timestamp" "$@"
 APP="$OUT/topophany-bar.xcarchive/Products/Applications/topophany-bar.app"
 DMG="$OUT/topophany-bar-$VERSION.dmg"
 codesign --verify --deep --strict --verbose=2 "$APP"
@@ -30,14 +39,14 @@ IDENTITY="$(codesign -dvv "$APP" 2>&1 | sed -n 's/^Authority=\(Developer ID Appl
 if [ "$NOTARIZE" = 1 ]; then
   : "${NOTARY_PROFILE:?set NOTARY_PROFILE (xcrun notarytool store-credentials)}"
   ditto -c -k --keepParent "$APP" "$OUT/topophany-bar.zip"
-  xcrun notarytool submit "$OUT/topophany-bar.zip" --keychain-profile "$NOTARY_PROFILE" --wait
+  notarize "$OUT/topophany-bar.zip"
   rm "$OUT/topophany-bar.zip"
   xcrun stapler staple "$APP"
   spctl --assess --type execute --verbose "$APP"
 fi
 SIGN="$IDENTITY" scripts/make-dmg.sh "$APP" "$DMG" "topophany-bar $VERSION"
 if [ "$NOTARIZE" = 1 ]; then
-  xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+  notarize "$DMG"
   xcrun stapler staple "$DMG"
   spctl --assess --type open --context context:primary-signature --verbose "$DMG"
 fi

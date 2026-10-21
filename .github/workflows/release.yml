@@ -1,0 +1,115 @@
+name: Release DMG
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+      NOTARY_PROFILE: topophany-bar-ci
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Read version from tag
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo '::error::Release tags must use vMAJOR.MINOR.PATCH, for example v0.1.0.'
+            exit 1
+          fi
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "NOTARY_KEYCHAIN=$RUNNER_TEMP/topophany-signing.keychain-db" >> "$GITHUB_ENV"
+
+      - name: Check release credentials
+        env:
+          DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for name in DEVELOPER_ID_CERTIFICATE_BASE64 DEVELOPER_ID_CERTIFICATE_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing repository secret: $name"
+              exit 1
+            fi
+          done
+
+      - name: Install build tools
+        run: |
+          brew install xcodegen
+          xcodebuild -version
+
+      - name: Run package tests
+        run: swift test
+
+      - name: Import signing certificate and notarization credentials
+        env:
+          DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          keychain_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$keychain_password"
+          certificate="$RUNNER_TEMP/developer-id.p12"
+          printf '%s' "$DEVELOPER_ID_CERTIFICATE_BASE64" | base64 --decode > "$certificate"
+          security create-keychain -p "$keychain_password" "$NOTARY_KEYCHAIN"
+          security set-keychain-settings -lut 7200 "$NOTARY_KEYCHAIN"
+          security unlock-keychain -p "$keychain_password" "$NOTARY_KEYCHAIN"
+          security import "$certificate" -P "$DEVELOPER_ID_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$NOTARY_KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -k "$keychain_password" "$NOTARY_KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$NOTARY_KEYCHAIN" "$HOME/Library/Keychains/login.keychain-db"
+          rm -f "$certificate"
+          xcrun notarytool store-credentials "$NOTARY_PROFILE" \
+            --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" --keychain "$NOTARY_KEYCHAIN"
+
+      - name: Build, sign, notarize and package
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          scripts/release.sh \
+            -destination 'generic/platform=macOS' \
+            TOPOPHANY_TEAM="$APPLE_TEAM_ID" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "build/release/topophany-bar-$VERSION.dmg" build/release/sha256.txt \
+            --verify-tag --title "Topophany $VERSION" --generate-notes
+
+      - name: Remove signing credentials
+        if: always()
+        run: |
+          if [[ -n "${NOTARY_KEYCHAIN:-}" && -f "$NOTARY_KEYCHAIN" ]]; then
+            security delete-keychain "$NOTARY_KEYCHAIN"
+          fi
+          rm -f "$RUNNER_TEMP/developer-id.p12"
