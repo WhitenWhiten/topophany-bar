@@ -1,3 +1,4 @@
+import Observation
 import SwiftUI
 
 /// Where the panel's scroll stands, for the quick scroll in its footer.
@@ -30,4 +31,22 @@ struct PanelLeap: Equatable {
     func target(panel: Double) -> Double {
         atEnd ? 0 : min(offset + min(panel / 2, visible), content - visible)
     }
+}
+
+/// Keeps the precise position for the next leap without invalidating the
+/// panel on every animation frame. Only crossing an edge changes its UI.
+@MainActor
+@Observable
+final class PanelScrollState {
+    @ObservationIgnored private var geometry = PanelLeap()
+    private(set) var atTop = true
+    private(set) var atEnd = true
+
+    func update(_ geometry: PanelLeap) {
+        self.geometry = geometry
+        if atTop != geometry.atTop { atTop = geometry.atTop }
+        if atEnd != geometry.atEnd { atEnd = geometry.atEnd }
+    }
+
+    func target(panel: Double) -> Double { geometry.target(panel: panel) }
 }

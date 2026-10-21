@@ -487,7 +487,7 @@ struct CellsPanel: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hover: String?
     @State private var position = ScrollPosition(edge: .top)
-    @State private var leapState = PanelLeap()
+    @State private var leapState = PanelScrollState()
 
     static let columns = 48
     nonisolated static let radius = 12.0
@@ -577,7 +577,7 @@ struct CellsPanel: View {
                     }
                     .scrollIndicators(.never)
                     .scrollPosition($position)
-                    .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState = new }
+                    .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState.update(new) }
                     .frame(height: max(80, maxH - top - (h - footer)))
                     .onChange(of: ctx.focus) { _, focus in
                         guard let focus else { return }

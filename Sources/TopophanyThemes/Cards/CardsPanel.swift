@@ -14,7 +14,7 @@ struct CardsPanel: View {
     @State private var panelHeight: Double?
     @State private var scrollFrame: Double = 0
     @State private var position = ScrollPosition(edge: .top)
-    @State private var leapState = PanelLeap()
+    @State private var leapState = PanelScrollState()
 
     var p: CardsPalette { CardsPalette.resolve(ctx) }
     var t: CardsType { CardsType(scale: ctx.scale, theme: ctx.theme) }
@@ -76,7 +76,7 @@ struct CardsPanel: View {
             .scrollIndicators(.never)
             .scrollBounceBehavior(.basedOnSize)
             .scrollPosition($position)
-            .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState = new }
+            .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState.update(new) }
             .frame(height: min(scrollHeight, scrollLimit))
             .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollFrame = $0 }
             .mask { ScrollEdgeFade(top: scrolls && !leapState.atTop, bottom: scrolls && !leapState.atEnd) }
