@@ -795,6 +795,54 @@
         }
       }
     },
+    "Clear shortcut": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショートカットを解除"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除快捷键"
+          }
+        }
+      }
+    },
+    "Click to record a keyboard shortcut": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリックしてショートカットを記録"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击以录制键盘快捷键"
+          }
+        }
+      }
+    },
+    "Click to record; Esc cancels. Checks system shortcuts and registered global shortcuts. Other apps’ internal shortcuts cannot all be checked.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリックして記録、Escでキャンセル。システムと登録済みのグローバルショートカットを確認します。他のアプリ内のショートカットはすべて確認できるわけではありません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击录制，Esc 取消。检测系统快捷键及已注册的全局快捷键，无法完整检测其他应用内部的快捷键。"
+          }
+        }
+      }
+    },
     "Close": {
       "localizations": {
         "ja": {
@@ -1387,6 +1435,22 @@
         }
       }
     },
+    "Include Command, Control or Option with another key.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Command、Control、Option のいずれかと別のキーを組み合わせてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请使用 Command、Control 或 Option 搭配其他按键。"
+          }
+        }
+      }
+    },
     "Indian Ocean": {
       "localizations": {
         "ja": {
@@ -1415,6 +1479,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "固定显示状态"
+          }
+        }
+      }
+    },
+    "Keyboard shortcut": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーボードショートカット"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "键盘快捷键"
           }
         }
       }
@@ -2027,6 +2107,22 @@
         }
       }
     },
+    "Open or close the panel from any app": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "どのアプリからでもパネルを開閉"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在任意应用中打开或关闭面板"
+          }
+        }
+      }
+    },
     "Other…": {
       "localizations": {
         "ja": {
@@ -2203,6 +2299,22 @@
         }
       }
     },
+    "Press shortcut…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーを押してください…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请按下快捷键…"
+          }
+        }
+      }
+    },
     "Pressure, app, wired and compressed, as Activity Monitor counts them": {
       "localizations": {
         "ja": {
@@ -2343,6 +2455,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "读数"
+          }
+        }
+      }
+    },
+    "Record shortcut…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショートカットを記録…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "录制快捷键…"
           }
         }
       }
@@ -2779,6 +2907,22 @@
         }
       }
     },
+    "Space": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スペース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "空格"
+          }
+        }
+      }
+    },
     "Starting": {
       "localizations": {
         "ja": {
@@ -2935,6 +3079,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "符号"
+          }
+        }
+      }
+    },
+    "System shortcuts could not be checked. Try recording again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システムのショートカットを確認できませんでした。もう一度記録してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法检测系统快捷键，请重新录制。"
           }
         }
       }
@@ -3195,6 +3355,54 @@
         }
       }
     },
+    "This shortcut is already registered by another app. Choose another combination.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このショートカットは他のアプリが登録しています。別の組み合わせを選んでください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此快捷键已被其他应用注册，请选择其他组合。"
+          }
+        }
+      }
+    },
+    "This shortcut is used by Topophany. Choose another combination.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このショートカットは Topophany が使用しています。別の組み合わせを選んでください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此快捷键已被 Topophany 使用，请选择其他组合。"
+          }
+        }
+      }
+    },
+    "This shortcut is used by macOS. Choose another combination.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このショートカットは macOS が使用しています。別の組み合わせを選んでください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此快捷键已被 macOS 使用，请选择其他组合。"
+          }
+        }
+      }
+    },
     "This topo doesn’t send service cards. Pinned services appear once it does.": {
       "localizations": {
         "ja": {
@@ -3271,6 +3479,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "各地点的时区"
+          }
+        }
+      }
+    },
+    "Toggle panel": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パネルの表示／非表示"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示或隐藏面板"
+          }
+        }
+      }
+    },
+    "Toggle panel shortcut": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パネル表示切替のショートカット"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板显示快捷键"
           }
         }
       }
@@ -3671,6 +3911,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "租约至 %@"
+          }
+        }
+      }
+    },
+    "macOS could not register this shortcut. Try another combination.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS にこのショートカットを登録できませんでした。別の組み合わせを試してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 无法注册此快捷键，请尝试其他组合。"
           }
         }
       }

@@ -14,6 +14,8 @@ public struct Settings: Sendable, Hashable, Codable {
     public var terminal = ""
     /// The language of the panel, the menu bar item, widgets and Settings.
     public var language: Language = .system
+    /// The global key that toggles the menu bar panel; absent until chosen.
+    public var panelShortcut: PanelShortcut?
 
     public enum Language: String, Sendable, Hashable, Codable, CaseIterable {
         case system, en, ja, zhHans = "zh-Hans"
@@ -25,7 +27,7 @@ public struct Settings: Sendable, Hashable, Codable {
 
     public init() {}
 
-    enum CodingKeys: String, CodingKey { case schema, topo, appearance, sections, openAtLogin, terminal, language }
+    enum CodingKeys: String, CodingKey { case schema, topo, appearance, sections, openAtLogin, terminal, language, panelShortcut }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -37,6 +39,7 @@ public struct Settings: Sendable, Hashable, Codable {
         openAtLogin = (try? c.decodeIfPresent(Bool.self, forKey: .openAtLogin)) ?? d.openAtLogin
         terminal = (try? c.decodeIfPresent(String.self, forKey: .terminal)) ?? d.terminal
         language = c.text(.language).flatMap(Language.init(rawValue:)) ?? d.language
+        panelShortcut = (try? c.decodeIfPresent(PanelShortcut.self, forKey: .panelShortcut)).flatMap { $0.isValid ? $0 : nil }
     }
 
     // MARK: topo

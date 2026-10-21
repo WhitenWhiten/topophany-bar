@@ -8,13 +8,13 @@ final class SettingsWindowController: NSWindowController {
     private let model: AppModel
     private let tabs = SettingsTabs()
 
-    init(model: AppModel) {
+    init(model: AppModel, shortcut: PanelShortcutController) {
         self.model = model
         let tabs = self.tabs
         tabs.tabStyle = .toolbar
         func tab<V: View>(_ symbol: String, _ view: V) -> NSTabViewItem {
             let index = tabs.tabViewItems.count
-            let host = NSHostingController(rootView: Localized(content: view).environment(model)
+            let host = NSHostingController(rootView: Localized(content: view).environment(model).environment(shortcut)
                 .environment(\.fitSettings, SettingsFitter(tab: index, tabs: tabs)))
             // The window follows the forms' heights itself (SettingsTabs).
             host.sizingOptions = []
@@ -35,7 +35,10 @@ final class SettingsWindowController: NSWindowController {
         relabel()
         // Back from the terminal or Finder: look again for topo and profiles.
         NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { [weak model] _ in
-            MainActor.assumeIsolated { model?.locate() }
+            MainActor.assumeIsolated {
+                model?.locate()
+                shortcut.configure(model?.settings.panelShortcut)
+            }
         }
     }
 

@@ -168,6 +168,7 @@ struct GeneralSettings: View {
                     .toggleStyle(.switch)
                 TerminalPicker()
             }
+            PanelShortcutSettings()
             Section {
                 Picker(selection: model.binding(\.language)) {
                     Text("Match System").tag(TopophanyKit.Settings.Language.system)

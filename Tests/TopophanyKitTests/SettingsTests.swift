@@ -3,6 +3,29 @@ import Testing
 @testable import TopophanyKit
 
 @Suite struct SettingsTests {
+    @Test func panelShortcutPersistsAndDoesNotChangeTheMonitorRequest() throws {
+        var settings = Settings()
+        #expect(settings.panelShortcut == nil)
+        settings.panelShortcut = PanelShortcut(keyCode: 49, modifiers: [.control, .option])
+        let back = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
+        #expect(back == settings)
+        #expect(TemplateCompiler().request(for: settings, revision: 1) == TemplateCompiler().request(for: Settings(), revision: 1))
+    }
+
+    @Test func invalidSavedShortcutsAreDisabled() throws {
+        for json in ["null", "{}", #"{"keyCode":49,"modifiers":0}"#,
+                     #"{"keyCode":55,"modifiers":8}"#,
+                     #"{"keyCode":500,"modifiers":8}"#,
+                     #"{"keyCode":49,"modifiers":16}"#,
+                     #"{"keyCode":-1,"modifiers":8}"#,
+                     #"{"keyCode":49,"modifiers":"command"}"#] {
+            let settings = try JSONDecoder().decode(Settings.self, from: Data("{\"panelShortcut\":\(json)}".utf8))
+            #expect(settings.panelShortcut == nil)
+        }
+        #expect(!PanelShortcut(keyCode: 0, modifiers: .shift).isValid)
+        #expect(PanelShortcut(keyCode: 0, modifiers: [.control, .shift]).isValid)
+    }
+
     /// DESIGN.md §9's example, verbatim.
     static let design = #"""
     {

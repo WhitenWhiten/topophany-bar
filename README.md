@@ -6,6 +6,8 @@ It shows what `topo` concludes and never decides anything itself. Every state, c
 
 **Status:** v1, not yet released. macOS 26 or later.
 
+In Settings › General › Keyboard shortcut, click Record shortcut to choose a global key that opens or closes the panel. Esc cancels and the clear button removes it. Conflicts with enabled system shortcuts, Topophany commands and registered global hotkeys are rejected. Other apps' internal shortcuts cannot all be checked.
+
 Like it? ★ [Star Topophany](https://github.com/WhitenWhiten/topophany), the project this bar is built on.
 
 ## Read first

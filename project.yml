@@ -84,6 +84,19 @@ targets:
         ENABLE_APP_SANDBOX: NO
         GENERATE_INFOPLIST_FILE: NO
         TOPOPHANY_ENTITLEMENTS_YES: Apps/topophany-bar/topophany-bar.entitlements
+  TopophanyAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/TopophanyAppTests
+      - path: Apps/topophany-bar/PanelShortcutController.swift
+    dependencies:
+      - package: topophany-bar
+        product: TopophanyKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.whitenwhiten.topophany-bar.tests
+        GENERATE_INFOPLIST_FILE: YES
   # Widgets load only when signed with a team, the App Group and the App
   # Sandbox.
   TopophanyWidgetsExtension:
@@ -126,3 +139,6 @@ schemes:
         topophany-bar: all
     run:
       config: Debug
+    test:
+      targets:
+        - TopophanyAppTests

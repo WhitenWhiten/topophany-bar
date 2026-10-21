@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController?
     private var panel: PanelController?
     private var settings: SettingsWindowController?
+    private let panelShortcut = PanelShortcutController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         model.widgets = WidgetBridge(store: HandoffStore(appGroup: HandoffStore.bundleAppGroup))
@@ -33,11 +34,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.contextMenu = { [weak self] in self?.itemMenu() }
         self.panel = panel
         statusItem = item
+        panelShortcut.onPress = { [weak panel, weak item] in
+            if let button = item?.button { panel?.toggle(from: button) }
+        }
+        panelShortcut.configure(model.settings.panelShortcut)
         model.onChange = { [weak item, weak panel] in
             item?.update()
             panel?.update()
         }
         model.onSettingsChange = { [weak self] old, new in
+            if old.panelShortcut != new.panelShortcut { self?.panelShortcut.configure(new.panelShortcut) }
             if old.openAtLogin != new.openAtLogin { self?.applyLoginItem() }
             if old.language != new.language {
                 self?.settings?.relabel()
@@ -78,6 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        panelShortcut.stop()
         // stdin closes and topo exits; it writes its last frame first.
         model.stopNow()
     }
@@ -119,7 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func showSettings() {
         panel?.close()
-        if settings == nil { settings = SettingsWindowController(model: model) }
+        if settings == nil { settings = SettingsWindowController(model: model, shortcut: panelShortcut) }
         comeForward()
         settings?.show()
     }

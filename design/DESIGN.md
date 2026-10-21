@@ -99,7 +99,11 @@ Some people can't work beside a red or orange badge they already know about. The
 
 ## 4. The panel
 
-The header shows the mark, the project and view, Open in Terminal (⌘O) and Settings (⌘,). The footer shows the connection and Quit, and while the panel scrolls, the quick scroll. Sections run in this default order:
+The header shows the mark, the project and view, Open in Terminal (⌘O) and Settings (⌘,). The footer shows the connection and Quit, and while the panel scrolls, the quick scroll.
+
+Settings › General › Keyboard shortcut records a global key to toggle the panel from any app. No key is assigned by default. Include Command, Control or Option; Esc cancels recording, Tab leaves the recorder, and Clear removes the shortcut. Recording pauses the saved shortcut and resumes it on cancellation. A conflict leaves the saved choice intact: enabled macOS symbolic shortcuts, Topophany's reserved commands and existing global hotkey registrations are checked. Other apps' internal shortcuts and event taps cannot all be detected. macOS can keep protected system combinations active during recording. A saved shortcut that cannot be registered on launch shows its error in General. The registration is checked again when Settings becomes key.
+
+Sections run in this default order:
 
 1. **Status.** Fixed, always first, pinned when the panel scrolls.
    - The verdict.
