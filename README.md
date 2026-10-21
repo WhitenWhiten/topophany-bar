@@ -1,98 +1,88 @@
 # topophany-bar
 
-A native macOS menu bar app and desktop widgets for [Topophany](https://github.com/WhitenWhiten/topophany). The status item shows, at a glance, what your collector concludes about your network. One click opens a panel with what needs attention, the vantage points that see it, a map of where your servers are, your applications, pinned services and servers, and this Mac. Widgets pin the same cards to the desktop.
+**A derivative project of [Topophany](https://github.com/WhitenWhiten/topophany), bringing its network monitoring to the macOS menu bar and desktop widgets.**
 
-It shows what `topo` concludes and never decides anything itself. Every state, count and health comes from `topo monitor stream`, which the app runs as a child process.
+<p align="center">
+  <img src="docs/assets/panel-columns.png" alt="Four equal-height columns: Native overview and continuation, followed by Terminal overview and continuation, showing a mostly healthy network, observers, map, applications, fleet, time zones and Mac readings" width="1000">
+  <br><sub>A demo network with 66 of 68 checks passing, two warnings and no open incidents, in Native (left pair) and Terminal (right pair). Each panel continues into the next column, split between cards; in the app, it scrolls to fit your display. Click the image for full resolution.</sub>
+</p>
 
-**Status:** v1, not yet released. macOS 26 or later.
+Keep your homelab, servers and services in view while you work. See what needs attention from the menu bar, open the panel to find where the problem is seen, and jump into Topophany's terminal UI for the evidence.
 
-In Settings › General › Keyboard shortcut, click Record shortcut to choose a global key that opens or closes the panel. Esc cancels and the clear button removes it. Conflicts with enabled system shortcuts, Topophany commands and registered global hotkeys are rejected. Other apps' internal shortcuts cannot all be checked.
+[Get started](#get-started) · [Widgets](#desktop-widgets) · [Customize](#make-it-yours) · [Contribute](#contributing) · [Topophany](https://github.com/WhitenWhiten/topophany)
 
-Settings › Sections › When the panel scrolls › Lock Geo Map is on by default, so wheel and trackpad scrolling moves the panel without zooming or panning the map. Turn it off to restore map scrolling; pinch and keyboard zoom are available either way.
+**macOS 26+ · Pre-release · English / 日本語 / 简体中文**
 
-Like it? ★ [Star Topophany](https://github.com/WhitenWhiten/topophany), the project this bar is built on.
+## What you can do
 
-## Read first
+- **Check your network at a glance.** The menu bar shows the current status as an icon, count or short phrase. Distinct shapes make warnings, incidents and missing data readable even without color.
+- **Find where a problem is seen.** The panel brings together incidents, affected applications and the observers reporting trouble. Open an attention item in Topophany's terminal UI to investigate.
+- **Put your servers on a map.** Explore locations and connections, browse your fleet by provider, and see the local time where your servers run.
+- **Keep important services close.** Pin service cards with recent checks, latency and uptime, or server cards with CPU, memory and disk readings.
+- **Add desktop widgets.** Choose Status, Server, Service, Map or Time Zones, with sizes and themes to suit your desktop.
+- **Watch this Mac too.** Show local CPU, memory, storage, network and battery readings in the panel; optionally put CPU, memory and network in the menu bar.
 
-| | |
+## Desktop widgets
+
+<p align="center">
+  <img src="docs/assets/widget-gallery.png" alt="Ten desktop widgets in Native, Terminal and Paper: a medium Map, large Status, medium Server, Time Zones, Service and Status, and small Status, Server, Service and Time Zones" width="1000">
+  <br><sub>A healthy demo network in small, medium and large widgets across Native, Terminal and Paper, including a medium Map and four small widgets. All images use synthetic demo data rendered by the app's native SwiftUI views. Click for full resolution.</sub>
+</p>
+
+## Get started
+
+topophany-bar is currently pre-release. [Build and launch the app from source](docs/DEVELOPMENT.md#building) to try it today. A local ad hoc build runs the menu bar app; desktop widgets require a build signed with an Apple Developer team and a shared App Group.
+
+### Connect your network
+
+1. **Set up Topophany.** You need a running Topophany collector for live network monitoring. If this is your first time using it, start with [Topophany's setup guide](https://github.com/WhitenWhiten/topophany#monitor-your-own-network).
+2. **Open topophany-bar.** If it cannot find a compatible `topo`, choose **Download topo**. The app downloads the command-line companion from Topophany's releases and verifies its SHA-256 checksum.
+3. **Sign in.** Open **Settings → General → Sign In…** to run `topo login` in your terminal. If you already use Topophany, select your saved **Profile** instead.
+4. **Click the menu bar icon.** Your network's status, observers, applications and fleet appear in the panel. Choose a single observer in **Settings → General → View** to see the network from that location.
+
+The app needs a `topo` version with `monitor stream` protocol 1. If your installed copy is too old, use the download offered in the app or choose a compatible binary in Settings.
+
+### Try a demo first
+
+Once the app and a compatible `topo` are installed, quit the app if it is running and launch the built-in preview network:
+
+```sh
+open -a topophany-bar --args -preview 1
+```
+
+This shows a simulated outage without a collector or credentials. Use `-preview 0` for a calm network. Quit and reopen the app normally to return to your saved connection. If you built from source without installing it in Applications, use the path to your built `.app` in place of `topophany-bar`.
+
+### Add widgets
+
+With a signed build installed, open topophany-bar once, then right-click the desktop and choose **Edit Widgets**. Search for **Topophany**, add a widget, and edit it to choose the server, service, map view or theme where available. Keep the menu bar app running to supply fresh data to the widgets.
+
+## Make it yours
+
+| In Settings | What you can change |
 |---|---|
-| [`design/DESIGN.md`](design/DESIGN.md) | The design: surfaces, themes, widgets, architecture, phases |
-| [`docs/PROTOCOL.md`](docs/PROTOCOL.md) | The contract with `topo monitor stream` (authoritative) |
-| [`design/index.html`](design/index.html) | HTML previews of every surface, state and theme; open in a browser |
+| **General** | Profile, observer, refresh rate, launch at login, language and a global shortcut to toggle the panel |
+| **Appearance** | Native, Terminal, Aurora, Linen, Paper and Dusk themes; menu bar text, colors, motion and icons, including imported images or animations |
+| **Sections** | Visible sections and their order, pinned servers and services, map framing and time zones |
+| **This Mac** | Local readings, a collector-backed card for this Mac, or neither |
 
-`design/shots/shot.sh PAGE OUT.png WIDTH HEIGHT [SCALE]` renders a preview page to PNG with a headless Chromium. For example: `design/shots/shot.sh "playground.html?scenario=incidents&theme=tui" /tmp/p.png 1440 1400 2`.
+Drag the panel's bottom edge to resize it. **Lock Geo Map** is enabled by default so scrolling moves the panel; pinch and keyboard zoom remain available. When you already know about an incident, **Quiet Until It Gets Worse** softens the menu bar alert until the situation worsens or clears.
 
-## Requirements
+## How it fits with Topophany
 
-- macOS 26 or later.
-- `topo` with `monitor stream` (`topo monitor stream --capabilities` must print `"protocol":1`). Without one, the app downloads it from [topophany's releases](https://github.com/WhitenWhiten/topophany/releases) when you click Download topo, and checks its SHA-256 first.
-- A saved client profile (`topo login`, or Sign In in Settings, which runs it in your terminal). The app never reads or stores a token; `topo` does.
+[Topophany](https://github.com/WhitenWhiten/topophany) runs the checks, collects evidence and determines network health. **topophany-bar is its macOS companion:** it reads that information through `topo` and presents it in the menu bar, panel and widgets. Closing the app does not stop your collectors or workers.
 
-## Building
+Expired evidence is shown as unavailable or cached, so an old healthy result does not remain current. Sign-in credentials stay with `topo`; the app does not read or store tokens. This Mac's local readings stay on the Mac and are never uploaded.
 
-The packages build and test with SwiftPM; the app and the widget extension build with the Xcode project, which XcodeGen generates from `project.yml`.
+## Contributing
 
-```sh
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-swift test
-xcodegen generate
-xcodebuild -project topophany-bar.xcodeproj -scheme topophany-bar -configuration Debug -derivedDataPath build/DerivedData build
-```
+Bug reports, feature ideas, translations and pull requests are welcome. [Open an issue](https://github.com/WhitenWhiten/topophany-bar/issues) with your macOS version, app and `topo` versions, and steps to reproduce the problem. Screenshots help; remove private network details before sharing them.
 
-Builds sign with the team in `project.yml` (`TOPOPHANY_TEAM`), with an App Group the app and the widgets share. Add `TOPOPHANY_SIGN=NO` to build ad hoc with no team or entitlements: the app runs, and macOS ignores the widgets. `scripts/release.sh` signs with Developer ID, notarizes, and packs the app into a disk image to drag to Applications. `scripts/make-dmg.sh APP OUT.dmg` packs any build the same way, for a look; `swift scripts/make-dmg-background.swift` redraws the image's window.
+For code contributions, see the [development guide](docs/DEVELOPMENT.md), [design notes](design/DESIGN.md) and [stream protocol](docs/PROTOCOL.md).
 
-## Releasing on GitHub
-
-The [release workflow](.github/workflows/release.yml) runs when you push a tag in
-the form `vMAJOR.MINOR.PATCH`, for example `v0.1.0`. It tests the packages on
-macOS 26, builds a universal app for Apple Silicon and Intel, signs with Developer
-ID, notarizes and staples both the app and the DMG, and publishes the DMG and
-`sha256.txt` as a GitHub Release. The tag selects the exact source commit and the
-app's version; it does not build the current tip of the default branch.
-
-Before the first release, enable GitHub Actions and add these **repository
-secrets** under Settings → Secrets and variables → Actions:
-
-| Secret | Value |
-|---|---|
-| `DEVELOPER_ID_CERTIFICATE_BASE64` | Base64 of a Developer ID Application `.p12` export, including its private key |
-| `DEVELOPER_ID_CERTIFICATE_PASSWORD` | The nonempty password used to export the `.p12` |
-| `APPLE_ID` | Apple Account email with access to the developer team |
-| `APPLE_APP_SPECIFIC_PASSWORD` | An app-specific password for that account, used by `notarytool` |
-| `APPLE_TEAM_ID` | The certificate's 10-character Apple Developer Team ID |
-
-Export **Developer ID Application**, rather than Apple Development, from Keychain
-Access with its private key. On macOS, copy the certificate's Base64 with:
-
-```sh
-base64 -i /path/to/DeveloperIDApplication.p12 | pbcopy
-```
-
-This requires Apple Developer Program membership. The workflow imports the key
-into a temporary keychain and deletes it after the job. The Team ID overrides
-the build's `TOPOPHANY_TEAM`; the certificate and the app/widget App Group must
-belong to that team. See [GitHub's certificate setup guide](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications).
-GitHub supplies the release token automatically; no personal access token is
-needed. Repository or organization policy must permit the workflow's
-`contents: write` permission.
-
-Commit and push the workflow and the code you want to release, then tag that
-commit (assuming the GitHub remote is named `origin`):
-
-```sh
-git tag -a v0.1.0 -m "Release v0.1.0"
-git push origin v0.1.0
-```
-
-Follow **Actions → Release DMG**. After it succeeds, **Releases → v0.1.0** contains
-`topophany-bar-0.1.0.dmg` and `sha256.txt`. Use a new version tag for each release;
-prerelease suffixes such as `-beta.1` are not supported by this workflow.
-The workflow creates a release after signing and notarization succeed, and does
-not overwrite an existing release. GitHub selects the Latest release
-[automatically by date and version](https://cli.github.com/manual/gh_release_create).
+If you find this useful, consider starring [Topophany](https://github.com/WhitenWhiten/topophany), the upstream project that makes it possible.
 
 ## License
 
-topophany-bar is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE): you may build it, run it and change it for any noncommercial purpose. Commercial use, including use at work for a company, needs a separate license; ask in an [issue](https://github.com/WhitenWhiten/topophany-bar/issues).
+topophany-bar is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). Noncommercial use is permitted under that license; commercial use requires a separate license. See [LICENSE](LICENSE) for the full terms and [open an issue](https://github.com/WhitenWhiten/topophany-bar/issues) for licensing inquiries.
 
-The provider logos and what came with them are under their own licenses: see [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). [Topophany](https://github.com/WhitenWhiten/topophany) itself is under the MIT License.
+[Topophany](https://github.com/WhitenWhiten/topophany) itself is MIT-licensed. Provider logos and other third-party assets retain their own terms; see [Third-party notices](THIRD-PARTY-NOTICES.md).

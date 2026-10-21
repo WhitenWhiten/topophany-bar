@@ -9,10 +9,11 @@ import TopophanySections
 @testable import TopophanyThemes
 import UniformTypeIdentifiers
 
-/// Where snapshot PNGs go: Tests/Snapshots/out (ignored by git).
+/// Defaults to Tests/Snapshots/out (ignored by git); export scripts can isolate output.
 let snapshotDirectory: URL = {
     let here = URL(filePath: #filePath)
-    let dir = here.deletingLastPathComponent().deletingLastPathComponent().appending(path: "Snapshots/out")
+    let dir = ProcessInfo.processInfo.environment["TOPOPHANY_SNAPSHOT_DIR"].map { URL(filePath: $0) }
+        ?? here.deletingLastPathComponent().deletingLastPathComponent().appending(path: "Snapshots/out")
     try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     return dir
 }()

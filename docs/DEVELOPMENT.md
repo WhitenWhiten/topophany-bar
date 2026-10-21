@@ -1,0 +1,107 @@
+# Development and releases
+
+Build, test and package topophany-bar. For features and first-time setup, see the [project README](../README.md). Run the commands below from the repository root.
+
+Prerequisites: macOS 26 or later, full Xcode with Swift 6.2 or newer and a macOS 26 SDK or newer, and [XcodeGen](https://github.com/yonaskolb/XcodeGen). Install XcodeGen with `brew install xcodegen`.
+
+## Read first
+
+| | |
+|---|---|
+| [`design/DESIGN.md`](../design/DESIGN.md) | The design: surfaces, themes, widgets, architecture, phases |
+| [`docs/PROTOCOL.md`](PROTOCOL.md) | The contract with `topo monitor stream` (authoritative) |
+| [`design/index.html`](../design/index.html) | HTML previews of every surface, state and theme; open in a browser |
+
+`design/shots/shot.sh PAGE OUT.png WIDTH HEIGHT [SCALE]` renders a preview page to PNG with a headless Chromium. For example: `design/shots/shot.sh "playground.html?scenario=incidents&theme=tui" /tmp/p.png 1440 1400 2`.
+
+## Building
+
+The packages build and test with SwiftPM; the app and the widget extension build with the Xcode project, which XcodeGen generates from `project.yml`.
+
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+swift test
+xcodegen generate
+xcodebuild -project topophany-bar.xcodeproj -scheme topophany-bar \
+  -configuration Debug -derivedDataPath build/DerivedData TOPOPHANY_SIGN=NO build
+open build/DerivedData/Build/Products/Debug/topophany-bar.app
+```
+
+The commands above build ad hoc with no developer team or entitlements: the app runs, but macOS does not load the widgets. To build with widgets, omit `TOPOPHANY_SIGN=NO` and set `TOPOPHANY_TEAM` to your own Apple Developer Team ID. The app and widget extension need a shared App Group belonging to that team. `scripts/release.sh` signs with Developer ID, notarizes, and packs the app into a disk image to drag to Applications. `scripts/make-dmg.sh APP OUT.dmg` packs any build the same way, for a look; `swift scripts/make-dmg-background.swift` redraws the image's window.
+
+## README screenshots
+
+The two README illustrations render the production SwiftUI views with fixed English demo data and a fixed clock. The panel uses the `degraded` fixture: 66 of 68 checks pass, two warn, none fail, and there are no open incidents. The widget gallery uses the `clear` fixture: all 68 checks pass. A few older service samples can still show a past failure.
+
+Generate and replace both images with one command:
+
+```sh
+./scripts/make-readme-screenshots.sh
+```
+
+The script runs from any working directory, finds full Xcode at `/Applications/Xcode.app` by default, and honors `DEVELOPER_DIR` for a different installation. It requires macOS 26+ and the build toolchain described above; no collector, credentials, signing, screen-recording permission or running app is needed.
+
+To preview changes without replacing the README assets, pass an output directory (relative to your current directory, or absolute):
+
+```sh
+./scripts/make-readme-screenshots.sh /tmp/topophany-readme-preview
+```
+
+Outputs:
+
+- `panel-columns.png`: Native and Terminal panels, each split into two equal-height columns. The renderer measures section boundaries and chooses the split nearest the middle, keeping cards intact without manual pixel offsets.
+- `widget-gallery.png`: ten widgets covering all five types and three themes, including a medium Map and four small widgets.
+
+The layouts and scenario choices live in `Tests/TopophanyThemesTests/ReadmeSnapshots.swift`. The script renders into a temporary directory and only copies the images after both renders succeed, so an unsuccessful run cannot reuse stale screenshots. `TOPOPHANY_SNAPSHOT_DIR` overrides the snapshot output directory for this run; ordinary snapshot tests still write to `Tests/Snapshots/out`.
+
+Inspect both generated images before committing them. Keep private network data and credentials out of documentation screenshots.
+
+## Releasing on GitHub
+
+The [release workflow](../.github/workflows/release.yml) runs when you push a tag in
+the form `vMAJOR.MINOR.PATCH`, for example `v0.1.0`. It tests the packages on
+macOS 26, builds a universal app for Apple Silicon and Intel, signs with Developer
+ID, notarizes and staples both the app and the DMG, and publishes the DMG and
+`sha256.txt` as a GitHub Release. The tag selects the exact source commit and the
+app's version; it does not build the current tip of the default branch.
+
+Before the first release, enable GitHub Actions and add these **repository
+secrets** under Settings → Secrets and variables → Actions:
+
+| Secret | Value |
+|---|---|
+| `DEVELOPER_ID_CERTIFICATE_BASE64` | Base64 of a Developer ID Application `.p12` export, including its private key |
+| `DEVELOPER_ID_CERTIFICATE_PASSWORD` | The nonempty password used to export the `.p12` |
+| `APPLE_ID` | Apple Account email with access to the developer team |
+| `APPLE_APP_SPECIFIC_PASSWORD` | An app-specific password for that account, used by `notarytool` |
+| `APPLE_TEAM_ID` | The certificate's 10-character Apple Developer Team ID |
+
+Export **Developer ID Application**, rather than Apple Development, from Keychain
+Access with its private key. On macOS, copy the certificate's Base64 with:
+
+```sh
+base64 -i /path/to/DeveloperIDApplication.p12 | pbcopy
+```
+
+This requires Apple Developer Program membership. The workflow imports the key
+into a temporary keychain and deletes it after the job. The Team ID overrides
+the build's `TOPOPHANY_TEAM`; the certificate and the app/widget App Group must
+belong to that team. See [GitHub's certificate setup guide](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications).
+GitHub supplies the release token automatically; no personal access token is
+needed. Repository or organization policy must permit the workflow's
+`contents: write` permission.
+
+Commit and push the workflow and the code you want to release, then tag that
+commit (assuming the GitHub remote is named `origin`):
+
+```sh
+git tag -a v0.1.0 -m "Release v0.1.0"
+git push origin v0.1.0
+```
+
+Follow **Actions → Release DMG**. After it succeeds, **Releases → v0.1.0** contains
+`topophany-bar-0.1.0.dmg` and `sha256.txt`. Use a new version tag for each release;
+prerelease suffixes such as `-beta.1` are not supported by this workflow.
+The workflow creates a release after signing and notarization succeed, and does
+not overwrite an existing release. GitHub selects the Latest release
+[automatically by date and version](https://cli.github.com/manual/gh_release_create).
