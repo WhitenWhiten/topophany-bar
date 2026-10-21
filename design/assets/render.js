@@ -278,14 +278,14 @@
     </div>`;
   }
 
-  // A history as bars, newest at the right, over the graph's centre line;
+  // A history as bars, newest at the right, centred on the graph's middle;
   // before the history is full (60 samples), the left is baseline only.
   function barHistory(vals, top, capacity = 60) {
     const n = Math.max(capacity, vals.length);
     const pitch = 100 / n;
     const bars = vals.slice(-n).map((v, i, a) => {
       const x = 100 - (a.length - i) * pitch;
-      return `<i style="left:${x.toFixed(3)}%;width:calc(${pitch.toFixed(3)}% - .6px);height:${Math.max(1, Math.min(1, v / top) * 11.5).toFixed(2)}px"></i>`;
+      return `<i style="left:${x.toFixed(3)}%;width:calc(${pitch.toFixed(3)}% - .6px);height:${Math.max(1, Math.min(1, v / top) * 22).toFixed(2)}px"></i>`;
     }).join('');
     return `<div class="nv-bars">${bars}</div>`;
   }

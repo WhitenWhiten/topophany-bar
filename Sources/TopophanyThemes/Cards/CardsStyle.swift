@@ -158,11 +158,14 @@ enum MeterStyle: String {
     }
 
     /// A history of readings as bars, newest at the right: lit columns of
-    /// ticks, hairlines on a scale, or columns of dots.
+    /// ticks, hairlines on a scale, or columns of dots. Each column is
+    /// centred vertically so its middle stays aligned as readings change.
     func drawHistory(_ ctx: GraphicsContext, size s: CGSize, values: [Double], top: Double, capacity: Int, color: Color, baseline: Color) {
         let n = max(capacity, values.count)
         guard n > 0 else { return }
-        ctx.fill(Path(CGRect(x: 0, y: s.height - (self == .rule ? 0.75 : 1), width: s.width, height: self == .rule ? 0.75 : 1)),
+        let mid = s.height / 2
+        let line = self == .rule ? 0.75 : 1.0
+        ctx.fill(Path(CGRect(x: 0, y: mid - line / 2, width: s.width, height: line)),
                  with: .color(baseline))
         let pitch = s.width / Double(n)
         let shown = Array(values.suffix(n).reversed().enumerated())
@@ -172,14 +175,14 @@ enum MeterStyle: String {
             var path = Path()
             for (i, v) in shown {
                 let h = max(1, min(1, v / max(top, 1e-9)) * s.height)
-                path.addRect(CGRect(x: s.width - Double(i + 1) * pitch + (pitch - w), y: s.height - h, width: w, height: h))
+                path.addRect(CGRect(x: s.width - Double(i + 1) * pitch + (pitch - w), y: mid - h / 2, width: w, height: h))
             }
             ctx.fill(path, with: .color(color))
         case .rule:
             var path = Path()
             for (i, v) in shown {
                 let h = max(1, min(1, v / max(top, 1e-9)) * (s.height - 0.75))
-                path.addRect(CGRect(x: s.width - Double(i + 1) * pitch + pitch / 2 - 0.4, y: s.height - 0.75 - h, width: 0.8, height: h))
+                path.addRect(CGRect(x: s.width - Double(i + 1) * pitch + pitch / 2 - 0.4, y: mid - h / 2, width: 0.8, height: h))
             }
             ctx.fill(path, with: .color(color))
         case .dots:
@@ -190,8 +193,9 @@ enum MeterStyle: String {
             for (i, v) in shown {
                 let k = max(1, Int((min(1, v / max(top, 1e-9)) * Double(rows)).rounded()))
                 let x = s.width - Double(i + 1) * pitch + (pitch - d) / 2
+                let start = mid - (Double(k - 1) * step + d) / 2
                 for row in 0..<k {
-                    path.addEllipse(in: CGRect(x: x, y: s.height - 1.75 - Double(row + 1) * step + 0.75, width: d, height: d))
+                    path.addEllipse(in: CGRect(x: x, y: start + Double(row) * step, width: d, height: d))
                 }
             }
             ctx.fill(path, with: .color(color))
