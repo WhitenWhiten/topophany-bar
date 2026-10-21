@@ -128,6 +128,7 @@ final class StatusItemController: NSObject {
         switch model.statusItem.icon {
         case .globe: nil
         case .deepseek: MenuBarIconAnimation.deepseek
+        case .whiteNight: MenuBarIconAnimation.whiteNight
         case .custom: model.customIconAnimation
         }
     }
@@ -375,6 +376,8 @@ private final class FrameView: NSView {
         portraitSize = animation?.size(height: height) ?? .zero
         portraitLayer.removeAllAnimations()
         portraitLayer.contents = animation?.frames.first
+        portraitLayer.magnificationFilter = animation?.id == "whiteNight" ? .nearest : .linear
+        portraitLayer.minificationFilter = animation?.id == "whiteNight" ? .nearest : .linear
         if let animation, moving {
             if animation.frames.count > 1 {
                 let frames = CAKeyframeAnimation(keyPath: "contents")

@@ -131,4 +131,36 @@ struct MenuBarIconLibraryTests {
         #expect(animation.frame(at: 4.7) === animation.frames[1])
         #expect(animation.frame(at: 4.81) === animation.frames[0])
     }
+
+    @Test func wideImportsKeepTheirResolutionAndLayoutAfterReload() throws {
+        try withLibrary { root, library in
+            let context = try #require(CGContext(data: nil, width: 312, height: 96, bitsPerComponent: 8,
+                                                bytesPerRow: 312 * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            context.setFillColor(CGColor(gray: 1, alpha: 1))
+            context.fill(CGRect(x: 0, y: 0, width: 312, height: 96))
+            let image = try #require(context.makeImage())
+            let url = root.appending(path: "panorama.apng")
+            try write(url, frames: [image, image], delays: [0.1, 0.2])
+            let asset = try library.importFiles([url])
+            let animation = try library.load(asset.id)
+            #expect(animation.aspectRatio == 3.25)
+            #expect(animation.frames[0].width >= 156)
+            #expect(animation.frames[0].height >= 48)
+            #expect(animation.size(height: 26) == CGSize(width: 80, height: 26))
+            #expect(animation.durations.count == 2)
+        }
+    }
+
+    @Test func skyIsAnimatedAndClosesWithoutAJump() throws {
+        let animation = try #require(MenuBarIconAnimation.whiteNight)
+        #expect(animation.frames.count == 180)
+        #expect(abs(animation.duration - 24) < 0.001)
+        let start = try #require(WhiteNightSky.frame(phase: 0)?.dataProvider?.data) as Data
+        let end = try #require(WhiteNightSky.frame(phase: 1)?.dataProvider?.data) as Data
+        let middle = try #require(WhiteNightSky.frame(phase: 0.5)?.dataProvider?.data) as Data
+        #expect(start == end)
+        #expect(start != middle)
+        #expect(animation.size(height: 26).width == 80)
+    }
 }

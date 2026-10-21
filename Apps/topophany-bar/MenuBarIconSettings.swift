@@ -23,6 +23,7 @@ struct MenuBarIconSettings: View {
         Picker(selection: Binding<String>(get: { selection }, set: { model.selectIcon($0) })) {
             Text("Default").tag("globe")
             Text("DeepSeek Girl").tag("deepseek")
+            Text("White Night Sky").tag("whiteNight")
             ForEach(model.customIcons) { asset in Text(verbatim: asset.name).tag(asset.id) }
             if model.settings.appearance.menuBar.icon == .custom, selectedAsset == nil {
                 Text("Unavailable custom icon").tag(selection)
@@ -67,7 +68,7 @@ struct MenuBarIconSettings: View {
                     }
                 }
             } label: {
-                RowLabel("Custom icons", "PNG, JPEG, GIF or APNG; select multiple PNGs for a 12 fps sequence")
+                RowLabel("Custom icons", "PNG, JPEG, GIF or APNG; wide icons supported; multiple PNGs play at 12 fps")
             }
             if model.settings.appearance.menuBar.icon != .globe {
                 Picker(selection: model.binding(\.appearance.menuBar.iconSize)) {
@@ -75,7 +76,7 @@ struct MenuBarIconSettings: View {
                     Text("Medium").tag(22)
                     Text("Large").tag(26)
                 } label: { RowLabel("Icon size") }
-                if selection == "deepseek" || selectedAsset?.isAnimated == true {
+                if selection == "deepseek" || selection == "whiteNight" || selectedAsset?.isAnimated == true {
                     Picker(selection: model.binding(\.appearance.menuBar.iconSpeed)) {
                         Text(verbatim: "0.5×").tag(0.5)
                         Text(verbatim: "1×").tag(1.0)

@@ -6,6 +6,7 @@ extension StatusItemModel {
         switch icon {
         case .globe: nil
         case .deepseek: MenuBarIconAnimation.deepseek
+        case .whiteNight: MenuBarIconAnimation.whiteNight
         case .custom: context.customIcon
         }
     }
@@ -24,7 +25,7 @@ struct MenuBarPortrait: View {
         let phase = animation.id == "deepseek" && motion.moves ? sin(time * 2 * .pi / 4.8) : 0
         let size = animation.size(height: height)
         Image(decorative: animation.frame(at: time), scale: 2)
-            .renderingMode(.original).resizable().interpolation(.high).scaledToFit()
+            .renderingMode(.original).resizable().interpolation(animation.id == "whiteNight" ? .none : .high).scaledToFit()
             .frame(width: size.width - 2, height: size.height - 2)
             .offset(y: phase * 0.25)
             .frame(width: size.width, height: size.height)

@@ -59,7 +59,12 @@ Out of scope for v1:
 ### 3.1 Motion
 
 Settings › Appearance › Menu bar icon offers the default renderer, the built-in
-DeepSeek Girl, and imported icons. DeepSeek Girl uses the approved portrait and a
+DeepSeek Girl, White Night Sky, and imported icons. White Night Sky adapts the
+personal homepage's Bayer 8×8 sky, layered value-noise clouds, shaded disk and
+paper-white horizon to a 3.25:1 panorama. Its 180 cached frames follow a closed
+path through the noise field over 24 seconds; the native layer loops them under
+the same motion policy as other icons. At 26 pt it occupies an 80 pt slot.
+DeepSeek Girl uses the approved portrait and a
 matching blink frame: a 140 ms blink every 4.8 seconds, with a quarter-point
 breathing movement. Shared transparent margins are trimmed, leaving the full
 headband and hair visible. Its status badge sits beside the portrait.
@@ -71,7 +76,9 @@ settings file; the original files are never changed and may subsequently be
 moved. The settings keep only the selected ID, size (18, 22 or 26 pt), and speed.
 The library supports rename and delete, with the default icon used if a selected
 asset is unavailable. Input limits are 32 MB total, 4096 pixels per dimension and
-180 frames. Frame delays are bounded to 20 ms–10 s.
+180 frames. Frame delays are bounded to 20 ms–10 s. Normalized frames retain up
+to 384 pixels on the longest side for wide Retina artwork. Icon slots support
+aspect ratios through 6:1; wider images fit proportionally inside that slot.
 
 Portraits play on their own native layer using their frame durations, leaving the
 readings and status rendering independent. They animate only with current data

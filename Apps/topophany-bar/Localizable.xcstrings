@@ -4602,6 +4602,38 @@
           }
         }
       }
+    },
+    "White Night Sky": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "白夜天空"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "白夜の空"
+          }
+        }
+      }
+    },
+    "PNG, JPEG, GIF or APNG; wide icons supported; multiple PNGs play at 12 fps": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG、JPEG、GIF 或 APNG；支持宽图标，多张 PNG 以 12 帧/秒播放"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG・JPEG・GIF・APNG。横長アイコン対応。複数の PNG は毎秒12コマで再生"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

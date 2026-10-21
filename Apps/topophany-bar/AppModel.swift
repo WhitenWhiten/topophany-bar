@@ -337,8 +337,8 @@ final class AppModel {
 
     func selectIcon(_ selection: String) {
         update { settings in
-            if selection == "globe" || selection == "deepseek" {
-                settings.appearance.menuBar.icon = selection == "globe" ? .globe : .deepseek
+            if let icon = Settings.Appearance.MenuBar.Icon(rawValue: selection), icon != .custom {
+                settings.appearance.menuBar.icon = icon
             } else {
                 settings.appearance.menuBar.icon = .custom
                 settings.appearance.menuBar.customIconID = selection

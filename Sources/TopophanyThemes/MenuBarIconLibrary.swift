@@ -26,7 +26,9 @@ public struct MenuBarIconAnimation: Sendable {
     }
 
     public func size(height: Double) -> CGSize {
-        let width = height * min(2, max(0.75, aspectRatio))
+        // Reserve the full panorama width, including the one-point inset on each side.
+        // Extreme panoramas still fit proportionally inside a six-to-one slot.
+        let width = (height - 2) * min(6, max(0.75, aspectRatio)) + 2
         return CGSize(width: width.rounded(.up), height: height)
     }
 
@@ -140,7 +142,7 @@ public struct MenuBarIconLibrary: Sendable {
     static func thumbnail(_ source: CGImageSource, index: Int) -> CGImage? {
         CGImageSourceCreateThumbnailAtIndex(source, index, [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceThumbnailMaxPixelSize: 128,
+            kCGImageSourceThumbnailMaxPixelSize: 384,
             kCGImageSourceCreateThumbnailWithTransform: true
         ] as CFDictionary)
     }

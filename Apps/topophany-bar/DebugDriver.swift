@@ -48,7 +48,7 @@ import TopophanyWidgets
 ///     deletedownload V      delete the downloaded topo V
 ///     menu                  the menu bar item's right-click menu, as text
 ///     itemshot              the menu bar item as last drawn, to item.png
-///     icon globe|deepseek   choose the menu bar icon
+///     icon globe|deepseek|whiteNight   choose the menu bar icon
 ///     iconimport JSON       import a JSON array of paths and select it
 ///     iconrename NAME       rename the selected custom icon
 ///     iconremove            remove the selected custom icon

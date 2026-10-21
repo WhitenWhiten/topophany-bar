@@ -90,6 +90,32 @@ import TopophanySections
         }
     }
 
+    @Test func whiteNightPanorama() throws {
+        for theme in [ThemeStore.native, ThemeStore.terminal] {
+            let rows = VStack(alignment: .leading, spacing: 12) {
+                ForEach([false, true], id: \.self) { dark in
+                    ForEach([18, 22, 26], id: \.self) { size in
+                        HStack(spacing: 20) {
+                            ForEach([0.0, 6, 12, 18], id: \.self) { time in
+                                let model = {
+                                    var m = item(.degraded)
+                                    m.icon = .whiteNight
+                                    m.iconSize = size
+                                    return m
+                                }()
+                                drawn(model, theme: theme, dark: dark,
+                                      motion: StatusItemMotion(moves: true, time: time))
+                            }
+                        }
+                        .padding(10)
+                        .background(dark ? Color(white: 0.11) : Color(white: 0.95))
+                    }
+                }
+            }
+            try snapshot("item-white-night-\(theme.id)", rows)
+        }
+    }
+
     /// Quieted until it gets worse: the alerts' badges in the menu bar's
     /// ink, beside the same in color.
     @Test func quiet() throws {

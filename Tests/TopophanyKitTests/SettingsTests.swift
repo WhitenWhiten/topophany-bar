@@ -3,6 +3,12 @@ import Testing
 @testable import TopophanyKit
 
 @Suite struct SettingsTests {
+    @Test func whiteNightIconPersists() throws {
+        var settings = Settings()
+        settings.appearance.menuBar.icon = .whiteNight
+        let back = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
+        #expect(back.appearance.menuBar.icon == .whiteNight)
+    }
     @Test func mapLockDefaultsOnForExistingSettings() throws {
         #expect(Settings().sections.mapLocked)
         for json in ["{}", #"{"sections":[{"id":"map","enabled":true,"frame":"world"}]}"#] {
