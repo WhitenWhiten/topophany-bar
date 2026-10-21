@@ -493,7 +493,7 @@ struct CellsPanel: View {
     nonisolated static let radius = 12.0
 
     var body: some View {
-        let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover, leapUp: leapState.atEnd)
+        let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover, drawsLeapDirection: false)
         let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
         let p = CellsPalette(ctx.theme)
         fitted(scene)
@@ -518,7 +518,15 @@ struct CellsPanel: View {
             key(scene, "open", tr("Open in Terminal"), nil) { actions.openTerminal() }
             key(scene, "settings", tr("Settings"), KeyboardShortcut(",", modifiers: [])) { actions.openSettings() }
             key(scene, "quit", tr("Quit"), KeyboardShortcut("q", modifiers: [])) { actions.quit() }
-            key(scene, "leap", leapState.atEnd ? tr("Back to top") : tr("Scroll down"), nil) { leap() }
+            if let rect = scene.regions["leap"], let direction = scene.regions["leapDirection"] {
+                CellsLeapKey(state: leapState, metrics: scene.metrics, rect: rect, direction: direction,
+                             color: hover == "leap" ? CellsPalette(ctx.theme).text : CellsPalette(ctx.theme).muted,
+                             action: leap)
+                    .onHover { inside in
+                        if inside { hover = "leap" } else if hover == "leap" { hover = nil }
+                    }
+                    .offset(x: rect.minX, y: rect.maxY - scene.size.height)
+            }
         }
     }
 
@@ -526,7 +534,7 @@ struct CellsPanel: View {
     func leap() {
         guard let panel = ctx.maxHeight else { return }
         let y = leapState.target(panel: panel)
-        withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { position.scrollTo(y: y) }
+        withAnimation(leapState.animation(panel: panel, reduceMotion: reduceMotion)) { position.scrollTo(y: y) }
     }
 
     /// Status's keycap, from the top: Status stays put while the rest
@@ -620,7 +628,7 @@ struct CellsPanel: View {
     /// rest of the scene; the band's shape also keeps it from taking the
     /// clicks and scrolls meant for the bands beside it.
     func slice(_ scene: CellScene, top: Double, bottom: Double) -> some View {
-        CellCanvas(scene: scene)
+        CellCanvas(scene: scene.band(top: top, bottom: bottom))
             .overlay(alignment: .topLeading) { live(scene, top: top, bottom: bottom) }
             .offset(y: -top)
             .frame(width: scene.size.width, height: bottom - top, alignment: .top)
@@ -631,7 +639,7 @@ struct CellsPanel: View {
     /// - Parameter leapUp: whether the scroll is at its end, and the quick
     ///   scroll's keycap points back up.
     static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false, hover: String? = nil,
-                      leapUp: Bool = false) -> CellScene {
+                      leapUp: Bool = false, drawsLeapDirection: Bool = true) -> CellScene {
         let m = CellMetrics.panel
         let p = CellsPalette(ctx.theme)
         let width = Double(columns) * m.cell + 14
@@ -751,7 +759,7 @@ struct CellsPanel: View {
         // While the panel scrolls, space leaps about half the panel down,
         // or from the end back to the top.
         if let maxH = ctx.maxHeight, footTop + 28 > maxH {
-            keys.append(key("␣", leapUp ? "↑" : "↓", "leap"))
+            keys.append(key("␣", drawsLeapDirection ? (leapUp ? "↑" : "↓") : " ", "leap"))
         }
         let room = columns - keys.reduce(0) { $0 + $1.segs.reduce(0) { $0 + $1.width } }
         let conn: Seg
@@ -784,6 +792,10 @@ struct CellsPanel: View {
         for k in keys {
             let n = k.segs.reduce(0) { $0 + $1.width }
             regions[k.id] = CGRect(x: w.frame.x + Double(col) * w.cell - 2, y: w.y - 4, width: Double(n - 2) * w.cell + 4, height: w.lineHeight + 8)
+            if k.id == "leap" {
+                regions["leapDirection"] = CGRect(x: w.frame.x + Double(col + 4) * w.cell, y: w.y,
+                                                 width: w.cell, height: w.lineHeight)
+            }
             col += n
         }
         w.line(keys.flatMap(\.segs), ownLine ? [] : [conn])
@@ -792,6 +804,31 @@ struct CellsPanel: View {
         scene.marks = marks
         scene.regions = regions
         return scene
+    }
+}
+
+/// Only this one-cell drawing observes the scroll's edge. Rebuilding the
+/// entire scene when a return leaves the bottom interrupts its first frames.
+private struct CellsLeapKey: View {
+    var state: PanelScrollState
+    var metrics: CellMetrics
+    var rect: CGRect
+    var direction: CGRect
+    var color: RGBA
+    var action: () -> Void
+
+    var body: some View {
+        let up = state.atEnd
+        Button(action: action) {
+            Canvas { ctx, _ in
+                CellCanvas.draw([.text(x: direction.minX - rect.minX, y: direction.minY - rect.minY,
+                                       up ? "↑" : "↓", color, bold: false)], in: &ctx, metrics: metrics)
+            }
+            .frame(width: rect.width, height: rect.height)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(up ? tr("Back to top") : tr("Scroll down"))
     }
 }
 

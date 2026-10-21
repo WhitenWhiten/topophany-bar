@@ -31,6 +31,16 @@ struct PanelLeap: Equatable {
     func target(panel: Double) -> Double {
         atEnd ? 0 : min(offset + min(panel / 2, visible), content - visible)
     }
+
+    /// A return can cross several pages. Keep its pace close to a normal
+    /// half-panel leap instead of compressing the whole distance into the
+    /// same spring, whose first frames move most of the content at once.
+    /// Bound the duration so a very long panel still returns promptly.
+    func duration(panel: Double) -> Double {
+        let step = max(1, min(panel / 2, visible))
+        let distance = abs(target(panel: panel) - offset)
+        return min(0.9, max(0.3, 0.3 * distance / step))
+    }
 }
 
 /// Keeps the precise position for the next leap without invalidating the
@@ -49,4 +59,8 @@ final class PanelScrollState {
     }
 
     func target(panel: Double) -> Double { geometry.target(panel: panel) }
+
+    func animation(panel: Double, reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .easeInOut(duration: geometry.duration(panel: panel))
+    }
 }

@@ -190,6 +190,19 @@ import TopophanySections
         #expect(texts(down).contains(" ␣ ") && texts(down).contains(" ↓  "))
         let up = CellsPanel.scene(tall, ctx: short, leapUp: true)
         #expect(texts(up).contains(" ↑  ") && !texts(up).contains(" ↓  "))
+        // The live button draws only its arrow when the scroll changes
+        // direction. Its placeholder must keep the footer's exact layout.
+        let live = CellsPanel.scene(tall, ctx: short, drawsLeapDirection: false)
+        #expect(live.size == down.size && live.regions == down.regions)
+        #expect(!texts(live).contains(" ↓  ") && !texts(live).contains(" ↑  "))
+        let direction = try #require(live.regions["leapDirection"])
+        #expect(r.contains(direction))
+        #expect(down.items.contains {
+            if case .text(let x, let y, " ↓  ", _, _) = $0 {
+                return abs(direction.minX - x - down.metrics.cell) < 1e-9 && direction.minY == y
+            }
+            return false
+        })
     }
 
     /// A leap goes down half the panel, no further than the scroll shows,
@@ -200,6 +213,26 @@ import TopophanySections
         #expect(PanelLeap(offset: 1100, content: 2000, visible: 700).target(panel: 1000) == 1300)
         #expect(PanelLeap(offset: 1300, content: 2000, visible: 700).atEnd)
         #expect(PanelLeap(offset: 1300, content: 2000, visible: 700).target(panel: 1000) == 0)
+    }
+
+    @Test func terminalBandsPreserveEveryVisiblePixel() throws {
+        let scene = CellsPanel.scene(previewPanel(.incidents), ctx: RenderContext(theme: ThemeStore.terminal, maxHeight: 600))
+        let header = try #require(scene.marks["status"])
+        let footer = try #require(scene.marks["footer"])
+        for (top, bottom) in [(0.0, header), (header, footer), (footer, scene.size.height)] {
+            func pixels(_ content: CellScene) throws -> Data {
+                let view = CellCanvas(scene: content)
+                    .offset(y: -top)
+                    .frame(width: scene.size.width, height: bottom - top, alignment: .top)
+                    .clipped()
+                let renderer = ImageRenderer(content: view)
+                renderer.scale = 2
+                return try #require(renderer.cgImage?.dataProvider?.data) as Data
+            }
+            let band = scene.band(top: top, bottom: bottom)
+            #expect(band.items.count < scene.items.count)
+            #expect(try pixels(band) == pixels(scene))
+        }
     }
 
     /// While no topo can run: the offer to download one, as it goes and

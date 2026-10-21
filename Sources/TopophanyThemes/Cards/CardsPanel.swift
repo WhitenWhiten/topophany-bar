@@ -92,7 +92,7 @@ struct CardsPanel: View {
     func leap() {
         guard scrolls, let panel = ctx.maxHeight else { return }
         let y = leapState.target(panel: panel)
-        withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { position.scrollTo(y: y) }
+        withAnimation(leapState.animation(panel: panel, reduceMotion: reduceMotion)) { position.scrollTo(y: y) }
     }
 }
 

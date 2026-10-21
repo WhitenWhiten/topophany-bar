@@ -30,6 +30,8 @@ import TopophanyWidgets
 ///                           a drag of DY points in Settings or the panel,
 ///                           over S seconds (default 0.6)
 ///     trace S               Settings' frame and This Mac's mode, for S seconds
+///     leaptrace             one quick scroll, with timed scroll offsets,
+///                           to leaptrace.csv
 ///     ax                    the open panel's accessibility tree
 ///     windows               each window's number and frame, the key window,
 ///                           and whether the app is active
@@ -178,6 +180,9 @@ enum DebugDriver {
         case "trace":
             guard let win = d.settingsWindow else { return }
             trace(win, model: d.model, seconds: num(1) ?? 2)
+        case "leaptrace":
+            guard let win = d.panelWindow else { return }
+            traceLeap(win)
         case "login":
             if w.count > 1 { d.model.update { $0.openAtLogin = w[1] == "on" } }
             let status = switch SMAppService.mainApp.status {
@@ -363,6 +368,33 @@ enum DebugDriver {
                      "before \(before.map { "\($0.x) \($0.y)" } ?? "-")",
                      "after \(sv.map { "\($0.contentView.bounds.origin.x) \($0.contentView.bounds.origin.y)" } ?? "-")"]
         try? lines.joined(separator: "\n").write(to: out.appending(path: "scroll.txt"), atomically: true, encoding: .utf8)
+    }
+
+    /// Samples the real scroll position and main-thread stalls during a leap.
+    static func traceLeap(_ win: NSWindow) {
+        func findScroll(_ view: NSView) -> NSScrollView? {
+            if let scroll = view as? NSScrollView { return scroll }
+            for child in view.subviews {
+                if let scroll = findScroll(child) { return scroll }
+            }
+            return nil
+        }
+        guard let root = win.contentView, let scroll = findScroll(root),
+              let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
+                                          timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: win.windowNumber,
+                                          context: nil, characters: " ", charactersIgnoringModifiers: " ",
+                                          isARepeat: false, keyCode: 49) else { return }
+        Task { @MainActor in
+            let start = ProcessInfo.processInfo.systemUptime
+            var lines = ["milliseconds,offset,content,visible"]
+            NSApp.postEvent(event, atStart: false)
+            repeat {
+                let elapsed = (ProcessInfo.processInfo.systemUptime - start) * 1000
+                lines.append("\(elapsed),\(scroll.contentView.bounds.minY),\(scroll.documentView?.frame.height ?? 0),\(scroll.contentSize.height)")
+                try? await Task.sleep(for: .milliseconds(4))
+            } while ProcessInfo.processInfo.systemUptime - start < 1.2
+            try? lines.joined(separator: "\n").write(to: out.appending(path: "leaptrace.csv"), atomically: true, encoding: .utf8)
+        }
     }
 
     /// Writes "t height y preferred mode" lines, t in milliseconds from the start.

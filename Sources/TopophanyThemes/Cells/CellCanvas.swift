@@ -101,6 +101,28 @@ public struct CellScene: Sendable {
         self.items = items
         self.live = live
     }
+
+    /// A pinned header, scrolling body and footer share one scene. Do not
+    /// lay out and paint all its text three times before clipping each band.
+    func band(top: Double, bottom: Double) -> CellScene {
+        func overlaps(_ low: Double, _ high: Double) -> Bool { high >= top && low <= bottom }
+        var result = self
+        result.items = items.filter { item in
+            switch item {
+            case .text(_, let y, _, _, _), .glyph(_, let y, _, _):
+                return overlaps(y - metrics.line, y + 2 * metrics.line)
+            case .fill(let r, _, _), .box(let r, _, _, _, _), .hatch(let r, _, _),
+                 .dots(let r, _, _, _, _), .stripes(let r, _, _):
+                return overlaps(r.minY - 1, r.maxY + 1)
+            case .line(let a, let b, _, let width, _):
+                return overlaps(min(a.y, b.y) - width, max(a.y, b.y) + width)
+            case .points(let points, _, let diameter):
+                return points.contains { overlaps($0.y - diameter, $0.y + diameter) }
+            }
+        }
+        result.live = live.filter { overlaps($0.y - metrics.line, $0.y + 2 * metrics.line) }
+        return result
+    }
 }
 
 /// Draws any `CellScene`, crisply at any scale.
