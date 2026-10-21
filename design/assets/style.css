@@ -378,7 +378,7 @@ svg.logo { fill: currentColor; stroke: none; overflow: visible; }
 .nv-tile-bar .nv-meter { flex: 1; height: 7px; border-radius: 4px; }
 .nv-tile-bar .nv-meter i { border-radius: 4px; }
 .nv-tile-g { height: 22px; margin: 5px 0 3px; position: relative; }
-.nv-bars { position: absolute; inset: 0; box-shadow: inset 0 -1px 0 var(--fill); }
+.nv-bars { position: absolute; inset: 0 0 auto; height: calc(50% + .5px); box-shadow: inset 0 -1px 0 var(--fill); }
 .nv-bars i { position: absolute; bottom: 0; background: var(--acc); }
 .nv-mirror { display: block; }
 .nv-parts { flex: 1; display: flex; height: 7px; border-radius: 4px; overflow: hidden; background: var(--fill); }

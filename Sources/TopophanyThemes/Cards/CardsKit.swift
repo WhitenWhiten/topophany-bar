@@ -507,7 +507,8 @@ struct PillView: View {
 }
 
 /// A history as bars, newest at the right, over a baseline, in the
-/// theme's meter; before the history is full, the left is baseline only.
+/// theme's meter. The baseline shares the other local graphs' centre line;
+/// before the history is full, the left is baseline only.
 struct BarHistory: View {
     var values: [Double]
     /// The value a full bar stands for.
@@ -519,7 +520,9 @@ struct BarHistory: View {
 
     var body: some View {
         Canvas { ctx, s in
-            style.drawHistory(ctx, size: s, values: values, top: top, capacity: capacity, color: color, baseline: baseline)
+            let baselineHeight = style == .rule ? 0.75 : 1.0
+            let chart = CGSize(width: s.width, height: (s.height / 2).rounded() + baselineHeight / 2)
+            style.drawHistory(ctx, size: chart, values: values, top: top, capacity: capacity, color: color, baseline: baseline)
         }
     }
 }
