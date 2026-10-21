@@ -171,6 +171,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func openPanelForSnapshot() { if let b = statusItem?.button { panel?.open(from: b) } }
     func closePanel() { panel?.close() }
     func panelKey(_ name: String) { panel?.press(name) }
+    /// A scroll in the panel, as the app's own monitor takes it: true when
+    /// the map took it.
+    func panelScroll(_ e: NSEvent) -> Bool { panel?.scroll(e) ?? false }
     func selectSettingsTab(_ i: Int) { settings?.select(i) }
     #endif
 

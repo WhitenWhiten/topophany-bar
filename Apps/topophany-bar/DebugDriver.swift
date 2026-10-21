@@ -16,7 +16,8 @@ import TopophanyWidgets
 ///     mainmenu              the app's menu bar, as text
 ///     panel | close         open or close the panel
 ///     tui                   open the TUI, as ⌘O does
-///     key up|down|return    a key in the panel
+///     key up|down|return|escape
+///                           a key in the panel
 ///     type [settings|#N] C [cmd]
 ///                           C typed into the panel, Settings or window N,
 ///                           through the app's event queue; `space` for a space
@@ -50,7 +51,8 @@ import TopophanyWidgets
 ///     scroll [panel|#N] X Y DY [DX]
 ///                           a scroll of DY (and DX) points at X Y in
 ///                           Settings, the panel or window N (a popover),
-///                           as a trackpad sends one;
+///                           as a trackpad sends one, the app's own scroll
+///                           monitor first, as the map's zoom takes it;
 ///                           how far the scroll view under it moved, to
 ///                           scroll.txt
 ///
@@ -164,7 +166,7 @@ enum DebugDriver {
             let target = number.flatMap { n in NSApp.windows.first { $0.windowNumber == n } }
             guard let x = num(1 + k), let y = num(2 + k), let dy = num(3 + k),
                   let win = target ?? (panel ? d.panelWindow : d.settingsWindow) else { return }
-            Task { await scroll(win, at: CGPoint(x: x, y: y), dy: dy, dx: num(4 + k) ?? 0) }
+            Task { await scroll(win, at: CGPoint(x: x, y: y), dy: dy, dx: num(4 + k) ?? 0, panelOf: panel ? d : nil) }
         case "trace":
             guard let win = d.settingsWindow else { return }
             trace(win, model: d.model, seconds: num(1) ?? 2)
@@ -276,9 +278,10 @@ enum DebugDriver {
     }
 
     /// Scroll wheel events at `p` (points from the window's top left), in a
-    /// few steps, to the view there; then where the scroll view under `p`
-    /// was before and after.
-    static func scroll(_ win: NSWindow, at p: CGPoint, dy: Double, dx: Double) async {
+    /// few steps, to the view there, or first to the panel's own scroll
+    /// monitor when `d` is given; then where the scroll view under `p` was
+    /// before and after.
+    static func scroll(_ win: NSWindow, at p: CGPoint, dy: Double, dx: Double, panelOf d: AppDelegate? = nil) async {
         let local = NSPoint(x: p.x, y: win.frame.height - p.y)
         let screen = win.convertPoint(toScreen: local)
         let top = NSScreen.screens.first?.frame.maxY ?? 0
@@ -296,7 +299,9 @@ enum DebugDriver {
             cg.location = CGPoint(x: screen.x, y: top - screen.y)
             cg.setIntegerValueField(.mouseEventWindowUnderMousePointer, value: Int64(win.windowNumber))
             cg.setIntegerValueField(.mouseEventWindowUnderMousePointerThatCanHandleThisEvent, value: Int64(win.windowNumber))
-            if let e = NSEvent(cgEvent: cg) {
+            if let e = NSEvent(cgEvent: cg), d?.panelScroll(e) == true {
+                seen = "to the map dy \(e.scrollingDeltaY)"
+            } else if let e = NSEvent(cgEvent: cg) {
                 // Made from a CGEvent, it has no window, so it goes to the
                 // view under `p` as the window's own hit test would send it.
                 let view = win.contentView?.hitTest(local)
