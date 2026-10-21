@@ -3,6 +3,28 @@ import Testing
 @testable import TopophanyKit
 
 @Suite struct SettingsTests {
+    @Test func mapLockDefaultsOnForExistingSettings() throws {
+        #expect(Settings().sections.mapLocked)
+        for json in ["{}", #"{"sections":[{"id":"map","enabled":true,"frame":"world"}]}"#] {
+            let settings = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
+            #expect(settings.sections.mapLocked)
+        }
+    }
+
+    @Test func mapLockPersistsWithoutChangingTheMonitorRequest() throws {
+        for locked in [false, true] {
+            var settings = Settings()
+            settings.sections.mapLocked = locked
+            settings.sections.mapFrame = .world
+            let back = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
+            #expect(back == settings)
+            #expect(back.sections.mapLocked == locked)
+            var other = settings
+            other.sections.mapLocked.toggle()
+            #expect(TemplateCompiler().request(for: settings, revision: 1) == TemplateCompiler().request(for: other, revision: 1))
+        }
+    }
+
     @Test func panelShortcutPersistsAndDoesNotChangeTheMonitorRequest() throws {
         var settings = Settings()
         #expect(settings.panelShortcut == nil)

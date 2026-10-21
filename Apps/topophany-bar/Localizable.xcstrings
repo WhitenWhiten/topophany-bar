@@ -1883,6 +1883,22 @@
         }
       }
     },
+    "Lock Geo Map": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geo Map をロック"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "锁定 Geo Map"
+          }
+        }
+      }
+    },
     "Looking for topo…": {
       "localizations": {
         "ja": {
@@ -3031,6 +3047,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "由 `topo login` 保存；应用从不接触令牌"
+          }
+        }
+      }
+    },
+    "Scroll the panel without zooming or moving the map": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地図を拡大縮小・移動せずにパネルをスクロール"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "滚轮仅滚动页面，不缩放或移动地图"
           }
         }
       }

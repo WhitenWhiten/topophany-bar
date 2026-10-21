@@ -213,6 +213,9 @@ public struct Sections: Sendable, Hashable, Codable {
     /// Map: where the nodes are, and what joins them.
     public var map = true
     public var mapFrame: MapFrame = .fit
+    /// Leave wheel and trackpad scrolling to the panel instead of zooming
+    /// or panning the map. Pinch and keyboard zoom remain available.
+    public var mapLocked = true
     /// Time zones: listed servers by the time zone of their place.
     public var zones = true
     /// A place (as `topo` names it) → the time zone chosen for it, an IANA
@@ -271,6 +274,7 @@ public struct Sections: Sendable, Hashable, Codable {
         var places: [String: String]?
         var mode: String?
         var frame: String?
+        var locked: Bool?
         var readings: [String]?
         var every: String?
         var node: String?
@@ -300,6 +304,7 @@ public struct Sections: Sendable, Hashable, Codable {
             case .map:
                 map = e.enabled ?? true
                 mapFrame = e.frame.flatMap(MapFrame.init(rawValue:)) ?? .fit
+                mapLocked = e.locked ?? true
             case .applications:
                 applications = e.enabled ?? true
                 applicationsOnly = e.only ?? []
@@ -348,6 +353,7 @@ public struct Sections: Sendable, Hashable, Codable {
             case .map:
                 e.enabled = map
                 e.frame = mapFrame.rawValue
+                e.locked = mapLocked
             case .applications:
                 e.enabled = applications
                 e.only = applicationsOnly

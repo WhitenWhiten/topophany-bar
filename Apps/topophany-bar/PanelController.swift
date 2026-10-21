@@ -353,6 +353,12 @@ final class PanelController: NSObject {
     /// keeps zooming it, its momentum spent there.
     func scroll(_ e: NSEvent) -> Bool {
         guard isOpen, let p = panel, e.window == nil || e.window === p, model.panel.map != nil else { return false }
+        // Return the whole gesture, including momentum, to the panel.
+        if model.settings.sections.mapLocked {
+            scrollBeganOver = false
+            scrollOnMap = nil
+            return false
+        }
         let at = inPanel(e)
         let over = map.frame.contains(at) && CGRect(origin: .zero, size: p.frame.size).contains(at)
         let dx = e.scrollingDeltaX, dy = e.scrollingDeltaY

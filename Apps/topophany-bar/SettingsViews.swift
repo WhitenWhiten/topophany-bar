@@ -860,6 +860,10 @@ struct SectionsSettings: View {
                     RowLabel("Keep Status pinned", "The rest scrolls beneath it")
                 }
                 .toggleStyle(.switch)
+                Toggle(isOn: model.binding(\.sections.mapLocked)) {
+                    RowLabel("Lock Geo Map", "Scroll the panel without zooming or moving the map")
+                }
+                .toggleStyle(.switch)
             }
         }
     }
