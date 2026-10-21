@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// How the panel writes times, sizes and rates. Formatting only: no value
 /// is rounded into a different meaning, and an unknown is never written as
@@ -55,31 +56,78 @@ public enum Words {
     /// set large: ("6:30", "AM"), ("12:13", "中午"), or ("18:30", "") on a
     /// 24-hour clock.
     public static func time(_ date: Date, in zone: TimeZone, locale: Locale = L10n.locale) -> (time: String, period: String) {
-        let pattern = DateFormatter.dateFormat(fromTemplate: "jmm", options: 0, locale: locale) ?? "HH:mm"
-        let f = DateFormatter()
-        f.locale = locale
-        f.timeZone = zone
-        // AM and PM, or a period of the day: "中午", "凌晨".
-        guard let r = pattern.range(of: "[abB]+", options: .regularExpression) else {
-            f.dateFormat = pattern
-            return (f.string(from: date), "")
+        let pattern = clockPattern(locale)
+        let key = ClockKey(locale: locale.identifier, hourCycle: locale.hourCycle, zone: zone.identifier)
+        let formatters = clocks.withLock { cache -> ClockFormatters in
+            if let kept = cache[key] { return kept }
+            let time = DateFormatter()
+            time.locale = locale
+            time.timeZone = zone
+            time.dateFormat = pattern.time
+            let period = pattern.period.map { format -> DateFormatter in
+                let f = DateFormatter()
+                f.locale = locale
+                f.timeZone = zone
+                f.dateFormat = format
+                return f
+            }
+            let fresh = ClockFormatters(time: time, period: period)
+            if cache.count >= 128 { cache.removeAll(keepingCapacity: true) }
+            cache[key] = fresh
+            return fresh
         }
-        var rest = pattern
-        rest.removeSubrange(r)
-        f.dateFormat = rest.trimmingCharacters(in: .whitespaces)
-        let time = f.string(from: date)
-        f.dateFormat = String(pattern[r])
-        return (time, f.string(from: date))
+        return (formatters.time.string(from: date), formatters.period?.string(from: date) ?? "")
     }
 
-    /// A time and its period as the language sets them: "6:30 AM",
-    /// "午後6:30", "中午12:13".
+    /// A time and its period as the language sets them.
     public static func clock(_ time: String, _ period: String, locale: Locale = L10n.locale) -> String {
         guard !period.isEmpty else { return time }
-        let pattern = DateFormatter.dateFormat(fromTemplate: "jmm", options: 0, locale: locale) ?? "HH:mm"
-        guard let r = pattern.range(of: "[abB]+", options: .regularExpression), let h = pattern.range(of: "[hHkK]", options: .regularExpression),
-              r.lowerBound < h.lowerBound else { return "\(time) \(period)" }
-        return pattern[r.upperBound..<h.lowerBound].contains(" ") ? "\(period) \(time)" : period + time
+        let p = clockPattern(locale)
+        return p.periodFirst ? period + (p.space ? " " : "") + time : "\(time) \(period)"
+    }
+
+    private struct LocaleKey: Hashable {
+        var locale: String
+        var hourCycle: Locale.HourCycle
+    }
+    private struct ClockKey: Hashable {
+        var locale: String
+        var hourCycle: Locale.HourCycle
+        var zone: String
+    }
+    private struct ClockPattern: Sendable {
+        var time: String
+        var period: String?
+        var periodFirst: Bool
+        var space: Bool
+    }
+    private struct ClockFormatters: Sendable {
+        let time: DateFormatter
+        let period: DateFormatter?
+    }
+    private static let patterns = Mutex<[LocaleKey: ClockPattern]>([:])
+    private static let clocks = Mutex<[ClockKey: ClockFormatters]>([:])
+
+    private static func clockPattern(_ locale: Locale) -> ClockPattern {
+        let key = LocaleKey(locale: locale.identifier, hourCycle: locale.hourCycle)
+        return patterns.withLock { cache in
+            if let kept = cache[key] { return kept }
+            let pattern = DateFormatter.dateFormat(fromTemplate: "jmm", options: 0, locale: locale) ?? "HH:mm"
+            var result = ClockPattern(time: pattern, period: nil, periodFirst: false, space: false)
+            if let r = pattern.range(of: "[abB]+", options: .regularExpression) {
+                var rest = pattern
+                rest.removeSubrange(r)
+                result.time = rest.trimmingCharacters(in: .whitespaces)
+                result.period = String(pattern[r])
+                if let h = pattern.range(of: "[hHkK]", options: .regularExpression), r.lowerBound < h.lowerBound {
+                    result.periodFirst = true
+                    result.space = pattern[r.upperBound..<h.lowerBound].contains(" ")
+                }
+            }
+            if cache.count >= 16 { cache.removeAll(keepingCapacity: true) }
+            cache[key] = result
+            return result
+        }
     }
 
     /// Whether the language sets the period before the time.

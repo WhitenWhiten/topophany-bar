@@ -63,7 +63,10 @@ public struct Handoff: Sendable, Codable {
 
     /// The panel's section models as they were when this was written.
     public func panel() -> PanelModel {
-        let s = decodedSettings
+        panel(reading: reading(), settings: decodedSettings)
+    }
+
+    private func panel(reading: Reading, settings s: TopophanyKit.Settings) -> PanelModel {
         var widgetSettings = s
         // Widgets draw every list section, whatever the panel shows.
         widgetSettings.sections.seen = true
@@ -77,17 +80,30 @@ public struct Handoff: Sendable, Codable {
         // Widgets draw neither Time zones nor local readings.
         widgetSettings.sections.zones = false
         if widgetSettings.sections.mac.mode == .local { widgetSettings.sections.mac.mode = .off }
-        return SectionBuilder.panel(PanelInput(reading: reading(), engine: engineRunning ? .running : .stopped,
+        return SectionBuilder.panel(PanelInput(reading: reading, engine: engineRunning ? .running : .stopped,
                                                settings: widgetSettings))
     }
 
     /// The panel for a Time zones widget: the zones as the clocks read at
     /// `date`, the marks as they were when this was written.
     public func panel(zonesAt date: Date, here: TimeZone = .autoupdatingCurrent) -> PanelModel {
-        var p = panel()
-        let s = decodedSettings.sections
-        p.sections = [.zones(SectionBuilder.zones(reading(), chosen: s.placeZones, pinned: s.serverNodes, here: here, at: date))]
-        return p
+        zonesPanelBuilder(here: here)(date)
+    }
+
+    /// Decode once per timeline. Only the clocks change between entries;
+    /// health remains the evidence held when the hand-off was written.
+    func zonesPanelBuilder(here: TimeZone) -> (Date) -> PanelModel {
+        let r = reading()
+        let s = decodedSettings
+        var minimal = s
+        minimal.sections.order = []
+        let base = SectionBuilder.panel(PanelInput(reading: r, engine: engineRunning ? .running : .stopped, settings: minimal))
+        return { date in
+            var p = base
+            p.sections = [.zones(SectionBuilder.zones(r, chosen: s.sections.placeZones, pinned: s.sections.serverNodes,
+                                                     here: here, at: date))]
+            return p
+        }
     }
 
     /// The servers `topo` last listed, for choosing a Server widget's node.
@@ -107,8 +123,9 @@ public struct Handoff: Sendable, Codable {
     /// The panel for a Service widget: its service's card is the one
     /// service, whether or not the panel pins it.
     public func panel(service id: String) -> PanelModel {
-        var p = panel()
-        let cards = SectionBuilder.services(reading(), ids: [id])
+        let r = reading()
+        var p = panel(reading: r, settings: decodedSettings)
+        let cards = SectionBuilder.services(r, ids: [id])
         p.sections.removeAll { if case .services = $0 { true } else { false } }
         p.sections.append(.services(cards))
         return p
@@ -117,9 +134,10 @@ public struct Handoff: Sendable, Codable {
     /// The panel for a Server widget: its node's card is the one server,
     /// whether or not the panel pins it.
     public func panel(server node: String) -> PanelModel {
-        var p = panel()
+        let r = reading()
+        var p = panel(reading: r, settings: decodedSettings)
         if case .server(let c, _)? = p.mac, c.id == node { return p }
-        let cards = SectionBuilder.servers(reading(), nodes: [node])
+        let cards = SectionBuilder.servers(r, nodes: [node])
         p.sections.removeAll { if case .servers = $0 { true } else { false } }
         p.sections.append(.servers(cards))
         return p

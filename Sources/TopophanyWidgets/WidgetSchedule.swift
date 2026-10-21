@@ -38,11 +38,12 @@ public enum WidgetSchedule {
         var dates = Set([now] + stride(from: first, to: end.timeIntervalSinceReferenceDate, by: zonesStep)
             .map { Date(timeIntervalSinceReferenceDate: $0) })
         if stale > now, stale < end { dates.insert(stale) }
+        let panel = h.zonesPanelBuilder(here: here)
         var out = dates.sorted().map { d -> (date: Date, panel: PanelModel, isCurrent: Bool) in
-            let p = h.panel(zonesAt: d, here: here)
+            let p = panel(d)
             return d < stale ? (d, p, true) : (d, p.withheld(at: d), false)
         }
-        var last = h.panel(zonesAt: end, here: here).withheld(at: end)
+        var last = panel(end).withheld(at: end)
         last.sections = last.sections.map { s in
             guard case .zones(var z) = s else { return s }
             z.isLongPast = true
