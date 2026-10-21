@@ -68,7 +68,7 @@ final class PanelController: NSObject {
         isOpen = true
         turn += 1
         model.focus = nil
-        model.refresh()
+        model.setPanelVisible(true)
         // Only a height the user chose can be too short.
         height.shortest = model.settings.appearance.panelHeight == nil ? 0 : measureShortest()
         layout()
@@ -94,6 +94,7 @@ final class PanelController: NSObject {
     func close() {
         guard let p = panel, isOpen else { return }
         isOpen = false
+        model.setPanelVisible(false)
         turn += 1
         let closing = turn
         onOpenChange?(false)

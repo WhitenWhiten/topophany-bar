@@ -73,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             switch url.host() {
             case "attention":
                 let id = value("id") ?? ""
-                let item = model.panel.attention?.items.first { $0.id == id }
+                let item = SectionBuilder.attention(model.reading, limit: 20)?.items.first { $0.id == id }
                     ?? AttentionSection.Item(id: id, kind: value("kind") ?? "", route: [], mark: .unknown,
                                              pill: .health(.unknown), observer: "", observerName: "", since: nil)
                 openTUI(focus: item)
@@ -98,7 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         about.target = self
         menu.addItem(about)
         menu.addItem(.separator())
-        let alert = model.panel.alert
+        let alert = model.menuBarAlert
         let quiet = NSMenuItem(title: tr("Quiet Until It Gets Worse"), action: #selector(toggleQuiet), keyEquivalent: "")
         quiet.target = self
         quiet.state = alert == .quiet ? .on : .off

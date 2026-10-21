@@ -175,17 +175,17 @@ func temporaryStore() -> HandoffStore {
         let count = Count()
         let bridge = WidgetBridge(store: store) { count.n += 1 }
         let p = policy(.clear)
-        bridge.tick(panel: panel(p), policy: p, theme: ThemeStore.native, settings: settings(), at: origin)
-        bridge.tick(panel: panel(p), policy: p, theme: ThemeStore.native, settings: settings(), at: origin.addingTimeInterval(1))
+        bridge.tick(panel: panel(p), reading: p.evaluate(at: origin), policy: p, theme: ThemeStore.native, settings: settings(), at: origin)
+        bridge.tick(panel: panel(p), reading: p.evaluate(at: origin), policy: p, theme: ThemeStore.native, settings: settings(), at: origin.addingTimeInterval(1))
         #expect(count.n == 1)
         #expect(store.read()?.writtenAt == origin)
-        bridge.tick(panel: panel(p), policy: p, theme: ThemeStore.terminal, settings: settings(), at: origin.addingTimeInterval(2))
+        bridge.tick(panel: panel(p), reading: p.evaluate(at: origin), policy: p, theme: ThemeStore.terminal, settings: settings(), at: origin.addingTimeInterval(2))
         #expect(count.n == 2)
         #expect(store.read()?.decodedTheme.id == "terminal")
         // A new language: the widgets draw their words again.
         var japanese = settings()
         japanese.language = .ja
-        bridge.tick(panel: panel(p), policy: p, theme: ThemeStore.terminal, settings: japanese, at: origin.addingTimeInterval(3))
+        bridge.tick(panel: panel(p), reading: p.evaluate(at: origin), policy: p, theme: ThemeStore.terminal, settings: japanese, at: origin.addingTimeInterval(3))
         #expect(count.n == 3)
         #expect(store.read()?.decodedSettings.language == .ja)
     }
@@ -194,8 +194,21 @@ func temporaryStore() -> HandoffStore {
         let count = Count()
         let bridge = WidgetBridge(store: HandoffStore(appGroup: nil)) { count.n += 1 }
         let p = policy(.clear)
-        bridge.tick(panel: panel(p), policy: p, theme: ThemeStore.native, settings: settings(), at: origin)
+        bridge.tick(panel: panel(p), reading: p.evaluate(at: origin), policy: p, theme: ThemeStore.native, settings: settings(), at: origin)
         #expect(count.n == 0)
+    }
+
+    @Test func hiddenPanelStillReloadsAtExpiry() {
+        let count = Count()
+        let bridge = WidgetBridge(store: temporaryStore()) { count.n += 1 }
+        let p = policy(.clear)
+        bridge.tick(reading: p.evaluate(at: origin), policy: p, theme: ThemeStore.native, settings: settings(), at: origin)
+        bridge.tick(panel: panel(p), reading: p.evaluate(at: origin), policy: p, theme: ThemeStore.native,
+                    settings: settings(), at: origin.addingTimeInterval(1))
+        #expect(count.n == 1)
+        let later = origin.addingTimeInterval(60)
+        bridge.tick(reading: p.evaluate(at: later), policy: p, theme: ThemeStore.native, settings: settings(), at: later)
+        #expect(count.n == 2)
     }
 }
 

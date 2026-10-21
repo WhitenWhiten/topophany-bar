@@ -40,6 +40,9 @@ final class SettingsWindowController: NSWindowController {
                 shortcut.configure(model?.settings.panelShortcut)
             }
         }
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak model] _ in
+            MainActor.assumeIsolated { model?.setSettingsVisible(false) }
+        }
     }
 
     /// Names the tabs, and the window after the one shown, in the language
@@ -59,6 +62,7 @@ final class SettingsWindowController: NSWindowController {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
     func show() {
+        model.setSettingsVisible(true)
         model.locate()
         if window?.isVisible != true { window?.center() }
         showWindow(nil)

@@ -15,6 +15,7 @@ import TopophanyWidgets
 final class AppModel {
     private(set) var settings: TopophanyKit.Settings
     private(set) var panel: PanelModel
+    private(set) var status: StatusSection
     private(set) var statusItem: StatusItemModel
     private(set) var reading: Reading
     private(set) var engineStatus: EngineStatus = .starting
@@ -42,6 +43,8 @@ final class AppModel {
     @ObservationIgnored private var tick: Timer?
     @ObservationIgnored private var revision = 0
     @ObservationIgnored private var widgetNeeds = TemplateCompiler.WidgetNeeds.none
+    @ObservationIgnored private var panelVisible = false
+    @ObservationIgnored private var settingsVisible = false
     @ObservationIgnored let machine = MachineInfo.current()
     /// Replays a fixture instead of running `topo`, for development:
     /// `-fixture incidents`.
@@ -89,6 +92,7 @@ final class AppModel {
         reading = r
         let p = SectionBuilder.panel(PanelInput(reading: r, engine: .starting, settings: s))
         panel = p
+        status = p.status
         statusItem = StatusItemModel(status: p.status, appearance: s.appearance.menuBar, local: nil)
     }
 
@@ -126,7 +130,9 @@ final class AppModel {
     /// The places `topo` names for its servers, in its order, with how many
     /// servers each has; then places given a zone that it no longer names.
     var knownPlaces: [(place: String, servers: Int)] {
-        let listed = knownServers.isEmpty ? panel.servers.filter { !$0.isMissing }.map(\.place) : knownServers.map(\.place)
+        let listed = knownServers.isEmpty
+            ? SectionBuilder.servers(reading, nodes: settings.sections.serverNodes).filter { !$0.isMissing }.map(\.place)
+            : knownServers.map(\.place)
         var out: [(place: String, servers: Int)] = []
         for p in listed where !p.isEmpty {
             if let i = out.firstIndex(where: { $0.place == p }) { out[i].servers += 1 } else { out.append((p, 1)) }
@@ -365,7 +371,7 @@ final class AppModel {
         }
     }
 
-    private func handle(_ event: EngineEvent) {
+    func handle(_ event: EngineEvent) {
         let now = Date()
         switch event {
         case .frame(let f, let line):
@@ -471,23 +477,44 @@ final class AppModel {
 
     /// Quiets the menu bar's alert until it gets worse, or shows it again.
     func toggleQuiet() {
-        switch panel.alert {
-        case .shown: quiet = QuietAlert(panel.status)
+        switch menuBarAlert {
+        case .shown: quiet = QuietAlert(status)
         case .quiet: quiet = nil
         case .unavailable: return
         }
         refresh()
     }
 
-    func refresh() {
-        let r = policy.evaluate(at: Date())
+    var menuBarAlert: MenuBarAlert {
+        !settings.appearance.menuBar.statusColors || !QuietAlert.alerts(status) ? .unavailable : quiet == nil ? .shown : .quiet
+    }
+
+    func setPanelVisible(_ visible: Bool) {
+        guard panelVisible != visible else { return }
+        panelVisible = visible
+        if visible { refresh() }
+    }
+
+    func setSettingsVisible(_ visible: Bool) {
+        guard settingsVisible != visible else { return }
+        settingsVisible = visible
+        if visible { refresh() }
+    }
+
+    func refresh(at now: Date = Date()) {
+        let r = policy.evaluate(at: now)
         reading = r
-        quiet = quiet?.after(SectionBuilder.status(r, engine: engineCondition))
-        panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: settings, local: local,
-                                                machineModel: machine.model, quiet: quiet, fetch: fetch))
-        let item = StatusItemModel(status: panel.status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)
+        let status = SectionBuilder.status(r, engine: engineCondition)
+        self.status = status
+        quiet = quiet?.after(status)
+        let visible = panelVisible || settingsVisible
+        if visible {
+            panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: settings, local: local,
+                                                    machineModel: machine.model, quiet: quiet, fetch: fetch))
+        }
+        let item = StatusItemModel(status: status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)
         if item != statusItem { statusItem = item }
-        widgets?.tick(panel: panel, policy: policy, theme: theme, settings: settings)
+        widgets?.tick(panel: visible ? panel : nil, status: status, reading: r, policy: policy, theme: theme, settings: settings, at: now)
         onChange?()
     }
 }

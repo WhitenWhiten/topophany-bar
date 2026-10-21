@@ -90,9 +90,20 @@ targets:
     sources:
       - path: Tests/TopophanyAppTests
       - path: Apps/topophany-bar/PanelShortcutController.swift
+      - path: Apps/topophany-bar/AppModel.swift
     dependencies:
       - package: topophany-bar
         product: TopophanyKit
+      - package: topophany-bar
+        product: TopophanyEngine
+      - package: topophany-bar
+        product: TopophanySections
+      - package: topophany-bar
+        product: TopophanyThemes
+      - package: topophany-bar
+        product: TopophanyWidgets
+      - package: topophany-bar
+        product: LocalReadings
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.whitenwhiten.topophany-bar.tests
