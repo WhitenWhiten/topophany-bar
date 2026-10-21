@@ -15,6 +15,7 @@ struct TopophanyWidgetBundle: WidgetBundle {
         ServerWidget()
         ServiceWidget()
         ZonesWidget()
+        MapWidget()
     }
 }
 
@@ -185,6 +186,59 @@ struct ZonesWidgetIntent: WidgetConfigurationIntent {
     var theme: ThemeChoice
 }
 
+/// How a Map widget draws the map: as the panel does, or its own way.
+enum MapModeChoice: String, AppEnum {
+    case panel, geo, virtual
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Map"
+    static let caseDisplayRepresentations: [MapModeChoice: DisplayRepresentation] = [
+        .panel: "Same as the Panel",
+        .geo: "Geo",
+        .virtual: "Virtual Geo",
+    ]
+
+    var model: Sections.MapMode? {
+        switch self {
+        case .panel: nil
+        case .geo: .geo
+        case .virtual: .virtual
+        }
+    }
+}
+
+enum MapFrameChoice: String, AppEnum {
+    case panel, fit, world
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Framing"
+    static let caseDisplayRepresentations: [MapFrameChoice: DisplayRepresentation] = [
+        .panel: "Same as the Panel",
+        .fit: "Fit Every Place",
+        .world: "The Whole World",
+    ]
+
+    var model: Sections.MapFrame? {
+        switch self {
+        case .panel: nil
+        case .fit: .fit
+        case .world: .world
+        }
+    }
+}
+
+struct MapWidgetIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Map"
+    static let description = IntentDescription("Where your servers are, and the lines between them.")
+
+    @Parameter(title: "Map", default: .panel)
+    var mode: MapModeChoice
+
+    @Parameter(title: "Framing", default: .panel)
+    var frame: MapFrameChoice
+
+    @Parameter(title: "Theme", default: .bar)
+    var theme: ThemeChoice
+}
+
 // MARK: timeline
 
 struct Entry: TimelineEntry {
@@ -216,7 +270,10 @@ enum Timelines {
         var service: String?
         if case .server(let n, _) = kind { node = n }
         if case .service(let id) = kind { service = id }
-        needs.record(key, .init(lists: family == .systemLarge || family == .systemExtraLarge, node: node, service: service, at: now))
+        var map = false
+        if case .map = kind { map = true }
+        needs.record(key, .init(lists: !map && (family == .systemLarge || family == .systemExtraLarge), node: node, service: service,
+                                map: map, at: now))
         let theme = theme(choice, h)
         return WidgetSchedule.entries(h, at: now, server: node, service: service).map { e in
             Entry(date: e.date, model: WidgetModel(kind: kind, right: right, panel: e.panel, isCurrent: e.isCurrent), theme: theme)
@@ -315,6 +372,26 @@ struct ZonesProvider: AppIntentTimelineProvider {
     }
 }
 
+struct MapProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> Entry {
+        Timelines.entries(kind: .map(mode: nil, frame: nil), right: .automatic, theme: .bar, family: context.family,
+                          key: "placeholder-map")[0]
+    }
+
+    func snapshot(for configuration: MapWidgetIntent, in context: Context) async -> Entry {
+        timeline(configuration, context)[0]
+    }
+
+    func timeline(for configuration: MapWidgetIntent, in context: Context) async -> Timeline<Entry> {
+        Timeline(entries: timeline(configuration, context), policy: .never)
+    }
+
+    func timeline(_ c: MapWidgetIntent, _ context: Context) -> [Entry] {
+        Timelines.entries(kind: .map(mode: c.mode.model, frame: c.frame.model), right: .automatic, theme: c.theme,
+                          family: context.family, key: "map-\(context.family)-\(c.mode.rawValue)-\(c.frame.rawValue)")
+    }
+}
+
 // MARK: views
 
 struct WidgetView: View {
@@ -395,6 +472,18 @@ struct ZonesWidget: Widget {
         .configurationDisplayName("Time Zones")
         .description("The time where your servers are, and each one’s health.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .contentMarginsDisabled()
+    }
+}
+
+struct MapWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: "map", intent: MapWidgetIntent.self, provider: MapProvider()) { entry in
+            WidgetView(entry: entry)
+        }
+        .configurationDisplayName("Map")
+        .description("Where your servers are, and the lines between them.")
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
         .contentMarginsDisabled()
     }
 }

@@ -168,6 +168,7 @@ public enum RowValue: Sendable, Hashable {
     case servers([ServerListEntry])
     case serviceCard(ServiceCard)
     case services([ServiceListEntry])
+    case map(MapGraph)
     /// A metric the panel doesn't draw.
     case other(JSONValue)
     /// The value didn't have its metric's shape; drawn as unknown.
@@ -188,6 +189,7 @@ public enum RowValue: Sendable, Hashable {
             case "servers.list": self = .servers(try c.decode([ServerListEntry].self, forKey: key))
             case "service.card": self = .serviceCard(try c.decode(ServiceCard.self, forKey: key))
             case "services.list": self = .services(try c.decode([ServiceListEntry].self, forKey: key))
+            case "map.graph": self = .map(try c.decode(MapGraph.self, forKey: key))
             default: self = .other(try c.decode(JSONValue.self, forKey: key))
             }
         } catch {

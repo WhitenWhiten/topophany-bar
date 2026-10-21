@@ -143,14 +143,22 @@ public struct Settings: Sendable, Hashable, Codable {
 // MARK: sections
 
 public enum SectionID: String, Sendable, Hashable, Codable, CaseIterable {
-    case status, seen, attention, applications, services, fleet, servers, zones, mac
+    case status, seen, attention, map, applications, services, fleet, servers, zones, mac
 }
 
 /// The panel's sections: their order, and each one's choices. Status is
 /// always first. Stored as an ordered array of objects, as DESIGN.md §9
 /// shows.
 public struct Sections: Sendable, Hashable, Codable {
-    public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .applications, .services, .fleet, .servers, .zones, .mac]
+    public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .map, .applications, .services, .fleet, .servers, .zones,
+                                                   .mac]
+
+    /// The map's view: the world as it is, or places as cards wired
+    /// together, west to east (the TUI's virtual geo).
+    public enum MapMode: String, Sendable, Hashable, Codable, CaseIterable { case geo, virtual }
+    /// How the map is framed before it's zoomed: every place, as `topo`'s
+    /// fit framing does, or the whole world.
+    public enum MapFrame: String, Sendable, Hashable, Codable, CaseIterable { case fit, world }
 
     public enum MacMode: String, Sendable, Hashable, Codable, CaseIterable { case local, server, off }
     public enum Reading: String, Sendable, Hashable, Codable, CaseIterable { case cpu, memory, storage, network, battery }
@@ -193,6 +201,10 @@ public struct Sections: Sendable, Hashable, Codable {
     public var servers = false
     /// Pinned servers by node ID.
     public var serverNodes: [String] = []
+    /// Map: where the nodes are, and what joins them.
+    public var map = true
+    public var mapMode: MapMode = .geo
+    public var mapFrame: MapFrame = .fit
     /// Time zones: listed servers by the time zone of their place.
     public var zones = true
     /// A place (as `topo` names it) → the time zone chosen for it, an IANA
@@ -208,6 +220,7 @@ public struct Sections: Sendable, Hashable, Codable {
         case .status: true
         case .seen: seen
         case .attention: attention
+        case .map: map
         case .applications: applications
         case .services: services
         case .fleet: fleet
@@ -222,6 +235,7 @@ public struct Sections: Sendable, Hashable, Codable {
         case .status: break
         case .seen: seen = on
         case .attention: attention = on
+        case .map: map = on
         case .applications: applications = on
         case .services: services = on
         case .fleet: fleet = on
@@ -248,6 +262,7 @@ public struct Sections: Sendable, Hashable, Codable {
         var ids: [String]?
         var places: [String: String]?
         var mode: String?
+        var frame: String?
         var readings: [String]?
         var every: String?
         var node: String?
@@ -274,6 +289,10 @@ public struct Sections: Sendable, Hashable, Codable {
             case .attention:
                 attention = e.enabled ?? true
                 attentionLimit = e.limit.map { $0 >= 5 ? 5 : 3 } ?? 3
+            case .map:
+                map = e.enabled ?? true
+                mapMode = e.mode.flatMap(MapMode.init(rawValue:)) ?? .geo
+                mapFrame = e.frame.flatMap(MapFrame.init(rawValue:)) ?? .fit
             case .applications:
                 applications = e.enabled ?? true
                 applicationsOnly = e.only ?? []
@@ -319,6 +338,10 @@ public struct Sections: Sendable, Hashable, Codable {
             case .attention:
                 e.enabled = attention
                 e.limit = attentionLimit
+            case .map:
+                e.enabled = map
+                e.mode = mapMode.rawValue
+                e.frame = mapFrame.rawValue
             case .applications:
                 e.enabled = applications
                 e.only = applicationsOnly

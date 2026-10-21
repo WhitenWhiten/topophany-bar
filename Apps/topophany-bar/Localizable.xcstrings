@@ -1355,6 +1355,38 @@
         }
       }
     },
+    "Geo, fitted": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理・全地点"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理 · 全部地点"
+          }
+        }
+      }
+    },
+    "Geo, whole world": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理・世界全体"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理 · 整个世界"
+          }
+        }
+      }
+    },
     "Height": {
       "localizations": {
         "ja": {
@@ -1639,6 +1671,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "正在查找 topo…"
+          }
+        }
+      }
+    },
+    "Map": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マップ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地图"
           }
         }
       }
@@ -3707,6 +3755,22 @@
         }
       }
     },
+    "Virtual geo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仮想地理"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虚拟地理"
+          }
+        }
+      }
+    },
     "What the collector shows from": {
       "localizations": {
         "ja": {
@@ -3751,6 +3815,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "当面板滚动时"
+          }
+        }
+      }
+    },
+    "Where your servers are, and the lines between them": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーのある場所と、その間のつながり"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器所在的位置，以及它们之间的连线"
           }
         }
       }
@@ -3815,6 +3895,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "文字"
+          }
+        }
+      }
+    },
+    "Your servers placed by name, until this topo sends its map": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この topo がマップを送るまでは、サーバーを名前から配置します"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在此 topo 发送地图之前，按名称定位服务器"
           }
         }
       }

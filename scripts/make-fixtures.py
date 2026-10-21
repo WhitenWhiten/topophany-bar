@@ -140,6 +140,67 @@ SERVICE_CARDS = {
 }
 SLOTS = 36
 
+# The map (map.graph), as View.Graph() draws topo preview's homelab: every
+# node with where it is, then the colos Cloudflare answered from. Per node:
+# id, name, kind, group, provider, parent, place, lat, lon. A node without
+# coordinates has no location; one with a parent and none of its own is
+# placed at its parent's.
+MAP_NODES = [
+    ("seattle-pc", "Windows Desktop", "desktop", "home", "Home", "", "Seattle", 47.61, -122.33),
+    ("macbook", "MacBook Pro", "laptop", "home", "Home", "", "Seattle", 47.61, -122.33),
+    ("router", "Home Router", "router", "home", "Home", "", "Seattle", 47.61, -122.33),
+    ("sj-vultr", "Vultr San Jose", "host", "relay", "Vultr", "", "San Jose", 37.34, -121.89),
+    ("bwh-la", "BandwagonHost LA", "host", "transit", "BandwagonHost", "", "Los Angeles", 34.05, -118.24),
+    ("oracle-la", "Oracle LA", "host", "exit", "Oracle", "", "Los Angeles", 33.99, -118.31),
+    ("hnl-vultr", "Vultr Honolulu", "host", "exit", "Vultr", "", "Honolulu", 21.31, -157.86),
+    ("oracle-ny", "Oracle New York", "host", "self-hosted", "Oracle", "", "New York", 40.71, -74.01),
+    ("postgres-box", "PostgreSQL Container", "container", "self-hosted", "", "oracle-ny", "", None, None),
+    ("azure-ny", "Azure New York", "host", "self-hosted", "Azure", "", "New York", 40.73, -73.94),
+    ("tokyo-vps", "GCP Tokyo", "host", "self-hosted", "GCP", "", "Tokyo", 35.68, 139.77),
+    ("openlist", "OpenList", "container", "self-hosted", "", "tokyo-vps", "", None, None),
+    ("fra-hetzner", "Hetzner Frankfurt", "host", "self-hosted", "Hetzner", "", "Frankfurt", 50.11, 8.68),
+    ("cloudflare", "Cloudflare", "edge", "edge", "Cloudflare", "", "", None, None),
+    ("vercel", "Vercel", "edge", "edge", "Vercel", "", "", None, None),
+    ("supabase", "Supabase", "platform", "edge", "Supabase", "", "Tokyo", 35.68, 139.77),
+    ("internet", "Internet", "external", "external", "", "", "", None, None),
+    ("visitors", "Visitors", "external", "external", "", "", "", None, None),
+]
+# Colos the edge in front named in fresh checks: (code, city, lat, lon,
+# the observer's node).
+MAP_COLOS = [("SJC", "San Jose", 37.36, -121.93, "sj-vultr"), ("FRA", "Frankfurt", 50.03, 8.56, "fra-hetzner")]
+# Declared links: id, from, to, and the signal of each when the scenario
+# says nothing. Unmeasured links over a passing path are carried.
+MAP_LINKS = [
+    ("win-transit", "seattle-pc", "bwh-la", "up"), ("mac-transit", "macbook", "bwh-la", "up"),
+    ("win-aux", "seattle-pc", "azure-ny", "up"), ("mac-aux", "macbook", "azure-ny", "up"),
+    ("transit-exit-a", "bwh-la", "oracle-la", "up"), ("transit-exit-b", "bwh-la", "hnl-vultr", "up"),
+    ("aux-exit-a", "azure-ny", "oracle-la", "up"), ("aux-exit-b", "azure-ny", "hnl-vultr", "up"),
+    ("exit-a-net", "oracle-la", "internet", "carried"), ("exit-b-net", "hnl-vultr", "internet", "carried"),
+    ("win-router", "seattle-pc", "router", "up"), ("mac-router", "macbook", "router", "up"),
+    ("relay-win", "sj-vultr", "seattle-pc", "up"), ("visitors-relay", "visitors", "sj-vultr", "carried"),
+    ("visitors-cf", "visitors", "cloudflare", "carried"), ("cf-app", "cloudflare", "oracle-ny", "up"),
+    ("visitors-jp", "visitors", "tokyo-vps", "carried"), ("visitors-git", "visitors", "fra-hetzner", "carried"),
+    ("visitors-vercel", "visitors", "vercel", "carried"), ("vercel-supabase", "vercel", "supabase", "carried"),
+    ("app-git", "oracle-ny", "fra-hetzner", "up"), ("home-cf", "seattle-pc", "cloudflare", "up"),
+]
+# Hops implied by declared paths that no link declares: id, from, to,
+# observer.
+MAP_PATHS = [("path:relay-entry", "sj-vultr", "bwh-la", "san-jose")]
+# Per scenario: node healths and affected nodes, and edge signals.
+MAP_SCENARIOS = {
+    "clear": dict(nodes={}, affected=set(), edges={"path:relay-entry": "carried"}),
+    "degraded": dict(nodes={}, affected={"bwh-la"},
+                     edges={"mac-transit": "degraded", "win-transit": "affected", "transit-exit-a": "affected",
+                            "path:relay-entry": "carried"}),
+    "incidents": dict(nodes={"bwh-la": "degraded"}, affected={"bwh-la", "oracle-la", "hnl-vultr"},
+                      edges={"win-transit": "down", "mac-transit": "down", "transit-exit-a": "affected",
+                             "transit-exit-b": "affected", "exit-a-net": "affected", "exit-b-net": "affected",
+                             "path:relay-entry": "down"}),
+    "incomplete": dict(nodes={"hnl-vultr": "unknown"}, affected=set(),
+                       edges={"transit-exit-b": "unknown", "aux-exit-b": "unknown", "exit-b-net": "unknown",
+                              "path:relay-entry": "carried"}),
+}
+
 # --------------------------------------------------------------- scenarios
 
 # Per scenario: observer overrides (counts and liveness), service healths,
@@ -208,6 +269,7 @@ ROWS = [
     dict(id="service-3", label="", metric="service.card", visual="card", select={"service": "workers-api"}),
     dict(id="service-4", label="", metric="service.card", visual="card", select={"service": "nightly-backup"}),
     dict(id="services", label="", metric="services.list", visual="list", select={}),
+    dict(id="map", label="", metric="map.graph", visual="map", select={}),
     dict(id="servers", label="", metric="servers.list", visual="list", select={}),
 ]
 
@@ -404,6 +466,38 @@ def server_entries(sc):
     return out
 
 
+def map_graph(key):
+    """map.graph for a scenario, as View.Graph() writes it."""
+    sc = MAP_SCENARIOS[key]
+    by = {n[0]: n for n in MAP_NODES}
+    nodes = []
+    for nid, name, kind, group, provider, parent, place, lat, lon in MAP_NODES:
+        inherited = lat is None and parent in by and by[parent][7] is not None
+        if inherited:
+            place, lat, lon = by[parent][6], by[parent][7], by[parent][8]
+        health = sc["nodes"].get(nid, "unknown" if kind == "external" else "up")
+        affected = nid in sc["affected"]
+        signal = "affected" if affected and health in ("up", "unknown") else health
+        nodes.append(dict(id=nid, name=name, kind=kind, group=group, provider=provider, parent=parent, place=place,
+                          lat=lat, lon=lon, located=lat is not None, inherited=inherited, health=health,
+                          affected=affected, signal=signal))
+    edges = []
+    for lid, a, b, signal in MAP_LINKS:
+        edges.append(dict(id=lid, **{"from": a}, to=b, kind="link", signal=sc["edges"].get(lid, signal), observer=""))
+    for pid, a, b, observer in MAP_PATHS:
+        edges.append(dict(id=pid, **{"from": a}, to=b, kind="path", signal=sc["edges"].get(pid, "carried"), observer=observer))
+    for nid, _, _, _, _, parent, _, _, _ in MAP_NODES:
+        if parent:
+            edges.append(dict(id="parent:" + nid, **{"from": parent}, to=nid, kind="contains", signal="unknown", observer=""))
+    for code, city, lat, lon, observer in MAP_COLOS:
+        cid = "colo:cloudflare:" + code
+        nodes.append(dict(id=cid, name=code, kind="colo", group="", provider="Cloudflare", parent="", place=city, lat=lat,
+                          lon=lon, located=True, inherited=False, health="unknown", affected=False, signal="carried"))
+        edges.append(dict(id=cid + ":to", **{"from": cid}, to="cloudflare", kind="colo", signal="carried", observer=""))
+        edges.append(dict(id=cid + ":from:" + observer, **{"from": observer}, to=cid, kind="colo", signal="carried", observer=""))
+    return dict(nodes=nodes, edges=edges)
+
+
 def row(template, value, text, health, t, valid, reason=None, freshness="fresh"):
     r = dict(template)
     r.update(value=value, text=text, health=health, freshness=freshness)
@@ -449,6 +543,10 @@ def running(key, sc, seq, t, extra_rows=()):
     services = service_entries(sc)
     rows.append(row(ROWS[11], services, "%d services" % len(services), worst(e["health"] for e in services), t, valid))
     rows += list(extra_rows)
+    graph = map_graph(next(k for k, v in SCENARIOS.items() if v is sc))
+    places = {n["place"] for n in graph["nodes"] if n["located"]}
+    rows.append(row(ROWS[-2], graph, "%d nodes in %d places" % (len(graph["nodes"]), len(places)),
+                    worst(n["health"] for n in graph["nodes"]), t, valid))
     listed = server_entries(sc)
     rows.append(row(ROWS[-1], listed, "%d servers" % len(listed), worst(s["health"] for s in listed), t, valid))
     return frame(key, seq, t, rows)

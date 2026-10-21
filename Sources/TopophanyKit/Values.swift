@@ -1063,3 +1063,164 @@ extension KeyedDecodingContainer {
         return n
     }
 }
+
+/// `map.graph`: the topology as the TUI's maps draw it, from `View.Graph()`.
+/// Every signal is `topo`'s; the app draws them and derives none.
+public struct MapGraph: Sendable, Hashable, Decodable {
+    /// What a map element may claim (`view.SignalRank`). A word this app
+    /// doesn't know is kept by name and drawn as unknown.
+    public enum Signal: Sendable, Hashable {
+        case up, carried, affected, degraded, down, unknown
+        case other(String)
+
+        public init(_ raw: String) {
+            switch raw {
+            case "up": self = .up
+            case "carried": self = .carried
+            case "affected": self = .affected
+            case "degraded": self = .degraded
+            case "down": self = .down
+            case "unknown": self = .unknown
+            default: self = .other(raw)
+            }
+        }
+    }
+
+    public struct Node: Sendable, Hashable, Decodable, Identifiable {
+        public var id: String
+        public var name: String
+        public var kind: String
+        public var group: String
+        public var provider: String
+        public var parent: String
+        /// Its location's label; its parent's when inherited, a colo's city.
+        public var place: String
+        /// Degrees, while `located`.
+        public var lat: Double?
+        public var lon: Double?
+        public var located: Bool
+        public var inherited: Bool
+        public var health: Health
+        public var affected: Bool
+        public var signal: Signal
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, kind, group, provider, parent, place, lat, lon, located, inherited, health, affected, signal
+        }
+
+        public init(id: String, name: String, kind: String = "", group: String = "", provider: String = "", parent: String = "",
+                    place: String = "", lat: Double? = nil, lon: Double? = nil, inherited: Bool = false, health: Health = .unknown,
+                    affected: Bool = false, signal: Signal? = nil) {
+            self.id = id
+            self.name = name
+            self.kind = kind
+            self.group = group
+            self.provider = provider
+            self.parent = parent
+            self.place = place
+            self.lat = lat
+            self.lon = lon
+            located = lat != nil && lon != nil
+            self.inherited = inherited
+            self.health = health
+            self.affected = affected
+            self.signal = signal ?? Signal(health.rawValue)
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decode(String.self, forKey: .id)
+            name = c.text(.name).flatMap { $0.isEmpty ? nil : $0 } ?? id
+            kind = c.text(.kind) ?? ""
+            group = c.text(.group) ?? ""
+            provider = c.text(.provider) ?? ""
+            parent = c.text(.parent) ?? ""
+            place = c.text(.place) ?? ""
+            // A node is placed only where it says so and both its numbers
+            // were sent.
+            let lat = c.degrees(.lat, limit: 90), lon = c.degrees(.lon, limit: 360)
+            located = (((try? c.decodeIfPresent(Bool.self, forKey: .located)) ?? nil) ?? true) && lat != nil && lon != nil
+            self.lat = located ? lat : nil
+            self.lon = located ? lon : nil
+            inherited = ((try? c.decodeIfPresent(Bool.self, forKey: .inherited)) ?? nil) ?? false
+            health = (try? c.decode(Health.self, forKey: .health)) ?? .unknown
+            affected = ((try? c.decodeIfPresent(Bool.self, forKey: .affected)) ?? nil) ?? false
+            signal = c.text(.signal).map(Signal.init) ?? Signal(health.rawValue)
+        }
+    }
+
+    public struct Edge: Sendable, Hashable, Decodable, Identifiable {
+        /// `view.EdgeKinds`. A kind this app doesn't know is kept by name
+        /// and not drawn.
+        public enum Kind: Sendable, Hashable {
+            case link, via, path, contains, colo
+            case other(String)
+
+            public init(_ raw: String) {
+                switch raw {
+                case "link": self = .link
+                case "via": self = .via
+                case "path": self = .path
+                case "contains": self = .contains
+                case "colo": self = .colo
+                default: self = .other(raw)
+                }
+            }
+        }
+
+        public var id: String
+        public var from: String
+        public var to: String
+        public var kind: Kind
+        public var signal: Signal
+        /// A path hop's observer, whose declared path implies it.
+        public var observer: String
+
+        enum CodingKeys: String, CodingKey { case id, from, to, kind, signal, observer }
+
+        public init(id: String, from: String, to: String, kind: Kind = .link, signal: Signal, observer: String = "") {
+            self.id = id
+            self.from = from
+            self.to = to
+            self.kind = kind
+            self.signal = signal
+            self.observer = observer
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            from = try c.decode(String.self, forKey: .from)
+            to = try c.decode(String.self, forKey: .to)
+            id = c.text(.id) ?? "\(from)→\(to)"
+            kind = Kind(c.text(.kind) ?? "")
+            signal = Signal(c.text(.signal) ?? "unknown")
+            observer = c.text(.observer) ?? ""
+        }
+    }
+
+    public var nodes: [Node]
+    public var edges: [Edge]
+
+    enum CodingKeys: String, CodingKey { case nodes, edges }
+
+    public init(nodes: [Node], edges: [Edge]) {
+        self.nodes = nodes
+        self.edges = edges
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        nodes = try c.decode([Node].self, forKey: .nodes)
+        // An edge whose ends aren't both nodes says nothing that can be drawn.
+        let ids = Set(nodes.map(\.id))
+        edges = ((try? c.decodeIfPresent([Edge].self, forKey: .edges)) ?? []).filter { ids.contains($0.from) && ids.contains($0.to) }
+    }
+}
+
+extension KeyedDecodingContainer {
+    /// Degrees within ±`limit`, or `nil` when absent, null or out of range.
+    func degrees(_ key: Key, limit: Double) -> Double? {
+        guard let n = (try? decodeIfPresent(Double.self, forKey: key)) ?? nil, n.isFinite, abs(n) <= limit else { return nil }
+        return n
+    }
+}

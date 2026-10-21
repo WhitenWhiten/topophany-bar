@@ -29,7 +29,8 @@ public final class WidgetBridge {
         guard store.isAvailable else { return }
         // A change of theme, language or what widgets show reloads too, and
         // so does a Server or Service widget's card changing health, or with a Time
-        // zones widget, any listed server's.
+        // zones widget, any listed server's, or with a Map widget, any place's
+        // or line's on the map.
         let reading = reader.evaluate(at: now)
         var extra = SectionBuilder.servers(reading, nodes: needs.nodes)
             .map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
@@ -37,6 +38,11 @@ public final class WidgetBridge {
             .map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
         if zones, let fleet = SectionBuilder.fleet(reading, pinned: settings.sections.serverNodes) {
             extra += ";" + fleet.groups.flatMap(\.nodes).map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
+        }
+        // A Map widget's places and lines, as each is marked.
+        if needs.map, let map = SectionBuilder.map(reading, sections: settings.sections, observer: settings.topo.observer) {
+            extra += ";" + map.nodes.map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
+                + ";" + map.edges.map { "\($0.line.rank)" }.joined(separator: ",")
         }
         let look = theme.id + settings.language.rawValue + String(describing: settings.sections) + String(describing: needs)
             + "\(zones)" + extra

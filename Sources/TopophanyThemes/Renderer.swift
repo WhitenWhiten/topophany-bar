@@ -113,13 +113,16 @@ public struct PanelActions: @unchecked Sendable {
     public var toggleQuiet: @MainActor () -> Void
     /// Downloads `topo`, while none can run.
     public var download: @MainActor (TopoBuild) -> Void
+    /// Shows the map as the world is, or as places wired together.
+    public var setMapMode: @MainActor (Sections.MapMode) -> Void
 
     public init(openTerminal: @escaping @MainActor () -> Void = {}, openSettings: @escaping @MainActor () -> Void = {},
                 quit: @escaping @MainActor () -> Void = {},
                 openAttention: @escaping @MainActor (AttentionSection.Item?) -> Void = { _ in },
                 focus: @escaping @MainActor (String?) -> Void = { _ in },
                 toggleQuiet: @escaping @MainActor () -> Void = {},
-                download: @escaping @MainActor (TopoBuild) -> Void = { _ in }) {
+                download: @escaping @MainActor (TopoBuild) -> Void = { _ in },
+                setMapMode: @escaping @MainActor (Sections.MapMode) -> Void = { _ in }) {
         self.openTerminal = openTerminal
         self.openSettings = openSettings
         self.quit = quit
@@ -127,6 +130,7 @@ public struct PanelActions: @unchecked Sendable {
         self.focus = focus
         self.toggleQuiet = toggleQuiet
         self.download = download
+        self.setMapMode = setMapMode
     }
 }
 
@@ -222,6 +226,7 @@ public enum Renderers {
                 ids += a.items.map { "attention:" + $0.id }
                 if a.more > 0 { ids.append("attention:more") }
             case .seen(let s): ids += (s.problems ?? []).map { "seen:" + $0.id }
+            case .map: ids.append("map")
             case .applications(let a): ids += a.rows.map { "app:" + $0.id }
             case .services(let cards): ids += cards.map { "service:" + $0.id }
             case .servers(let cards): ids += cards.map { "server:" + $0.id }

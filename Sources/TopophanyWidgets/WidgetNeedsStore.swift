@@ -14,13 +14,16 @@ public struct WidgetNeedsStore: Sendable {
         public var service: String?
         /// A Time zones widget, which draws every listed server's mark.
         public var zones: Bool?
+        /// A Map widget, which draws the map's graph.
+        public var map: Bool?
         public var at: Date
 
-        public init(lists: Bool, node: String?, service: String? = nil, zones: Bool = false, at: Date) {
+        public init(lists: Bool, node: String?, service: String? = nil, zones: Bool = false, map: Bool = false, at: Date) {
             self.lists = lists
             self.node = node
             self.service = service
             self.zones = zones ? true : nil
+            self.map = map ? true : nil
             self.at = at
         }
     }
@@ -47,7 +50,7 @@ public struct WidgetNeedsStore: Sendable {
         guard let url else { return }
         var all = entries().filter { entry.at.timeIntervalSince($0.value.at) < Self.forgetAfter }
         guard all[key].map({ $0.lists != entry.lists || $0.node != entry.node || $0.service != entry.service || $0.zones != entry.zones
-            || entry.at.timeIntervalSince($0.at) > 60 }) ?? true
+            || $0.map != entry.map || entry.at.timeIntervalSince($0.at) > 60 }) ?? true
         else { return }
         all[key] = entry
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -59,7 +62,8 @@ public struct WidgetNeedsStore: Sendable {
         let live = entries().values.filter { now.timeIntervalSince($0.at) < Self.forgetAfter }
         let nodes = Set(live.compactMap(\.node)).sorted()
         let services = Set(live.compactMap(\.service)).sorted()
-        return TemplateCompiler.WidgetNeeds(lists: live.contains { $0.lists }, nodes: nodes, services: services)
+        return TemplateCompiler.WidgetNeeds(lists: live.contains { $0.lists }, nodes: nodes, services: services,
+                                            map: live.contains { $0.map == true })
     }
 
     /// A Time zones widget was drawn lately.

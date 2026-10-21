@@ -136,6 +136,10 @@ public struct Capabilities: Sendable, Hashable, Decodable {
     /// Whether `services.list` is offered, for choosing services.
     public var listsServices: Bool { metrics.contains { $0.name == "services.list" } }
 
+    /// Whether `map.graph` is offered, for the map. Without it, the map
+    /// places what `servers.list` names.
+    public var drawsMap: Bool { metrics.contains { $0.name == "map.graph" } }
+
     /// The metrics the panel draws.
     public static let required = ["summary.verdict", "observers.verdicts", "attention.list", "applications.list", "server.card"]
 

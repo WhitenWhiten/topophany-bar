@@ -60,6 +60,8 @@ public enum SectionBuilder {
                 sections.append(.seen(seen(r)))
             case .attention where s.attention:
                 if let a = attention(r, limit: s.attentionLimit) { sections.append(.attention(a)) }
+            case .map where s.map:
+                if let m = map(r, sections: s, observer: input.settings.topo.observer) { sections.append(.map(m)) }
             case .applications where s.applications:
                 if let a = applications(r, only: s.applicationsOnly) { sections.append(.applications(a)) }
             case .services where s.services:

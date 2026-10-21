@@ -156,21 +156,23 @@ import TopophanySections
     }
 
     /// The keycaps are buttons, within the footer; while there's an alert,
-    /// Status's `m` too, and while no topo can run, its `d`.
+    /// Status's `m` too, and while no topo can run, its `d`. The map's
+    /// regions are its own.
     @Test func terminalKeycaps() throws {
         let ctx = RenderContext(theme: ThemeStore.terminal)
+        func keys(_ s: CellScene) -> Set<String> { Set(s.regions.keys).subtracting(["map", "mapMode", "mapMeta"]) }
         for model in [previewPanel(.clear), previewPanel(.offline)] {
             let s = CellsPanel.scene(model, ctx: ctx)
-            #expect(Set(s.regions.keys) == ["open", "settings", "quit"])
-            for r in s.regions.values { #expect(r.minY > s.marks["footer"]! && r.maxY < s.size.height) }
+            #expect(keys(s) == ["open", "settings", "quit"])
+            for k in keys(s) { #expect(s.regions[k]!.minY > s.marks["footer"]! && s.regions[k]!.maxY < s.size.height) }
         }
         let s = CellsPanel.scene(previewPanel(.incidents), ctx: ctx)
         let quiet = try #require(s.regions["quiet"])
-        #expect(Set(s.regions.keys) == ["open", "settings", "quit", "quiet"])
+        #expect(keys(s) == ["open", "settings", "quit", "quiet"])
         #expect(quiet.minY > s.marks["header"]! && quiet.maxY < s.marks["status"]!)
         let old = CellsPanel.scene(waitingPanel(.tooOld), ctx: ctx)
         let download = try #require(old.regions["download"])
-        #expect(Set(old.regions.keys) == ["open", "settings", "quit", "download"])
+        #expect(keys(old) == ["open", "settings", "quit", "download"])
         #expect(download.minY > old.marks["header"]! && download.maxY < old.marks["status"]!)
     }
 

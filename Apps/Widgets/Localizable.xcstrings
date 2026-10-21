@@ -55,6 +55,54 @@
         }
       }
     },
+    "Fit Every Place": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての地点に合わせる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "适配所有地点"
+          }
+        }
+      }
+    },
+    "Framing": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示範囲"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "范围"
+          }
+        }
+      }
+    },
+    "Geo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理"
+          }
+        }
+      }
+    },
     "Linen": {
       "localizations": {
         "ja": {
@@ -67,6 +115,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "亚麻"
+          }
+        }
+      }
+    },
+    "Map": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マップ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地图"
           }
         }
       }
@@ -231,6 +295,22 @@
         }
       }
     },
+    "Same as the Panel": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パネルと同じ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与面板相同"
+          }
+        }
+      }
+    },
     "Server": {
       "localizations": {
         "ja": {
@@ -291,6 +371,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "终端"
+          }
+        }
+      }
+    },
+    "The Whole World": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "世界全体"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整个世界"
           }
         }
       }
@@ -375,6 +471,22 @@
         }
       }
     },
+    "Virtual Geo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仮想地理"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虚拟地理"
+          }
+        }
+      }
+    },
     "What the collector concludes right now.": {
       "localizations": {
         "ja": {
@@ -387,6 +499,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "采集器此刻得出的结论。"
+          }
+        }
+      }
+    },
+    "Where your servers are, and the lines between them.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーのある場所と、その間のつながり。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器所在的位置，以及它们之间的连线。"
           }
         }
       }

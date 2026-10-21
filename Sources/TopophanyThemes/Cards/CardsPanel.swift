@@ -513,6 +513,7 @@ struct CardsSection: View {
         case .attention(let a): CardsAttention(attention: a, p: p, t: t, focus: ctx.focus)
         case .applications(let a): CardsApplications(apps: a, p: p, t: t, focus: ctx.focus)
         case .fleet(let f): CardsFleet(fleet: f, p: p, t: t)
+        case .map(let m): CardsMapCard(map: m, p: p, t: t, focused: ctx.focus == "map")
         case .services(let cards):
             Card(p: p) {
                 CardTitle(symbol: "waveform.path.ecg", title: tr("Services"), meta: tr("\(cards.count) pinned services"), p: p, t: t)

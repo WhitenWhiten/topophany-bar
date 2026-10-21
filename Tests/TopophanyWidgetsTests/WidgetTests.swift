@@ -281,4 +281,14 @@ func temporaryStore() -> HandoffStore {
         // A widget not drawn for long has been removed.
         #expect(store.needs(at: origin.addingTimeInterval(WidgetNeedsStore.forgetAfter + 1)) == .none)
     }
+    /// A Map widget asks for the map's graph, whatever the panel shows.
+    @Test func recordsTheMap() {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "topophany-bar-tests-\(UUID().uuidString)")
+        let store = WidgetNeedsStore(directory: dir)
+        store.record("status-small-automatic", .init(lists: false, node: nil, at: origin))
+        #expect(!store.needs(at: origin).map)
+        store.record("map-large-panel-panel", .init(lists: false, node: nil, map: true, at: origin))
+        #expect(store.needs(at: origin.addingTimeInterval(60)) == .init(map: true))
+        #expect(store.needs(at: origin.addingTimeInterval(WidgetNeedsStore.forgetAfter + 1)) == .none)
+    }
 }

@@ -334,6 +334,7 @@ public struct PanelModel: Sendable, Hashable {
     public enum Section: Sendable, Hashable, Identifiable {
         case seen(SeenFromSection)
         case attention(AttentionSection)
+        case map(MapSection)
         case applications(ApplicationsSection)
         case services([ServiceCardModel])
         case fleet(FleetSection)
@@ -345,6 +346,7 @@ public struct PanelModel: Sendable, Hashable {
             switch self {
             case .seen: .seen
             case .attention: .attention
+            case .map: .map
             case .applications: .applications
             case .services: .services
             case .fleet: .fleet
@@ -381,6 +383,7 @@ public struct PanelModel: Sendable, Hashable {
     public var attention: AttentionSection? { if case .attention(let s)? = section(.attention) { s } else { nil } }
     public var applications: ApplicationsSection? { if case .applications(let s)? = section(.applications) { s } else { nil } }
     public var fleet: FleetSection? { if case .fleet(let s)? = section(.fleet) { s } else { nil } }
+    public var map: MapSection? { if case .map(let s)? = section(.map) { s } else { nil } }
     public var services: [ServiceCardModel] { if case .services(let s)? = section(.services) { s } else { [] } }
     public var servers: [ServerCardModel] { if case .servers(let s)? = section(.servers) { s } else { [] } }
     public var zones: ZonesSection? { if case .zones(let s)? = section(.zones) { s } else { nil } }

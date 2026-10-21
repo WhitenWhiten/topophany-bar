@@ -32,6 +32,12 @@ final class PanelController: NSObject {
     /// were when it began, in points down from the top of the screens, and
     /// whether it has moved since.
     private var footDrag: (pointer: Double, height: Double, moved: Bool)?
+    /// Where the map is magnified and moved to, while the panel is open.
+    let map = MapViewport()
+    /// The trackpad's scroll under way: whether it began over the map, and
+    /// once it has moved, whether the map takes it to its end.
+    private var scrollBeganOver = false
+    private var scrollOnMap: Bool?
 
     /// The band at the panel's foot that drags its height.
     static let footBand = 6.0
@@ -42,14 +48,11 @@ final class PanelController: NSObject {
 
     var window: NSWindow? { panel }
 
-    /// Presses a key as the keyboard would: `up`, `down` or `return`.
+    /// Presses a key as the keyboard would: `up`, `down`, `return` or
+    /// `escape`.
     func press(_ name: String) {
-        switch name {
-        case "up": move(-1)
-        case "down": move(1)
-        case "return": activate()
-        default: break
-        }
+        let codes: [String: UInt16] = ["up": 126, "down": 125, "return": 36, "escape": 53]
+        if isOpen, let code = codes[name] { _ = key(code, command: false, characters: "") }
     }
 
     func toggle(from button: NSStatusBarButton) {
@@ -97,6 +100,10 @@ final class PanelController: NSObject {
         model.focus = nil
         footDrag = nil
         height.dragged = nil
+        // The map opens framed again next time.
+        map.isSelected = false
+        map.reset()
+        scrollOnMap = nil
         removeMonitors()
         NSAnimationContext.runAnimationGroup { c in
             c.duration = 0.12
@@ -130,7 +137,7 @@ final class PanelController: NSObject {
         p.animationBehavior = .none
         p.isReleasedWhenClosed = false
         p.foot = { [weak self] e in self?.foot(e) == true }
-        let root = PanelRoot(model: model, actions: panelActions, maxHeight: { [weak self] in self?.maxHeight ?? 800 })
+        let root = PanelRoot(model: model, actions: panelActions, maxHeight: { [weak self] in self?.maxHeight ?? 800 }, map: map)
         let h = NSHostingView(rootView: root)
         h.sizingOptions = [.intrinsicContentSize]
         p.contentView = h
@@ -145,7 +152,8 @@ final class PanelController: NSObject {
                      openAttention: { [weak self] item in self?.actions?.openAttention(item) },
                      focus: { [weak self] id in self?.model.focus = id },
                      toggleQuiet: { [weak self] in self?.actions?.toggleQuiet() },
-                     download: { [weak self] build in self?.model.download(build) })
+                     download: { [weak self] build in self?.model.download(build) },
+                     setMapMode: { [weak self] mode in self?.model.update { $0.sections.mapMode = mode } })
     }
 
     private var screen: NSScreen? { anchor?.window?.screen ?? NSScreen.main }
@@ -245,6 +253,21 @@ final class PanelController: NSObject {
             let handled = MainActor.assumeIsolated { self?.key(event) == true }
             return handled ? nil : e
         }) { monitors.append(m) }
+        // SwiftUI has no scroll wheel of its own: the map's comes from here.
+        if let m = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel], handler: { [weak self] e in
+            nonisolated(unsafe) let event = e
+            let handled = MainActor.assumeIsolated { self?.scroll(event) == true }
+            return handled ? nil : e
+        }) { monitors.append(m) }
+        // A click away from the map lets the keys go back to the panel.
+        if let m = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown], handler: { [weak self] e in
+            nonisolated(unsafe) let event = e
+            MainActor.assumeIsolated {
+                guard let self, self.map.isSelected, event.window === self.panel, !self.map.frame.contains(self.inPanel(event)) else { return }
+                self.map.isSelected = false
+            }
+            return e
+        }) { monitors.append(m) }
     }
 
     private func removeMonitors() {
@@ -252,11 +275,24 @@ final class PanelController: NSObject {
         monitors = []
     }
 
-    /// ↑↓ move, ↵ opens, Space leaps, Esc closes, ⌘O ⌘, ⌘Q.
+    /// ↑↓ move, ↵ opens, Space leaps, Esc closes, ⌘O ⌘, ⌘Q. On the map, ↵
+    /// selects it; selected, ↑ zooms in, ↓ out, and Esc lets it go.
     private func key(_ e: NSEvent) -> Bool {
         guard isOpen, e.window === panel else { return false }
-        let cmd = e.modifierFlags.contains(.command)
-        switch (e.keyCode, cmd, e.charactersIgnoringModifiers ?? "") {
+        return key(e.keyCode, command: e.modifierFlags.contains(.command), characters: e.charactersIgnoringModifiers ?? "")
+    }
+
+    private func key(_ code: UInt16, command cmd: Bool, characters: String) -> Bool {
+        if map.isSelected, model.panel.map != nil, !cmd {
+            let easing = MapViewport.easing(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
+            switch code {
+            case 126: map.step(in: true, easing: easing); return true
+            case 125: map.step(in: false, easing: easing); return true
+            case 53: map.isSelected = false; return true
+            default: break
+            }
+        }
+        switch (code, cmd, characters) {
         case (53, _, _): close(); return true
         case (126, false, _): move(-1); return true
         case (125, false, _): move(1); return true
@@ -289,12 +325,62 @@ final class PanelController: NSObject {
 
     private func activate() {
         guard let f = model.focus else { actions?.openTerminal(); return }
+        if f == "map" { map.isSelected = true; return }
         if f == "attention:more" { actions?.openAttention(nil); return }
         if f.hasPrefix("attention:"), let item = model.panel.attention?.items.first(where: { "attention:" + $0.id == f }) {
             actions?.openAttention(item)
             return
         }
         actions?.openTerminal()
+    }
+
+    // MARK: the map's scroll wheel
+
+    /// Where an event happened, in points from the panel's top left, as
+    /// SwiftUI's frames are.
+    private func inPanel(_ e: NSEvent) -> CGPoint {
+        guard let p = panel else { return .zero }
+        let screen = e.window.map { $0.convertPoint(toScreen: e.locationInWindow) } ?? e.locationInWindow
+        let local = p.convertPoint(fromScreen: screen)
+        return CGPoint(x: local.x, y: p.frame.height - local.y)
+    }
+
+    /// Over the map, the scroll wheel zooms it about the pointer, and a
+    /// trackpad's sideways scroll moves it. At its framing, a scroll that
+    /// would zoom out scrolls the panel instead, so the panel still scrolls
+    /// past the map. A trackpad's scroll keeps to where it began: one begun
+    /// away from the map scrolls the panel to its end, and one the map took
+    /// keeps zooming it, its momentum spent there.
+    func scroll(_ e: NSEvent) -> Bool {
+        guard isOpen, let p = panel, e.window == nil || e.window === p, model.panel.map != nil else { return false }
+        let at = inPanel(e)
+        let over = map.frame.contains(at) && CGRect(origin: .zero, size: p.frame.size).contains(at)
+        let dx = e.scrollingDeltaX, dy = e.scrollingDeltaY
+        func wanted() -> Bool { map.isZoomed || (dy > 0 && abs(dy) >= abs(dx)) }
+        if e.phase.contains(.began) || e.phase.contains(.mayBegin) {
+            scrollBeganOver = over
+            scrollOnMap = nil
+        }
+        // What doesn't move goes on to the panel, so its scroll view sees
+        // each gesture begin and end.
+        guard dx != 0 || dy != 0 else { return false }
+        if !e.phase.isEmpty || !e.momentumPhase.isEmpty {
+            if scrollOnMap == nil { scrollOnMap = scrollBeganOver && wanted() }
+            guard scrollOnMap == true else { return false }
+            // A zoom that glides on is hard to stop where it's wanted.
+            guard e.momentumPhase.isEmpty else { return true }
+        } else {
+            guard over, wanted() else { return false }
+        }
+        if e.hasPreciseScrollingDeltas, abs(dx) > abs(dy) {
+            map.pan(by: CGSize(width: dx, height: 0))
+        } else {
+            // A wheel's notch is a line; a trackpad's scroll is in points.
+            let per = e.hasPreciseScrollingDeltas ? 0.006 : 0.12
+            let anchor = CGPoint(x: at.x - map.frame.minX, y: at.y - map.frame.minY)
+            map.zoom(by: exp(max(-6, min(6, dy * per))), at: anchor)
+        }
+        return true
     }
 
     /// VoiceOver reads the row the keyboard moved to.
@@ -313,6 +399,8 @@ final class PanelController: NSObject {
             if let c = cards.first(where: { "server:" + $0.id == id }) { text = "\(c.name), \(c.pill.text)" }
         } else if id.hasPrefix("service:"), let c = model.panel.services.first(where: { "service:" + $0.id == id }) {
             text = "\(c.name), \(c.pill.text), \(c.checksText)"
+        } else if id == "map", let m = model.panel.map {
+            text = MapWords.summary(m)
         }
         guard !text.isEmpty, let p = panel else { return }
         NSAccessibility.post(element: p, notification: .announcementRequested,
@@ -349,6 +437,8 @@ struct PanelRoot: View {
     var model: AppModel
     var actions: PanelActions
     var maxHeight: () -> Double?
+    /// The map's viewport, where the panel is live.
+    var map: MapViewport?
     /// Another panel than the model's, to measure.
     var shown: PanelModel?
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -373,6 +463,7 @@ struct PanelRoot: View {
         Renderers.renderer(for: model.theme).panel(shown ?? model.panel, context: ctx)
             .id(model.settings.language)
             .environment(\.panelActions, actions)
+            .environment(\.mapViewport, map)
             .environment(\.locale, L10n.locale)
             .preferredColorScheme(window)
             .overlay(alignment: .bottom) {

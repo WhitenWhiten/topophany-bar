@@ -33,6 +33,7 @@ struct CellsWidget: View {
         case .server: l.server(size)
         case .service: l.service(size)
         case .zones: l.zones(size)
+        case .map: l.map(size)
         }
         return CellScene(size: bounds, metrics: m, items: l.w.items, live: l.w.live)
     }
@@ -228,6 +229,28 @@ struct CellsWidget: View {
                   x0: x0, x1: x1, style: style) { w in
                 b.zones(&w, z, shown: shown, rest: rest, lines: lines,
                         foot: !rest.isEmpty || (extra > 0 && shown.count * per + 1 <= room))
+            }
+        }
+
+        // MARK: Map
+
+        /// The map, as tall as the widget allows, and beneath it what it
+        /// can't place where there's a line for it.
+        mutating func map(_ size: WidgetSize) {
+            let x0 = pad.side, x1 = pad.side + Double(cols) * cell
+            head(cols)
+            let b = self.b
+            guard let m = model.map else {
+                w.box(title(tr("MAP")), x0: x0, x1: x1, style: style) { $0.line([.mark(.offline, p), .t(" " + tr("not received yet"), p.muted)]) }
+                return
+            }
+            let tray = size != .small && b.mapHasTray(m)
+            let rows = max(2, linesLeft - (tray ? 1 : 0))
+            let detail: MapDetail = size == .small ? .marks : .places
+            let t = b.mapTitle(m) { title($0) }
+            w.box(size == .small ? title(tr("MAP")) : t.segs, size == .small ? [] : [.t(" " + tr("\(m.places.count) places") + " ", p.muted)],
+                  x0: x0, x1: x1, style: style) { w in
+                b.map(&w, m, rows: rows, detail: detail, tray: tray)
             }
         }
 

@@ -73,6 +73,7 @@ public struct Handoff: Sendable, Codable {
         widgetSettings.sections.fleet = true
         widgetSettings.sections.servers = true
         widgetSettings.sections.services = true
+        widgetSettings.sections.map = true
         // Widgets draw neither Time zones nor local readings.
         widgetSettings.sections.zones = false
         if widgetSettings.sections.mac.mode == .local { widgetSettings.sections.mac.mode = .off }

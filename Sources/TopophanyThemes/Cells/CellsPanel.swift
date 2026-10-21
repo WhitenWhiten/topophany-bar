@@ -420,6 +420,61 @@ struct CellsBodies {
         }
     }
 
+    // MARK: map
+
+    /// The map box's title: MAP, then its two views, the one shown lit.
+    func mapTitle(_ m: MapSection, _ title: (String) -> [Seg]) -> (segs: [Seg], words: (from: Int, width: Int)) {
+        var s = title(tr("MAP")).dropLast().map { $0 }
+        let from = s.reduce(0) { $0 + $1.width } + 3
+        s += [.t(" · ", p.faint), .t(tr("geo"), m.mode == .geo ? p.text : p.faint, bold: m.mode == .geo), .t(" ", p.faint),
+              .t(tr("virtual"), m.mode == .virtual ? p.text : p.faint, bold: m.mode == .virtual), .t(" ", p.text)]
+        return (s, (from, s.reduce(0) { $0 + $1.width } - from - 1))
+    }
+
+    /// The map in `rows` lines, then what it can't place, counted with
+    /// their marks, trouble first. Returns where the map is.
+    @discardableResult
+    func map(_ w: inout CellWriter, _ m: MapSection, rows: Int, detail: MapDetail = .places, tray: Bool = true) -> CGRect {
+        let n = w.frame.columns
+        let rect = CGRect(x: w.frame.x, y: w.y, width: Double(n) * w.cell, height: Double(rows) * w.lineHeight)
+        w.items += CellsMap(map: m, p: p, metrics: w.metrics, detail: detail, plain: w.plain)
+            .items(x: rect.minX, y: rect.minY, cols: n, rows: rows)
+        w.y += rect.height
+        if tray { mapTray(&w, m) }
+        return rect
+    }
+
+    /// Whether the map has a line to say beneath it.
+    func mapHasTray(_ m: MapSection) -> Bool { MapFoot.says(m) }
+
+    func mapTray(_ w: inout CellWriter, _ m: MapSection) {
+        let n = w.frame.columns
+        if m.isTooLarge {
+            w.line([.mark(.degraded, p), .t(" " + CellText.truncate(tr("Too large to draw: see the topology in Topophany"), n - 2), p.muted)])
+            return
+        }
+        // The virtual view draws them, as pills.
+        let unplaced = m.mode == .virtual ? [] : Mark.troubleFirst(m.unplaced, by: \.mark)
+        let note = m.source == .places ? tr("placed by name") : !m.isCurrent ? tr("not current") : ""
+        guard !unplaced.isEmpty || !note.isEmpty else { return }
+        var segs: [Seg] = []
+        if !unplaced.isEmpty {
+            segs.append(.t(tr("no location") + " ", p.faint))
+            var used = segs.reduce(0) { $0 + $1.width } + CellText.width(note) + 1
+            for (i, node) in unplaced.enumerated() {
+                let name = node.name + "  "
+                let rest = unplaced.count - i
+                if used + 2 + CellText.width(name) + (rest > 1 ? 4 : 0) > n {
+                    segs += [.t("+\(rest)", p.faint)]
+                    break
+                }
+                segs += [.mark(node.mark, p), .t(" " + name, p.muted)]
+                used += 2 + CellText.width(name)
+            }
+        }
+        w.line(segs, note.isEmpty ? [] : [.t(note, p.faint)])
+    }
+
     // MARK: focus
 
     func focusRow(_ w: inout CellWriter, _ id: String, lines: Int) {
@@ -544,7 +599,15 @@ struct CellsPanel: View {
             }
             .frame(width: scene.size.width)
         } else {
-            CellCanvas(scene: scene)
+            CellCanvas(scene: scene).overlay(alignment: .topLeading) { live(scene, top: 0, bottom: scene.size.height) }
+        }
+    }
+
+    /// The map as it moves, where a band from `top` to `bottom` shows it.
+    @ViewBuilder func live(_ scene: CellScene, top: Double, bottom: Double) -> some View {
+        if let m = model.map, let r = scene.regions["map"], r.maxY > top, r.minY < bottom {
+            CellsMapLive(map: m, scene: scene, rect: r, modeWords: scene.regions["mapMode"], meta: scene.regions["mapMeta"],
+                         p: CellsPalette(ctx.theme))
         }
     }
 
@@ -568,6 +631,7 @@ struct CellsPanel: View {
     /// clicks and scrolls meant for the bands beside it.
     func slice(_ scene: CellScene, top: Double, bottom: Double) -> some View {
         CellCanvas(scene: scene)
+            .overlay(alignment: .topLeading) { live(scene, top: top, bottom: bottom) }
             .offset(y: -top)
             .frame(width: scene.size.width, height: bottom - top, alignment: .top)
             .clipped()
@@ -603,6 +667,7 @@ struct CellsPanel: View {
         w.y = 28
 
         var marks = ["header": w.y]
+        var regions: [String: CGRect] = [:]
         let x0 = 6.0, x1 = width - 6
         func title(_ t: String, _ extra: String? = nil) -> [Seg] {
             var s: [Seg] = [.t(" " + t, p.accent, bold: true)]
@@ -650,6 +715,21 @@ struct CellsPanel: View {
             case .services(let cards):
                 for c in cards {
                     w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: .panel) { b.service(&$0, c) }
+                }
+            case .map(let m):
+                let t = b.mapTitle(m, { title($0) })
+                w.box(t.segs, [.t(" " + tr("\(m.places.count) places") + " ", p.muted)], x0: x0, x1: x1, style: .panel) {
+                    regions["map"] = b.map(&$0, m, rows: 9)
+                }
+                regions["mapMeta"] = w.titleRight
+                if let o = w.titleOrigin {
+                    regions["mapMode"] = CGRect(x: o.x + Double(t.words.from) * w.cell - 2, y: o.y - 3,
+                                                width: Double(t.words.width) * w.cell + 4, height: w.lineHeight + 6)
+                }
+                if ctx.focus == "map", let r = regions["map"] {
+                    // The accent's bar a focused row has, down the map's left.
+                    w.focused = r
+                    w.items.append(.fill(CGRect(x: r.minX - w.cell + 1, y: r.minY, width: 2, height: r.height), p.accent, radius: 0))
                 }
             case .fleet(let f):
                 w.box(title(tr("FLEET"), "\(f.nodeCount)"), [.t(" " + tr("\(f.providerCount) providers") + " ", p.muted)],
@@ -712,7 +792,6 @@ struct CellsPanel: View {
             w.y += 2
         }
         // Each keycap and its label is a button.
-        var regions: [String: CGRect] = [:]
         regions["quiet"] = quietRegion
         regions["download"] = downloadRegion
         regions["focus"] = w.focused

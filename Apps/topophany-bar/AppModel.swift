@@ -145,6 +145,10 @@ final class AppModel {
     /// Whether to ask for `services.list`, for choosing services.
     private var listServices: Bool { fixture != nil || capabilities?.listsServices == true }
 
+    /// Whether to ask for `map.graph`: when this `topo` draws a map.
+    /// Without it, the map places servers by name.
+    var mapGraph: Bool { fixture != nil || capabilities?.drawsMap == true }
+
     /// Services with a card, from the latest list `topo` sent, for choosing
     /// services; without one, the services the applications list.
     var knownServices: [ServiceListEntry] {
@@ -306,7 +310,8 @@ final class AppModel {
 
     private func request(_ s: TopophanyKit.Settings) -> Request {
         var r = TemplateCompiler().request(for: effective(s), revision: 0, widgets: widgetNeeds, lang: L10n.previewLanguage,
-                                           listServers: listServers, serviceCards: cardsServices, listServices: listServices)
+                                           listServers: listServers, serviceCards: cardsServices, listServices: listServices,
+                                           mapGraph: mapGraph)
         r.requestID = ""
         return r
     }
@@ -315,7 +320,7 @@ final class AppModel {
         revision += 1
         return TemplateCompiler().request(for: effectiveSettings, revision: revision, widgets: widgetNeeds,
                                           lang: L10n.previewLanguage, listServers: listServers, serviceCards: cardsServices,
-                                          listServices: listServices)
+                                          listServices: listServices, mapGraph: mapGraph)
     }
 
     private func send() {
@@ -393,9 +398,9 @@ final class AppModel {
         Task.detached {
             let caps = try? ProcessEngine.check(path).get()
             await MainActor.run {
-                let asked = [self.listServers, self.cardsServices, self.listServices]
+                let asked = [self.listServers, self.cardsServices, self.listServices, self.mapGraph]
                 self.capabilities = caps
-                if [self.listServers, self.cardsServices, self.listServices] != asked { self.send() }
+                if [self.listServers, self.cardsServices, self.listServices, self.mapGraph] != asked { self.send() }
                 if caps?.profiles == true { self.loadProfiles(path: path) } else { self.profiles = nil }
             }
         }

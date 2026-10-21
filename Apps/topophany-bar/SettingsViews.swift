@@ -861,6 +861,7 @@ struct SectionsSettings: View {
 
 /// A section's handle, icon and name.
 struct SectionLabel: View {
+    @Environment(AppModel.self) private var model
     var id: SectionID
 
     var body: some View {
@@ -881,6 +882,7 @@ struct SectionLabel: View {
         case .fleet: "square.grid.2x2.fill"
         case .servers: "server.rack"
         case .zones: "clock.fill"
+        case .map: "map.fill"
         case .mac: "laptopcomputer"
         }
     }
@@ -895,6 +897,7 @@ struct SectionLabel: View {
         case .fleet: Color(red: 0.35, green: 0.34, blue: 0.84)
         case .servers: Color(red: 0.56, green: 0.56, blue: 0.58)
         case .zones: Color(red: 0.19, green: 0.69, blue: 0.78)
+        case .map: Color(red: 0.64, green: 0.52, blue: 0.37)
         case .mac: Color(red: 0.39, green: 0.82, blue: 1)
         }
     }
@@ -909,6 +912,8 @@ struct SectionLabel: View {
         case .fleet: RowLabel("Fleet", "Every server, edge and platform topo lists, by who runs it")
         case .servers: RowLabel("Servers", "The Servers-tab card of each server you pin")
         case .zones: RowLabel("Time zones", "The time where your servers are, and each one’s health")
+        case .map where model.mapGraph: RowLabel("Map", "Where your servers are, and the lines between them")
+        case .map: RowLabel("Map", "Your servers placed by name, until this topo sends its map")
         case .mac: RowLabel("This Mac", "Set up under This Mac")
         }
     }
@@ -944,9 +949,36 @@ struct SectionControls: View {
             ServersButton()
         case .zones:
             ZonesButton()
+        case .map:
+            MapViewPicker()
         default:
             EmptyView()
         }
+    }
+}
+
+/// How the map opens: where things are, fitted to every place or the
+/// whole world, or the places wired together. The panel's own switch
+/// changes it too.
+struct MapViewPicker: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let s = model.settings.sections
+        Picker("", selection: Binding(get: { s.mapMode == .virtual ? "virtual" : s.mapFrame.rawValue },
+                                      set: { v in model.update {
+                                          if v == "virtual" {
+                                              $0.sections.mapMode = .virtual
+                                          } else {
+                                              $0.sections.mapMode = .geo
+                                              $0.sections.mapFrame = Sections.MapFrame(rawValue: v) ?? .fit
+                                          }
+                                      } })) {
+            Text("Geo, fitted").tag("fit")
+            Text("Geo, whole world").tag("world")
+            Text("Virtual geo").tag("virtual")
+        }
+        .labelsHidden().fixedSize()
     }
 }
 

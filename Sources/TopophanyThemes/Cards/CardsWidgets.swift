@@ -25,6 +25,8 @@ struct CardsWidget: View {
                     WidgetZones(zones: z, size: size, room: CGSize(width: bounds.width - 28, height: bounds.height - 28),
                                 p: p, t: t, rendering: ctx.widgetRendering)
                 }
+            case .map:
+                WidgetMap(model: model, size: size, p: p, t: t, ctx: ctx).padding(-14)
             }
         }
         .padding(14)

@@ -39,7 +39,7 @@ Bad requests, unreachable collectors and credential problems never end the proce
 
 ```json
 {"protocol":1,"version":"1.3.0","sources":["client","preview"],
- "visuals":["text","bar","status","list","card"],
+ "visuals":["text","bar","status","list","card","map"],
  "metrics":[{"name":"summary.verdict","type":"object","sources":["client","collector"],"visual":"status"}, …],
  "profiles":true}
 ```
@@ -99,7 +99,7 @@ The template is `topo monitor`'s schema 1, validated as today, with these additi
 - **Row field `limit`:** an int, 1 to 20; default 5; only for `attention.list`.
 - **Selector `node`:** a topology node ID (`config.ID`); only for `server.card`, where it is required.
 - **Selector `service`:** a topology service ID; only for `service.card`, where it is required.
-- **New visuals:** `status`, `list` and `card`. Each metric allows exactly one visual (table below); `text` and `bar` keep their meaning for the existing metrics.
+- **New visuals:** `status`, `list`, `card` and `map`. Each metric allows exactly one visual (table below); `text` and `bar` keep their meaning for the existing metrics.
 - **`bar.row`:** must still reference a row. The consumer points it at the `summary.verdict` row.
 
 | Metric (new) | Visual | Selector | Sources |
@@ -112,6 +112,7 @@ The template is `topo monitor`'s schema 1, validated as today, with these additi
 | `servers.list` (new) | `list` | none | client, collector, preview |
 | `service.card` (new) | `card` | `service` (required) | client, collector, preview |
 | `services.list` (new) | `list` | none | client, collector, preview |
+| `map.graph` (new) | `map` | none | client, collector, preview |
 
 The existing metrics (`summary.status`, `check.status`, `host.*`, …) remain valid in stream requests with their current sources. `preview` behaves as `client` for source checks.
 
@@ -326,6 +327,33 @@ All times are RFC 3339 UTC. Every count is an integer ≥ 0. Every percentage is
 - **`application`** is the application's name, `""` for none. **`health`, `note`, `monitored` and `elsewhere`** are as in `service.card`. **`host`** is `{id, name, kind, provider}`: `service.card`'s without `where` and `health`. In a cached view, every `health` is `unknown`.
 - **The row's `health`:** the worst entry's. **`text`:** for example `"23 services"`.
 - **The row's `valid_until`:** the earliest deadline of the source envelope and the listed services' states.
+
+#### `map.graph` (new)
+
+```json
+{"nodes":[{"id":"transit","name":"Primary BandwagonHost","kind":"host","group":"transit","provider":"bandwagon","parent":"",
+   "place":"Los Angeles","lat":34.05,"lon":-118.24,"located":true,"inherited":false,
+   "health":"up","affected":true,"signal":"affected"},
+  {"id":"cf","name":"Cloudflare","kind":"edge","group":"edge","provider":"cloudflare","parent":"","place":"",
+   "lat":null,"lon":null,"located":false,"inherited":false,"health":"up","affected":false,"signal":"up"}],
+ "edges":[{"id":"mac-transit","from":"mac","to":"transit","kind":"link","signal":"down","observer":""},
+  {"id":"path:w-transit-exit-a","from":"transit","to":"exit-a","kind":"path","signal":"affected","observer":"obs-win"}]}
+```
+
+- **Built from `View.Graph()`,** the nodes and edges the TUI's maps draw. The app adds nothing: no signal, no link and no place of its own.
+- **`nodes`:** every topology node, in topology order, then the colo pseudo-nodes `Graph` adds (`kind: "colo"`, `id` `colo:<edge>:<code>`), at most 256 and 32 of them.
+  - `name`, `kind`, `group`, `provider` and `parent` come from the node.
+  - `place` is its location's label: its parent's when `inherited`, the colo's city for a colo, `""` when it has none.
+  - `lat` and `lon` are degrees when `located`, and `null` otherwise. `located` is `true` when the node has a declared location, its own or, when `inherited`, its parent's.
+  - `health` and `affected` are the node's state as the TUI shows it. In a cached view, every `health` is `unknown`.
+  - `signal` is what the node may claim, `view.NodeSignal`: `up`, `affected`, `degraded`, `down` or `unknown`, and for a colo `carried` too. Consumers draw `signal`; they never derive it from `health` and `affected`.
+- **`edges`:** at most 512, in `Graph`'s order: declared links, the hops in front of endpoints, the hops of declared paths, nodes hosted in others, then colo hops. Both ends of every edge are in `nodes`.
+  - `kind` is `link`, `via`, `path`, `contains` or `colo` (`view.EdgeKinds`).
+  - `signal` is what the edge may claim (`view.SignalRank`): `up`, `carried`, `affected`, `degraded`, `down` or `unknown`. A link no check measures is `carried` while a declared path over it succeeds end to end. A path hop is an expectation, never a measured link.
+  - `observer` is, for a path hop, the observer whose declared path implies it, and `""` otherwise.
+- **Too large to draw:** past either limit, `value: null`, `health: "unknown"`, `reason: "graph_too_large"`.
+- **The row's `health`:** the worst node `health`. **`text`:** for example `"18 nodes in 7 places"`.
+- **The row's `valid_until`:** the earliest deadline of the source envelope and of the node, link, path and check states the signals rely on, the checks that place colos included. The value has no nested deadlines: past the row's, the whole value is withheld (section 5).
 
 ## 4. When frames are written
 

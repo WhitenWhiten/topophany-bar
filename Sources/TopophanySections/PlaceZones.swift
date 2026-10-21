@@ -14,17 +14,20 @@ public enum PlaceZones {
     /// The zone whose city the place names, in English, Japanese or
     /// Chinese: "Tokyo", "東京", "Frankfurt am Main", "Seattle (home)".
     /// Nil when no city matches, as for "anycast" or coordinates.
-    public static func suggestion(for place: String) -> String? {
+    public static func suggestion(for place: String) -> String? { lookup(place, in: table) }
+
+    /// What `table` holds for the city a place names, its keys folded: the
+    /// city itself, or the longest city the label starts with, ending at a
+    /// word's end: "tokyo 2" and "frankfurt am main", never "parisian".
+    static func lookup<V>(_ place: String, in table: [String: V]) -> V? {
         let key = fold(place)
         guard !key.isEmpty else { return nil }
-        if let z = table[key] { return z }
-        // The longest city the label starts with, ending at a word's end:
-        // "tokyo 2" and "frankfurt am main", never "parisian".
-        var best: (String, String)?
-        for (city, zone) in table where city.count > (best?.0.count ?? 0) && key.hasPrefix(city) {
+        if let v = table[key] { return v }
+        var best: (String, V)?
+        for (city, value) in table where city.count > (best?.0.count ?? 0) && key.hasPrefix(city) {
             let rest = key.dropFirst(city.count)
             let joined = rest.first.map { $0.isLetter && !isCJK(city.last ?? " ") } ?? false
-            if !joined { best = (city, zone) }
+            if !joined { best = (city, value) }
         }
         return best?.1
     }

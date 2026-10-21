@@ -128,7 +128,7 @@ import Testing
     @Test func missingAndUnknownFields() throws {
         let s = try JSONDecoder().decode(Settings.self, from: Data(#"{"future":1,"topo":{"interval":"90m"},"sections":[{"id":"mac","mode":"off"},{"id":"bogus"},{"id":"status"}]}"#.utf8))
         #expect(s.topo.interval == "1h")
-        #expect(s.sections.order == [.status, .seen, .attention, .applications, .services, .fleet, .servers, .zones, .mac])
+        #expect(s.sections.order == [.status, .seen, .attention, .map, .applications, .services, .fleet, .servers, .zones, .mac])
         #expect(s.sections.mac.mode == .off)
         #expect(s.sections.isEnabled(.mac) == false)
         #expect(s.appearance == Settings.Appearance())
@@ -155,9 +155,13 @@ import Testing
     @Test func missingSectionsTakeTheirPlace() throws {
         let old = #"{"sections":[{"id":"status"},{"id":"mac"},{"id":"seen"},{"id":"attention"},{"id":"servers"}]}"#
         let s = try JSONDecoder().decode(Settings.self, from: Data(old.utf8))
-        #expect(s.sections.order == [.status, .mac, .seen, .attention, .applications, .services, .fleet, .servers, .zones])
-        // Time zones and Fleet, newer than such a file, are on.
+        #expect(s.sections.order == [.status, .mac, .seen, .attention, .map, .applications, .services, .fleet, .servers, .zones])
+        // Time zones, Fleet and Map, newer than such a file, are on, the map
+        // as the TUI frames it.
         #expect(s.sections.zones)
+        #expect(s.sections.map)
+        #expect(s.sections.mapMode == .geo)
+        #expect(s.sections.mapFrame == .fit)
         #expect(s.sections.fleet)
         #expect(s.sections.placeZones.isEmpty)
         // Services, newer still, are off until pinned.

@@ -68,6 +68,9 @@ public enum CellItem: Sendable {
     /// Vertical stripes `period` apart, half on and half off.
     case stripes(CGRect, RGBA, period: Double)
     case line(from: CGPoint, to: CGPoint, RGBA, width: Double, dash: [Double])
+    /// Dots `diameter` wide at each point, as braille dots sit in their
+    /// cells: the maps' land, lines and rings.
+    case points([CGPoint], RGBA, diameter: Double)
 }
 
 /// An age that counts up on its own, as a widget's must between reloads:
@@ -107,59 +110,7 @@ public struct CellCanvas: View {
     public init(scene: CellScene) { self.scene = scene }
 
     public var body: some View {
-        Canvas(rendersAsynchronously: false) { ctx, _ in
-            let m = scene.metrics
-            for item in scene.items {
-                switch item {
-                case .fill(let r, let c, let radius):
-                    ctx.fill(Path(roundedRect: r, cornerRadius: radius, style: .continuous), with: .color(Color(c)))
-                case .box(let r, let c, let radius, let gaps, let style):
-                    var box = ctx
-                    if !gaps.isEmpty {
-                        box.clip(to: Self.outside(gaps, of: r), style: FillStyle(eoFill: true))
-                    }
-                    box.stroke(Self.edge(r, style: style, radius: radius, arm: m.cell - 2.5), with: .color(Color(c)), lineWidth: 1)
-                case .hatch(let r, let c, let period):
-                    var h = ctx
-                    h.clip(to: Path(r))
-                    var p = Path()
-                    var x = r.minX - r.height
-                    while x < r.maxX {
-                        p.move(to: CGPoint(x: x, y: r.maxY))
-                        p.addLine(to: CGPoint(x: x + r.height, y: r.minY))
-                        x += period
-                    }
-                    h.stroke(p, with: .color(Color(c)), lineWidth: period * 0.42)
-                case .dots(let r, let c, let d, let columns, let rows):
-                    let px = columns > 1 ? (r.width - d) / Double(columns - 1) : 0
-                    let py = rows > 1 ? (r.height - d) / Double(rows - 1) : 0
-                    var p = Path()
-                    for i in 0..<max(0, columns) {
-                        for j in 0..<max(0, rows) {
-                            p.addEllipse(in: CGRect(x: r.minX + Double(i) * px, y: r.minY + Double(j) * py, width: d, height: d))
-                        }
-                    }
-                    ctx.fill(p, with: .color(Color(c)))
-                case .stripes(let r, let c, let period):
-                    var x = r.minX
-                    var p = Path()
-                    while x < r.maxX {
-                        p.addRect(CGRect(x: x, y: r.minY, width: min(period / 2, r.maxX - x), height: r.height))
-                        x += period
-                    }
-                    ctx.fill(p, with: .color(Color(c)))
-                case .line(let a, let b, let c, let w, let dash):
-                    var p = Path()
-                    p.move(to: a)
-                    p.addLine(to: b)
-                    ctx.stroke(p, with: .color(Color(c)), style: StrokeStyle(lineWidth: w, dash: dash.map { CGFloat($0) }))
-                case .text(let x, let y, let s, let c, let bold):
-                    Self.drawText(&ctx, s, x: x, y: y, color: c, bold: bold, metrics: m)
-                case .glyph(let x, let y, let g, let c):
-                    Self.drawGlyph(&ctx, g, x: x, y: y, color: c, metrics: m)
-                }
-            }
-        }
+        Canvas(rendersAsynchronously: false) { ctx, _ in Self.draw(scene.items, in: &ctx, metrics: scene.metrics) }
         .frame(width: scene.size.width, height: scene.size.height)
         .overlay(alignment: .topLeading) {
             ForEach(Array(scene.live.enumerated()), id: \.offset) { _, a in
@@ -173,6 +124,64 @@ public struct CellCanvas: View {
                     .background(a.background.map { Color($0) } ?? .clear)
                     .frame(width: a.right, alignment: .trailing)
                     .offset(y: a.y)
+            }
+        }
+    }
+
+    /// Draws `items` in `ctx`.
+    static func draw(_ items: [CellItem], in ctx: inout GraphicsContext, metrics m: CellMetrics) {
+        for item in items {
+            switch item {
+            case .fill(let r, let c, let radius):
+                ctx.fill(Path(roundedRect: r, cornerRadius: radius, style: .continuous), with: .color(Color(c)))
+            case .box(let r, let c, let radius, let gaps, let style):
+                var box = ctx
+                if !gaps.isEmpty {
+                    box.clip(to: Self.outside(gaps, of: r), style: FillStyle(eoFill: true))
+                }
+                box.stroke(Self.edge(r, style: style, radius: radius, arm: m.cell - 2.5), with: .color(Color(c)), lineWidth: 1)
+            case .hatch(let r, let c, let period):
+                var h = ctx
+                h.clip(to: Path(r))
+                var p = Path()
+                var x = r.minX - r.height
+                while x < r.maxX {
+                    p.move(to: CGPoint(x: x, y: r.maxY))
+                    p.addLine(to: CGPoint(x: x + r.height, y: r.minY))
+                    x += period
+                }
+                h.stroke(p, with: .color(Color(c)), lineWidth: period * 0.42)
+            case .dots(let r, let c, let d, let columns, let rows):
+                let px = columns > 1 ? (r.width - d) / Double(columns - 1) : 0
+                let py = rows > 1 ? (r.height - d) / Double(rows - 1) : 0
+                var p = Path()
+                for i in 0..<max(0, columns) {
+                    for j in 0..<max(0, rows) {
+                        p.addEllipse(in: CGRect(x: r.minX + Double(i) * px, y: r.minY + Double(j) * py, width: d, height: d))
+                    }
+                }
+                ctx.fill(p, with: .color(Color(c)))
+            case .stripes(let r, let c, let period):
+                var x = r.minX
+                var p = Path()
+                while x < r.maxX {
+                    p.addRect(CGRect(x: x, y: r.minY, width: min(period / 2, r.maxX - x), height: r.height))
+                    x += period
+                }
+                ctx.fill(p, with: .color(Color(c)))
+            case .line(let a, let b, let c, let w, let dash):
+                var p = Path()
+                p.move(to: a)
+                p.addLine(to: b)
+                ctx.stroke(p, with: .color(Color(c)), style: StrokeStyle(lineWidth: w, dash: dash.map { CGFloat($0) }))
+            case .points(let pts, let c, let d):
+                var p = Path()
+                for pt in pts { p.addEllipse(in: CGRect(x: pt.x - d / 2, y: pt.y - d / 2, width: d, height: d)) }
+                ctx.fill(p, with: .color(Color(c)))
+            case .text(let x, let y, let s, let c, let bold):
+                Self.drawText(&ctx, s, x: x, y: y, color: c, bold: bold, metrics: m)
+            case .glyph(let x, let y, let g, let c):
+                Self.drawGlyph(&ctx, g, x: x, y: y, color: c, metrics: m)
             }
         }
     }

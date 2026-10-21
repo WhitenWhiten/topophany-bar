@@ -127,6 +127,7 @@ func onDesktop(_ model: WidgetModel, _ size: WidgetSize, bounds: CGSize? = nil, 
                         case .text(_, let y, _, _, _), .glyph(_, let y, _, _): y + scene.metrics.line
                         case .fill(let r, _, _), .box(let r, _, _, _, _), .stripes(let r, _, _), .hatch(let r, _, _), .dots(let r, _, _, _, _): r.maxY
                         case .line(let a, let b, _, _, _): max(a.y, b.y)
+                        case .points(let pts, _, let d): (pts.map(\.y).max() ?? 0) + d / 2
                         }
                     }.max() ?? 0
                     #expect(bottom <= bounds.height - 6, "\(theme.id) \(n)\(tag): \(bottom) of \(bounds.height)")

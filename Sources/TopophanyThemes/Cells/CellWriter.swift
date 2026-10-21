@@ -145,6 +145,10 @@ struct CellWriter {
     var frame: Frame
     /// Monochrome (another app in front): boxes become plain headings.
     var plain = false
+    /// Where the last box's title was set.
+    var titleOrigin: CGPoint?
+    /// Where the last box's right-hand title was drawn, if it had one.
+    var titleRight: CGRect?
 
     var cell: Double { metrics.cell }
     var lineHeight: Double { metrics.line }
@@ -373,6 +377,8 @@ struct CellWriter {
             // Monochrome: a plain heading, no border.
             y += style.margin * 0.4
             let f = Frame(x: x0 + 1, columns: Int(((x1 - x0) / cell).rounded(.down)) - 1)
+            titleOrigin = CGPoint(x: f.x, y: y)
+            titleRight = nil
             line(title, right, in: f)
             let saved = frame
             frame = Frame(x: x0 + 1, columns: f.columns)
@@ -395,9 +401,12 @@ struct CellWriter {
         var titleItems = CellWriter(metrics: metrics, palette: p, width: width, frame: frame)
         let tw = Double(title.reduce(0) { $0 + $1.width }) * cell
         titleItems.draw(title, x: titleX, y: titleY)
+        titleOrigin = CGPoint(x: titleX, y: titleY)
+        titleRight = nil
         var gaps = [titleX...(titleX + tw)]
         let rw = Double(right.reduce(0) { $0 + $1.width }) * cell
         if rw > 0 {
+            titleRight = CGRect(x: rightEnd - rw, y: titleY, width: rw, height: lineHeight)
             titleItems.draw(right, x: rightEnd - rw, y: titleY)
             gaps.append((rightEnd - rw)...rightEnd)
         }

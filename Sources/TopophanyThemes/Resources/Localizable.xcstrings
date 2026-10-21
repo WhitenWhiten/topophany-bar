@@ -468,6 +468,40 @@
         }
       }
     },
+    "%lld places": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld place"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld places"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 地点"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个地点"
+          }
+        }
+      }
+    },
     "%lld providers": {
       "localizations": {
         "en": {
@@ -596,6 +630,22 @@
         }
       }
     },
+    "%lld without a location": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置なし %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个无位置"
+          }
+        }
+      }
+    },
     "%lld without a time zone": {
       "localizations": {
         "ja": {
@@ -689,6 +739,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld/%lld 个观测点在线"
+          }
+        }
+      }
+    },
+    "%lld° folded": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld° 省略"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "折叠 %lld°"
           }
         }
       }
@@ -887,6 +953,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "应用"
+          }
+        }
+      }
+    },
+    "Back to every place": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての地点に戻る"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回到所有地点"
+          }
+        }
+      }
+    },
+    "Back to the whole world": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "世界全体に戻る"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回到整个世界"
           }
         }
       }
@@ -1099,6 +1197,22 @@
         }
       }
     },
+    "Geo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理"
+          }
+        }
+      }
+    },
     "LIVE": {
       "localizations": {
         "ja": {
@@ -1111,6 +1225,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "实时"
+          }
+        }
+      }
+    },
+    "MAP": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マップ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地图"
           }
         }
       }
@@ -1159,6 +1289,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "内存"
+          }
+        }
+      }
+    },
+    "Map": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マップ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地图"
           }
         }
       }
@@ -1335,6 +1481,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "此节点上没有服务"
+          }
+        }
+      }
+    },
+    "Not current": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最新ではない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非当前状态"
           }
         }
       }
@@ -1803,6 +1965,54 @@
         }
       }
     },
+    "Show Every Place": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての地点を表示"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示所有地点"
+          }
+        }
+      }
+    },
+    "Show places where they are": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地点を地図上に表示"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在地图上显示地点"
+          }
+        }
+      }
+    },
+    "Show places wired together": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地点のつながりを表示"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示地点之间的连接"
+          }
+        }
+      }
+    },
     "Show the menu bar’s colors again": {
       "localizations": {
         "ja": {
@@ -1931,6 +2141,22 @@
         }
       }
     },
+    "Too large to draw: see the topology in Topophany": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大きすぎて描けません。トポロジーは Topophany で"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太大，无法绘制：请在 Topophany 中查看拓扑"
+          }
+        }
+      }
+    },
     "Topophany": {
       "localizations": {
         "ja": {
@@ -1959,6 +2185,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@更新"
+          }
+        }
+      }
+    },
+    "Virtual": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仮想"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虚拟"
+          }
+        }
+      }
+    },
+    "Zoom In": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拡大"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放大"
+          }
+        }
+      }
+    },
+    "Zoom Out": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "縮小"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缩小"
           }
         }
       }
@@ -2109,6 +2383,22 @@
         }
       }
     },
+    "fit": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全地点"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部地点"
+          }
+        }
+      }
+    },
     "from %@": {
       "localizations": {
         "ja": {
@@ -2121,6 +2411,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "来自 %@"
+          }
+        }
+      }
+    },
+    "geo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地理"
           }
         }
       }
@@ -2253,6 +2559,22 @@
         }
       }
     },
+    "no location": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置なし"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无位置"
+          }
+        }
+      }
+    },
     "no server chosen": {
       "localizations": {
         "ja": {
@@ -2297,6 +2619,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "无"
+          }
+        }
+      }
+    },
+    "not current": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最新でない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非当前"
           }
         }
       }
@@ -2477,6 +2815,22 @@
         }
       }
     },
+    "placed by name": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前から配置"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按名称定位"
+          }
+        }
+      }
+    },
     "press %@": {
       "localizations": {
         "ja": {
@@ -2621,6 +2975,22 @@
         }
       }
     },
+    "virtual": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仮想"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "虚拟"
+          }
+        }
+      }
+    },
     "warn": {
       "localizations": {
         "ja": {
@@ -2633,6 +3003,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "警告"
+          }
+        }
+      }
+    },
+    "world": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "世界"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "世界"
+          }
+        }
+      }
+    },
+    "↑ ↓ zoom · esc": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↑ ↓ ズーム · esc"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↑ ↓ 缩放 · esc"
           }
         }
       }
