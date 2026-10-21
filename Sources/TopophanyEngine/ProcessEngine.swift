@@ -98,7 +98,14 @@ public final class ProcessEngine: Engine {
             try? await Task.sleep(for: .milliseconds(50))
         }
         let p = state.withLock { $0.process }
-        if let p, p.isRunning { p.terminate() }
+        if let p, p.isRunning {
+            p.terminate()
+            for _ in 0..<20 {
+                if !p.isRunning { return }
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            if p.isRunning { kill(p.processIdentifier, SIGKILL) }
+        }
     }
 
     /// Closes `topo`'s stdin at once, as the app quits. `topo` writes its
@@ -218,7 +225,8 @@ public final class ProcessEngine: Engine {
         // A write to a process that has gone fails instead of raising SIGPIPE.
         _ = fcntl(input.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
         let exited = DispatchSemaphore(value: 0)
-        p.terminationHandler = { _ in exited.signal() }
+        let outputOrExit = DispatchSemaphore(value: 0)
+        p.terminationHandler = { _ in exited.signal(); outputOrExit.signal() }
         do {
             try p.run()
         } catch {
@@ -235,45 +243,88 @@ public final class ProcessEngine: Engine {
         }
         yield(.status(.running(.init(pid: p.processIdentifier, path: path, version: version, startedAt: clock.now()))))
 
-        let readers = DispatchGroup()
-        readers.enter()
+        let stdoutFinished = DispatchSemaphore(value: 0)
+        let stderrFinished = DispatchSemaphore(value: 0)
+        let stdoutControl = ReadControl()
+        let stderrControl = ReadControl()
         Thread.detachNewThread { [self] in
-            readFrames(output.fileHandleForReading)
-            readers.leave()
+            readFrames(output.fileHandleForReading, control: stdoutControl)
+            yield(.sourceEnded)
+            stdoutFinished.signal()
+            outputOrExit.signal()
         }
-        readers.enter()
         Thread.detachNewThread { [self] in
-            readDiagnostics(errors.fileHandleForReading)
-            readers.leave()
+            readDiagnostics(errors.fileHandleForReading, control: stderrControl)
+            stderrFinished.signal()
         }
-        // stdout closing ends the stream even if the process lingers.
-        readers.wait()
-        var reaped = false
-        if p.isRunning {
-            reaped = exited.wait(timeout: .now() + 2) == .success
-            if !reaped { p.terminate() }
+        // stdout alone ends the source. A descendant may inherit either
+        // pipe, so neither reader may wait forever after topo exits.
+        outputOrExit.wait()
+        if stdoutFinished.wait(timeout: .now() + 0.25) == .timedOut {
+            stdoutControl.stop()
+            _ = stdoutFinished.wait(timeout: .now() + 1)
         }
-        if !reaped { exited.wait() }
+        var reaped = exited.wait(timeout: .now() + 2) == .success
+        if !reaped, p.isRunning {
+            p.terminate()
+            reaped = exited.wait(timeout: .now() + 1) == .success
+        }
+        if !reaped, p.isRunning {
+            kill(p.processIdentifier, SIGKILL)
+            _ = exited.wait(timeout: .now() + 1)
+        }
+        if stderrFinished.wait(timeout: .now() + 0.25) == .timedOut {
+            stderrControl.stop()
+            _ = stderrFinished.wait(timeout: .now() + 1)
+        }
         state.withLock { s in
             s.process = nil
             s.stdin = nil
         }
         try? input.fileHandleForWriting.close()
+        guard !p.isRunning else { return "topo did not exit after stdout closed" }
         switch p.terminationReason {
         case .uncaughtSignal: return "topo ended by signal \(p.terminationStatus)"
         default: return p.terminationStatus == 0 ? "topo exited" : "topo exited with status \(p.terminationStatus)"
         }
     }
 
-    private func readFrames(_ handle: FileHandle) {
-        var decoder = FrameDecoder()
+    private final class ReadControl: Sendable {
+        private let stopped = Mutex(false)
+        let wake = Pipe()
+        var isStopped: Bool { stopped.withLock { $0 } }
+        func stop() {
+            let first = stopped.withLock { s in
+                guard !s else { return false }
+                s = true
+                return true
+            }
+            if first { try? wake.fileHandleForWriting.write(contentsOf: Data([1])) }
+        }
+    }
+
+    /// A cancellation pipe wakes a blocked reader without periodic polling,
+    /// even if a descendant retains stdout or stderr.
+    private func readChunks(_ handle: FileHandle, control: ReadControl, consume: (Data) -> Void) {
         let fd = handle.fileDescriptor
+        var descriptors = [pollfd(fd: fd, events: Int16(POLLIN), revents: 0),
+                           pollfd(fd: control.wake.fileHandleForReading.fileDescriptor, events: Int16(POLLIN), revents: 0)]
         var buffer = [UInt8](repeating: 0, count: 64 * 1024)
-        while true {
+        while !control.isStopped {
+            let ready = poll(&descriptors, 2, -1)
+            if ready < 0, errno == EINTR { continue }
+            guard ready > 0, !control.isStopped, descriptors[0].revents & Int16(POLLNVAL) == 0 else { break }
             let n = buffer.withUnsafeMutableBytes { read(fd, $0.baseAddress, $0.count) }
             if n < 0, errno == EINTR { continue }
             guard n > 0 else { break }
-            emit(decoder.feed(Data(buffer[0..<n])))
+            consume(Data(buffer[0..<n]))
+        }
+    }
+
+    private func readFrames(_ handle: FileHandle, control: ReadControl) {
+        var decoder = FrameDecoder()
+        readChunks(handle, control: control) { chunk in
+            emit(decoder.feed(chunk))
         }
         emit(decoder.finish())
     }
@@ -288,11 +339,9 @@ public final class ProcessEngine: Engine {
         }
     }
 
-    private func readDiagnostics(_ handle: FileHandle) {
+    private func readDiagnostics(_ handle: FileHandle, control: ReadControl) {
         var pending = Data()
-        while true {
-            let d = handle.availableData
-            guard !d.isEmpty else { break }
+        readChunks(handle, control: control) { d in
             pending.append(d)
             while let nl = pending.firstIndex(of: 0x0A) {
                 let line = String(decoding: pending[pending.startIndex..<nl], as: UTF8.self)

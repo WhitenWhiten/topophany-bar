@@ -17,6 +17,9 @@ public protocol Engine: AnyObject, Sendable {
 public enum EngineEvent: Sendable {
     case frame(Frame, line: Data)
     case status(EngineStatus)
+    /// stdout ended; the process may still be exiting. Its evidence is
+    /// unavailable immediately, independently of stderr and reaping.
+    case sourceEnded
     /// A line `topo` wrote to stderr, or a line that wasn't a frame. Shown,
     /// never parsed.
     case diagnostic(String)

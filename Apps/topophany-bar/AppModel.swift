@@ -393,6 +393,8 @@ final class AppModel {
         case .diagnostics(let pending):
             appendDiagnostics(pending.drain())
             return
+        case .sourceEnded:
+            policy.sourceEnded(at: now)
         }
         refresh()
     }

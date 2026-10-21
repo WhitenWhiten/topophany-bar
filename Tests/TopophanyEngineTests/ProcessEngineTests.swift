@@ -90,6 +90,20 @@ func config(_ path: String, backoff: TimeInterval = 0.2) -> ProcessEngine.Config
 }
 
 @Suite(.serialized) struct ProcessEngineTests {
+    @Test func stdoutEndsEvidenceBeforeAnUncooperativeProcessExits() async throws {
+        let body = FakeTopo.script.replacingOccurrences(of: "echo \"fake topo started\" >&2",
+                                                        with: "exec 1>&-\ntrap '' TERM\nexec /bin/sleep 30")
+        let engine = ProcessEngine(configuration: config(try FakeTopo.install(body), backoff: 10))
+        let rec = Recorder(engine.start(request()))
+        #expect(await rec.wait(timeout: 1) { events in events.contains { if case .sourceEnded = $0 { true } else { false } } })
+        // The source-ended notification doesn't depend on stderr EOF or
+        // SIGTERM. Stopping also reaps a process that ignores SIGTERM.
+        await engine.stop()
+        #expect(await rec.wait(timeout: 3) { events in events.contains { if case .status(.stopped) = $0 { true } else { false } } })
+        await rec.finished()
+        #expect(rec.statuses.last == .stopped)
+    }
+
     @Test func diagnosticFloodDoesNotDisplaceFrames() async throws {
         let ready = FileManager.default.temporaryDirectory.appending(path: "flood-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: ready) }
