@@ -540,7 +540,7 @@ struct AppearanceSettings: View {
                     }
                     .padding(.vertical, 2)
                 }
-                .scrollIndicators(.automatic)
+                .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
             } header: {
                 Text("Theme")
