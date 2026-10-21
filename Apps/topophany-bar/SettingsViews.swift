@@ -84,23 +84,28 @@ struct CommitField: View {
     }
 }
 
-/// Settings forms: grouped, fixed width, as tall as their content. The
-/// window fits itself to that size (`fitSettings`), and the form stays at
-/// the top while it does.
+/// Measure the full form so the window can fit short tabs. Taller forms
+/// scroll within the window's capped height, including while it resizes.
 struct SettingsForm<Content: View>: View {
     @ViewBuilder var content: Content
     @Environment(\.fitSettings) private var fit
 
     var body: some View {
-        Form { content }
-            .formStyle(.grouped)
-            .scrollDisabled(true)
-            .frame(width: settingsWidth)
-            .fixedSize(horizontal: false, vertical: true)
-            .onGeometryChange(for: CGSize.self) { $0.size } action: { fit($0) }
-            // While the window is still shorter than the form, the form
-            // overflows at the bottom rather than being centered.
-            .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
+        ScrollView(.vertical) {
+            Form { content }
+                .formStyle(.grouped)
+                .scrollDisabled(true)
+                // Let a persistent system scrollbar take its own width.
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                    fit(CGSize(width: settingsWidth, height: $0))
+                }
+        }
+        .scrollIndicators(.visible)
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(width: settingsWidth)
+        .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
     }
 }
 

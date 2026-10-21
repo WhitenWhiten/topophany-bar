@@ -76,9 +76,9 @@ final class SettingsWindowController: NSWindowController {
     }
 }
 
-/// Toolbar tabs whose window is the size of the selected form, top edge
-/// fixed. It eases to a new size when a tab is chosen or its form grows or
-/// shrinks, rather than waiting on `preferredContentSize`. A new size while
+/// Toolbar tabs whose window fits the selected form up to a height limit,
+/// top edge fixed. It eases to a new size when a tab is chosen or its form
+/// grows or shrinks, rather than waiting on `preferredContentSize`. A new size while
 /// it moves carries on from where the window is.
 @MainActor
 final class SettingsTabs: NSTabViewController {
@@ -109,10 +109,17 @@ final class SettingsTabs: NSTabViewController {
         let now = window.frame
         // The title bar and toolbar, which the content runs beneath.
         let chrome = now.height - window.contentLayoutRect.height
-        let target = CGSize(width: size.width.rounded(), height: (size.height + chrome).rounded())
+        let screen = window.screen?.visibleFrame ?? NSScreen.main?.visibleFrame
+        // Leave room for the toolbar even on a smaller display.
+        let availableHeight = screen.map { max(0, $0.height - chrome) } ?? 720
+        let maxHeight = min(720, availableHeight)
+        let target = CGSize(width: size.width.rounded(), height: (min(size.height, maxHeight) + chrome).rounded())
         var to = move?.to ?? now
         guard abs(target.height - to.height) >= 0.5 || abs(target.width - to.width) >= 0.5 else { return }
         to.origin.y = now.maxY - target.height
+        if let screen {
+            to.origin.y = min(max(to.origin.y, screen.minY), screen.maxY - target.height)
+        }
         to.origin.x = (now.midX - target.width / 2).rounded()
         to.size = target
         guard window.isVisible, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
