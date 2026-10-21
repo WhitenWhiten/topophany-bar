@@ -38,8 +38,8 @@ public struct TopoRelease: Sendable, Hashable {
                          sha256: sha256)
         }
         return TopoRelease(version: version, assets: [
-            asset("arm64", "73ca31a74c8afbfb6a35b4a562298f21c735f78c3aa6e6e015bd53369529aab8"),
-            asset("amd64", "1da48f0b60d52c616b3c4ad964f789f7500af02fe262cc4ee52709cf049d8080"),
+            asset("arm64", "5c2be26ddfb65782b1acb0891db6458ea6c2677b151926d78520cd46ccaf47a6"),
+            asset("amd64", "007c7c21013605c0ec4e8cd5fc215b28f1a41209b9f3b1d9e6358893d9b7fb82"),
         ])
     }()
 
