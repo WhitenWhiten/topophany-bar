@@ -247,8 +247,7 @@ struct CellsWidget: View {
             let tray = size != .small && b.mapHasTray(m)
             let rows = max(2, linesLeft - (tray ? 1 : 0))
             let detail: MapDetail = size == .small ? .marks : .places
-            let t = b.mapTitle(m) { title($0) }
-            w.box(size == .small ? title(tr("MAP")) : t.segs, size == .small ? [] : [.t(" " + tr("\(m.places.count) places") + " ", p.muted)],
+            w.box(title(tr("MAP")), size == .small ? [] : [.t(" " + tr("\(m.places.count) places") + " ", p.muted)],
                   x0: x0, x1: x1, style: style) { w in
                 b.map(&w, m, rows: rows, detail: detail, tray: tray)
             }

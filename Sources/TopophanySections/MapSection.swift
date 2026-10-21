@@ -6,7 +6,6 @@ import TopophanyKit
 /// Without `map.graph`, the places `servers.list` names, with each server's
 /// mark and no lines, since nothing says how they connect.
 public struct MapSection: Sendable, Hashable {
-    public typealias Mode = Sections.MapMode
     public typealias Frame = Sections.MapFrame
 
     /// Where a node is, in degrees.
@@ -116,18 +115,16 @@ public struct MapSection: Sendable, Hashable {
     public var source: Source
     /// Shown from the last value with every mark withheld.
     public var isCurrent: Bool
-    public var mode: Mode
     public var frame: Frame
     /// `topo` found the graph too large to draw.
     public var isTooLarge: Bool
 
-    public init(nodes: [Node], edges: [Edge], source: Source = .graph, isCurrent: Bool = true, mode: Mode = .geo,
+    public init(nodes: [Node], edges: [Edge], source: Source = .graph, isCurrent: Bool = true,
                 frame: Frame = .fit, isTooLarge: Bool = false) {
         self.nodes = nodes
         self.edges = edges
         self.source = source
         self.isCurrent = isCurrent
-        self.mode = mode
         self.frame = frame
         self.isTooLarge = isTooLarge
     }
@@ -193,7 +190,7 @@ extension SectionBuilder {
             if case .map(let g) = row.value { return map(g, observer: observer, sections: s) }
             if case .map(let g) = r.lastValue(of: row) { return map(g, observer: observer, sections: s).withheld() }
             if row.row.reason == "graph_too_large" {
-                return MapSection(nodes: [], edges: [], mode: s.mapMode, frame: s.mapFrame, isTooLarge: true)
+                return MapSection(nodes: [], edges: [], frame: s.mapFrame, isTooLarge: true)
             }
         }
         var current = true
@@ -213,7 +210,7 @@ extension SectionBuilder {
             MapSection.Node(id: $0.id, name: $0.name, kind: $0.kind, provider: $0.provider, place: $0.place,
                             coordinate: MapPlaces.coordinate(for: $0.place), mark: $0.mark)
         }
-        return MapSection(nodes: nodes, edges: [], source: .places, isCurrent: current, mode: s.mapMode, frame: s.mapFrame)
+        return MapSection(nodes: nodes, edges: [], source: .places, isCurrent: current, frame: s.mapFrame)
     }
 
     static func map(_ g: MapGraph, observer: String, sections s: Sections) -> MapSection {
@@ -239,6 +236,6 @@ extension SectionBuilder {
             }
             return MapSection.Edge(id: e.id, from: e.from, to: e.to, kind: kind, line: line)
         }
-        return MapSection(nodes: nodes, edges: edges, source: .graph, mode: s.mapMode, frame: s.mapFrame)
+        return MapSection(nodes: nodes, edges: edges, source: .graph, frame: s.mapFrame)
     }
 }

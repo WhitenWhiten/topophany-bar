@@ -5,21 +5,20 @@ import TopophanyKit
 import TopophanySections
 @testable import TopophanyThemes
 
-/// The map, in every theme, mode, framing and state; magnified; and its
+/// The map, in every theme, framing and state; magnified; and its
 /// widgets.
 @MainActor
 @Suite(.serialized) struct MapSnapshots {
     init() { L10n.force("en") }
 
-    func mapSettings(_ mode: Sections.MapMode = .geo, _ frame: Sections.MapFrame = .fit) -> TopophanyKit.Settings {
+    func mapSettings(_ frame: Sections.MapFrame = .fit) -> TopophanyKit.Settings {
         var s = previewSettings()
-        s.sections.mapMode = mode
         s.sections.mapFrame = frame
         return s
     }
 
-    func panel(_ scenario: FixtureEngine.Scenario, _ mode: Sections.MapMode = .geo, _ frame: Sections.MapFrame = .fit) -> PanelModel {
-        let s = mapSettings(mode, frame)
+    func panel(_ scenario: FixtureEngine.Scenario, _ frame: Sections.MapFrame = .fit) -> PanelModel {
+        let s = mapSettings(frame)
         let request = TemplateCompiler().request(for: s, revision: 1, listServers: true, serviceCards: true, listServices: true,
                                                  mapGraph: true)
         let reading = FixtureEngine.reading(scenario, request: request, origin: snapshotOrigin, after: 4)
@@ -45,8 +44,6 @@ import TopophanySections
             for s in [FixtureEngine.Scenario.incidents, .clear] {
                 let m = try #require(panel(s).map)
                 try snapshot("map-native-\(a)-\(s.rawValue)", card(m, theme: ThemeStore.native, dark: dark))
-                let v = try #require(panel(s, .virtual).map)
-                try snapshot("map-native-\(a)-virtual-\(s.rawValue)", card(v, theme: ThemeStore.native, dark: dark))
             }
         }
     }
@@ -57,7 +54,6 @@ import TopophanySections
             for dark in [true, false] {
                 let theme = ThemeStore().theme(id)
                 try snapshot("map-\(id)-\(dark ? "dark" : "light")-incidents", card(try #require(panel(.incidents).map), theme: theme, dark: dark))
-                try snapshot("map-\(id)-\(dark ? "dark" : "light")-virtual", card(try #require(panel(.incidents, .virtual).map), theme: theme, dark: dark))
             }
         }
         // Magnified, as the pointer leaves it.
@@ -84,12 +80,11 @@ import TopophanySections
         for theme in [ThemeStore.terminal, ThemeStore().theme("paper"), ThemeStore().theme("dusk")] {
             try snapshot("map-panel-\(theme.id)-incidents", whole(panel(.incidents), theme: theme, dark: true))
         }
-        try snapshot("map-panel-terminal-virtual-incidents", whole(panel(.incidents, .virtual), theme: ThemeStore.terminal, dark: true))
-        try snapshot("map-panel-terminal-world-clear", whole(panel(.clear, .geo, .world), theme: ThemeStore.terminal, dark: true))
+        try snapshot("map-panel-terminal-world-clear", whole(panel(.clear, .world), theme: ThemeStore.terminal, dark: true))
     }
 
-    func widget(_ scenario: FixtureEngine.Scenario, _ mode: Sections.MapMode = .geo, _ frame: Sections.MapFrame = .fit) -> WidgetModel {
-        WidgetModel(kind: .map(mode: mode, frame: frame), panel: panel(scenario))
+    func widget(_ scenario: FixtureEngine.Scenario, _ frame: Sections.MapFrame = .fit) -> WidgetModel {
+        WidgetModel(kind: .map(frame: frame), panel: panel(scenario))
     }
 
     @Test func widgets() throws {
@@ -97,15 +92,13 @@ import TopophanySections
             for dark in [true, false] {
                 try snapshot("map-widget-native-\(dark ? "dark" : "light")-\(n)", onDesktop(widget(.incidents), size, theme: ThemeStore.native, dark: dark))
             }
-            try snapshot("map-widget-native-dark-virtual-\(n)", onDesktop(widget(.incidents, .virtual), size, theme: ThemeStore.native, dark: true))
             try snapshot("map-widget-terminal-\(n)", onDesktop(widget(.incidents), size, theme: ThemeStore.terminal, dark: true))
-            try snapshot("map-widget-terminal-virtual-\(n)", onDesktop(widget(.incidents, .virtual), size, theme: ThemeStore.terminal, dark: true))
             let small = try #require(WidgetSnapshots.smaller[size])
             try snapshot("map-widget-native-light-\(n)-1080", onDesktop(widget(.incidents), size, bounds: small, theme: ThemeStore.native, dark: false))
             try snapshot("map-widget-paper-\(n)-1080", onDesktop(widget(.degraded), size, bounds: small, theme: ThemeStore().theme("paper"), dark: false))
         }
         try snapshot("map-widget-native-vibrant-l", onDesktop(widget(.incidents), .large, theme: ThemeStore.native, dark: true, rendering: .vibrant))
-        try snapshot("map-widget-native-world-xl", onDesktop(widget(.clear, .geo, .world), .extraLarge, theme: ThemeStore.native, dark: true))
+        try snapshot("map-widget-native-world-xl", onDesktop(widget(.clear, .world), .extraLarge, theme: ThemeStore.native, dark: true))
         let stale = widget(.incidents).notCurrent(at: snapshotOrigin.addingTimeInterval(47 * 60))
         try snapshot("map-widget-native-not-current-m", onDesktop(stale, .medium, theme: ThemeStore.native, dark: true))
     }

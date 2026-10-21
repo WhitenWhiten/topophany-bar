@@ -160,7 +160,6 @@ import Testing
         // as the TUI frames it.
         #expect(s.sections.zones)
         #expect(s.sections.map)
-        #expect(s.sections.mapMode == .geo)
         #expect(s.sections.mapFrame == .fit)
         #expect(s.sections.fleet)
         #expect(s.sections.placeZones.isEmpty)

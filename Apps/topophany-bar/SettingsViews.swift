@@ -950,33 +950,22 @@ struct SectionControls: View {
         case .zones:
             ZonesButton()
         case .map:
-            MapViewPicker()
+            MapFramePicker()
         default:
             EmptyView()
         }
     }
 }
 
-/// How the map opens: where things are, fitted to every place or the
-/// whole world, or the places wired together. The panel's own switch
-/// changes it too.
-struct MapViewPicker: View {
+/// Whether the geographic map fits every place or shows the whole world.
+struct MapFramePicker: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let s = model.settings.sections
-        Picker("", selection: Binding(get: { s.mapMode == .virtual ? "virtual" : s.mapFrame.rawValue },
-                                      set: { v in model.update {
-                                          if v == "virtual" {
-                                              $0.sections.mapMode = .virtual
-                                          } else {
-                                              $0.sections.mapMode = .geo
-                                              $0.sections.mapFrame = Sections.MapFrame(rawValue: v) ?? .fit
-                                          }
-                                      } })) {
-            Text("Geo, fitted").tag("fit")
-            Text("Geo, whole world").tag("world")
-            Text("Virtual geo").tag("virtual")
+        Picker("", selection: Binding(get: { model.settings.sections.mapFrame },
+                                      set: { frame in model.update { $0.sections.mapFrame = frame } })) {
+            Text("Geo, fitted").tag(Sections.MapFrame.fit)
+            Text("Geo, whole world").tag(Sections.MapFrame.world)
         }
         .labelsHidden().fixedSize()
     }

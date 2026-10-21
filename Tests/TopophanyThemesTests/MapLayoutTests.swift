@@ -5,8 +5,8 @@ import TopophanyKit
 import TopophanySections
 @testable import TopophanyThemes
 
-/// The map's framing, as the TUI's geo map frames it; its virtual view's
-/// cards, apart; and how the panel's map is magnified and moved.
+/// The map's framing, as the TUI's geo map frames it, and how the panel's
+/// map is magnified and moved.
 @MainActor
 @Suite struct MapLayoutTests {
     init() { L10n.force("en") }
@@ -65,28 +65,6 @@ import TopophanySections
         #expect(close.sites.contains { $0.title == "San Jose" } && close.sites.contains { $0.title == "Los Angeles" })
         // Every mark is topo's: a site's is its worst node's.
         #expect(framed.sites.first { $0.title.contains("Los Angeles") }?.mark == .degraded)
-    }
-
-    /// The virtual view's cards never sit on one another, at the panel's
-    /// size and every widget's, in both looks.
-    @Test func virtualCardsApart() throws {
-        let m = try #require(MapSnapshots().panel(.incidents, .virtual).map)
-        let cell = CellMetrics.panel.cell
-        let cells = VirtualScene.Metrics(title: 15, row: 15, padX: cell, padY: 5, pill: 15, mark: 2 * cell, indent: 2 * cell,
-                                         minWidth: 8 * cell, maxWidth: 22 * cell, colGap: 3 * cell, cardGap: 7, margin: cell,
-                                         chipMark: 1.5 * cell, compactGap: 2 * cell, tiles: false)
-        for size in [CGSize(width: 330, height: 172), CGSize(width: 164, height: 120), CGSize(width: 344, height: 120),
-                     CGSize(width: 344, height: 290), CGSize(width: 704, height: 290)] {
-            for metrics in [CardsMapPainter.virtualMetrics, cells] {
-                let s = VirtualScene(m, size: size, metrics: metrics) { text, _ in Double(text.count) * 6.5 }
-                #expect(s.cards.count >= m.places.count)
-                for (i, a) in s.cards.enumerated() {
-                    for b in s.cards[(i + 1)...] {
-                        #expect(!a.rect.insetBy(dx: 0.5, dy: 0.5).intersects(b.rect), "\(a.title) on \(b.title) at \(size)")
-                    }
-                }
-            }
-        }
     }
 
     @Test func viewportZoomsAndMoves() {

@@ -21,7 +21,7 @@ import TopophanyKit
     @Test func drawsTheGraph() throws {
         let m = try #require(map(.incidents))
         #expect(m.source == .graph && m.isCurrent)
-        #expect(m.mode == .geo && m.frame == .fit)
+        #expect(m.frame == .fit)
         // Every place topo names, colos aside, in its order.
         #expect(m.places == ["Seattle", "San Jose", "Los Angeles", "Honolulu", "New York", "Tokyo", "Frankfurt"])
         let byID = Dictionary(uniqueKeysWithValues: m.nodes.map { ($0.id, $0) })
@@ -86,12 +86,11 @@ import TopophanyKit
         #expect(map(.incidents, mapGraph: false, listServers: false, settings: none) == nil)
     }
 
-    @Test func modeAndFrameFromSettings() throws {
+    @Test func frameFromSettings() throws {
         var s = settings()
-        s.sections.mapMode = .virtual
         s.sections.mapFrame = .world
         let m = try #require(map(.clear, settings: s))
-        #expect(m.mode == .virtual && m.frame == .world)
+        #expect(m.frame == .world)
         s.sections.map = false
         #expect(map(.clear, settings: s) == nil)
     }

@@ -418,119 +418,6 @@
     }
   }
 
-  // The virtual view: places as cards west to east, wired row to row.
-  // A simpler layout than VirtualScene's, with its look.
-  function virtualLayout(gr, W, H, measure, m, sizeOf) {
-    const sc = scene(Object.assign({}, gr, { frame: 'fit' }), 1000, 400, 1, 2, [0.5, 0.5]);
-    const [centre, arc] = lonBounds(sc.sites.map((s) => s.nodes[0].at.lon));
-    const key = (s) => (((s.nodes[0].at.lon - (centre - arc / 2) + 720 + 1e-6) % 360));
-    const cards = sc.sites.filter((s) => !s.coloOnly).map((s) => ({ title: s.places[0] || s.cities[0], nodes: s.nodes.filter((n) => !n.colo), mark: s.mark, key: key(s), lat: s.nodes[0].at.lat }))
-      .concat(sc.unplaced.map((n) => ({ title: '', nodes: [n], mark: n.mark, pill: true, lat: null })));
-    cards.forEach((c) => {
-      c.w = c.pill ? measure(c.nodes[0].name, false) + m.mark + 2 * m.padX : Math.max(measure(c.title, true), Math.min(6, c.nodes.length) * m.chip) + 2 * m.padX;
-      c.h = c.pill ? m.pill : m.title + m.row + 2 * m.padY - 2;
-      if (sizeOf) sizeOf(c);
-    });
-    const places = cards.filter((c) => !c.pill).sort((a, b) => a.key - b.key);
-    // Columns at the widest gaps of longitude, as many as fit.
-    const gaps = places.slice(1).map((c, i) => [c.key - places[i].key, i + 1]).sort((a, b) => b[0] - a[0]);
-    let cols = [];
-    for (let nc = places.length; nc >= 1; nc--) {
-      const cuts = new Set(gaps.slice(0, nc - 1).map((g) => g[1]));
-      cols = [[]];
-      places.forEach((c, i) => { if (cuts.has(i)) cols.push([]); cols[cols.length - 1].push(c); });
-      const width = cols.reduce((a, col) => a + Math.max(...col.map((c) => c.w)), 0) + (cols.length - 1) * m.gap + 2 * m.margin;
-      if (width <= W - (nc > 1 ? 0 : 0)) break;
-    }
-    // A card without a place joins the column it links to most, by room.
-    const colOf = new Map();
-    cols.forEach((col, k) => col.forEach((c) => c.nodes.forEach((n) => colOf.set(n.id, k))));
-    for (const c of cards.filter((c) => c.pill)) {
-      const linked = gr.edges.filter((e) => e.from === c.nodes[0].id || e.to === c.nodes[0].id).map((e) => colOf.get(e.from === c.nodes[0].id ? e.to : e.from)).filter((k) => k != null);
-      const room = (k) => H - cols[k].reduce((a, x) => a + x.h + m.cardGap, 0);
-      let k = linked.length ? linked.sort((a, b) => room(b) - room(a))[0] : cols.length - 1;
-      if (room(k) < c.h) k = cols.map((_, i) => i).sort((a, b) => room(b) - room(a))[0];
-      cols[k].push(c);
-      colOf.set(c.nodes[0].id, k);
-    }
-    const widths = cols.map((col) => Math.max(...col.map((c) => c.w)));
-    const spare = Math.max(0, W - widths.reduce((a, b) => a + b, 0) - 2 * m.margin);
-    let x = cols.length > 1 ? m.margin : (W - widths[0]) / 2;
-    const gap = cols.length > 1 ? spare / (cols.length - 1) : 0;
-    cols.forEach((col, k) => {
-      col.sort((a, b) => (b.lat == null ? -999 : b.lat) - (a.lat == null ? -999 : a.lat));
-      const total = col.reduce((a, c) => a + c.h, 0) + (col.length - 1) * m.cardGap;
-      let y = Math.max(m.margin, (H - total) / 2);
-      for (const c of col) { c.x = x + (widths[k] - c.w) / 2; c.y = y; y += c.h + m.cardGap; c.col = k; }
-      x += widths[k] + gap;
-    });
-    // One wire per pair of cards, the worst line between them.
-    const cardOf = new Map();
-    cards.forEach((c) => c.nodes.forEach((n) => cardOf.set(n.id, c)));
-    sc.sites.forEach((s) => s.nodes.forEach((n) => { if (n.colo && !cardOf.has(n.id)) cardOf.set(n.id, cards.find((c) => !c.pill && c.title === n.place)); }));
-    const wires = new Map();
-    for (const e of gr.edges) {
-      const a = cardOf.get(e.from), b = cardOf.get(e.to);
-      if (!a || !b || a === b) continue;
-      const k = [cards.indexOf(a), cards.indexOf(b)].sort((p, q) => p - q).join('-');
-      const w = wires.get(k);
-      if (!w) wires.set(k, { a, b, line: e.line, declared: e.kind === 'link' });
-      else { if (RANK[e.line] > RANK[w.line]) w.line = e.line; w.declared = w.declared || e.kind === 'link'; }
-    }
-    return { cards, wires: [...wires.values()] };
-  }
-  function drawCardsVirtual(ctx, W, H, gr, c, o) {
-    // A faint field of the land's dots, as the geo map's lattice.
-    ctx.fillStyle = alpha(c.land, c.strength * 0.35);
-    for (let y = 6; y < H; y += 9) for (let x = 6; x < W; x += 9) { ctx.beginPath(); ctx.arc(x, y, 0.55, 0, 7); ctx.fill(); }
-    const font = (size, weight, track) => `${weight} ${size}px ${c.font}`;
-    const measure = (t, title) => { ctx.font = title ? font(8.5, 600) : font(10, 500); return ctx.measureText(title ? t.toUpperCase() : t).width + (title ? t.length * 0.6 : 0); };
-    const m = { padX: 7, padY: 5, title: 14, row: 14, pill: 19, mark: 12, chip: 9, gap: 22, cardGap: 9, margin: 9 };
-    let L = virtualLayout(gr, W, H, measure, m);
-    // Too tall: each place on one line, its name beside its marks.
-    const chips = L.cards.some((c) => c.y + c.h > H - 2);
-    if (chips) {
-      L = virtualLayout(gr, W, H, measure, Object.assign({}, m, { cardGap: 3, margin: 3 }), (c) => {
-        c.h = m.pill;
-        if (!c.pill) c.w = measure(c.title, true) + 5 + Math.min(6, c.nodes.length) * m.chip + 2 * m.padX;
-      });
-    }
-    const side = (a, b) => (a.x + a.w / 2 < b.x + b.w / 2 ? [1, -1] : a.x + a.w / 2 > b.x + b.w / 2 ? [-1, 1] : [1, 1]);
-    for (const w of L.wires.sort((x, y) => RANK[x.line] - RANK[y.line])) {
-      const [sa, sb] = side(w.a, w.b);
-      const p0 = { x: sa > 0 ? w.a.x + w.a.w : w.a.x, y: w.a.y + w.a.h / 2 }, p3 = { x: sb > 0 ? w.b.x + w.b.w : w.b.x, y: w.b.y + w.b.h / 2 };
-      const k = Math.max(18, Math.abs(p3.x - p0.x) * 0.45);
-      const [color, width, dash] = c.line(w.line, w.declared);
-      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash);
-      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.bezierCurveTo(p0.x + sa * k, p0.y, p3.x + sb * k, p3.y, p3.x, p3.y); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = color;
-      for (const p of [p0, p3]) { ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, 7); ctx.fill(); }
-    }
-    for (const card of L.cards) {
-      const trouble = card.mark === 'down' || card.mark === 'degraded';
-      const color = c.mark(card.mark);
-      ctx.beginPath(); ctx.roundRect(card.x, card.y, card.w, card.h, card.pill ? card.h / 2 : 6);
-      ctx.fillStyle = o.dark ? 'rgba(30,30,34,.92)' : 'rgba(250,250,252,.95)'; ctx.fill();
-      ctx.fillStyle = c.fill2; ctx.fill();
-      ctx.strokeStyle = trouble ? alpha(color, 0.65) : alpha(c.l3, 0.5); ctx.lineWidth = trouble ? 1 : 0.6; ctx.stroke();
-      ctx.textBaseline = 'middle';
-      if (card.pill) {
-        const n = card.nodes[0];
-        drawMark(ctx, n.mark, card.x + m.padX, card.y + card.h / 2 - 4, 8, c.mark(n.mark));
-        ctx.font = font(10, 500); ctx.fillStyle = c.l2; ctx.fillText(n.name, card.x + m.padX + m.mark, card.y + card.h / 2 + 0.5);
-        continue;
-      }
-      ctx.font = font(8.5, 600); ctx.fillStyle = trouble ? c.l1 : c.l2;
-      ctx.letterSpacing = '0.6px';
-      ctx.fillText(card.title.toUpperCase(), card.x + m.padX, chips ? card.y + card.h / 2 + 0.5 : card.y + m.padY + m.title / 2);
-      ctx.letterSpacing = '0px';
-      const mx = chips ? card.x + card.w - m.padX - Math.min(6, card.nodes.length) * m.chip : card.x + m.padX;
-      const my = chips ? card.y + card.h / 2 - 3.75 : card.y + m.padY + m.title + 1;
-      card.nodes.slice(0, 6).forEach((n, k) => drawMark(ctx, n.mark, mx + k * m.chip, my, 7.5, c.mark(n.mark)));
-    }
-  }
-
   // ------------------------------------------------------- cells painter
   // The TUI's map: land shaded cell by cell under braille dots with a
   // dotted coast, marks and names in the grid, arcs in dots.
@@ -611,119 +498,6 @@
       [...t].forEach((ch, i) => ctx.fillText(ch, x * cw + i * cw, y * lh + lh / 2 + 0.5));
     }
   }
-  // CellsVirtual: each place a chip on one line, in columns west to east
-  // split at gaps of 12° and more while they fit, each on the line its
-  // latitude puts it; pills in the column they link to most.
-  function cellsLayout(gr, cols, rows) {
-    const cards = [], cardOf = {};
-    for (const n of gr.nodes.filter((n) => n.at && !n.colo)) {
-      let k = cards.findIndex((c) => !c.pill && (c.title === n.place || (Math.abs(c.lat - n.at.lat) < 0.5 && Math.abs(c.lon - n.at.lon) < 0.5)));
-      if (k < 0) { k = cards.length; cards.push({ title: n.place, nodes: [], pill: false, lat: n.at.lat, lon: n.at.lon }); }
-      cards[k].nodes.push(n); cardOf[n.id] = k;
-    }
-    for (const n of gr.nodes.filter((n) => n.colo)) { const k = cards.findIndex((c) => c.title === n.place); if (k >= 0) cardOf[n.id] = k; }
-    for (const n of gr.nodes.filter((n) => !n.at)) { cardOf[n.id] = cards.length; cards.push({ title: n.name, nodes: [n], pill: true }); }
-    const mark = (c) => c.nodes.reduce((m, n) => (m == null || WORSE[n.mark] > WORSE[m] ? n.mark : m), null);
-    cards.forEach((c) => { c.mark = mark(c); c.w = c.pill ? 2 + len(c.title) + 2 : len(c.title) + 1 + Math.min(4, c.nodes.length) + 2; });
-    const pairs = new Map();
-    for (const e of gr.edges) {
-      const a = cardOf[e.from], b = cardOf[e.to];
-      if (a == null || b == null || a === b) continue;
-      const k = Math.min(a, b) + '-' + Math.max(a, b), w = pairs.get(k);
-      if (!w) pairs.set(k, { a: Math.min(a, b), b: Math.max(a, b), line: e.line, declared: e.kind === 'link' });
-      else { if (RANK[e.line] > RANK[w.line]) w.line = e.line; w.declared = w.declared || e.kind === 'link'; }
-    }
-    const wires = [...pairs.values()];
-    const near = cards.map(() => []);
-    wires.forEach((w) => { near[w.a].push(w.b); near[w.b].push(w.a); });
-    const places = cards.map((_, i) => i).filter((i) => !cards[i].pill);
-    const pills = cards.map((_, i) => i).filter((i) => cards[i].pill).sort((a, b) => near[b].length - near[a].length || cards[b].w - cards[a].w);
-    const [centre, arc] = lonBounds(places.map((k) => cards[k].lon));
-    const key = (k) => (cards[k].lon - (centre - arc / 2) + 720 + 1e-6) % 360;
-    const order = places.slice().sort((a, b) => key(a) - key(b));
-    const gaps = order.slice(1).map((k, i) => i).sort((a, b) => (key(order[b + 1]) - key(order[b])) - (key(order[a + 1]) - key(order[a])));
-    const GAP = 2;
-    function attempt(nc) {
-      const cuts = new Set(gaps.slice(0, nc - 1).map((g) => g + 1));
-      const col = {};
-      let c = 0;
-      order.forEach((k, i) => { if (cuts.has(i)) c++; col[k] = c; });
-      const n = c + 1, w = Array(n).fill(0), count = Array(n).fill(0);
-      places.forEach((k) => { w[col[k]] = Math.max(w[col[k]], cards[k].w); count[col[k]]++; });
-      const room = cols - GAP * (n - 1);
-      const sum = () => w.reduce((a, b) => a + b, 0);
-      if (sum() > room || count.some((x) => x > rows)) return null;
-      for (const p of pills) {
-        const options = [...Array(n).keys()].filter((c) => count[c] < rows && sum() - w[c] + Math.max(w[c], cards[p].w) <= room);
-        if (!options.length) return null;
-        const cost = (c) => (Math.max(w[c], cards[p].w) - w[c]) * 10 - near[p].filter((k) => col[k] === c).length * 3 + count[c];
-        const best = options.sort((a, b) => cost(a) - cost(b))[0];
-        col[p] = best; w[best] = Math.max(w[best], cards[p].w); count[best]++;
-      }
-      return { col, n, w };
-    }
-    const regions = 1 + order.slice(1).filter((k, i) => key(k) - key(order[i]) >= 12).length;
-    const most = Math.min(order.length, Math.max(1, Math.floor(cols / 9)));
-    let L = null;
-    for (let nc = Math.min(regions, most); nc >= 1 && !L; nc--) L = attempt(nc);
-    for (let nc = most; nc > regions && !L; nc--) L = attempt(nc);
-    if (!L) return { cards: [], wires: [] };
-    const lats = places.map((k) => cards[k].lat), top = Math.max(...lats), bottom = Math.min(...lats);
-    const north = (k) => (cards[k].pill ? (near[k].filter((j) => !cards[j].pill).map((j) => cards[j].lat).reduce((a, b, _, x) => a + b / x.length, 0) || -1000) - 500 : cards[k].lat);
-    const spare = Math.max(0, cols - L.w.reduce((a, b) => a + b, 0));
-    const margin = L.n > 1 ? Math.min(2, Math.floor(spare / (L.n + 1))) : Math.floor((cols - L.w[0]) / 2);
-    const between = L.n > 1 ? Math.floor((spare - 2 * margin) / (L.n - 1)) : 0;
-    let x = margin;
-    for (let c = 0; c < L.n; c++) {
-      const list = cards.map((_, i) => i).filter((i) => L.col[i] === c).sort((a, b) => north(b) - north(a));
-      const gap = 2 * list.length - 1 <= rows ? 2 : 1;
-      const want = list.map((k) => (cards[k].pill || top === bottom ? Math.floor(rows / 2) : Math.round(((top - cards[k].lat) / (top - bottom)) * (rows - 1))));
-      for (let i = 1; i < want.length; i++) want[i] = Math.max(want[i], want[i - 1] + gap);
-      if (want[want.length - 1] > rows - 1) { want[want.length - 1] = rows - 1; for (let i = want.length - 2; i >= 0; i--) want[i] = Math.min(want[i], want[i + 1] - gap); }
-      list.forEach((k, i) => { cards[k].col = c; cards[k].row = Math.max(0, want[i]); cards[k].x = x + Math.floor((L.w[c] - cards[k].w) / 2); });
-      x += L.w[c] + between;
-    }
-    return { cards, wires, last: L.n - 1 };
-  }
-  const len = (s) => [...s].length;
-  function drawCellsVirtual(ctx, cols, rows, cw, lh, gr, P) {
-    const L = cellsLayout(gr, cols, rows);
-    const rect = (c) => ({ x: c.x * cw, y: c.row * lh, w: c.w * cw, h: lh });
-    const tone = (m) => ({ up: P.up, degraded: P.warn, down: P.down, unknown: P.unk, cached: P.unk }[m]);
-    const lineTone = (l) => ({ up: TB.mix(P.up, P.ink, 0.5), carried: TB.mix(P.up, P.ink, 0.62), affected: P.warn, degraded: P.warn, down: P.down }[l] || TB.mix(P.unk, P.ink, 0.3));
-    const dw = cw / 2;
-    for (const w of L.wires.slice().sort((x, y) => RANK[x.line] - RANK[y.line])) {
-      const a = L.cards[w.a], b = L.cards[w.b], ra = rect(a), rb = rect(b);
-      const [sa, sb] = a.col === b.col ? (a.col === L.last && L.last > 0 ? [-1, -1] : [1, 1]) : a.col < b.col ? [1, -1] : [-1, 1];
-      const p0 = { x: sa > 0 ? ra.x + ra.w + 1 : ra.x - 1, y: ra.y + lh / 2 }, p3 = { x: sb > 0 ? rb.x + rb.w + 1 : rb.x - 1, y: rb.y + lh / 2 };
-      const reach = Math.max(2 * cw, Math.abs(p3.x - p0.x) * 0.45);
-      const p1 = { x: p0.x + sa * reach, y: p0.y }, p2 = { x: p3.x + sb * reach, y: p3.y };
-      const n = Math.max(2, Math.round((Math.hypot(p3.x - p0.x, p3.y - p0.y) + 2 * reach) / dw));
-      ctx.fillStyle = lineTone(w.line);
-      for (let i = 0; i <= n; i++) {
-        if (!w.declared && i % 3 === 2) continue;
-        const t = i / n, u = 1 - t;
-        const x = u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x;
-        const y = u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y;
-        if (L.cards.some((c) => c.x != null && x > c.x * cw - 0.5 && x < (c.x + c.w) * cw + 0.5 && y > c.row * lh + 1 && y < (c.row + 1) * lh - 1)) continue;
-        ctx.beginPath(); ctx.arc(x, y, Math.min(dw, lh / 4) * 0.3, 0, 7); ctx.fill();
-      }
-    }
-    ctx.textBaseline = 'middle';
-    for (const c of L.cards) {
-      if (c.x == null) continue;
-      const r = rect(c), trouble = c.mark === 'down' || c.mark === 'degraded';
-      ctx.fillStyle = c.pill ? TB.mix(P.ink, tone(c.mark), 0.16) : P.key;
-      ctx.beginPath(); ctx.roundRect(r.x, r.y + 1, r.w, lh - 2, 4); ctx.fill();
-      let x = r.x + cw;
-      const put = (t, color, bold) => { ctx.font = `${bold ? 700 : 400} 12px ui-monospace, "SF Mono", Menlo, monospace`; ctx.fillStyle = color; [...t].forEach((ch) => { ctx.fillText(ch, x, r.y + lh / 2 + 0.5); x += cw; }); };
-      if (c.pill) { put(TB.glyph(c.mark), tone(c.mark)); put(' ' + c.title, P.text); continue; }
-      put(c.title, trouble ? P.text : P.muted, trouble);
-      put(' ', P.text);
-      c.nodes.slice(0, 4).forEach((n) => put(TB.glyph(n.mark === 'cached' ? 'cached' : n.mark), tone(n.mark)));
-    }
-  }
-
   // ---------------------------------------------------------- canvases
   function draw(cv) {
     const o = JSON.parse(cv.dataset.map);
@@ -738,12 +512,10 @@
       ctx.font = '12px ui-monospace, "SF Mono", Menlo, monospace';
       const cw = ctx.measureText('0').width, lh = 18;
       const cols = Math.round(W / cw), rows = Math.round(H / lh);
-      if (o.mode === 'virtual') drawCellsVirtual(ctx, cols, rows, cw, lh, gr, P);
-      else drawCellsGeo(ctx, cols, rows, cw, lh, gr, P, o);
+      drawCellsGeo(ctx, cols, rows, cw, lh, gr, P, o);
     } else {
       const c = cardColors(cv, o);
-      if (o.mode === 'virtual') drawCardsVirtual(ctx, W, H, gr, c, o);
-      else drawCardsGeo(ctx, W, H, gr, c, o);
+      drawCardsGeo(ctx, W, H, gr, c, o);
     }
     cv.dataset.drawn = '1';
   }
@@ -754,27 +526,26 @@
   const canvas = (o, w, h, cls = '') => `<canvas class="map-cv ${cls}" style="width:${w ? w + 'px' : '100%'};height:${h}px" data-map='${JSON.stringify(o)}'></canvas>`;
 
   // ------------------------------------------------------------- pieces
-  /// The Map card: its title and the switch, the map full width, and what
+  /// The Map card: its title, the map full width, and what
   /// it can't place beneath.
   TB.nvMap = function (sc, o) {
-    const mode = o.mapMode || 'geo', gr = graph(sc.key);
-    const sw = `<span class="map-sw">${['geo', 'virtual'].map((m) => `<b class="${m === mode ? 'on' : ''}">${m === 'geo' ? 'Geo' : 'Virtual'}</b>`).join('')}</span>`;
+    const gr = graph(sc.key);
     const unplaced = troubleFirst(gr.nodes.filter((n) => !n.at));
-    const foot = [mode === 'geo' && unplaced.length ? `<span>${unplaced.length} without a location <i>${unplaced.map((n) => TB._cards.mark(n.mark, 8)).join('')}</i></span>` : '',
+    const foot = [unplaced.length ? `<span>${unplaced.length} without a location <i>${unplaced.map((n) => TB._cards.mark(n.mark, 8)).join('')}</i></span>` : '',
       gr.current ? '' : '<span class="r">not current</span>'].join('');
-    return `<section class="nv-card nv-map"><h3>${TB._cards.I.map || mapIcon}Map${sw}</h3>
-      ${canvas({ scenario: sc.key, mode, frame: o.mapFrame || 'fit', dark: o.appearance === 'dark', tokens: o.tokens || '' }, 328, 172)}
+    return `<section class="nv-card nv-map"><h3>${TB._cards.I.map || mapIcon}Map</h3>
+      ${canvas({ scenario: sc.key, frame: o.mapFrame || 'fit', dark: o.appearance === 'dark', tokens: o.tokens || '' }, 328, 172)}
       ${foot ? `<div class="map-foot">${foot}</div>` : ''}</section>`;
   };
   const mapIcon = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M2.5 5l5-2 5 2 5-2v12l-5 2-5-2-5 2z"/><path d="M7.5 3v12M12.5 5v12"/></svg>';
 
-  /// The Terminal box: MAP · geo virtual in its border, the places counted.
+  /// The Terminal box: MAP in its border, the places counted.
   TB.tvMap = function (sc, o, T) {
-    const S = T.S, mode = o.mapMode || 'geo', gr = graph(sc.key);
-    const title = [S(' MAP', 'acc b'), S(' · ', 'faint'), S('geo', mode === 'geo' ? 'b' : 'faint'), S(' ', 'faint'), S('virtual', mode === 'virtual' ? 'b' : 'faint'), S(' ')];
+    const S = T.S, gr = graph(sc.key);
+    const title = [S(' MAP ', 'acc b')];
     const unplaced = troubleFirst(gr.nodes.filter((n) => !n.at));
     let tray = '';
-    if (mode === 'geo' && unplaced.length) {
+    if (unplaced.length) {
       const segs = [S('no location ', 'faint')];
       let used = 12;
       for (let i = 0; i < unplaced.length; i++) {
@@ -785,30 +556,29 @@
       }
       tray = T.tl(segs, gr.current ? [] : [S('not current', 'faint')]);
     }
-    const body = `<div class="tl map-tl" style="height:${9 * 18}px">${canvas({ scenario: sc.key, mode, frame: o.mapFrame || 'fit', look: 'cells', palette: o.palette || 'terminal' }, 0, 9 * 18, 'map-cells')}</div>${tray}`;
+    const body = `<div class="tl map-tl" style="height:${9 * 18}px">${canvas({ scenario: sc.key, frame: o.mapFrame || 'fit', look: 'cells', palette: o.palette || 'terminal' }, 0, 9 * 18, 'map-cells')}</div>${tray}`;
     return T.box(title, [S(` ${placesOf(gr).length} places `, 'muted')], body);
   };
 
   /// The Map widget: the map across the whole widget under its heading.
   TB.mapWidget = function (size, sc, o) {
     const SIZE = TB.widgetSize[size];
-    const gr = graph(sc.key), mode = o.mapMode || 'geo';
+    const gr = graph(sc.key);
     const detail = { s: 'marks', m: 'places', l: 'nodes', xl: 'nodes' }[size];
     if (o.theme === 'tui') {
       const P = TB.palettes[o.palette || 'terminal'];
       const rows = Math.floor((SIZE[1] - 16 - 40) / 18);
       const T = TB._cells, S = T.S, cols = { s: 22, m: 51, l: 51, xl: 108 }[size];
       const head = T.tl([S('◉', 'acc'), S(' homelab', 'b')], [sc.live ? S('● LIVE', 'h-up b') : S('◌', 'h-unk b')], 'whead', cols);
-      const title = size === 's' ? [S(' MAP ', 'acc b')]
-        : [S(' MAP', 'acc b'), S(' · ', 'faint'), S('geo', mode === 'geo' ? 'b' : 'faint'), S(' ', 'faint'), S('virtual', mode === 'virtual' ? 'b' : 'faint'), S(' ')];
-      const map = `<div class="tl map-tl" style="height:${rows * 18}px">${canvas({ scenario: sc.key, mode, frame: o.mapFrame || 'fit', look: 'cells', palette: o.palette || 'terminal', detail }, 0, rows * 18, 'map-cells')}</div>`;
+      const title = [S(' MAP ', 'acc b')];
+      const map = `<div class="tl map-tl" style="height:${rows * 18}px">${canvas({ scenario: sc.key, frame: o.mapFrame || 'fit', look: 'cells', palette: o.palette || 'terminal', detail }, 0, rows * 18, 'map-cells')}</div>`;
       return `<div class="wdg tv wd-${size}" style="${TB.paletteVars(P)};width:${SIZE[0]}px;height:${SIZE[1]}px">${head}${T.box(title, size === 's' ? null : [S(` ${placesOf(gr).length} places `, 'muted')], map)}</div>`;
     }
     const unplaced = troubleFirst(gr.nodes.filter((n) => !n.at));
     const h = SIZE[1] - 30 - 26;
     return `<div class="wdg nv ${o.appearance} wd-${size} map-w" style="${TB.tokenCSS(o)}width:${SIZE[0]}px;height:${SIZE[1]}px">
-      <div class="map-w-h">${mapIcon}<b>Map</b>${size === 's' ? '' : `<span>${mode === 'virtual' ? 'Virtual · ' : ''}${placesOf(gr).length} places</span>`}<img class="w-mark" src="assets/mark.svg" alt=""></div>
-      ${canvas({ scenario: sc.key, mode, frame: o.mapFrame || 'fit', dark: o.appearance === 'dark', tokens: o.tokens || '', detail }, SIZE[0], h)}
-      <div class="map-w-f">${mode === 'geo' && unplaced.length && size !== 's' ? `<span>${unplaced.length} without a location<i>${unplaced.slice(0, 6).map((n) => TB._cards.mark(n.mark, 7.5)).join('')}</i></span>` : '<span></span>'}<span>${gr.current ? esc(sc.age || 'now') : 'Not current'}</span></div></div>`;
+      <div class="map-w-h">${mapIcon}<b>Map</b>${size === 's' ? '' : `<span>${placesOf(gr).length} places</span>`}<img class="w-mark" src="assets/mark.svg" alt=""></div>
+      ${canvas({ scenario: sc.key, frame: o.mapFrame || 'fit', dark: o.appearance === 'dark', tokens: o.tokens || '', detail }, SIZE[0], h)}
+      <div class="map-w-f">${unplaced.length && size !== 's' ? `<span>${unplaced.length} without a location<i>${unplaced.slice(0, 6).map((n) => TB._cards.mark(n.mark, 7.5)).join('')}</i></span>` : '<span></span>'}<span>${gr.current ? esc(sc.age || 'now') : 'Not current'}</span></div></div>`;
   };
 })();

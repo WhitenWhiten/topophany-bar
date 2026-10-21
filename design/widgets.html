@@ -73,7 +73,7 @@
   <div class="themes" id="sthemes"></div>
 
   <h2>The Map widget</h2>
-  <p class="sub">The panel's map across the whole widget, in its view and framing, or the panel's. The small one marks each place and names those that need a look; the medium names every place; the large and extra large name each node beside its place. The geo map's land is a dither of fine dots, fading toward the edges; the virtual one wires the places together west to east.</p>
+  <p class="sub">The panel's map across the whole widget, in its own framing, or the panel's. The small one marks each place and names those that need a look; the medium names every place; the large and extra large name each node beside its place. The geo map's land is a dither of fine dots, fading toward the edges.</p>
   <div class="deskw desk wall-dark" id="m1"></div>
   <div style="height:22px"></div>
   <div class="deskw desk wall-dark" id="m2"></div>
@@ -169,15 +169,15 @@
   const sset = [['s', tr['vless-transit']], ['m', tr['vless-transit']], ['s', og.blog], ['m', ok.shortlink]];
   sdesk('s1', { theme: 'native', appearance: 'dark' }, sset);
   sdesk('s2', { theme: 'tui', appearance: 'dark' }, sset);
-  // The Map widget: geo at every size, then virtual and the whole world.
+  // The Map widget: geographical maps at every size, fitted or world.
   const mdesk = (id, o, list) => {
     const el = document.getElementById(id);
     const item = TB.statusItem(sc, Object.assign({ text: 'count', color: 'status' }, o));
     el.innerHTML = TB.menubar(o.appearance, item, { clock: 'Sun Oct 18&nbsp;&nbsp;6:31 AM' }) +
       `<div class="wgrid">${list.map(([size, x]) => TB.widget('map', size, sc, Object.assign({}, o, x || {}))).join('')}</div>`;
   };
-  mdesk('m1', { theme: 'native', appearance: 'dark' }, [['xl', { mapFrame: 'world' }], ['l'], ['s'], ['m'], ['m', { mapMode: 'virtual' }]]);
-  mdesk('m2', { theme: 'tui', appearance: 'dark' }, [['xl', { mapMode: 'virtual' }], ['l'], ['s'], ['m'], ['m', { mapMode: 'virtual' }]]);
+  mdesk('m1', { theme: 'native', appearance: 'dark' }, [['xl', { mapFrame: 'world' }], ['l'], ['s'], ['m']]);
+  mdesk('m2', { theme: 'tui', appearance: 'dark' }, [['xl', { mapFrame: 'world' }], ['l'], ['s'], ['m']]);
   document.getElementById('sthemes').innerHTML = [
     ['Native · light', { theme: 'native', appearance: 'light' }, 'light'], ['Aurora', { theme: 'native', appearance: 'dark', tokens: 'aurora' }, 'dark'],
     ['Linen · light', { theme: 'native', appearance: 'light', tokens: 'linen' }, 'light'], ['Linen · dark', { theme: 'native', appearance: 'dark', tokens: 'linen' }, 'dark'],

@@ -61,8 +61,7 @@ import Testing
 
     @Test func settingsRoundTrip() throws {
         var s = Settings()
-        #expect(s.sections.map && s.sections.mapMode == .geo && s.sections.mapFrame == .fit)
-        s.sections.mapMode = .virtual
+        #expect(s.sections.map && s.sections.mapFrame == .fit)
         s.sections.mapFrame = .world
         s.sections.map = false
         let data = try JSONEncoder().encode(s)
@@ -71,7 +70,19 @@ import Testing
         #expect(back == s)
         // A word this app doesn't know is the default.
         let odd = try JSONDecoder().decode(Settings.self, from: Data(#"{"sections":[{"id":"map","mode":"flat","frame":"globe"}]}"#.utf8))
-        #expect(odd.sections.mapMode == .geo && odd.sections.mapFrame == .fit && odd.sections.map)
+        #expect(odd.sections.mapFrame == .fit && odd.sections.map)
+    }
+
+    @Test func legacyMapModeIsIgnored() throws {
+        let settings = try JSONDecoder().decode(Settings.self, from: Data(#"{"sections":[{"id":"map","mode":"virtual","frame":"world","enabled":false},{"id":"mac","mode":"server","node":"macbook"}]}"#.utf8))
+        #expect(settings.sections.mapFrame == .world && !settings.sections.map)
+        #expect(settings.sections.mac.mode == .server && settings.sections.mac.node == "macbook")
+        let data = try JSONEncoder().encode(settings)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let sections = try #require(object["sections"] as? [[String: Any]])
+        let map = try #require(sections.first { ($0["id"] as? String) == "map" })
+        #expect(map["mode"] == nil)
+        #expect(try JSONDecoder().decode(Settings.self, from: data) == settings)
     }
 
     /// The row is asked for only of a topo that draws the map, while the
@@ -88,9 +99,8 @@ import Testing
         #expect(!asks(s, mapGraph: true))
         #expect(asks(s, widgets: .init(map: true), mapGraph: true))
         #expect(!asks(s, widgets: .init(map: true), mapGraph: false))
-        // Its view and framing are the app's: the request doesn't change.
+        // Its framing is the app's: the request doesn't change.
         var t = Settings()
-        t.sections.mapMode = .virtual
         t.sections.mapFrame = .world
         #expect(TemplateCompiler().request(for: t, revision: 1, mapGraph: true) == TemplateCompiler().request(for: Settings(), revision: 1, mapGraph: true))
     }

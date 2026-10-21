@@ -153,9 +153,6 @@ public struct Sections: Sendable, Hashable, Codable {
     public static let defaultOrder: [SectionID] = [.status, .seen, .attention, .map, .applications, .services, .fleet, .servers, .zones,
                                                    .mac]
 
-    /// The map's view: the world as it is, or places as cards wired
-    /// together, west to east (the TUI's virtual geo).
-    public enum MapMode: String, Sendable, Hashable, Codable, CaseIterable { case geo, virtual }
     /// How the map is framed before it's zoomed: every place, as `topo`'s
     /// fit framing does, or the whole world.
     public enum MapFrame: String, Sendable, Hashable, Codable, CaseIterable { case fit, world }
@@ -203,7 +200,6 @@ public struct Sections: Sendable, Hashable, Codable {
     public var serverNodes: [String] = []
     /// Map: where the nodes are, and what joins them.
     public var map = true
-    public var mapMode: MapMode = .geo
     public var mapFrame: MapFrame = .fit
     /// Time zones: listed servers by the time zone of their place.
     public var zones = true
@@ -291,7 +287,6 @@ public struct Sections: Sendable, Hashable, Codable {
                 attentionLimit = e.limit.map { $0 >= 5 ? 5 : 3 } ?? 3
             case .map:
                 map = e.enabled ?? true
-                mapMode = e.mode.flatMap(MapMode.init(rawValue:)) ?? .geo
                 mapFrame = e.frame.flatMap(MapFrame.init(rawValue:)) ?? .fit
             case .applications:
                 applications = e.enabled ?? true
@@ -340,7 +335,6 @@ public struct Sections: Sendable, Hashable, Codable {
                 e.limit = attentionLimit
             case .map:
                 e.enabled = map
-                e.mode = mapMode.rawValue
                 e.frame = mapFrame.rawValue
             case .applications:
                 e.enabled = applications

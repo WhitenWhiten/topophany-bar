@@ -1068,6 +1068,6 @@
   TB.defaults = () => ({
     theme: 'native', appearance: 'dark', text: 'count', color: 'status', mac: 'local', limit: 3,
     sections: { seen: true, attention: true, map: true, apps: true, fleet: true, servers: false, zones: true, mac: true },
-    mapMode: 'geo', mapFrame: 'fit',
+    mapFrame: 'fit',
   });
 })();

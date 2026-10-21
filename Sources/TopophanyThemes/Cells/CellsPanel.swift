@@ -422,15 +422,6 @@ struct CellsBodies {
 
     // MARK: map
 
-    /// The map box's title: MAP, then its two views, the one shown lit.
-    func mapTitle(_ m: MapSection, _ title: (String) -> [Seg]) -> (segs: [Seg], words: (from: Int, width: Int)) {
-        var s = title(tr("MAP")).dropLast().map { $0 }
-        let from = s.reduce(0) { $0 + $1.width } + 3
-        s += [.t(" · ", p.faint), .t(tr("geo"), m.mode == .geo ? p.text : p.faint, bold: m.mode == .geo), .t(" ", p.faint),
-              .t(tr("virtual"), m.mode == .virtual ? p.text : p.faint, bold: m.mode == .virtual), .t(" ", p.text)]
-        return (s, (from, s.reduce(0) { $0 + $1.width } - from - 1))
-    }
-
     /// The map in `rows` lines, then what it can't place, counted with
     /// their marks, trouble first. Returns where the map is.
     @discardableResult
@@ -453,8 +444,7 @@ struct CellsBodies {
             w.line([.mark(.degraded, p), .t(" " + CellText.truncate(tr("Too large to draw: see the topology in Topophany"), n - 2), p.muted)])
             return
         }
-        // The virtual view draws them, as pills.
-        let unplaced = m.mode == .virtual ? [] : Mark.troubleFirst(m.unplaced, by: \.mark)
+        let unplaced = Mark.troubleFirst(m.unplaced, by: \.mark)
         let note = m.source == .places ? tr("placed by name") : !m.isCurrent ? tr("not current") : ""
         guard !unplaced.isEmpty || !note.isEmpty else { return }
         var segs: [Seg] = []
@@ -606,7 +596,7 @@ struct CellsPanel: View {
     /// The map as it moves, where a band from `top` to `bottom` shows it.
     @ViewBuilder func live(_ scene: CellScene, top: Double, bottom: Double) -> some View {
         if let m = model.map, let r = scene.regions["map"], r.maxY > top, r.minY < bottom {
-            CellsMapLive(map: m, scene: scene, rect: r, modeWords: scene.regions["mapMode"], meta: scene.regions["mapMeta"],
+            CellsMapLive(map: m, scene: scene, rect: r, meta: scene.regions["mapMeta"],
                          p: CellsPalette(ctx.theme))
         }
     }
@@ -717,15 +707,10 @@ struct CellsPanel: View {
                     w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: .panel) { b.service(&$0, c) }
                 }
             case .map(let m):
-                let t = b.mapTitle(m, { title($0) })
-                w.box(t.segs, [.t(" " + tr("\(m.places.count) places") + " ", p.muted)], x0: x0, x1: x1, style: .panel) {
+                w.box(title(tr("MAP")), [.t(" " + tr("\(m.places.count) places") + " ", p.muted)], x0: x0, x1: x1, style: .panel) {
                     regions["map"] = b.map(&$0, m, rows: 9)
                 }
                 regions["mapMeta"] = w.titleRight
-                if let o = w.titleOrigin {
-                    regions["mapMode"] = CGRect(x: o.x + Double(t.words.from) * w.cell - 2, y: o.y - 3,
-                                                width: Double(t.words.width) * w.cell + 4, height: w.lineHeight + 6)
-                }
                 if ctx.focus == "map", let r = regions["map"] {
                     // The accent's bar a focused row has, down the map's left.
                     w.focused = r

@@ -29,9 +29,9 @@ public struct WidgetModel: Sendable, Hashable {
         case service(id: String)
         /// The time where the servers are, with each one's mark.
         case zones
-        /// Where the nodes are: in a mode and framing of its own, or `nil`
+        /// Where the nodes are: in a framing of its own, or `nil`
         /// for the panel's.
-        case map(mode: Sections.MapMode?, frame: Sections.MapFrame?)
+        case map(frame: Sections.MapFrame?)
     }
 
     /// The medium Status widget's right side.
@@ -76,11 +76,10 @@ public struct WidgetModel: Sendable, Hashable {
         panel.sections.lazy.compactMap { if case .zones(let z) = $0 { z } else { nil } }.first
     }
 
-    /// What a Map widget shows, in its own mode and framing.
+    /// What a Map widget shows, in its own framing.
     public var map: MapSection? {
         guard var m = panel.map else { return nil }
-        if case .map(let mode, let frame) = kind {
-            if let mode { m.mode = mode }
+        if case .map(let frame) = kind {
             if let frame { m.frame = frame }
         }
         return m

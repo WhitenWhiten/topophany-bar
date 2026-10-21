@@ -2,14 +2,13 @@ import SwiftUI
 import TopophanyKit
 import TopophanySections
 
-/// The Map card: the map full width under its title, the view to switch
-/// at the title's right, and below it what the map can't place.
+/// The Map card: the geographic map full width under its title, and
+/// below it what the map can't place.
 struct CardsMapCard: View {
     var map: MapSection
     var p: CardsPalette
     var t: CardsType
     var focused: Bool
-    @Environment(\.panelActions) private var actions
     @Environment(\.mapViewport) private var viewport
 
     static let height = 172.0
@@ -31,7 +30,6 @@ struct CardsMapCard: View {
                         .transition(.opacity)
                         .accessibilityHidden(true)
                 }
-                MapModeSwitch(mode: map.mode, p: p, t: t) { actions.setMapMode($0) }
             }
             .foregroundStyle(p.l2)
             .animation(Highlight.easing(viewport?.isSelected == true), value: viewport?.isSelected == true)
@@ -47,43 +45,6 @@ struct CardsMapCard: View {
     }
 }
 
-/// Geo or Virtual, as a pair of words: the one shown in the text's color
-/// on a faint chip, the other quieter.
-struct MapModeSwitch: View {
-    var mode: MapSection.Mode
-    var p: CardsPalette
-    var t: CardsType
-    var choose: (MapSection.Mode) -> Void
-
-    var body: some View {
-        HStack(spacing: 1) {
-            item(.geo, tr("Geo"))
-            item(.virtual, tr("Virtual"))
-        }
-        .padding(1.5)
-        .background(RoundedRectangle(cornerRadius: p.style.chip(6), style: .continuous).fill(p.fill2))
-    }
-
-    func item(_ m: MapSection.Mode, _ word: String) -> some View {
-        let on = m == mode
-        return Button { choose(m) } label: {
-            Text(word).font(t.font(10, on ? .semibold : .medium)).foregroundStyle(on ? p.l1 : p.l3)
-                .padding(.horizontal, 7).padding(.vertical, 1.5)
-                .background {
-                    if on {
-                        RoundedRectangle(cornerRadius: p.style.chip(5), style: .continuous)
-                            .fill(p.isDark ? Color.white.opacity(0.12) : Color.white.opacity(0.9))
-                            .shadow(color: .black.opacity(p.isDark ? 0 : 0.08), radius: 0.5, y: 0.5)
-                    }
-                }
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(PressStyle())
-        .accessibilityLabel(word)
-        .accessibilityAddTraits(on ? .isSelected : [])
-    }
-}
-
 /// What the map can't place, counted with their marks, trouble first; and
 /// where its places come from when `topo` sends no map.
 struct MapFoot: View {
@@ -93,12 +54,11 @@ struct MapFoot: View {
 
     /// Whether there's anything to say beneath the map.
     nonisolated static func says(_ m: MapSection) -> Bool {
-        m.isTooLarge || m.source == .places || !m.isCurrent || (m.mode == .geo && !m.unplaced.isEmpty)
+        m.isTooLarge || m.source == .places || !m.isCurrent || !m.unplaced.isEmpty
     }
 
     var body: some View {
-        // The virtual view draws them, as pills.
-        let unplaced = map.mode == .geo ? Mark.troubleFirst(map.unplaced, by: \.mark) : []
+        let unplaced = Mark.troubleFirst(map.unplaced, by: \.mark)
         HStack(spacing: 6) {
             if map.isTooLarge {
                 Text(tr("Too large to draw: see the topology in Topophany"))
@@ -156,7 +116,6 @@ struct MapCanvas: View {
                 .onTapGesture { viewport.isSelected = true }
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewport.frame = $0 }
                 .onGeometryChange(for: CGSize.self) { $0.size } action: { viewport.layout($0) }
-                .onChange(of: map.mode) { viewport.reset() }
                 .onChange(of: map.frame) { viewport.reset() }
                 .accessibilityAction(named: tr("Zoom In")) { viewport.step(in: true) }
                 .accessibilityAction(named: tr("Zoom Out")) { viewport.step(in: false) }
@@ -293,11 +252,11 @@ struct WidgetMap: View {
     }
 
     func meta(_ m: MapSection) -> String {
-        m.mode == .virtual ? Words.join([tr("Virtual"), tr("\(m.places.count) places")]) : tr("\(m.places.count) places")
+        tr("\(m.places.count) places")
     }
 
     @ViewBuilder func foot(_ m: MapSection) -> some View {
-        let unplaced = m.mode == .geo ? Mark.troubleFirst(m.unplaced, by: \.mark) : []
+        let unplaced = Mark.troubleFirst(m.unplaced, by: \.mark)
         HStack(spacing: 5) {
             if !unplaced.isEmpty && size != .small {
                 Text(tr("\(unplaced.count) without a location")).lineLimit(1)

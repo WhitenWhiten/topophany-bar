@@ -152,8 +152,7 @@ final class PanelController: NSObject {
                      openAttention: { [weak self] item in self?.actions?.openAttention(item) },
                      focus: { [weak self] id in self?.model.focus = id },
                      toggleQuiet: { [weak self] in self?.actions?.toggleQuiet() },
-                     download: { [weak self] build in self?.model.download(build) },
-                     setMapMode: { [weak self] mode in self?.model.update { $0.sections.mapMode = mode } })
+                     download: { [weak self] build in self?.model.download(build) })
     }
 
     private var screen: NSScreen? { anchor?.window?.screen ?? NSScreen.main }

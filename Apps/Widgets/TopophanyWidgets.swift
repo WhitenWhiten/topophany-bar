@@ -186,26 +186,6 @@ struct ZonesWidgetIntent: WidgetConfigurationIntent {
     var theme: ThemeChoice
 }
 
-/// How a Map widget draws the map: as the panel does, or its own way.
-enum MapModeChoice: String, AppEnum {
-    case panel, geo, virtual
-
-    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Map"
-    static let caseDisplayRepresentations: [MapModeChoice: DisplayRepresentation] = [
-        .panel: "Same as the Panel",
-        .geo: "Geo",
-        .virtual: "Virtual Geo",
-    ]
-
-    var model: Sections.MapMode? {
-        switch self {
-        case .panel: nil
-        case .geo: .geo
-        case .virtual: .virtual
-        }
-    }
-}
-
 enum MapFrameChoice: String, AppEnum {
     case panel, fit, world
 
@@ -228,9 +208,6 @@ enum MapFrameChoice: String, AppEnum {
 struct MapWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Map"
     static let description = IntentDescription("Where your servers are, and the lines between them.")
-
-    @Parameter(title: "Map", default: .panel)
-    var mode: MapModeChoice
 
     @Parameter(title: "Framing", default: .panel)
     var frame: MapFrameChoice
@@ -374,7 +351,7 @@ struct ZonesProvider: AppIntentTimelineProvider {
 
 struct MapProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> Entry {
-        Timelines.entries(kind: .map(mode: nil, frame: nil), right: .automatic, theme: .bar, family: context.family,
+        Timelines.entries(kind: .map(frame: nil), right: .automatic, theme: .bar, family: context.family,
                           key: "placeholder-map")[0]
     }
 
@@ -387,8 +364,8 @@ struct MapProvider: AppIntentTimelineProvider {
     }
 
     func timeline(_ c: MapWidgetIntent, _ context: Context) -> [Entry] {
-        Timelines.entries(kind: .map(mode: c.mode.model, frame: c.frame.model), right: .automatic, theme: c.theme,
-                          family: context.family, key: "map-\(context.family)-\(c.mode.rawValue)-\(c.frame.rawValue)")
+        Timelines.entries(kind: .map(frame: c.frame.model), right: .automatic, theme: c.theme,
+                          family: context.family, key: "map-\(context.family)-\(c.frame.rawValue)")
     }
 }
 

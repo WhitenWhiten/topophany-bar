@@ -87,22 +87,6 @@
         }
       }
     },
-    "Geo": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "地理"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "地理"
-          }
-        }
-      }
-    },
     "Linen": {
       "localizations": {
         "ja": {
@@ -467,22 +451,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "时区"
-          }
-        }
-      }
-    },
-    "Virtual Geo": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "仮想地理"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "虚拟地理"
           }
         }
       }

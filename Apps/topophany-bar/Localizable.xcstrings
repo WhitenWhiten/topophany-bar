@@ -3755,22 +3755,6 @@
         }
       }
     },
-    "Virtual geo": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "仮想地理"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "虚拟地理"
-          }
-        }
-      }
-    },
     "What the collector shows from": {
       "localizations": {
         "ja": {

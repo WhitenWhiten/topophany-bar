@@ -160,7 +160,7 @@ import TopophanySections
     /// regions are its own.
     @Test func terminalKeycaps() throws {
         let ctx = RenderContext(theme: ThemeStore.terminal)
-        func keys(_ s: CellScene) -> Set<String> { Set(s.regions.keys).subtracting(["map", "mapMode", "mapMeta"]) }
+        func keys(_ s: CellScene) -> Set<String> { Set(s.regions.keys).subtracting(["map", "mapMeta"]) }
         for model in [previewPanel(.clear), previewPanel(.offline)] {
             let s = CellsPanel.scene(model, ctx: ctx)
             #expect(keys(s) == ["open", "settings", "quit"])

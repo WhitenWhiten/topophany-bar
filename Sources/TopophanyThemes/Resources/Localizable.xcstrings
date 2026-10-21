@@ -1197,22 +1197,6 @@
         }
       }
     },
-    "Geo": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "地理"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "地理"
-          }
-        }
-      }
-    },
     "LIVE": {
       "localizations": {
         "ja": {
@@ -1981,38 +1965,6 @@
         }
       }
     },
-    "Show places where they are": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "地点を地図上に表示"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在地图上显示地点"
-          }
-        }
-      }
-    },
-    "Show places wired together": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "地点のつながりを表示"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "显示地点之间的连接"
-          }
-        }
-      }
-    },
     "Show the menu bar’s colors again": {
       "localizations": {
         "ja": {
@@ -2185,22 +2137,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@更新"
-          }
-        }
-      }
-    },
-    "Virtual": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "仮想"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "虚拟"
           }
         }
       }
@@ -2411,22 +2347,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "来自 %@"
-          }
-        }
-      }
-    },
-    "geo": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "地理"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "地理"
           }
         }
       }
@@ -2971,22 +2891,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "被 %lld 项依赖"
-          }
-        }
-      }
-    },
-    "virtual": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "仮想"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "虚拟"
           }
         }
       }

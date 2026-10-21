@@ -5,20 +5,18 @@ import TopophanySections
 /// The Terminal panel's map as it moves. The scene draws the map framed;
 /// magnified or moved, this draws it again over the scene's, on the
 /// panel's own ground and grain. It takes the map's gestures, as the cards'
-/// map does, and makes the title's geo and virtual a button. Laid over the
-/// whole scene, in its coordinates, each part placed by padding so the
+/// map does. Laid over the whole scene, in its coordinates, each part
+/// placed by padding so the
 /// map's frame, which the app's scroll wheel finds it by, is where it shows.
 struct CellsMapLive: View {
     var map: MapSection
     var scene: CellScene
-    /// Where the map is, where the title names its views, and where its
-    /// count of places is, which the keys take while it's selected.
+    /// Where the map is, and where its count of places is, which the
+    /// keys take while it's selected.
     var rect: CGRect
-    var modeWords: CGRect?
     var meta: CGRect?
     var p: CellsPalette
     @Environment(\.mapViewport) private var viewport
-    @Environment(\.panelActions) private var actions
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dragged: CGSize = .zero
     @State private var pinch = 1.0
@@ -32,16 +30,6 @@ struct CellsMapLive: View {
             if let viewport {
                 drawn(viewport)
                 gestures(viewport)
-            }
-            if let r = modeWords {
-                Button { actions.setMapMode(map.mode == .geo ? .virtual : .geo) } label: {
-                    Color.clear.contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .frame(width: r.width, height: r.height)
-                .help(map.mode == .geo ? tr("Show places wired together") : tr("Show places where they are"))
-                .accessibilityLabel(map.mode == .geo ? tr("Virtual") : tr("Geo"))
-                .padding(.leading, r.minX).padding(.top, r.minY)
             }
         }
         .frame(width: scene.size.width, height: scene.size.height, alignment: .topLeading)
@@ -109,7 +97,6 @@ struct CellsMapLive: View {
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { v.frame = $0 }
             .onAppear { v.layout(CGSize(width: cols * 2, height: rows * 4), unit: CGSize(width: cells.dotW, height: cells.dotH)) }
             .onChange(of: rect.size) { v.layout(CGSize(width: cols * 2, height: rows * 4), unit: CGSize(width: cells.dotW, height: cells.dotH)) }
-            .onChange(of: map.mode) { v.reset() }
             .onChange(of: map.frame) { v.reset() }
             .accessibilityElement()
             .accessibilityLabel(MapWords.summary(map))

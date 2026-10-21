@@ -3,8 +3,7 @@ import TopophanySections
 
 /// The Terminal look's map, as the TUI draws it: the land shaded cell by
 /// cell under a lattice of braille dots with a dotted coast, each place a
-/// mark of `topo`'s and its name, arcs between places in dots; or, in the
-/// virtual view, places as small boxes wired in dots.
+/// mark of `topo`'s and its name, arcs between places in dots.
 struct CellsMap {
     var map: MapSection
     var p: CellsPalette
@@ -22,10 +21,7 @@ struct CellsMap {
     /// by `transform`, in dots.
     func items(x: Double, y: Double, cols: Int, rows: Int, transform: MapTransform = .identity) -> [CellItem] {
         guard cols > 4, rows > 1 else { return [] }
-        switch map.mode {
-        case .geo: return geo(x: x, y: y, cols: cols, rows: rows, transform: transform)
-        case .virtual: return virtual(x: x, y: y, cols: cols, rows: rows, transform: transform)
-        }
+        return geo(x: x, y: y, cols: cols, rows: rows, transform: transform)
     }
 
     // MARK: colors
@@ -263,112 +259,5 @@ struct CellsMap {
             let a = 2 * Double.pi * Double(i) / Double(steps)
             d.set(Int((c.x + cos(a) * r).rounded()), Int((c.y + sin(a) * r / ky).rounded()), color, pri)
         }
-    }
-
-    // MARK: virtual
-
-    /// The virtual geo map: each place a chip of its name and its nodes'
-    /// marks, in columns west to east, what has no place a pill beside
-    /// what it links to, wired in dots as the geo map's arcs are.
-    /// Magnified, the cards move apart; their words keep their size.
-    func virtual(x x0: Double, y y0: Double, cols: Int, rows: Int, transform: MapTransform) -> [CellItem] {
-        let c = metrics.cell, l = metrics.line
-        let layout = CellsVirtual(map, cols: cols, rows: rows)
-        let bounds = CGRect(x: x0, y: y0, width: Double(cols) * c, height: Double(rows) * l)
-        // Where a point of the laid-out map shows, magnified and moved.
-        func at(_ pt: CGPoint) -> CGPoint {
-            CGPoint(x: x0 + pt.x * transform.zoom + transform.offset.x * dotW, y: y0 + pt.y * transform.zoom + transform.offset.y * dotH)
-        }
-        // Each card's line: its left, middle and right, before magnifying.
-        func rect(_ k: Int) -> CGRect {
-            let card = layout.cards[k]
-            let mid = at(CGPoint(x: (Double(card.x) + Double(card.width) / 2) * c, y: (Double(card.row) + 0.5) * l))
-            return CGRect(x: (mid.x - Double(card.width) * c / 2).rounded(), y: mid.y - l / 2, width: Double(card.width) * c, height: l)
-        }
-        let rects = layout.cards.indices.map(rect)
-        // Magnified, how far, at the top right, the wires kept clear of it.
-        let tag = transform.zoom > 1.001 ? " \(MapCanvas.zoomText(transform.zoom)) " : ""
-        let tagRect = CGRect(x: x0 + Double(cols - CellText.width(tag) - 1) * c, y: y0, width: Double(CellText.width(tag)) * c, height: l)
-        var items: [CellItem] = []
-
-        // Wires, in dots, leaving each card on the side toward the other
-        // and spread along its edge by where they go; a pair in one column
-        // loops out and back on the side with more room.
-        let lastCol = layout.cards.map(\.col).max() ?? 0
-        struct End: Hashable { var card: Int; var side: Double }
-        var ends: [End: [(wire: Int, toward: Double)]] = [:]
-        var sides: [(Double, Double)] = []
-        for (i, w) in layout.wires.enumerated() {
-            let a = layout.cards[w.a], b = layout.cards[w.b]
-            let side: (Double, Double) = a.col == b.col ? (a.col == lastCol && lastCol > 0 ? (-1, -1) : (1, 1))
-                : a.col < b.col ? (1, -1) : (-1, 1)
-            sides.append(side)
-            ends[End(card: w.a, side: side.0), default: []].append((i, rects[w.b].midY))
-            ends[End(card: w.b, side: side.1), default: []].append((i, rects[w.a].midY))
-        }
-        var endY: [String: Double] = [:]
-        for (end, list) in ends {
-            let r = rects[end.card]
-            let span = min(r.height - 6, Double(list.count - 1) * dotH * 0.9)
-            for (j, e) in list.sorted(by: { $0.toward < $1.toward }).enumerated() {
-                endY["\(e.wire)-\(end.card)"] = r.midY - span / 2 + (list.count > 1 ? span * Double(j) / Double(list.count - 1) : 0)
-            }
-        }
-        var dots: [RGBA: [CGPoint]] = [:]
-        for i in layout.wires.indices.sorted(by: { layout.wires[$0].line.rank < layout.wires[$1].line.rank }) {
-            let w = layout.wires[i], (sa, sb) = sides[i]
-            let ra = rects[w.a], rb = rects[w.b]
-            guard layout.cards[w.a].width > 0, layout.cards[w.b].width > 0 else { continue }
-            let a = CGPoint(x: sa > 0 ? ra.maxX + 1 : ra.minX - 1, y: endY["\(i)-\(w.a)"] ?? ra.midY)
-            let b = CGPoint(x: sb > 0 ? rb.maxX + 1 : rb.minX - 1, y: endY["\(i)-\(w.b)"] ?? rb.midY)
-            let reach = max(2 * c, abs(b.x - a.x) * 0.45)
-            let p1 = CGPoint(x: a.x + sa * reach, y: a.y), p2 = CGPoint(x: b.x + sb * reach, y: b.y)
-            let (color, _, dash) = lineStyle(w.line, declared: w.declared)
-            let length = hypot(b.x - a.x, b.y - a.y) + 2 * reach
-            let n = max(2, Int(length / dotW))
-            for j in 0...n where dash == 0 || (j / dash) % 2 == 0 {
-                let t = Double(j) / Double(n), u = 1 - t
-                let pt = CGPoint(x: u * u * u * a.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * b.x,
-                                 y: u * u * u * a.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * b.y)
-                guard bounds.contains(pt), !rects.contains(where: { $0.insetBy(dx: -0.5, dy: 1).contains(pt) }),
-                      tag.isEmpty || !tagRect.contains(pt) else { continue }
-                dots[color, default: []].append(pt)
-            }
-        }
-        let d = min(dotW, dotH) * 0.6
-        items += dots.map { .points($0.value, $0.key, diameter: d) }
-
-        // Cards: a chip for a place, a pill for the rest, whole or not at
-        // all where magnified past the map's edge.
-        for (k, card) in layout.cards.enumerated() where card.width > 0 {
-            let r = rects[k]
-            guard bounds.insetBy(dx: -1, dy: -1).contains(r) else { continue }
-            let trouble = card.mark == .down || card.mark == .degraded
-            let y = r.minY
-            var x = r.minX + c
-            if card.isMore {
-                items.append(.text(x: x, y: y, card.title, p.faint, bold: false))
-                continue
-            }
-            items.append(.fill(r.insetBy(dx: 0, dy: 1), card.isPill ? p.pillBackground(card.mark) : p.key, radius: 4))
-            if card.isPill {
-                items.append(.glyph(x: x, y: y, .mark(card.mark), tone(card.mark)))
-                items.append(.text(x: x + 2 * c, y: y, card.title, p.text, bold: false))
-                if card.nodes.count > 1 {
-                    items.append(.text(x: x + Double(2 + CellText.width(card.title)) * c, y: y, " +\(card.nodes.count - 1)", p.faint, bold: false))
-                }
-                continue
-            }
-            items.append(.text(x: x, y: y, card.title, trouble ? p.text : p.muted, bold: trouble))
-            x += Double(CellText.width(card.title) + 1) * c
-            let m = card.marks
-            for n in m.shown {
-                items.append(.glyph(x: x, y: y, .mark(n.mark), tone(n.mark)))
-                x += c
-            }
-            if m.more > 0 { items.append(.text(x: x, y: y, "+\(m.more)", p.faint, bold: false)) }
-        }
-        if !tag.isEmpty { items.append(.text(x: tagRect.minX, y: y0, tag, p.faint, bold: false)) }
-        return items
     }
 }

@@ -49,7 +49,7 @@
   const st = Object.assign(TB.defaults(), { scenario: 'incidents', alert: 'shown' });
   const q = new URLSearchParams(location.search);
   st.fetch = 'ready';
-  for (const k of ['theme', 'appearance', 'text', 'color', 'alert', 'mac', 'scenario', 'fetch', 'mapMode', 'mapFrame']) if (q.get(k)) st[k] = q.get(k);
+  for (const k of ['theme', 'appearance', 'text', 'color', 'alert', 'mac', 'scenario', 'fetch', 'mapFrame']) if (q.get(k)) st[k] = q.get(k);
   if (q.get('servers')) st.sections.servers = q.get('servers') === '1';
   st.sections.services = q.get('services') === '1';
   if (q.get('limit')) st.limit = +q.get('limit');
@@ -64,7 +64,6 @@
     ['alert', 'Menu bar alert', [['shown', 'Shown'], ['quiet', 'Quiet until worse']]],
     ['mac', 'This Mac', [['local', 'Local readings'], ['server', 'As a server'], ['off', 'Off']]],
     ['limit', 'Needs attention rows', [[3, '3'], [5, '5']]],
-    ['mapMode', 'Map', [['geo', 'Geo'], ['virtual', 'Virtual geo']]],
     ['mapFrame', 'Map framing', [['fit', 'Fit every place'], ['world', 'The whole world']]],
   ];
   const sections = [['seen', 'Seen from'], ['attention', 'Needs attention'], ['map', 'Map'], ['apps', 'Applications'], ['services', 'Services (pinned)'], ['fleet', 'Fleet'], ['servers', 'Servers (pinned)'], ['zones', 'Time zones'], ['mac', 'This Mac']];
