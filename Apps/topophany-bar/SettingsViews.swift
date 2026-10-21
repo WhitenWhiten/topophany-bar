@@ -883,7 +883,7 @@ struct SectionLabel: View {
         case .servers: "server.rack"
         case .zones: "clock.fill"
         case .map: "map.fill"
-        case .mac: "laptopcomputer"
+        case .mac: "apple.logo"
         }
     }
 

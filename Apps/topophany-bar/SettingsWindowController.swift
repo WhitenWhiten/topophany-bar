@@ -25,7 +25,7 @@ final class SettingsWindowController: NSWindowController {
         tabs.addTabViewItem(tab("gearshape", GeneralSettings()))
         tabs.addTabViewItem(tab("circle.lefthalf.filled", AppearanceSettings()))
         tabs.addTabViewItem(tab("list.bullet", SectionsSettings()))
-        tabs.addTabViewItem(tab("laptopcomputer", MacSettings()))
+        tabs.addTabViewItem(tab("apple.logo", MacSettings()))
         let window = NSWindow(contentViewController: tabs)
         window.styleMask = [.titled, .closable]
         window.toolbarStyle = .preference

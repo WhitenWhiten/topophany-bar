@@ -666,7 +666,7 @@ struct WidgetServerCard: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 NodeAvatar(provider: card.isMissing ? "" : card.provider, kind: card.kind, size: 26, p: p,
-                           symbol: isMac ? "laptopcomputer" : nil)
+                           symbol: isMac ? "apple.logo" : nil)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(card.name).font(t.font(12.5, .semibold)).lineLimit(1).minimumScaleFactor(0.85)
                     Text(card.isMissing ? card.place : Words.join([card.place, card.provider]))

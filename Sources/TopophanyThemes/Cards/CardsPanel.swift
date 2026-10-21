@@ -534,8 +534,8 @@ struct CardsSection: View {
             CardsZones(zones: z, p: p, t: t)
         case .mac(.server(let c, let node)):
             Card(p: p) {
-                CardTitle(symbol: macSymbol(c.name), title: tr("This Mac"), meta: tr("as a server · \(node)"), p: p, t: t)
-                CardsServer(card: c, symbol: macSymbol(c.name), p: p, t: t, focused: ctx.focus == "server:" + c.id)
+                CardTitle(symbol: "apple.logo", title: tr("This Mac"), meta: tr("as a server · \(node)"), p: p, t: t)
+                CardsServer(card: c, symbol: "apple.logo", p: p, t: t, focused: ctx.focus == "server:" + c.id)
                 if let o = c.observes.first {
                     VStack(spacing: 0) {
                         Rectangle().fill(p.sep).frame(height: 0.5).padding(.top, 8)
@@ -949,7 +949,7 @@ struct CardsLocal: View {
 
     var body: some View {
         Card(p: p) {
-            CardTitle(symbol: macSymbol(local.model), title: tr("This Mac"),
+            CardTitle(symbol: "apple.logo", title: tr("This Mac"),
                       meta: Words.join([local.model, tr("local readings")]), p: p, t: t)
             let tiles = Array(tilesList.enumerated())
             Grid(horizontalSpacing: 5, verticalSpacing: 5) {

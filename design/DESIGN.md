@@ -194,6 +194,8 @@ The map draws `topo`'s `map.graph`: the nodes `View.Graph()` places, the lines b
 
 There are three modes: **Local readings**, **As a server** and **Off**.
 
+The Apple logo identifies This Mac in Settings, Native cards and its Server widget.
+
 ### Local readings
 
 The app reads these natively, every 2 s by default:

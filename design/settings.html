@@ -144,7 +144,7 @@
   const half = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 1 0 14Z" fill="currentColor"/></svg>';
   const list = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7.5 5.5h9M7.5 10h9M7.5 14.5h9"/><circle cx="3.9" cy="5.5" r=".9" fill="currentColor"/><circle cx="3.9" cy="10" r=".9" fill="currentColor"/><circle cx="3.9" cy="14.5" r=".9" fill="currentColor"/></svg>';
   const lockI = '<svg viewBox="0 0 12 14" width="10" height="12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="6" width="9" height="6.5" rx="1.6"/><path d="M3.5 6V4.4a2.5 2.5 0 0 1 5 0V6"/></svg>';
-  const tabs = (on) => `<div class="tabs">${[['General', I.gear], ['Appearance', half], ['Sections', list], ['This Mac', I.laptop]].map(([t, i]) =>
+  const tabs = (on) => `<div class="tabs">${[['General', I.gear], ['Appearance', half], ['Sections', list], ['This Mac', I.apple]].map(([t, i]) =>
     `<div class="tab ${t === on ? 'on' : ''}">${i}<span>${t}</span></div>`).join('')}</div>`;
   const win = (title, body) => `<div class="win"><div class="win-bar"><div class="lights"><i></i><i></i><i></i></div><div class="win-title">${title}</div></div>${tabs(title)}<div class="win-body">${body}</div></div>`;
   const row = (lab, sub, ctl, pre = '') => `<div class="grow">${pre}<div class="lab"><b>${lab}</b>${sub ? `<span>${sub}</span>` : ''}</div>${ctl || ''}</div>`;
@@ -269,7 +269,7 @@
       ${row('Fleet', 'Every server, edge and platform topo lists, by who runs it', sw(true), handle + gi(I.fleet, '#5957d6'))}
       ${row('Servers', 'The Servers-tab card of each server you pin', '<span class="btn">Choose…</span>' + sw(false), handle + gi(I.server, '#8e8e93'))}
       ${row('Time zones', 'The time where your servers are, and each one’s health', '<span class="btn">Places…</span>' + sw(true), handle + gi(I.clock, '#30b0c7'))}
-      ${row('This Mac', 'Set up under This Mac', sw(true), handle + gi(I.laptop, '#64d2ff'))}
+      ${row('This Mac', 'Set up under This Mac', sw(true), handle + gi(I.apple, '#64d2ff'))}
     </div>
     <p class="foot">Each section is a row set in the template the app sends to <code>topo monitor stream</code>. What makes an entry up, warn or down is set in <code>topology.json</code> (for example <code>max_disk_percent</code>), not here.</p>
     <div class="gt">When the panel scrolls</div><div class="group">

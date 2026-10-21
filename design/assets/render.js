@@ -42,6 +42,7 @@
   }
 
   const I = {
+    apple: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>',
     globe: sv('<circle cx="10" cy="10" r="7.2"/><ellipse cx="10" cy="10" rx="3.1" ry="7.2"/><path d="M2.8 10h14.4"/>'),
     terminal: sv('<rect x="2.6" y="3.6" width="14.8" height="12.8" rx="3.2"/><path d="M6.2 8.1l2.4 1.9-2.4 1.9M10.6 12.3h3.2"/>'),
     gear: sv(`<path d="${gearPath(10, 10, 7.6, 5.9, 8)}"/><circle cx="10" cy="10" r="2.4"/>`),
@@ -570,10 +571,10 @@
     if (on.mac && o.mac !== 'off') {
       if (o.mac === 'server') {
         const ob = sc.mac.observes;
-        out.push(`<section class="nv-card"><h3>${I.laptop}This Mac<em>as a server · macbook</em></h3>${nvServer(sc.mac, { icon: I.laptop })}
+        out.push(`<section class="nv-card"><h3>${I.apple}This Mac<em>as a server · macbook</em></h3>${nvServer(sc.mac, { icon: I.apple })}
           <div class="nv-observes">${I.scope}<span>Observes from here</span><b>${mark(ob.health, 10)}${esc(ob.text)}</b></div></section>`);
       } else {
-        out.push(`<section class="nv-card"><h3>${I.laptop}This Mac<em>${L.model} · local readings</em></h3>${nvLocal(L)}</section>`);
+        out.push(`<section class="nv-card"><h3>${I.apple}This Mac<em>${L.model} · local readings</em></h3>${nvLocal(L)}</section>`);
       }
     }
 

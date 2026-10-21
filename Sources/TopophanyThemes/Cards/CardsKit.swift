@@ -703,16 +703,6 @@ struct RouteLayout: Layout {
     }
 }
 
-/// SF Symbols for this Mac's model.
-func macSymbol(_ model: String) -> String {
-    let m = model.lowercased()
-    if m.contains("mini") { return "macmini" }
-    if m.contains("studio") { return "macstudio" }
-    if m.contains("imac") { return "desktopcomputer" }
-    if m.contains("pro") && !m.contains("book") { return "macpro.gen3" }
-    return "laptopcomputer"
-}
-
 /// Markdown with its strong runs in `strong`.
 func emphasized(_ markdown: String, _ strong: Color) -> AttributedString {
     var a = (try? AttributedString(markdown: markdown)) ?? AttributedString(markdown)

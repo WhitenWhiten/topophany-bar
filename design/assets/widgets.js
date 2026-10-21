@@ -108,7 +108,7 @@
     if (kind === 'server') {
       const s = o.node === 'mac' ? sc.mac : sc.servers[0];
       const x = nServerMini(s);
-      const head = `<div class="w-srv-top">${TB.avatar(s, o.node === 'mac' ? C.I.laptop : null)}<div class="nv-server-name"><b>${esc(s.name)}</b><span>${esc(s.place)} · ${esc(TB.providerName(s.provider))}</span></div></div>`;
+      const head = `<div class="w-srv-top">${TB.avatar(s, o.node === 'mac' ? C.I.apple : null)}<div class="nv-server-name"><b>${esc(s.name)}</b><span>${esc(s.place)} · ${esc(TB.providerName(s.provider))}</span></div></div>`;
       const left = `<div class="w-col">${head}<div class="w-res-col">${x.meters}</div><div class="w-foot">${x.pill}<span>${s.withheld ? 'last ' : ''}${esc(s.updated)}</span></div></div>`;
       if (size === 's') body = left;
       else {
