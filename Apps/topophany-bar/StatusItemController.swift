@@ -32,8 +32,8 @@ final class StatusItemController: NSObject {
     private let readingsRenderer = ImageRenderer(content: AnyView(EmptyView()))
     private var readingsKey: ReadingsKey?
     private let frameView = FrameView()
-    /// The latest frame, for snapshots.
-    private(set) var frame: NSImage?
+    /// Include the currently presented portrait frame in debug snapshots.
+    var frame: NSImage? { frameView.snapshot }
     /// Frames of the turn by their place in a step, for what `key` draws.
     private var frames: [Int: CGImage] = [:]
     private var key: FrameKey?
@@ -124,10 +124,18 @@ final class StatusItemController: NSObject {
             && !ProcessInfo.processInfo.isLowPowerModeEnabled
     }
 
+    private var portrait: MenuBarIconAnimation? {
+        switch model.statusItem.icon {
+        case .globe: nil
+        case .deepseek: MenuBarIconAnimation.deepseek
+        case .custom: model.customIconAnimation
+        }
+    }
+
     /// Whether the turn runs steadily, nothing else moving: the system can
     /// play its frames.
     private var steady: Bool {
-        mayMove && change == nil && model.statusItem.activity == .live && turn.velocity == StatusItemTurn.speed
+        portrait == nil && mayMove && change == nil && model.statusItem.activity == .live && turn.velocity == StatusItemTurn.speed
     }
 
     /// Frames a second the app draws now; 0 while nothing moves or the
@@ -136,7 +144,7 @@ final class StatusItemController: NSObject {
         guard mayMove, !screensAsleep, !hidden, playing == nil else { return 0 }
         if let c = change, now - c.at < StatusItemMotion.changeLength { return 60 }
         let m = model.statusItem
-        return m.activity == .live || m.activity == .connecting || turn.isMoving ? 15 : 0
+        return m.activity == .connecting || (portrait == nil && (m.activity == .live || turn.isMoving)) ? 15 : 0
     }
 
     private func schedule(at now: TimeInterval) {
@@ -222,6 +230,7 @@ final class StatusItemController: NSObject {
         }
         shown = m
         if !steady { stopPlaying(at: now) }
+        if portrait != nil { turn.rest() }
         if !mayMove {
             turn.rest()
             change = nil
@@ -238,8 +247,12 @@ final class StatusItemController: NSObject {
         let scale = b.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
         let renderer = Renderers.renderer(for: theme)
         func context(_ motion: StatusItemMotion) -> StatusItemContext {
-            StatusItemContext(theme: theme, menuBarIsDark: dark, motion: motion)
+            StatusItemContext(theme: theme, menuBarIsDark: dark, motion: motion,
+                              customIcon: model.customIconAnimation, drawsPortrait: false)
         }
+        let height = min(Double(m.iconSize), Double(b.window?.frame.height ?? 30) - 2)
+        frameView.setPortrait(portrait, height: height, speed: m.iconSpeed,
+                              moving: mayMove && !screensAsleep && !hidden && m.activity == .live)
 
         // The readings, once a sample.
         let rk = ReadingsKey(readings: m.readings, language: L10n.localization, theme: theme.id, dark: dark, scale: scale)
@@ -257,6 +270,7 @@ final class StatusItemController: NSObject {
         // The rest: between changes, and with no spinner, a frame is its
         // place in the turn's step alone.
         var drawn = m
+        drawn.iconSize = Int(height)
         drawn.accessibilityLabel = ""
         drawn.readings = []
         let k = FrameKey(model: drawn, theme: theme.id, dark: dark, scale: scale)
@@ -290,7 +304,6 @@ final class StatusItemController: NSObject {
         if b.image?.size != size {
             b.image = NSImage(size: size, flipped: false) { _ in true }
         }
-        frame = frameView.snapshot
         showPressed(dark: dark)
         if b.accessibilityLabel() != m.accessibilityLabel {
             b.setAccessibilityLabel(m.accessibilityLabel)
@@ -323,6 +336,10 @@ private struct FrameKey: Equatable {
 private final class FrameView: NSView {
     private let readingsLayer = CALayer()
     private let itemLayer = CALayer()
+    private let portraitLayer = CALayer()
+    private var portrait: MenuBarIconAnimation?
+    private var portraitSize = NSSize.zero
+    private var portraitKey: PortraitKey?
     private var item: CGImage?
     private var scale: CGFloat = 2
 
@@ -336,15 +353,59 @@ private final class FrameView: NSView {
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
-        for l in [readingsLayer, itemLayer] {
+        for l in [readingsLayer, portraitLayer, itemLayer] {
             l.contentsGravity = .resize
             layer?.addSublayer(l)
         }
+        portraitLayer.contentsGravity = .resizeAspect
     }
 
     required init?(coder: NSCoder) { nil }
 
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    func setPortrait(_ animation: MenuBarIconAnimation?, height: Double, speed: Double, moving: Bool) {
+        let key = PortraitKey(id: animation?.id, height: height, speed: speed, moving: moving)
+        guard key != portraitKey else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
+        portraitKey = key
+        portrait = animation
+        portraitSize = animation?.size(height: height) ?? .zero
+        portraitLayer.removeAllAnimations()
+        portraitLayer.contents = animation?.frames.first
+        if let animation, moving {
+            if animation.frames.count > 1 {
+                let frames = CAKeyframeAnimation(keyPath: "contents")
+                frames.values = animation.frames
+                frames.keyTimes = animation.keyTimes
+                frames.calculationMode = .discrete
+                frames.duration = animation.duration / speed
+                frames.repeatCount = .infinity
+                portraitLayer.add(frames, forKey: "frames")
+            }
+            if animation.id == "deepseek" {
+                let breath = CAKeyframeAnimation(keyPath: "transform.translation.y")
+                breath.values = [0, 0.25, 0, -0.25, 0]
+                breath.keyTimes = [0, 0.25, 0.5, 0.75, 1]
+                breath.calculationMode = .cubic
+                breath.duration = 4.8 / speed
+                breath.repeatCount = .infinity
+                portraitLayer.add(breath, forKey: "breath")
+            }
+        }
+        update()
+    }
+
+    private struct PortraitKey: Equatable {
+        var id: String?
+        var height: Double
+        var speed: Double
+        var moving: Bool
+    }
+
+    private var portraitWidth: CGFloat { portrait == nil ? 0 : portraitSize.width + 2 }
 
     func show(_ image: CGImage, scale: CGFloat) {
         guard image !== item || scale != self.scale else { return }
@@ -378,16 +439,28 @@ private final class FrameView: NSView {
     /// Both parts and the room between them.
     var size: NSSize {
         let r = points(readings), i = points(item)
-        return NSSize(width: r.width + (readings == nil ? 0 : spacing) + i.width, height: max(r.height, i.height))
+        return NSSize(width: r.width + (readings == nil ? 0 : spacing) + portraitWidth + i.width,
+                      height: max(r.height, i.height, portraitSize.height))
     }
 
     /// Both parts in one image, as the menu bar shows them.
     var snapshot: NSImage? {
         guard let item else { return nil }
         let r = points(readings), i = points(item), all = size
+        // This layer's contents and every animation value are CGImages.
+        let portraitImage = portraitLayer.presentation()?.contents.map { $0 as! CGImage } ?? portrait?.frames.first
+        let portraitSize = portraitSize, portraitWidth = portraitWidth
         return NSImage(size: all, flipped: false) { [readings] _ in
             guard let c = NSGraphicsContext.current?.cgContext else { return false }
             if let readings { c.draw(readings, in: CGRect(x: 0, y: (all.height - r.height) / 2, width: r.width, height: r.height)) }
+            if let portraitImage {
+                let box = CGRect(x: all.width - i.width - portraitWidth + 1,
+                                 y: (all.height - portraitSize.height) / 2 + 1,
+                                 width: portraitSize.width - 2, height: portraitSize.height - 2)
+                let ratio = min(box.width / CGFloat(portraitImage.width), box.height / CGFloat(portraitImage.height))
+                let width = CGFloat(portraitImage.width) * ratio, height = CGFloat(portraitImage.height) * ratio
+                c.draw(portraitImage, in: CGRect(x: box.midX - width / 2, y: box.midY - height / 2, width: width, height: height))
+            }
             c.draw(item, in: CGRect(x: all.width - i.width, y: (all.height - i.height) / 2, width: i.width, height: i.height))
             return true
         }
@@ -408,6 +481,10 @@ private final class FrameView: NSView {
         readingsLayer.contents = readings
         readingsLayer.contentsScale = scale
         readingsLayer.frame = CGRect(x: x, y: y + (all.height - r.height) / 2, width: r.width, height: r.height)
+        portraitLayer.contentsScale = scale
+        portraitLayer.frame = CGRect(x: x + all.width - i.width - portraitWidth + 1,
+                                     y: y + (all.height - portraitSize.height) / 2 + 1,
+                                     width: max(0, portraitSize.width - 2), height: max(0, portraitSize.height - 2))
         itemLayer.contents = item
         itemLayer.contentsScale = scale
         itemLayer.frame = CGRect(x: x + all.width - i.width, y: y + (all.height - i.height) / 2, width: i.width, height: i.height)

@@ -13,7 +13,14 @@ public struct CellsRenderer: Renderer {
 
     public func statusItemParts(_ model: StatusItemModel, context: StatusItemContext) -> StatusItemParts {
         let readings = model.readings.isEmpty ? nil : AnyView(CellsReadingsChip(readings: model.readings, ctx: context))
-        return StatusItemParts(readings: readings, spacing: 4, item: AnyView(CellsStatusItem(model: model, ctx: context)))
+        let item = HStack(spacing: 4) {
+            if context.drawsPortrait, let portrait = model.portrait(in: context) {
+                MenuBarPortrait(animation: portrait, height: Double(model.iconSize), speed: model.iconSpeed,
+                                motion: model.activity == .live ? context.motion : .still)
+            }
+            CellsStatusItem(model: model, ctx: context)
+        }
+        return StatusItemParts(readings: readings, spacing: 4, item: AnyView(item))
     }
 
     public func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView {

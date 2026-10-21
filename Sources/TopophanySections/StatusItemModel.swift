@@ -16,6 +16,10 @@ public struct StatusItemModel: Sendable, Hashable {
 
     public var mark: Mark
     public var show: Settings.Appearance.Show
+    public var icon: Settings.Appearance.MenuBar.Icon = .globe
+    public var customIconID: String?
+    public var iconSize = 26
+    public var iconSpeed = 1.0
     public var statusColors: Bool
     /// The user quieted its alert until it gets worse: the badge keeps its
     /// shape, in the menu bar's ink.
@@ -53,6 +57,10 @@ public struct StatusItemModel: Sendable, Hashable {
                 quiet: QuietAlert? = nil) {
         mark = status.mark
         show = appearance.show
+        icon = appearance.icon
+        customIconID = appearance.customIconID
+        iconSize = appearance.iconSize
+        iconSpeed = appearance.iconSpeed
         statusColors = appearance.statusColors
         self.quiet = appearance.statusColors && quiet != nil && QuietAlert.alerts(status)
         switch appearance.show {

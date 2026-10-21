@@ -46,6 +46,14 @@ import TopophanyWidgets
 ///     deletedownload V      delete the downloaded topo V
 ///     menu                  the menu bar item's right-click menu, as text
 ///     itemshot              the menu bar item as last drawn, to item.png
+///     icon globe|deepseek   choose the menu bar icon
+///     iconimport JSON       import a JSON array of paths and select it
+///     iconrename NAME       rename the selected custom icon
+///     iconremove            remove the selected custom icon
+///     iconoptions SIZE SPEED on|off
+///                           set portrait size, speed and motion
+///     iconinfo              library and native layer playback, to icons.txt
+///     settingsshot          Settings as drawn, to settings.png
 ///     views                 the open panel's AppKit views and their frames,
 ///                           and its first responder
 ///     scroll [panel|#N] X Y DY [DX]
@@ -203,6 +211,45 @@ enum DebugDriver {
             try? lines.joined(separator: "\n").write(to: out.appending(path: "menu.txt"), atomically: true, encoding: .utf8)
         case "itemshot":
             if let image = d.statusItemImage { DebugSnapshots.write(image, out.appending(path: "item.png")) }
+        case "icon":
+            if w.count > 1, let icon = TopophanyKit.Settings.Appearance.MenuBar.Icon(rawValue: w[1]) {
+                d.model.update { $0.appearance.menuBar.icon = icon }
+            }
+        case "iconimport":
+            do {
+                let paths = try JSONDecoder().decode([String].self, from: Data(w.dropFirst().joined(separator: " ").utf8))
+                let asset = try d.model.iconLibrary.importFiles(paths.map { URL(filePath: $0) })
+                d.model.reloadIcons()
+                d.model.selectIcon(asset.id)
+            } catch { try? error.localizedDescription.write(to: out.appending(path: "icon-error.txt"), atomically: true, encoding: .utf8) }
+        case "iconrename":
+            if let id = d.model.settings.appearance.menuBar.customIconID {
+                try? d.model.iconLibrary.rename(id, to: w.dropFirst().joined(separator: " "))
+                d.model.reloadIcons()
+            }
+        case "iconremove":
+            if let id = d.model.settings.appearance.menuBar.customIconID { try? d.model.removeIcon(id) }
+        case "iconoptions":
+            d.model.update {
+                if let size = num(1) { $0.appearance.menuBar.iconSize = min(26, max(18, Int(size))) }
+                if let speed = num(2) { $0.appearance.menuBar.iconSpeed = min(3, max(0.25, speed)) }
+                if w.count > 3 { $0.appearance.menuBar.motion = w[3] == "on" }
+            }
+        case "iconinfo":
+            let bar = d.model.settings.appearance.menuBar
+            var lines = ["icon \(bar.icon.rawValue), size \(bar.iconSize), speed \(bar.iconSpeed), motion \(bar.motion)",
+                         "library \(d.model.iconLibrary.directory.path)", "custom frames \(d.model.customIconAnimation?.frames.count ?? 0)"]
+            lines += d.model.customIcons.map { "\($0.id) \($0.name) \($0.durations)" }
+            func layers(_ layer: CALayer) {
+                for key in layer.animationKeys() ?? [] {
+                    lines.append("animation \(key) duration \(layer.animation(forKey: key)?.duration ?? 0)")
+                }
+                for child in layer.sublayers ?? [] { layers(child) }
+            }
+            if let button = d.statusButton { for view in button.subviews { if let layer = view.layer { layers(layer) } } }
+            try? lines.joined(separator: "\n").write(to: out.appending(path: "icons.txt"), atomically: true, encoding: .utf8)
+        case "settingsshot":
+            if let window = d.settingsWindow { DebugSnapshots.write(window, out.appending(path: "settings.png")) }
         case "language":
             if w.count > 1, let l = TopophanyKit.Settings.Language(rawValue: w[1]) { d.model.update { $0.language = l } }
         case "handoff":

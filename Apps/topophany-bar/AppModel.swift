@@ -69,6 +69,10 @@ final class AppModel {
     private(set) var fetch: TopoFetch = .idle
     /// Where downloaded copies go: beside the settings file.
     @ObservationIgnored let downloads: TopoDownloads
+    @ObservationIgnored let iconLibrary: MenuBarIconLibrary
+    private(set) var customIcons: [MenuBarIconAsset] = []
+    private(set) var customIconAnimation: MenuBarIconAnimation?
+    private(set) var iconError: String?
     @ObservationIgnored var onChange: (() -> Void)?
     @ObservationIgnored var widgets: WidgetBridge?
 
@@ -88,6 +92,7 @@ final class AppModel {
     init(store: SettingsStore = AppModel.defaultStore) {
         self.store = store
         downloads = TopoDownloads(besideSettings: store.url)
+        iconLibrary = MenuBarIconLibrary(directory: store.url.deletingLastPathComponent().appending(path: "MenuBarIcons"))
         let s = store.load()
         L10n.prefer(s.language.localization)
         settings = s
@@ -97,6 +102,7 @@ final class AppModel {
         panel = p
         status = p.status
         statusItem = StatusItemModel(status: p.status, appearance: s.appearance.menuBar, local: nil)
+        reloadIcons()
     }
 
     var theme: Theme { themes.theme(settings.appearance.theme) }
@@ -300,6 +306,9 @@ final class AppModel {
         let old = settings
         L10n.prefer(s.language.localization)
         settings = s
+        if old.appearance.menuBar.customIconID != s.appearance.menuBar.customIconID || old.appearance.menuBar.icon != s.appearance.menuBar.icon {
+            reloadIcons()
+        }
         try? store.save(s)
         onSettingsChange?(old, s)
         if old.topo.path != s.topo.path || old.topo.source != s.topo.source {
@@ -314,6 +323,35 @@ final class AppModel {
             startLocal()
         }
         refresh()
+    }
+
+    func reloadIcons() {
+        customIcons = iconLibrary.list()
+        customIconAnimation = nil
+        iconError = nil
+        if settings.appearance.menuBar.icon == .custom, let id = settings.appearance.menuBar.customIconID {
+            do { customIconAnimation = try iconLibrary.load(id) }
+            catch { iconError = tr("This custom icon is unavailable. The default icon is shown instead.") }
+        }
+    }
+
+    func selectIcon(_ selection: String) {
+        update { settings in
+            if selection == "globe" || selection == "deepseek" {
+                settings.appearance.menuBar.icon = selection == "globe" ? .globe : .deepseek
+            } else {
+                settings.appearance.menuBar.icon = .custom
+                settings.appearance.menuBar.customIconID = selection
+            }
+        }
+    }
+
+    func removeIcon(_ id: String) throws {
+        try iconLibrary.remove(id)
+        if settings.appearance.menuBar.customIconID == id {
+            update { $0.appearance.menuBar.icon = .globe; $0.appearance.menuBar.customIconID = nil }
+        }
+        reloadIcons()
     }
 
     func setWidgetNeeds(_ needs: TemplateCompiler.WidgetNeeds) {

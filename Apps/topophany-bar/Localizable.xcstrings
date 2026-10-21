@@ -379,6 +379,22 @@
         }
       }
     },
+    "All PNG frames must have the same dimensions.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてのPNGフレームを同じサイズにしてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有 PNG 帧的尺寸必须相同。"
+          }
+        }
+      }
+    },
     "All observers": {
       "localizations": {
         "ja": {
@@ -423,6 +439,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "美洲"
+          }
+        }
+      }
+    },
+    "An icon can contain up to 180 frames.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アイコンは最大180フレームです。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一个图标最多包含 180 帧。"
+          }
+        }
+      }
+    },
+    "Animation speed": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アニメーション速度"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "动画速度"
           }
         }
       }
@@ -699,6 +747,22 @@
         }
       }
     },
+    "Choose a PNG, JPEG, GIF, APNG, or a sequence of PNG frames.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG・JPEG・GIF・APNG、またはPNGフレームの連番を選択してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择 PNG、JPEG、GIF、APNG 或 PNG 帧序列。"
+          }
+        }
+      }
+    },
     "Choose a node": {
       "localizations": {
         "ja": {
@@ -907,6 +971,22 @@
         }
       }
     },
+    "Could not update icon": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アイコンを更新できませんでした"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法更新图标"
+          }
+        }
+      }
+    },
     "Count": {
       "localizations": {
         "ja": {
@@ -919,6 +999,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "计数"
+          }
+        }
+      }
+    },
+    "Custom icons": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カスタムアイコン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义图标"
           }
         }
       }
@@ -955,6 +1051,22 @@
         }
       }
     },
+    "DeepSeek Girl": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DeepSeek 娘"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DeepSeek 娘"
+          }
+        }
+      }
+    },
     "Default": {
       "localizations": {
         "ja": {
@@ -971,6 +1083,22 @@
         }
       }
     },
+    "Delete": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "削除"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除"
+          }
+        }
+      }
+    },
     "Delete Download": {
       "localizations": {
         "ja": {
@@ -983,6 +1111,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "删除下载"
+          }
+        }
+      }
+    },
+    "Delete this custom icon?": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このカスタムアイコンを削除しますか？"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除此自定义图标？"
+          }
+        }
+      }
+    },
+    "Delete…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "削除…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除…"
           }
         }
       }
@@ -1143,6 +1303,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "引擎"
+          }
+        }
+      }
+    },
+    "Enter a name of up to 80 characters.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "80文字以内の名前を入力してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入不超过 80 个字符的名称。"
           }
         }
       }
@@ -1467,6 +1643,54 @@
         }
       }
     },
+    "Icon size": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アイコンのサイズ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图标大小"
+          }
+        }
+      }
+    },
+    "Import menu bar icon": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メニューバーアイコンを読み込む"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入菜单栏图标"
+          }
+        }
+      }
+    },
+    "Import…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み込む…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入…"
+          }
+        }
+      }
+    },
     "Include Command, Control or Option with another key.": {
       "localizations": {
         "ja": {
@@ -1707,6 +1931,22 @@
         }
       }
     },
+    "Medium": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中"
+          }
+        }
+      }
+    },
     "Memory": {
       "localizations": {
         "ja": {
@@ -1755,6 +1995,22 @@
         }
       }
     },
+    "Menu bar icon": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メニューバーアイコン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏图标"
+          }
+        }
+      }
+    },
     "Motion": {
       "localizations": {
         "ja": {
@@ -1799,6 +2055,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "上移"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名称"
           }
         }
       }
@@ -2027,6 +2299,22 @@
         }
       }
     },
+    "OK": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
+          }
+        }
+      }
+    },
     "Observes from here": {
       "localizations": {
         "ja": {
@@ -2183,6 +2471,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "其他…"
+          }
+        }
+      }
+    },
+    "PNG, JPEG, GIF or APNG; select multiple PNGs for a 12 fps sequence": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG・JPEG・GIF・APNG。複数のPNGは毎秒12フレームで再生"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG、JPEG、GIF 或 APNG；多张 PNG 按 12 帧/秒播放"
           }
         }
       }
@@ -2571,6 +2875,38 @@
         }
       }
     },
+    "Rename icon": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アイコン名を変更"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重命名图标"
+          }
+        }
+      }
+    },
+    "Rename…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前を変更…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重命名…"
+          }
+        }
+      }
+    },
     "Replaying a fixture; topo is not running": {
       "localizations": {
         "ja": {
@@ -2667,6 +3003,22 @@
         }
       }
     },
+    "Save": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存"
+          }
+        }
+      }
+    },
     "Saved by `topo login`; the app never sees a token": {
       "localizations": {
         "ja": {
@@ -2743,6 +3095,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "全选"
+          }
+        }
+      }
+    },
+    "Select one image or animation, or multiple PNG frames. Frames play in filename order.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画像やアニメーションを1つ、または複数のPNGフレームを選択します。ファイル名順に再生されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择一张图片或动画，或多张 PNG 帧。帧按文件名顺序播放。"
           }
         }
       }
@@ -3227,6 +3595,22 @@
         }
       }
     },
+    "The image is empty or could not be decoded.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画像が空か、読み取れませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片为空白或无法解码。"
+          }
+        }
+      }
+    },
     "The menu bar item keeps its badge’s shape, in its own color, until this gets worse.": {
       "localizations": {
         "ja": {
@@ -3255,6 +3639,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "该节点在 topology.json 中的 ID"
+          }
+        }
+      }
+    },
+    "The original files will be kept.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元のファイルは保持されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原始文件会保留。"
           }
         }
       }
@@ -3383,6 +3783,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "来自采集器的本机卡片，与 Servers 标签页中的相同。"
+          }
+        }
+      }
+    },
+    "This custom icon is unavailable. The default icon is shown instead.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このカスタムアイコンは利用できないため、標準アイコンを表示しています。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此自定义图标不可用，已显示默认图标。"
           }
         }
       }
@@ -3675,6 +4091,22 @@
         }
       }
     },
+    "Unavailable custom icon": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カスタムアイコンを利用できません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义图标不可用"
+          }
+        }
+      }
+    },
     "Undo": {
       "localizations": {
         "ja": {
@@ -3735,6 +4167,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "最高至屏幕高度"
+          }
+        }
+      }
+    },
+    "Use images up to 4096 × 4096 pixels and 32 MB in total.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画像は4096 × 4096ピクセル以下、合計32 MB以下にしてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片尺寸不能超过 4096 × 4096 像素，总大小不能超过 32 MB。"
           }
         }
       }

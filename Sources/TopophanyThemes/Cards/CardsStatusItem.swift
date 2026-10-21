@@ -17,6 +17,8 @@ struct CardsStatusItem: View {
     /// middle, the globe of the still item.
     static let meridians = 7
     static let badgeCenter = CGPoint(x: 14.6, y: 14.6)
+    var portrait: MenuBarIconAnimation? { model.portrait(in: ctx) }
+    var badgeCenter: CGPoint { portrait != nil ? CGPoint(x: 5.5, y: 11) : Self.badgeCenter }
 
     /// The front half of a meridian on a unit globe, top to bottom.
     static let meridian: Path = {
@@ -48,16 +50,27 @@ struct CardsStatusItem: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            Canvas { c, size in
-                drawGlobe(&c, size)
-                drawBadge(&c)
+            if let portrait {
+                if ctx.drawsPortrait {
+                    MenuBarPortrait(animation: portrait, height: Double(model.iconSize), speed: model.iconSpeed,
+                                    motion: model.activity == .live ? ctx.motion : .still)
+                        .padding(.trailing, 2)
+                }
+                Canvas { c, _ in drawBadge(&c) }
+                    .frame(width: 11, height: 22)
+                    .overlay { ripple }
+            } else {
+                Canvas { c, size in
+                    drawGlobe(&c, size)
+                    drawBadge(&c)
+                }
+                .frame(width: 19, height: 19)
+                .overlay { ripple }
             }
-            .frame(width: 19, height: 19)
-            .overlay { ripple }
             words
         }
         .padding(.horizontal, 1)
-        .frame(height: 22)
+        .frame(height: portrait != nil ? Double(model.iconSize) : 22)
     }
 
     // MARK: globe
@@ -108,7 +121,7 @@ struct CardsStatusItem: View {
 
     func badge(_ c: inout GraphicsContext, _ mark: Mark, scale: Double) {
         var g = c
-        let o = Self.badgeCenter
+        let o = badgeCenter
         if scale != 1 {
             g.translateBy(x: o.x, y: o.y)
             g.scaleBy(x: scale, y: scale)
@@ -160,7 +173,9 @@ struct CardsStatusItem: View {
             let t = Ease.span(ch.age, 0, StatusItemMotion.changeLength)
             Canvas { c, _ in
                 let r = 3.6 + 6.4 * Ease.out(t)
-                let o = CGPoint(x: Self.badgeCenter.x + 8, y: Self.badgeCenter.y + 8)
+                let o = portrait != nil
+                    ? CGPoint(x: 17.5, y: 17.5)
+                    : CGPoint(x: Self.badgeCenter.x + 8, y: Self.badgeCenter.y + 8)
                 c.stroke(Path(ellipseIn: CGRect(x: o.x - r, y: o.y - r, width: 2 * r, height: 2 * r)),
                          with: .color(color(model.mark).opacity(0.75 * pow(1 - t, 1.6))), lineWidth: 1.4 - 0.6 * t)
             }

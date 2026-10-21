@@ -588,6 +588,7 @@ struct AppearanceSettings: View {
                 } label: {
                     RowLabel("Show", "The count is what needs attention; nothing when all clear")
                 }
+                MenuBarIconSettings()
                 Toggle(isOn: model.binding(\.appearance.menuBar.statusColors)) {
                     RowLabel("Status colors", "Off draws the badge in the menu bar’s own color; its shape still changes")
                 }
@@ -719,7 +720,7 @@ struct MenuBarPreview: View {
         var appearance = model.settings.appearance.menuBar
         let readings = !appearance.readings.isEmpty
         let _ = appearance.readings = []
-        let moves = appearance.motion && !reduceMotion
+        let moves = appearance.motion && !reduceMotion && !ProcessInfo.processInfo.isLowPowerModeEnabled
         // Drawn as a dark menu bar shows it. This Mac's readings go with
         // the item as it is now.
         TimelineView(.animation(minimumInterval: 1 / 15, paused: !moves)) { t in
@@ -745,7 +746,7 @@ struct MenuBarPreview: View {
         var motion = motion
         if m.activity != .live { motion.turn = 0 }
         return Renderers.renderer(for: theme)
-            .statusItem(m, context: StatusItemContext(theme: theme, menuBarIsDark: true, motion: motion))
+            .statusItem(m, context: StatusItemContext(theme: theme, menuBarIsDark: true, motion: motion, customIcon: model.customIconAnimation))
     }
 }
 

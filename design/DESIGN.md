@@ -58,6 +58,27 @@ Out of scope for v1:
 
 ### 3.1 Motion
 
+Settings › Appearance › Menu bar icon offers the default renderer, the built-in
+DeepSeek Girl, and imported icons. DeepSeek Girl uses the approved portrait and a
+matching blink frame: a 140 ms blink every 4.8 seconds, with a quarter-point
+breathing movement. Shared transparent margins are trimmed, leaving the full
+headband and hair visible. Its status badge sits beside the portrait.
+
+Import accepts PNG/JPEG still images, GIF/APNG animations with their frame timing,
+or multiple equally sized PNG frames, sorted naturally by filename at 12 fps.
+Imports are normalized to small PNG frames in `MenuBarIcons/<UUID>` beside the
+settings file; the original files are never changed and may subsequently be
+moved. The settings keep only the selected ID, size (18, 22 or 26 pt), and speed.
+The library supports rename and delete, with the default icon used if a selected
+asset is unavailable. Input limits are 32 MB total, 4096 pixels per dimension and
+180 frames. Frame delays are bounded to 20 ms–10 s.
+
+Portraits play on their own native layer using their frame durations, leaving the
+readings and status rendering independent. They animate only with current data
+and the existing motion policy permits it; sleeping or hidden displays, Reduce
+Motion and Low Power Mode show the first frame. The selected size is capped to
+fit the actual menu bar. Changing readings does not restart an animation.
+
 The item moves only to say something.
 
 | When | Native | Terminal |

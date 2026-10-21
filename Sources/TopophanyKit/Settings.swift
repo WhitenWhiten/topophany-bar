@@ -82,10 +82,15 @@ public struct Settings: Sendable, Hashable, Codable {
         public enum Show: String, Sendable, Hashable, Codable, CaseIterable { case symbol, count, words }
 
         public struct MenuBar: Sendable, Hashable, Codable {
+            public enum Icon: String, Sendable, Hashable, Codable, CaseIterable { case globe, deepseek, custom }
             /// This Mac's readings the item can show beside its globe.
             public enum Reading: String, Sendable, Hashable, Codable, CaseIterable { case cpu, memory, network }
 
             public var show: Show = .count
+            public var icon: Icon = .globe
+            public var customIconID: String?
+            public var iconSize = 26
+            public var iconSpeed = 1.0
             public var statusColors = true
             /// The item moves: it turns while what it shows is current, and
             /// its changes animate. Reduce Motion keeps it still regardless.
@@ -96,11 +101,18 @@ public struct Settings: Sendable, Hashable, Codable {
 
             public init() {}
 
-            enum CodingKeys: String, CodingKey { case show, statusColors, motion, readings }
+            enum CodingKeys: String, CodingKey { case show, icon, customIconID, iconSize, iconSpeed, statusColors, motion, readings }
 
             public init(from decoder: Decoder) throws {
                 let c = try decoder.container(keyedBy: CodingKeys.self)
                 show = c.text(.show).flatMap(Show.init(rawValue:)) ?? .count
+                icon = c.text(.icon).flatMap(Icon.init(rawValue:)) ?? .globe
+                customIconID = c.text(.customIconID).flatMap { UUID(uuidString: $0) == nil ? nil : $0 }
+                if icon == .custom && customIconID == nil { icon = .globe }
+                let size = (try? c.decodeIfPresent(Int.self, forKey: .iconSize)) ?? 26
+                iconSize = [18, 22, 26].contains(size) ? size : 26
+                let speed = (try? c.decodeIfPresent(Double.self, forKey: .iconSpeed)) ?? 1
+                iconSpeed = [0.5, 1, 1.5, 2].contains(speed) ? speed : 1
                 statusColors = (try? c.decodeIfPresent(Bool.self, forKey: .statusColors)) ?? true
                 motion = (try? c.decodeIfPresent(Bool.self, forKey: .motion)) ?? true
                 let r = (try? c.decodeIfPresent([String].self, forKey: .readings)) ?? []

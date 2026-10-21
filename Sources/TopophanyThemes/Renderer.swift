@@ -76,11 +76,17 @@ public struct StatusItemContext: Sendable {
     /// the item takes the ink the menu bar's own items take on it.
     public var menuBarIsDark: Bool
     public var motion: StatusItemMotion
+    public var customIcon: MenuBarIconAnimation?
+    /// The app renders the portrait in its own native animation layer.
+    public var drawsPortrait: Bool
 
-    public init(theme: Theme, menuBarIsDark: Bool, motion: StatusItemMotion = .still) {
+    public init(theme: Theme, menuBarIsDark: Bool, motion: StatusItemMotion = .still,
+                customIcon: MenuBarIconAnimation? = nil, drawsPortrait: Bool = true) {
         self.theme = theme
         self.menuBarIsDark = menuBarIsDark
         self.motion = motion
+        self.customIcon = customIcon
+        self.drawsPortrait = drawsPortrait
     }
 }
 
