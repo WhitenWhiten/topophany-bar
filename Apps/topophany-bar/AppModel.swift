@@ -388,10 +388,18 @@ final class AppModel {
                 break
             }
         case .diagnostic(let d):
-            diagnostics.append(d)
-            if diagnostics.count > 50 { diagnostics.removeFirst(diagnostics.count - 50) }
+            appendDiagnostics([d])
+            return
+        case .diagnostics(let pending):
+            appendDiagnostics(pending.drain())
+            return
         }
         refresh()
+    }
+
+    private func appendDiagnostics(_ lines: [String]) {
+        diagnostics.append(contentsOf: lines)
+        if diagnostics.count > 50 { diagnostics.removeFirst(diagnostics.count - 50) }
     }
 
     private func loadCapabilities(path: String) {

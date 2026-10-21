@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// Something that produces frames for a request: `topo monitor stream` as a
 /// child process today, the same core linked as a library later. Nothing
@@ -19,6 +20,39 @@ public enum EngineEvent: Sendable {
     /// A line `topo` wrote to stderr, or a line that wasn't a frame. Shown,
     /// never parsed.
     case diagnostic(String)
+    /// A bounded batch of diagnostics. Drain it when handling this event;
+    /// frames and lifecycle events keep their own places in the stream.
+    case diagnostics(EngineDiagnostics)
+}
+
+/// At most one pending notification and the latest 50 diagnostic lines,
+/// even when the event consumer is busy. Diagnostics never displace frames.
+public final class EngineDiagnostics: Sendable {
+    private struct State: Sendable {
+        var lines: [String] = []
+        var notified = false
+    }
+    private let state = Mutex(State())
+
+    public init() {}
+
+    /// Returns true when the producer should enqueue a notification.
+    public func append(_ line: String) -> Bool {
+        state.withLock { s in
+            s.lines.append(String(line.prefix(500)))
+            if s.lines.count > 50 { s.lines.removeFirst(s.lines.count - 50) }
+            guard !s.notified else { return false }
+            s.notified = true
+            return true
+        }
+    }
+
+    public func drain() -> [String] {
+        state.withLock { s in
+            defer { s.lines.removeAll(keepingCapacity: true); s.notified = false }
+            return s.lines
+        }
+    }
 }
 
 public enum EngineStatus: Sendable, Hashable {

@@ -45,6 +45,7 @@ public final class ProcessEngine: Engine {
     public let configuration: Configuration
     private let clock: any WallClock
     private let state = Mutex(State())
+    private let diagnostics = EngineDiagnostics()
     private let shellPath: @Sendable () -> String?
 
     public init(configuration: Configuration, clock: any WallClock = SystemClock()) {
@@ -115,6 +116,10 @@ public final class ProcessEngine: Engine {
 
     private func yield(_ e: EngineEvent) {
         _ = state.withLock { $0.continuation }?.yield(e)
+    }
+
+    private func diagnose(_ line: String) {
+        if diagnostics.append(line) { yield(.diagnostics(diagnostics)) }
     }
 
     // MARK: supervision
@@ -277,8 +282,8 @@ public final class ProcessEngine: Engine {
         for o in outputs {
             switch o {
             case .frame(let f, let line): yield(.frame(f, line: line))
-            case .problem(.oversized(let bytes)): yield(.diagnostic("dropped a frame of \(bytes) bytes, over the 1 MiB limit"))
-            case .problem(.malformed(let why)): yield(.diagnostic("a line on stdout wasn't a frame: \(why)"))
+            case .problem(.oversized(let bytes)): diagnose("dropped a frame of \(bytes) bytes, over the 1 MiB limit")
+            case .problem(.malformed(let why)): diagnose("a line on stdout wasn't a frame: \(why)")
             }
         }
     }
@@ -292,7 +297,7 @@ public final class ProcessEngine: Engine {
             while let nl = pending.firstIndex(of: 0x0A) {
                 let line = String(decoding: pending[pending.startIndex..<nl], as: UTF8.self)
                 pending.removeSubrange(pending.startIndex...nl)
-                if !line.isEmpty { yield(.diagnostic(String(line.prefix(500)))) }
+                if !line.isEmpty { diagnose(line) }
             }
             if pending.count > 4096 { pending.removeAll() }
         }

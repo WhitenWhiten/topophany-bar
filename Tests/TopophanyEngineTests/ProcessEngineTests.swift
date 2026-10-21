@@ -16,7 +16,14 @@ final class Recorder: Sendable {
     init(_ stream: AsyncStream<EngineEvent>) {
         let box = self.box
         task = Task {
-            for await e in stream { box.events.withLock { $0.append(e) } }
+            for await e in stream {
+                if case .diagnostics(let pending) = e {
+                    let lines = pending.drain()
+                    box.events.withLock { $0.append(contentsOf: lines.map(EngineEvent.diagnostic)) }
+                } else {
+                    box.events.withLock { $0.append(e) }
+                }
+            }
         }
     }
 
@@ -83,6 +90,37 @@ func config(_ path: String, backoff: TimeInterval = 0.2) -> ProcessEngine.Config
 }
 
 @Suite(.serialized) struct ProcessEngineTests {
+    @Test func diagnosticFloodDoesNotDisplaceFrames() async throws {
+        let ready = FileManager.default.temporaryDirectory.appending(path: "flood-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: ready) }
+        let body = FakeTopo.script.replacingOccurrences(of: "echo \"fake topo started\" >&2",
+                                                        with: "seq 1 20000 >&2\ntouch '\(ready.path)'")
+        let engine = ProcessEngine(configuration: config(try FakeTopo.install(body)))
+        let stream = engine.start(request("first"))
+        let deadline = Date().addingTimeInterval(5)
+        while !FileManager.default.fileExists(atPath: ready.path), Date() < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(FileManager.default.fileExists(atPath: ready.path))
+        try await engine.update(request("second"))
+        // Leave the consumer idle until every output has been queued.
+        await engine.stop()
+        var notifications = 0
+        var lines: [String] = []
+        var received: [Frame] = []
+        for await event in stream {
+            switch event {
+            case .diagnostics(let buffer): notifications += 1; lines += buffer.drain()
+            case .frame(let frame, _): received.append(frame)
+            default: break
+            }
+        }
+        #expect(notifications == 1)
+        #expect(lines == (19_951...20_000).map(String.init))
+        #expect(received.filter { $0.lifecycle == .running }.map(\.requestID) == ["first", "second"])
+        #expect(received.last?.lifecycle == .stopped)
+    }
+
     @Test func runsUpdatesAndStops() async throws {
         let path = try FakeTopo.install()
         let engine = ProcessEngine(configuration: config(path))
