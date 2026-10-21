@@ -540,7 +540,8 @@ struct AppearanceSettings: View {
                     }
                     .padding(.vertical, 2)
                 }
-                .scrollIndicators(.hidden)
+                // `.hidden` still allows macOS to show a persistent scrollbar.
+                .scrollIndicators(.never, axes: .horizontal)
                 .scrollBounceBehavior(.basedOnSize)
             } header: {
                 Text("Theme")
