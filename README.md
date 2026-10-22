@@ -86,3 +86,22 @@ If you find this useful, consider starring [Topophany](https://github.com/Whiten
 topophany-bar is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). Noncommercial use is permitted under that license; commercial use requires a separate license. See [LICENSE](LICENSE) for the full terms and [open an issue](https://github.com/WhitenWhiten/topophany-bar/issues) for licensing inquiries.
 
 [Topophany](https://github.com/WhitenWhiten/topophany) itself is MIT-licensed. Provider logos and other third-party assets retain their own terms; see [Third-party notices](THIRD-PARTY-NOTICES.md).
+
+### Beszel direct
+
+In Settings → Data sources, choose **Beszel direct**, add your Beszel Hub, and
+use your account and password to **Test connection**. Select up to 20 servers per
+source and save. An API token is available under Authentication for accounts
+whose sign-in method needs it. Editing an existing source uses saved authentication
+unless you choose to sign in again. The app never saves your password.
+
+Direct requires a `topo` whose capabilities advertise **Direct v1 / config API 1**.
+Choose or download a newer executable in General if needed. It needs a Beszel Hub,
+but no Topophany collector or handwritten topology. A profile can hold several
+sources; equal server names in different sources remain separate.
+
+CPU, memory and the primary disk use the Hub's sample timestamps. Connection
+status describes data acquisition. Missing and expired measurements stay unknown.
+Closing the bar stops its own collection; an independently opened terminal polls
+on its own. Direct widgets are resource snapshots labelled **As of** and expire
+at their original deadlines; WidgetKit does not promise a five-second refresh.

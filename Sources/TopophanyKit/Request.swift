@@ -4,10 +4,12 @@ import Foundation
 public struct Request: Sendable, Hashable, Codable {
     public var schema: Int = 1
     public var requestID: String
-    /// `client` or `preview`.
+    /// `client`, `preview` or `direct`.
     public var source: String
     public var credentials: String
     public var profile: String
+    public var profileRevision: String? = nil
+    public var retryNonce: String? = nil
     public var project: String
     public var observer: String
     /// `preview` only.
@@ -18,6 +20,7 @@ public struct Request: Sendable, Hashable, Codable {
     public var template: Template
 
     enum CodingKeys: String, CodingKey {
+        case profileRevision = "profile_revision", retryNonce = "retry_nonce"
         case schema, requestID = "request_id", source, credentials, profile, project, observer, scenario, lang, interval, template
     }
 
@@ -49,9 +52,21 @@ public struct Request: Sendable, Hashable, Codable {
     /// same rule applies to the first request and subsequent updates.
     public func supported(by capabilities: Capabilities) -> Request {
         var r = self
-        let metrics = Set(capabilities.metrics.map(\.name))
+        let metrics = Set(capabilities.metrics.filter { capabilities.supports(metric: $0.name, source: source) }.map(\.name))
         r.template.rows.removeAll { !metrics.contains($0.metric) }
         return r
+    }
+
+    public func validate(using capabilities: Capabilities) throws {
+        guard capabilities.supports(source: source), source != "direct" || !profile.isEmpty else {
+            throw SourceProblem(code: "source_unsupported")
+        }
+        guard template.rows.count <= min(128, capabilities.direct?.limits.templateRows ?? 128) else { throw SourceProblem(code: "template_limit") }
+        guard !template.rows.isEmpty, template.rows.contains(where: { $0.id == template.bar.row }),
+              Set(template.rows.map(\.id)).count == template.rows.count else { throw SourceProblem(code: "template_invalid") }
+        let required = source == "direct" ? ["sources.status", "servers.list", "server.card"] : Capabilities.required
+        guard required.allSatisfy({ capabilities.supports(metric: $0, source: source) }) else { throw SourceProblem(code: "metrics_unsupported") }
+        guard try line().count <= 256 * 1024 else { throw SourceProblem(code: "state_budget") }
     }
 }
 
@@ -121,8 +136,27 @@ public struct Capabilities: Sendable, Hashable, Decodable {
     public var metrics: [Metric]
     /// Whether `--profiles` is served.
     public var profiles: Bool
+    public var direct: Direct?
+    public struct Direct: Sendable, Hashable, Decodable {
+        public var schema: Int
+        public var configAPI: Int
+        public var adapters: [String]
+        public var retry: Bool
+        public var limits: Limits
+        public struct Limits: Sendable, Hashable, Decodable {
+            public var sourcesPerProfile: Int
+            public var objectsPerSource: Int
+            public var objectsPerProfile: Int
+            public var templateRows: Int
+            enum CodingKeys: String, CodingKey {
+                case sourcesPerProfile = "sources_per_profile", objectsPerSource = "objects_per_source"
+                case objectsPerProfile = "objects_per_profile", templateRows = "template_rows"
+            }
+        }
+        enum CodingKeys: String, CodingKey { case schema, configAPI = "config_api", adapters, retry, limits }
+    }
 
-    enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles }
+    enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles, direct }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -132,6 +166,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
         sources = (try? c.decodeIfPresent([String].self, forKey: .sources)) ?? []
         visuals = (try? c.decodeIfPresent([String].self, forKey: .visuals)) ?? []
         metrics = (try? c.decodeIfPresent([Metric].self, forKey: .metrics)) ?? []
+        direct = try? c.decodeIfPresent(Direct.self, forKey: .direct)
         profiles = (try? c.decodeIfPresent(Bool.self, forKey: .profiles)) ?? false
     }
 
@@ -159,5 +194,14 @@ public struct Capabilities: Sendable, Hashable, Decodable {
     }
 
     /// Protocol 1 with every metric the panel draws.
-    public var isUsable: Bool { (self.protocol == 1 || protocols.contains(1)) && missing().isEmpty }
+    public var isUsable: Bool { self.protocol == 1 || protocols.contains(1) }
+
+    public func supports(source: String) -> Bool {
+        guard isUsable, sources.contains(source) else { return false }
+        if source == "direct" { return direct?.schema == 1 && direct?.configAPI == 1 && direct?.adapters.contains("beszel") == true }
+        return source == "client" || source == "preview"
+    }
+    public func supports(metric: String, source: String) -> Bool {
+        metrics.contains { $0.name == metric && ($0.sources == nil || $0.sources!.contains(source == "preview" ? "client" : source)) }
+    }
 }

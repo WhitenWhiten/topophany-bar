@@ -12,7 +12,30 @@ public enum WidgetSchedule {
 
     /// The "Not current" entry's date: the next heartbeat plus the grace.
     public static func notCurrent(after h: Handoff) -> Date {
-        h.writtenAt.addingTimeInterval(h.heartbeat + grace)
+        if h.isDirect { return directDeadline(h, server: nil) }
+        return h.writtenAt.addingTimeInterval(h.heartbeat + grace)
+    }
+
+    /// Only the rows used by this widget bound its snapshot, with nested resource deadlines.
+    public static func directDeadline(_ h: Handoff, server node: String?) -> Date {
+        guard h.engineRunning, let frame = h.decodedFrame, frame.source == "direct" else { return h.writtenAt }
+        let rows = frame.rows.filter { row in
+            if let node { return row.metric == "server.card" && row.select?.node == node }
+            return row.metric == "sources.status" || row.metric == "servers.list"
+        }
+        guard !rows.isEmpty else { return h.writtenAt }
+        var deadlines: [Date] = []
+        for row in rows {
+            guard let until = row.validUntil else { return h.writtenAt }
+            deadlines.append(until)
+            if case .serverCard(let card) = row.value {
+                for resource in card.resources {
+                    guard let until = resource.validUntil else { return h.writtenAt }
+                    deadlines.append(until)
+                }
+            }
+        }
+        return deadlines.min() ?? h.writtenAt
     }
 
     /// A Time zones widget's clocks are set by its entries, one a minute:
@@ -62,6 +85,12 @@ public enum WidgetSchedule {
                                                         settings: TopophanyKit.Settings()))
             return [(now, empty.withheld(at: now), false)]
         }
+        if h.isDirect {
+            let stale = directDeadline(h, server: node)
+            let panel = node.map { h.panel(server: $0, at: now) } ?? h.panel(at: now)
+            guard stale > now else { return [(now, panel.withheld(at: now), false)] }
+            return [(now, panel, true), (stale, (node.map { h.panel(server: $0, at: stale) } ?? h.panel(at: stale)).withheld(at: stale), false)]
+        }
         let panel = node.map { h.panel(server: $0) } ?? service.map { h.panel(service: $0) } ?? h.panel()
         let stale = notCurrent(after: h)
         if stale <= now { return [(now, panel.withheld(at: now), false)] }
@@ -81,6 +110,10 @@ public struct WidgetReloadPolicy: Sendable {
     /// every server, by ID.
     public static func signature(_ p: PanelModel) -> String {
         var parts = ["status:\(p.status.kind):\(p.status.mark.rawValue):\(p.status.count ?? -1)"]
+        if let sources = p.status.sources {
+            parts.append("sources:\(sources.isCurrent):\(sources.value.state)")
+            parts += sources.value.sources.map { "source:\($0.id)=\($0.state):\($0.code ?? "")" }
+        }
         if let s = p.seen { parts.append("seen:" + (s.problems?.map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",") ?? "?")) }
         if let a = p.attention { parts.append("att:\(a.total):" + a.items.prefix(3).map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")) }
         if let a = p.applications { parts.append("apps:" + a.rows.map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")) }

@@ -253,6 +253,8 @@ enum DebugDriver {
             }
             if let button = d.statusButton { for view in button.subviews { if let layer = view.layer { layers(layer) } } }
             try? lines.joined(separator: "\n").write(to: out.appending(path: "icons.txt"), atomically: true, encoding: .utf8)
+        case "panelshot":
+            if let window = d.panelWindow { DebugSnapshots.write(window, out.appending(path: "panel.png")) }
         case "settingsshot":
             if let window = d.settingsWindow { DebugSnapshots.write(window, out.appending(path: "settings.png")) }
         case "language":

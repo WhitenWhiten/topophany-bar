@@ -380,3 +380,53 @@ These are the rules `topo monitor preview` applies, and topophany-bar's `ReaderP
 ## 6. Versioning
 
 Fields may be added to requests, frames and values without changing `protocol`, and consumers ignore fields they don't know. Renaming or removing a field, or changing a meaning, needs protocol 2, and `--capabilities` must then list both protocols for as long as both are served.
+
+## 7. Direct v1 (D1)
+
+The additive schema/protocol 1 extension is specified in the verified
+[`contracts/direct-v1/contract.md`](contracts/direct-v1/contract.md). Its manifest
+and fixtures are copied byte-for-byte from topophany; tests validate their hashes.
+`client`, `preview` and `direct` are exclusive source modes. Unknown modes are
+retained in Settings and rejected by capability negotiation rather than becoming
+client connections. `--profiles` retains its client meaning; direct profiles come
+from `topo sources list --json`.
+
+A direct request explicitly names a profile, optionally fences installation with
+`profile_revision`, and projects `sources.status`, `servers.list`, and deduplicated
+`server.card` rows. Template/source/metric support are checked separately from
+protocol support. Row admission is bounded at 128 with an explicit error. Collector
+section preferences survive mode switches. No resource thresholds or network
+health aggregation are implemented by the bar.
+
+The one-shot `sources inspect/save/remove --json-stdin` executor sends authentication
+only on stdin, bounds input/output to 256 KiB / 1 MiB, drains stderr concurrently
+without displaying its body, and validates schema, request ID, envelope and exit
+status. Its default deadline is 45 seconds. Password/token values live only in an
+editing session. Inspect does not carry an implicit token into save. A conflict or
+unknown save outcome reads the profile again and requires review before retrying.
+Closing the editor cancels its process and clears its secret fields.
+
+A source ID is generated once per editor. Returned node IDs are used unchanged;
+`origin` stays distinct from provider. Optional malformed origin fields are ignored
+locally. `profile_revision`, request ID, config revision and dataset ID retain their
+separate meanings. A running frame confirms installation; a matching error rejects
+only its request. Old process and request generations cannot install new content.
+The reader clears evidence/history when source + dataset changes. Pins are scoped
+by mode and stable profile; direct Widget node choices also include dataset identity.
+
+The stream continues across profile/pin/template/language/display updates. Explicit
+retry and Mac wake use a debounced `retry_nonce`, only when advertised. Direct-root,
+command-response, engine and clock injection are development dependencies, absent
+from normal Settings. Terminal arguments use `--source direct --profile ID` with
+no Hub URL or authentication. App exit closes its stream and cancels config commands.
+
+The old statement that stream never writes files applies to client/preview. D1 may
+lock/read/atomically renew its credentials in its private root. It writes no metrics
+journal, panel file or history database.
+
+Direct Widget handoffs contain only public Settings and display frames. Each
+Widget's expiry uses the earliest relevant original row/resource deadline, with
+no heartbeat grace. Snapshot publication, sample time, source contact and handoff
+write time remain distinct. Direct snapshot writes may happen every 15 seconds;
+resource-only reload requests are limited to once per minute. WidgetKit controls
+execution. Collector Widget schedules retain their existing heartbeat policy.

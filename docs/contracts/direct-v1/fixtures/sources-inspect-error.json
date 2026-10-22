@@ -1,0 +1,1 @@
+{"schema":1,"request_id":"settings-42","ok":false,"error":{"code":"auth_required","message":"Authentication is required; the Hub did not accept this credential.","retryable":false}}

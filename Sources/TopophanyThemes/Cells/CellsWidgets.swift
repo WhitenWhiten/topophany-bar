@@ -73,7 +73,7 @@ struct CellsWidget: View {
         /// "◉ homelab ……… ● LIVE"
         mutating func head(_ columns: Int) {
             let ch = model.panel.chrome
-            let live: [Seg] = ch.isLive && model.isCurrent ? [.mark(.up, p), .t(" " + tr("LIVE"), p.up, bold: true)] : [.mark(.offline, p)]
+            let live: [Seg] = model.status.sources != nil ? [.t(tr("Resource snapshot"), p.muted)] : ch.isLive && model.isCurrent ? [.mark(.up, p), .t(" " + tr("LIVE"), p.up, bold: true)] : [.mark(.offline, p)]
             let name = ch.project.isEmpty ? "Topophany" : ch.project
             w.line([.glyph(.logo, p.accent), .t(" " + CellText.truncate(name, columns - 10), p.text, bold: true)], live,
                    in: .init(x: pad.side, columns: columns))
@@ -169,6 +169,17 @@ struct CellsWidget: View {
         mutating func status(_ size: WidgetSize) {
             let x0 = pad.side, x1 = pad.side + Double(cols) * cell
             head(cols)
+            if model.status.sources != nil {
+                let b = self.b, status = self.status
+                w.box(title(tr("STATUS")), x0: x0, x1: x1, style: style) { w in
+                    b.status(&w, status, short: size == .small, blockHeight: 0)
+                    if let at = status.sources?.snapshotAt ?? model.updatedAt {
+                        let time = Words.time(at, in: .current)
+                        w.line([.t(CellText.truncate(tr("As of \(Words.clock(time.time, time.period))"), w.frame.columns), self.p.faint)])
+                    }
+                }
+                return
+            }
             switch size {
             case .small:
                 statusBox(x0: x0, x1: x1, short: true)
@@ -271,7 +282,7 @@ struct CellsWidget: View {
             let b = self.b
             if size == .small {
                 w.line([.mark(c.isWithheld ? .offline : c.mark, p), .t(" " + CellText.truncate(c.name, cols - 2), p.text, bold: true)])
-                let kind = c.kind.isEmpty ? tr("NODE") : Words.kind(c.kind).uppercased(with: L10n.locale)
+                let kind = c.origin?.badge ?? (c.kind.isEmpty ? tr("NODE") : Words.kind(c.kind).uppercased(with: L10n.locale))
                 let p = self.p
                 let live = ctx.liveDates
                 var ages: [LiveAge] = []
@@ -286,19 +297,25 @@ struct CellsWidget: View {
                     row(tr("CPU "), c.cpu)
                     row(tr("MEM "), c.memory)
                     row(tr("DSK "), c.disk)
-                    let place = c.isMissing ? c.place : (c.place.isEmpty ? c.provider : c.place)
-                    if let at = c.sampledAt, live {
+                    let place = c.isMissing ? c.place : (c.origin?.badge ?? (c.place.isEmpty ? c.provider : c.place))
+                    if let at = c.sampledAt, c.origin != nil {
+                        let time = Words.time(at, in: .current)
+                        w.line([.t(CellText.truncate(tr("As of \(Words.clock(time.time, time.period))"), n), p.faint)])
+                    } else if let at = c.sampledAt, live, c.origin == nil {
                         ages.append(LiveAge(right: w.frame.x + Double(n) * w.cell, y: w.y, date: at, color: p.faint, background: nil))
                         w.line([.t(CellText.truncate(place, n - 8), p.muted)])
                     } else {
-                        let age = c.sampledAt.map { Words.span(since: $0, now: c.now, style: .compact) } ?? ""
+                        let age = c.sampledAt.map { c.origin == nil ? Words.span(since: $0, now: c.now, style: .compact) : tr("As of \(Words.time($0, in: .current).time)") } ?? ""
                         w.line([.t(CellText.truncate(place, n - 6), p.muted)], [.t(c.isWithheld && !age.isEmpty ? tr("last \(age)") : age, p.faint)])
                     }
                 }
                 w.live += ages
             } else {
                 head(cols)
-                w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: style) { b.server(&$0, c, bar: 22, observes: true) }
+                w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: style) { w in
+                    b.server(&w, c, bar: 22, observes: true)
+                    if c.origin != nil, let at = c.sampledAt { w.line([.t(tr("As of \(Words.time(at, in: .current).time)"), self.p.faint)]) }
+                }
             }
         }
     }

@@ -27,7 +27,7 @@ enum DebugSnapshots {
             }
             if let w = delegate.panelWindow { write(w, dir.appending(path: "panel-focus.png")) }
             delegate.showSettings()
-            for (i, name) in ["general", "appearance", "sections", "mac"].enumerated() {
+            for (i, name) in ["general", "appearance", "sections", "mac", "sources"].enumerated() {
                 delegate.selectSettingsTab(i)
                 try? await Task.sleep(for: .milliseconds(900))
                 if let w = delegate.settingsWindow { write(w, dir.appending(path: "settings-\(name).png")) }

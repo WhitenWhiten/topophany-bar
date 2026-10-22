@@ -115,6 +115,12 @@ extension PanelModel {
         }
         p.status = StatusSection(kind: .blind(.notCurrent), mark: .offline, updatedAt: status.updatedAt,
                                  lastKnown: known, now: date)
+        if var sources = status.sources {
+            sources.isCurrent = false
+            p.status.lastKnown = nil
+            p.status.sources = sources
+            p.status.kind = .sources
+        }
         p.chrome.connection = .notRunning(tr("Not current"))
         p.chrome.now = date
         p.sections = sections.compactMap { s -> Section? in

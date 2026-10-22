@@ -19,7 +19,8 @@ enum WidgetNeedsWatcher {
     }
 
     private static func check(_ model: AppModel, _ store: WidgetNeedsStore) {
-        let needs = store.needs()
+        let scope = model.reading.frame.flatMap { $0.source == "direct" ? $0.source + ":" + $0.datasetID : nil }
+        let needs = store.needs(datasetScope: scope)
         model.widgets?.needs = needs
         model.widgets?.zones = store.zones()
         model.setWidgetNeeds(needs)

@@ -31,10 +31,13 @@ public struct StatusSection: Sendable, Hashable {
     }
 
     public enum Kind: Sendable, Hashable {
+        case sources
         case verdict(VerdictState)
         case blind(Blind)
     }
 
+    public var notice: String? = nil
+    public var sources: SourceStatusSection? = nil
     public var kind: Kind
     /// ● ▲ ✖ ○ ◌
     public var mark: Mark
@@ -73,6 +76,7 @@ public struct StatusSection: Sendable, Hashable {
     }
 
     public var isBlind: Bool {
+        if let sources { return !sources.isCurrent }
         if case .blind = kind { return true }
         return false
     }
@@ -85,6 +89,7 @@ public struct StatusSection: Sendable, Hashable {
     /// The number the status item shows in Count mode: what needs
     /// attention. `nil` when nothing does, or nothing is known.
     public var count: Int? {
+        if let sources { return sources.isCurrent ? sources.value.counts?.attention.flatMap { $0 > 0 ? $0 : nil } : nil }
         guard let s = verdictState, let c = counts else { return nil }
         let n: Int?
         switch s {
@@ -100,7 +105,9 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The headline: "All clear", "5 incidents", "Offline".
     public var title: String {
+        if let sources { return sources.title }
         switch kind {
+        case .sources: return ""
         case .verdict(let s):
             switch s {
             case .clear: return tr("All clear")
@@ -122,6 +129,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The menu bar's Words mode: "All clear", "5 incidents", "Incomplete".
     public var shortTitle: String {
+        if let sources { return sources.title }
         switch verdictState {
         case .incomplete?, .noEvidence?, .noChecks?: return tr("Incomplete")
         case .some, nil: return title
@@ -130,7 +138,9 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The line under the headline.
     public var subtitle: String {
+        if let sources { return sources.subtitle }
         switch kind {
+        case .sources: return ""
         case .verdict(let s):
             guard let c = counts, let up = c.up else { return topoText }
             let total = configured ?? 0
@@ -159,7 +169,9 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The line under a small widget's headline: "5 down · 63 of 68 up".
     public var shortSubtitle: String {
+        if let sources { return sources.subtitle }
         switch kind {
+        case .sources: return ""
         case .verdict(let s):
             guard let c = counts, let up = c.up else { return topoText }
             let total = configured ?? 0
@@ -218,7 +230,9 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The TUI's words for the verdict: "5 INCIDENTS", "OFFLINE".
     public var tuiTitle: String {
+        if let sources { return sources.title.uppercased() }
         switch kind {
+        case .sources: return ""
         case .verdict(let s):
             switch s {
             case .clear: return tr("ALL CLEAR")
@@ -251,6 +265,10 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The TUI's big number and the two lines beside it.
     public var big: (digits: String, top: String, bottom: String) {
+        if let sources {
+            let n = sources.isCurrent ? sources.value.counts?.current.map(String.init) ?? "--" : "--"
+            return (n, tr("resource samples"), sources.isCurrent ? sources.subtitle : tr("not current"))
+        }
         let of = configured.map { tr("of \($0) configured") } ?? ""
         guard let s = verdictState, let c = counts else {
             let last = lastKnown.map { tr("last snapshot \(Words.ago($0.at, now: now))") } ?? tr("nothing current is known")

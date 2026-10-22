@@ -24,6 +24,10 @@ public final class WidgetBridge {
         var extra: String
     }
     private var lastLook: Look?
+    private var lastSavedAt: Date?
+    private var lastSavedFrame: Data?
+    private var lastScope: String?
+    private var lastResourceReload: Date?
     private let reload: @MainActor () -> Void
 
     public init(store: HandoffStore, reload: @escaping @MainActor () -> Void = { WidgetCenter.shared.reloadAllTimelines() }) {
@@ -68,12 +72,21 @@ public final class WidgetBridge {
         }
         let look = Look(theme: theme, language: settings.language, sections: settings.sections, needs: needs, zones: zones, extra: extra)
         let changedLook = look != lastLook
-        guard policy.shouldReload(panel, at: now) || changedLook else { return }
-        lastLook = look
+        let scope = settings.topo.source + ":" + settings.topo.profile + ":" + settings.topo.profileRevision
+            + ":" + (reading.frame?.source ?? "") + ":" + (reading.frame?.datasetID ?? "")
+        let changedScope = lastScope != scope
+        let direct = settings.topo.source == "direct" || reading.frame?.source == "direct"
+        let newFrame = reader.line != lastSavedFrame
+        let saveDue = direct && newFrame && (lastSavedAt.map { now.timeIntervalSince($0) >= 15 } ?? true)
+        let resourceReload = direct && newFrame && (lastResourceReload.map { now.timeIntervalSince($0) >= 60 } ?? true)
+        let reloadDue = policy.shouldReload(panel, at: now) || changedLook || changedScope || resourceReload
+        guard reloadDue || saveDue else { return }
+        lastLook = look; lastScope = scope
+        lastSavedAt = now; lastSavedFrame = reader.line
         var running = false
         if case .open = reader.source { running = true }
         try? store.write(Handoff(policy: reader, theme: theme, settings: settings, engineRunning: running, at: now))
-        reload()
+        if reloadDue { lastResourceReload = now; reload() }
     }
 
     private func signaturePanel(_ reading: Reading, settings: TopophanyKit.Settings) -> PanelModel {

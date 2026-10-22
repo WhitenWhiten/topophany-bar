@@ -14,6 +14,8 @@ public final class ProcessEngine: Engine {
     public struct Configuration: Sendable {
         /// The `topo` path setting; empty to search.
         public var topoPath: String
+        /// Test/advanced injection only; never set by normal Settings.
+        public var directRoot: String? = nil
         public var minimumBackoff: TimeInterval = 1
         public var maximumBackoff: TimeInterval = 30
         /// How long a process must run before the backoff starts over.
@@ -47,6 +49,7 @@ public final class ProcessEngine: Engine {
     private let clock: any WallClock
     private let state = Mutex(State())
     private let diagnostics = EngineDiagnostics()
+    private let wake = DispatchSemaphore(value: 0)
     private let shellPath: @Sendable () -> String?
 
     public init(configuration: Configuration, clock: any WallClock = SystemClock()) {
@@ -82,12 +85,14 @@ public final class ProcessEngine: Engine {
     /// Writes the request to the running process. A process that has just
     /// ended gets it when it is restarted.
     public func update(_ request: Request) async throws {
-        let (stdin, supported) = state.withLock { s -> (FileHandle?, Request) in
+        try state.withLock { s in
+            let supported = s.capabilities.map { request.supported(by: $0) } ?? request
+            if let caps = s.capabilities { try supported.validate(using: caps) }
+            let line = try supported.line()
+            try s.stdin?.write(contentsOf: line)
             s.request = request
-            return (s.stdin, s.capabilities.map { request.supported(by: $0) } ?? request)
+            if s.stdin == nil { wake.signal() }
         }
-        let line = try supported.line()
-        try? stdin?.write(contentsOf: line)
     }
 
     public func stop() async {
@@ -158,6 +163,15 @@ public final class ProcessEngine: Engine {
             if stopping { break }
             state.withLock { $0.capabilities = capabilities }
             yield(.capabilities(capabilities))
+            if let request = state.withLock({ $0.request }) {
+                do { try request.supported(by: capabilities).validate(using: capabilities) }
+                catch {
+                    yield(.status(.unavailable(.unsupported(path: found.path, version: capabilities.version,
+                        missing: [request.source == "direct" ? "direct configuration" : "selected source or template"])) ))
+                    pause(configuration.unavailableRetry)
+                    continue
+                }
+            }
             let began = clock.now()
             let reason = runOnce(path: found.path, capabilities: capabilities)
             if stopping { break }
@@ -179,7 +193,7 @@ public final class ProcessEngine: Engine {
     private func pause(_ seconds: TimeInterval) {
         let end = Date().addingTimeInterval(seconds)
         while !stopping, Date() < end {
-            Thread.sleep(forTimeInterval: min(0.1, max(0, end.timeIntervalSinceNow)))
+            if wake.wait(timeout: .now() + min(0.1, max(0, end.timeIntervalSinceNow))) == .success { break }
         }
     }
 
@@ -219,6 +233,7 @@ public final class ProcessEngine: Engine {
         let p = Process()
         p.executableURL = URL(filePath: path)
         p.arguments = ["monitor", "stream"]
+        if let root = configuration.directRoot { p.arguments! += ["--direct-root", root] }
         var env = ProcessInfo.processInfo.environment
         env["NO_COLOR"] = "1"
         p.environment = env

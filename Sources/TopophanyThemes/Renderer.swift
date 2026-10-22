@@ -111,6 +111,7 @@ public struct StatusItemParts {
 public struct PanelActions: @unchecked Sendable {
     public var openTerminal: @MainActor () -> Void
     public var openSettings: @MainActor () -> Void
+    public var openSources: @MainActor () -> Void
     public var quit: @MainActor () -> Void
     public var openAttention: @MainActor (AttentionSection.Item?) -> Void
     public var focus: @MainActor (String?) -> Void
@@ -121,13 +122,14 @@ public struct PanelActions: @unchecked Sendable {
     public var download: @MainActor (TopoBuild) -> Void
 
     public init(openTerminal: @escaping @MainActor () -> Void = {}, openSettings: @escaping @MainActor () -> Void = {},
-                quit: @escaping @MainActor () -> Void = {},
+                quit: @escaping @MainActor () -> Void = {}, openSources: (@MainActor () -> Void)? = nil,
                 openAttention: @escaping @MainActor (AttentionSection.Item?) -> Void = { _ in },
                 focus: @escaping @MainActor (String?) -> Void = { _ in },
                 toggleQuiet: @escaping @MainActor () -> Void = {},
                 download: @escaping @MainActor (TopoBuild) -> Void = { _ in }) {
         self.openTerminal = openTerminal
         self.openSettings = openSettings
+        self.openSources = openSources ?? openSettings
         self.quit = quit
         self.openAttention = openAttention
         self.focus = focus

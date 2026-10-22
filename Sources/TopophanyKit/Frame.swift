@@ -34,6 +34,9 @@ public struct Frame: Sendable, Hashable, Decodable {
     public var instance: String
     public var sequence: UInt64?
     public var source: String
+    public var profile: String = ""
+    public var profileRevision: String = ""
+    public var datasetID: String = ""
     public var project: String
     public var observer: String
     public var lifecycle: Lifecycle
@@ -46,6 +49,7 @@ public struct Frame: Sendable, Hashable, Decodable {
 
     enum CodingKeys: String, CodingKey {
         case schema, name, requestID = "request_id", configRevision = "config_revision", instance, sequence, source
+        case profile, profileRevision = "profile_revision", datasetID = "dataset_id"
         case project, observer, lifecycle, generatedAt = "generated_at", publisherExpiresAt = "publisher_expires_at"
         case title, barRow = "bar_row", rows, error
     }
@@ -81,6 +85,9 @@ public struct Frame: Sendable, Hashable, Decodable {
         instance = c.text(.instance) ?? ""
         sequence = (try? c.decodeIfPresent(UInt64.self, forKey: .sequence)) ?? nil
         source = c.text(.source) ?? ""
+        profile = c.text(.profile) ?? ""
+        profileRevision = c.text(.profileRevision) ?? ""
+        datasetID = c.text(.datasetID) ?? ""
         project = c.text(.project) ?? ""
         observer = c.text(.observer) ?? ""
         lifecycle = Lifecycle(c.text(.lifecycle) ?? "")
@@ -160,6 +167,7 @@ public struct Row: Sendable, Hashable, Decodable, Identifiable {
 public enum RowValue: Sendable, Hashable {
     /// `null`, or absent: nothing current is known.
     case none
+    case sources(SourcesStatus)
     case verdict(Verdict)
     case observers([ObserverVerdict])
     case attention(AttentionList)
@@ -181,6 +189,7 @@ public enum RowValue: Sendable, Hashable {
         }
         do {
             switch metric {
+            case "sources.status": self = .sources(try c.decode(SourcesStatus.self, forKey: key))
             case "summary.verdict": self = .verdict(try c.decode(Verdict.self, forKey: key))
             case "observers.verdicts": self = .observers(try c.decode([ObserverVerdict].self, forKey: key))
             case "attention.list": self = .attention(try c.decode(AttentionList.self, forKey: key))

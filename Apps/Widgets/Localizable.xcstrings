@@ -486,6 +486,22 @@
           }
         }
       }
+    },
+    "Choose a server again": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーを選び直してください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请重新选择服务器"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

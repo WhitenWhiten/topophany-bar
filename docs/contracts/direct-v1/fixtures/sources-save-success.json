@@ -1,0 +1,1 @@
+{"schema":1,"request_id":"settings-42","ok":true,"data":{"dataset_id":"dataset-synthetic-1","nodes":[{"id":"bs-00000000000000000000000000000001.aaaaaaaaaaaaaaa","object_id":"aaaaaaaaaaaaaaa","name":"Synthetic server"}],"profile":"desktop","profile_revision":"revision-synthetic-1","source_id":"bs-00000000000000000000000000000001"}}

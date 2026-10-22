@@ -1,0 +1,1 @@
+{"schema":1,"request_id":"settings-42","ok":false,"error":{"code":"mfa_required","message":"The Hub requires an additional authentication step; use a token.","retryable":false}}

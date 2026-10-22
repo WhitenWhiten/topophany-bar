@@ -54,6 +54,19 @@ public struct TemplateCompiler: Sendable {
     public func request(for settings: Settings, revision: Int, widgets: WidgetNeeds = .none, lang: String? = nil,
                         listServers: Bool = false, serviceCards: Bool = false, listServices: Bool = false,
                         mapGraph: Bool = false) -> Request {
+        if settings.topo.source == "direct" {
+            var rows = [TemplateRow(id: RowID.status, metric: "sources.status", visual: "status"),
+                        TemplateRow(id: RowID.servers, metric: "servers.list", visual: "list")]
+            let s = settings.sections
+            var nodes = s.servers ? Self.unique(s.serverNodes) : []
+            if s.mac.mode == .server, Self.validNode(s.mac.node), !nodes.contains(s.mac.node) { nodes.append(s.mac.node) }
+            nodes += Self.unique(widgets.nodes).filter { !nodes.contains($0) }
+            for (i, node) in nodes.enumerated() { rows.append(Self.card(RowID.server(i), node)) }
+            var r = Request(requestID: "settings-\(revision)", source: "direct", profile: settings.topo.profile,
+                            observer: settings.topo.observer, interval: settings.topo.interval, template: Template(title: title, rows: rows))
+            r.profileRevision = settings.topo.profileRevision
+            return r
+        }
         let s = settings.sections
         var rows = [TemplateRow(id: RowID.status, metric: "summary.verdict", visual: "status")]
         for id in s.order {
@@ -99,7 +112,7 @@ public struct TemplateCompiler: Sendable {
         let preview = t.source == "preview"
         return Request(
             requestID: "settings-\(revision)",
-            source: preview ? "preview" : "client",
+            source: t.source,
             profile: preview ? "" : t.profile,
             observer: t.observer,
             scenario: preview ? (t.scenario ?? 0) : nil,

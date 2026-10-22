@@ -76,6 +76,7 @@ public struct StatusItemModel: Sendable, Hashable {
         }
         count = status.count
         switch status.kind {
+        case .sources: activity = status.sources?.value.state == "loading" ? .connecting : (status.sources?.isCurrent == true ? .live : .resting)
         case .verdict(.cached): activity = .resting
         case .verdict: activity = .live
         case .blind(.starting): activity = .connecting

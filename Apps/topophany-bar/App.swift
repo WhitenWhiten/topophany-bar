@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.actions = PanelController.Actions(
             openTerminal: { [weak self] in self?.openTUI(focus: nil) },
             openSettings: { [weak self] in self?.showSettings() },
+            openSources: { [weak self] in self?.showSettings(); self?.selectSettingsTab(4) },
             quit: { NSApp.terminate(nil) },
             openAttention: { [weak self] item in self?.openTUI(focus: item) },
             toggleQuiet: { [weak self] in self?.model.toggleQuiet() })

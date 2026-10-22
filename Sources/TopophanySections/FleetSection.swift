@@ -8,6 +8,7 @@ import TopophanyKit
 /// of its own: the app adds none up.
 public struct FleetSection: Sendable, Hashable {
     public struct Node: Sendable, Hashable, Identifiable {
+        public var origin: Origin? = nil
         public var id: String
         public var name: String
         public var place: String
@@ -15,7 +16,8 @@ public struct FleetSection: Sendable, Hashable {
         /// `topo`'s note, "affected" or "outdated", or "".
         public var note: String
 
-        public init(id: String, name: String, place: String, mark: Mark, note: String = "") {
+        public init(id: String, name: String, place: String, mark: Mark, note: String = "", origin: Origin? = nil) {
+            self.origin = origin
             self.id = id
             self.name = name
             self.place = place
@@ -79,7 +81,7 @@ public struct FleetSection: Sendable, Hashable {
     public func withheld() -> FleetSection {
         FleetSection(groups: groups.map { g in
             var g = g
-            g.nodes = g.nodes.map { Node(id: $0.id, name: $0.name, place: $0.place, mark: .offline) }
+            g.nodes = g.nodes.map { Node(id: $0.id, name: $0.name, place: $0.place, mark: .offline, origin: $0.origin) }
             return g
         }, isCurrent: false)
     }

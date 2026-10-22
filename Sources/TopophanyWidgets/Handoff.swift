@@ -53,17 +53,42 @@ public struct Handoff: Sendable, Codable {
     }
 
     /// What the reader showed when this was written.
-    public func reading() -> Reading {
-        let f = frame.flatMap(FrameDecoder.frame(from:))
+    public var decodedFrame: Frame? { frame.flatMap(FrameDecoder.frame(from:)) }
+    public var isDirect: Bool { decodedFrame?.source == "direct" || decodedSettings.topo.source == "direct" }
+    public var datasetScope: String { (decodedFrame?.source ?? decodedSettings.topo.source) + ":" + (decodedFrame?.datasetID ?? "") }
+
+    /// Direct node choices carry dataset identity. Unscoped old choices cannot silently rebind.
+    public func selectionID(node: String) -> String {
+        guard isDirect else { return node }
+        return "direct/" + Data(datasetScope.utf8).base64EncodedString() + "/" + node
+    }
+    public func resolveSelection(_ id: String) -> String? {
+        if isDirect {
+            let prefix = "direct/" + Data(datasetScope.utf8).base64EncodedString() + "/"
+            guard id.hasPrefix(prefix) else { return nil }
+            return String(id.dropFirst(prefix.count))
+        }
+        return id.hasPrefix("direct/") ? nil : id
+    }
+
+    public func reading(at date: Date? = nil) -> Reading {
+        var f = decodedFrame
+        let evaluatedAt = date ?? writtenAt
+        // Direct is explicitly a resource snapshot, bounded by its original row/resource deadlines.
+        // A snapshot does not claim that a publisher is still alive.
+        if isDirect, date != nil { f?.publisherExpiresAt = evaluatedAt.addingTimeInterval(30) }
         var p = ReaderPolicy(frame: f, line: frame, receivedAt: receivedAt, lastKnown: lastKnown,
                              source: engineRunning ? .open : .ended(at: writtenAt))
         if f == nil, !engineRunning { p.sourceEnded(at: writtenAt) }
-        return p.evaluate(at: writtenAt)
+        return p.evaluate(at: evaluatedAt)
     }
 
     /// The panel's section models as they were when this was written.
-    public func panel() -> PanelModel {
-        panel(reading: reading(), settings: decodedSettings)
+    public func panel() -> PanelModel { panel(at: nil) }
+    public func panel(at date: Date?) -> PanelModel {
+        var p = panel(reading: reading(at: date), settings: decodedSettings)
+        if var source = p.status.sources { source.snapshotAt = decodedFrame?.generatedAt; p.status.sources = source }
+        return p
     }
 
     private func panel(reading: Reading, settings s: TopophanyKit.Settings) -> PanelModel {
@@ -133,9 +158,9 @@ public struct Handoff: Sendable, Codable {
 
     /// The panel for a Server widget: its node's card is the one server,
     /// whether or not the panel pins it.
-    public func panel(server node: String) -> PanelModel {
-        let r = reading()
-        var p = panel(reading: r, settings: decodedSettings)
+    public func panel(server node: String, at date: Date? = nil) -> PanelModel {
+        let r = reading(at: date)
+        var p = panel(at: date)
         if case .server(let c, _)? = p.mac, c.id == node { return p }
         let cards = SectionBuilder.servers(r, nodes: [node])
         p.sections.removeAll { if case .servers = $0 { true } else { false } }

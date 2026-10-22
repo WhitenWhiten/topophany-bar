@@ -26,6 +26,7 @@ final class SettingsWindowController: NSWindowController {
         tabs.addTabViewItem(tab("circle.lefthalf.filled", AppearanceSettings()))
         tabs.addTabViewItem(tab("list.bullet", SectionsSettings()))
         tabs.addTabViewItem(tab("apple.logo", MacSettings()))
+        tabs.addTabViewItem(tab("externaldrive.connected.to.line.below", SourceSettings()))
         let window = NSWindow(contentViewController: tabs)
         window.styleMask = [.titled, .closable]
         window.toolbarStyle = .preference
@@ -48,7 +49,7 @@ final class SettingsWindowController: NSWindowController {
     /// Names the tabs, and the window after the one shown, in the language
     /// the user chose.
     func relabel() {
-        let titles = [tr("General"), tr("Appearance"), tr("Sections"), tr("This Mac")]
+        let titles = [tr("General"), tr("Appearance"), tr("Sections"), tr("This Mac"), tr("Data sources")]
         for (item, title) in zip(tabs.tabViewItems, titles) {
             item.label = title
             item.viewController?.title = title

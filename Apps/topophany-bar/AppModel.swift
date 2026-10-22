@@ -34,6 +34,11 @@ final class AppModel {
 
     let themes = ThemeStore()
     @ObservationIgnored private let store: SettingsStore
+    @ObservationIgnored private let clock: any WallClock
+    @ObservationIgnored private let engineFactory: (@MainActor (ProcessEngine.Configuration) -> any Engine)?
+    @ObservationIgnored private let injectedRoot: String?
+    @ObservationIgnored private let injectedSources: SourcesClient?
+    func sourcesClient(path: String) -> SourcesClient { injectedSources ?? SourcesClient(path: path, directRoot: directRoot) }
     @ObservationIgnored private var policy = ReaderPolicy()
     @ObservationIgnored private var engine: (any Engine)?
     @ObservationIgnored private var engineTask: Task<Void, Never>?
@@ -42,6 +47,21 @@ final class AppModel {
     @ObservationIgnored private var localTask: Task<Void, Never>?
     @ObservationIgnored private var tick: Timer?
     @ObservationIgnored private var revision = 0
+    @ObservationIgnored private var retryNonce: String?
+    @ObservationIgnored private var lastRetryAt: Date?
+    private(set) var applyingRequestID: String?
+    private(set) var activeRequestID: String?
+    private(set) var configurationProblem: String?
+    @ObservationIgnored private var wakeObserver: NSObjectProtocol?
+    /// Debug injection uses only temporary roots and synthetic credentials.
+    var directRoot: String? {
+        if let injectedRoot { return injectedRoot }
+        #if DEBUG
+        return UserDefaults.standard.string(forKey: "direct-root")
+        #else
+        return nil
+        #endif
+    }
     @ObservationIgnored private var widgetNeeds = TemplateCompiler.WidgetNeeds.none
     @ObservationIgnored private var panelVisible = false
     @ObservationIgnored private var settingsVisible = false
@@ -89,14 +109,16 @@ final class AppModel {
     /// Told when a saved setting changes, before `topo` hears of it.
     @ObservationIgnored var onSettingsChange: ((_ old: TopophanyKit.Settings, _ new: TopophanyKit.Settings) -> Void)?
 
-    init(store: SettingsStore = AppModel.defaultStore) {
-        self.store = store
+    init(store: SettingsStore = AppModel.defaultStore, clock: any WallClock = SystemClock(), directRoot: String? = nil,
+         sourcesClient: SourcesClient? = nil, engineFactory: (@MainActor (ProcessEngine.Configuration) -> any Engine)? = nil) {
+        self.store = store; self.clock = clock; self.injectedRoot = directRoot
+        self.injectedSources = sourcesClient; self.engineFactory = engineFactory
         downloads = TopoDownloads(besideSettings: store.url)
         iconLibrary = MenuBarIconLibrary(directory: store.url.deletingLastPathComponent().appending(path: "MenuBarIcons"))
         let s = store.load()
         L10n.prefer(s.language.localization)
         settings = s
-        let r = ReaderPolicy().evaluate(at: Date())
+        let r = ReaderPolicy().evaluate(at: clock.now())
         reading = r
         let p = SectionBuilder.panel(PanelInput(reading: r, engine: .starting, settings: s))
         panel = p
@@ -264,7 +286,12 @@ final class AppModel {
     }
 
     private func loadProfiles(path: String) {
-        guard profilesTask == nil else { return }
+        // --profiles belongs only to the normal collector client. Isolated
+        // direct/UI tests must never inspect the user's default credential store.
+        guard effectiveSettings.topo.source == "client", directRoot == nil, profilesTask == nil else { return }
+        #if DEBUG
+        guard UserDefaults.standard.string(forKey: "settings") == nil else { return }
+        #endif
         profilesRevision += 1
         let revision = profilesRevision
         profilesTask = Task { [weak self] in
@@ -284,6 +311,9 @@ final class AppModel {
         if fixture != nil { profiles = FixtureEngine.profiles }
         locate()
         startEngine()
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.retryDirect() }
+        }
         startLocal()
         let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refresh() }
@@ -295,6 +325,11 @@ final class AppModel {
 
     /// Closes `topo`'s stdin at once; it writes its last frame and exits.
     func stopNow() {
+        SourcesClient.cancelAll()
+        if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        tick?.invalidate()
+        engineTask?.cancel()
+        locateTask?.cancel(); profilesTask?.cancel()
         (engine as? ProcessEngine)?.closeInputNow()
         localTask?.cancel()
     }
@@ -304,6 +339,15 @@ final class AppModel {
         change(&s)
         guard s != settings else { return }
         let old = settings
+        let oldScope = old.topo.source + ":" + old.topo.profile
+        let newScope = s.topo.source + ":" + s.topo.profile
+        if oldScope != newScope {
+            s.topo.scopedPins[oldScope] = old.sections.serverNodes
+            s.sections.serverNodes = s.topo.scopedPins[newScope] ?? []
+            policy = ReaderPolicy()
+            activeRequestID = nil
+            retryNonce = nil
+        }
         L10n.prefer(s.language.localization)
         settings = s
         if old.appearance.menuBar.customIconID != s.appearance.menuBar.customIconID || old.appearance.menuBar.icon != s.appearance.menuBar.icon {
@@ -369,15 +413,34 @@ final class AppModel {
 
     private func currentRequest() -> Request {
         revision += 1
-        return TemplateCompiler().request(for: effectiveSettings, revision: revision, widgets: widgetNeeds,
+        var r = TemplateCompiler().request(for: effectiveSettings, revision: revision, widgets: scopedWidgetNeeds,
                                           lang: L10n.previewLanguage, listServers: true, serviceCards: true,
                                           listServices: true, mapGraph: true)
+        r.retryNonce = effectiveSettings.topo.source == "direct" ? retryNonce : nil
+        if let root = directRoot, effectiveSettings.topo.source == "client" {
+            r.credentials = URL(filePath: root).appending(path: "client-credentials.json").path
+        }
+        return r
+    }
+
+    private var scopedWidgetNeeds: TemplateCompiler.WidgetNeeds {
+        guard effectiveSettings.topo.source == "direct" else { return widgetNeeds }
+        var needs = widgetNeeds
+        // Direct node IDs include the immutable source ID; foreign selections never rebind by name.
+        let sourceIDs = Set(knownServers.compactMap { $0.origin?.sourceID })
+        needs.nodes = needs.nodes.filter { node in sourceIDs.contains { node.hasPrefix($0 + ".") } }
+        needs.services = []; needs.map = false; needs.lists = false
+        return needs
     }
 
     private func send() {
         guard let engine else { return }
         let r = currentRequest()
-        Task { try? await engine.update(r) }
+        applyingRequestID = r.requestID; configurationProblem = nil
+        Task {
+            do { try await engine.update(r) }
+            catch { if applyingRequestID == r.requestID { applyingRequestID = nil; configurationProblem = (error as? SourceProblem)?.code ?? "configuration_failed"; refresh() } }
+        }
     }
 
     #if DEBUG
@@ -395,7 +458,7 @@ final class AppModel {
         engine = nil
         if let p = old as? ProcessEngine { p.closeInputNow() }
         Task { await old?.stop() }
-        policy.sourceEnded(at: Date())
+        policy.sourceEnded(at: clock.now())
         startEngine()
     }
 
@@ -409,10 +472,14 @@ final class AppModel {
         if let fixture {
             e = FixtureEngine(scenario: fixture)
         } else {
-            e = ProcessEngine(configuration: .init(topoPath: effectiveSettings.topo.path, downloads: downloads))
+            var configuration = ProcessEngine.Configuration(topoPath: effectiveSettings.topo.path, downloads: downloads)
+            configuration.directRoot = directRoot
+            e = engineFactory?(configuration) ?? ProcessEngine(configuration: configuration, clock: clock)
         }
         engine = e
-        let stream = e.start(currentRequest())
+        let request = currentRequest()
+        activeRequestID = nil; applyingRequestID = request.requestID
+        let stream = e.start(request)
         engineTask = Task { [weak self] in
             for await event in stream {
                 guard let self, !Task.isCancelled else { return }
@@ -422,9 +489,20 @@ final class AppModel {
     }
 
     func handle(_ event: EngineEvent) {
-        let now = Date()
+        let now = clock.now()
         switch event {
         case .frame(let f, let line):
+            guard engine == nil || f.requestID == applyingRequestID || f.requestID == activeRequestID || fixture != nil else { return }
+            if f.lifecycle == .running {
+                guard f.source == effectiveSettings.topo.source,
+                      f.source != "direct" || f.profile == effectiveSettings.topo.profile else { return }
+                if f.requestID == applyingRequestID {
+                    activeRequestID = f.requestID; applyingRequestID = nil; configurationProblem = nil
+                }
+            } else if f.lifecycle == .error {
+                guard f.requestID == applyingRequestID else { return }
+                applyingRequestID = nil; configurationProblem = f.error?.code ?? "configuration_failed"
+            }
             policy.receive(f, line: line, at: now)
             if f.lifecycle == .running { lastFrameAt = now }
         case .status(let s):
@@ -474,6 +552,55 @@ final class AppModel {
         case .unavailable(.launchFailed): .stopped
         case .stopped: .stopped
         }
+    }
+
+
+    func selectSource(_ source: String) {
+        guard source != settings.topo.source else { return }
+        update {
+            $0.topo.modeProfiles[$0.topo.source] = $0.topo.profile
+            $0.topo.source = source
+            $0.topo.profile = $0.topo.modeProfiles[source] ?? (source == "direct" ? "desktop" : "")
+            $0.topo.profileRevision = ""
+        }
+    }
+
+    func useDirect(profile: String, revision: String, nodes: [String] = [], sourceID: String? = nil, retry: Bool = false) {
+        if settings.topo.source != "direct" { selectSource("direct") }
+        update {
+            $0.topo.profile = profile; $0.topo.profileRevision = revision
+        }
+        if !nodes.isEmpty {
+            var tooMany = false
+            update {
+                $0.sections.servers = true
+                if let sourceID { $0.sections.serverNodes.removeAll { $0.hasPrefix(sourceID + ".") } }
+                let pinned = Array(Set($0.sections.serverNodes).union(nodes)).sorted()
+                if pinned.count <= 126 { $0.sections.serverNodes = pinned }
+                else { tooMany = true }
+            }
+            if tooMany { configurationProblem = "template_limit"; refresh() }
+        }
+        if retry { retryDirect() }
+    }
+
+    func removeDirectSource(_ result: DirectRemoved) {
+        update {
+            let scope = "direct:" + result.profile
+            $0.topo.scopedPins[scope]?.removeAll { $0.hasPrefix(result.sourceID + ".") }
+            if $0.topo.source == "direct", $0.topo.profile == result.profile {
+                $0.topo.profileRevision = result.profileRevision
+                $0.sections.serverNodes.removeAll { $0.hasPrefix(result.sourceID + ".") }
+            }
+        }
+    }
+
+    func retryDirect(at time: Date? = nil) {
+        let now = time ?? clock.now()
+        guard effectiveSettings.topo.source == "direct", capabilities?.direct?.retry == true,
+              lastRetryAt.map({ now.timeIntervalSince($0) >= 5 }) ?? true else { return }
+        lastRetryAt = now; retryNonce = UUID().uuidString
+        send()
     }
 
     // MARK: this Mac
@@ -543,16 +670,20 @@ final class AppModel {
         if visible { refresh() }
     }
 
-    func refresh(at now: Date = Date()) {
+    func refresh(at time: Date? = nil) {
+        let now = time ?? clock.now()
         let r = policy.evaluate(at: now)
         reading = r
-        let status = SectionBuilder.status(r, engine: engineCondition)
+        var status = SectionBuilder.status(r, engine: engineCondition)
+        if configurationProblem != nil { status.notice = configurationProblem == "template_limit" ? SourceMessages.templateLimit : SourceMessages.configurationRejected }
+        else if applyingRequestID != nil { status.notice = SourceMessages.configurationApplying }
         self.status = status
         quiet = quiet?.after(status)
         let visible = panelVisible || settingsVisible
         if visible {
             panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: settings, local: local,
                                                     machineModel: machine.model, quiet: quiet, fetch: fetch))
+            panel.status = status
         }
         let item = StatusItemModel(status: status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)
         if item != statusItem { statusItem = item }

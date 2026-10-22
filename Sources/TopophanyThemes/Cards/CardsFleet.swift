@@ -108,6 +108,9 @@ struct FleetCell: View {
                 }
                 title
             }
+            if let origin = group.nodes.first?.origin {
+                Text(origin.badge).font(t.font(9)).foregroundStyle(p.l3).fixedSize().help(origin.detail)
+            }
             // The stack's spacing alone keeps the marks clear of the name.
             Spacer(minLength: 0)
             HStack(spacing: 2.5) {

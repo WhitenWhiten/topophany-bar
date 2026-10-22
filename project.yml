@@ -91,6 +91,7 @@ targets:
       - path: Tests/TopophanyAppTests
       - path: Apps/topophany-bar/PanelShortcutController.swift
       - path: Apps/topophany-bar/AppModel.swift
+      - path: Apps/topophany-bar/TerminalLauncher.swift
     dependencies:
       - package: topophany-bar
         product: TopophanyKit

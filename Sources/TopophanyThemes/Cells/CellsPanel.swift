@@ -14,6 +14,20 @@ struct CellsBodies {
 
     /// The verdict, the big count, every check by health and the observers.
     func status(_ w: inout CellWriter, _ s: StatusSection, short: Bool = false, blockHeight: Double) {
+        if let sources = s.sources {
+            w.line([.mark(s.mark, p), .t(" " + CellText.truncate(sources.title.uppercased(), w.frame.columns - 2), p.text, bold: true)])
+            for line in CellText.wrap(sources.subtitle, w.frame.columns, lines: 2) { w.line([.t(line, p.muted)]) }
+            if !short {
+                for source in sources.value.sources.prefix(4) {
+                    let state = sources.state(source)
+                    let room = w.frame.columns - CellText.width(state) - 3
+                    w.line([.mark(sources.mark(source), p), .t(" " + CellText.truncate(source.name, max(1, room)), p.text)], [.t(state, p.muted)])
+                }
+            }
+            if sources.value.sources.count > 4 { w.line([.t(CellText.truncate(tr("More sources in Settings"), w.frame.columns), p.muted)]) }
+            if let notice = s.notice { for line in CellText.wrap(notice, w.frame.columns, lines: 2) { w.line([.t(line, p.muted)]) } }
+            return
+        }
         let tone = p.tone(s.mark)
         let title = short ? s.tuiShortTitle : s.tuiTitle
         w.line([.mark(s.mark, p), .t(" " + CellText.truncate(title, w.frame.columns - 2), tone, bold: true)])
@@ -184,6 +198,8 @@ struct CellsBodies {
         func entry(_ lead: [Seg], _ title: String, _ titleColor: RGBA, tag: String, nodes: [FleetSection.Node]) -> [Seg] {
             var tail: [Seg] = nodes.prefix(marks).map { .mark($0.mark, p) }
             if nodes.count > marks { tail.append(.t("+\(nodes.count - marks)", p.faint)) }
+            let badge = nodes.first?.origin?.badge ?? ""
+            if !badge.isEmpty { tail.insert(.t(" " + badge + " ", p.muted), at: 0) }
             let room = cw - 2 - tail.reduce(0) { $0 + $1.width } - 1
             let fits = !tag.isEmpty && CellText.width(title) + CellText.width(tag) <= room
             var segs = lead + [.t(CellText.truncate(title, max(1, room)), titleColor)]
@@ -267,6 +283,7 @@ struct CellsBodies {
                 let over = width(segs) - room
                 segs = line("", CellText.truncate(c.place, max(1, CellText.width(c.place) - over)))
             }
+            if let origin = c.origin { segs = [.t(CellText.truncate(origin.detail, max(1, room)), p.muted)] }
             w.line(segs, [.t(ageText, p.faint)])
         }
         func shown(_ m: ServerCardModel.Meter) -> String { m.detail.replacingOccurrences(of: " / ", with: "/") }

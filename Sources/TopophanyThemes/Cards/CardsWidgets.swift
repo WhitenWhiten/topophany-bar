@@ -38,6 +38,32 @@ struct CardsWidget: View {
     // MARK: Status
 
     @ViewBuilder func status(_ p: CardsPalette) -> some View {
+        if let sources = model.status.sources {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    HeroSymbol(status: model.status, size: 30, palette: p)
+                    Spacer(minLength: 4)
+                    WidgetMark(palette: p, rendering: ctx.widgetRendering)
+                }
+                Text(sources.title).font(t.font(15, .semibold)).lineLimit(2)
+                Text(sources.subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
+                if size != .small {
+                    ForEach(sources.value.sources.prefix(size == .medium ? 1 : 5)) { source in
+                        HStack(spacing: 5) {
+                            CardMark(mark: sources.mark(source), size: 8, color: p.listColor(sources.mark(source)))
+                            Text(source.name).lineLimit(1)
+                            Spacer(minLength: 4)
+                            Text(sources.state(source)).lineLimit(1)
+                        }.font(t.font(11)).foregroundStyle(p.l2)
+                    }
+                }
+                Spacer(minLength: 0)
+                if let at = sources.snapshotAt ?? model.updatedAt {
+                    Text(tr("As of \(Words.clock(Words.time(at, in: .current).time, Words.time(at, in: .current).period))"))
+                        .font(t.font(10)).foregroundStyle(p.l3).lineLimit(1)
+                }
+            }
+        } else {
         let w = WidgetStatus(status: model.status, p: p, t: t, ctx: ctx)
         switch size {
         case .small:
@@ -65,6 +91,8 @@ struct CardsWidget: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
+    }
+
     }
 
     /// The verdict in a narrow column: the checks fill the room between
@@ -119,7 +147,7 @@ struct CardsWidget: View {
     @ViewBuilder func server(_ p: CardsPalette) -> some View {
         let card = model.server ?? placeholder
         let left = WidgetServerCard(card: card, isMac: isMac, p: p, t: t, ctx: ctx)
-        if size == .small {
+        if size == .small || card.origin != nil {
             left
         } else {
             HStack(alignment: .top, spacing: 16) {
@@ -669,7 +697,7 @@ struct WidgetServerCard: View {
                            symbol: isMac ? "apple.logo" : nil)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(card.name).font(t.font(12.5, .semibold)).lineLimit(1).minimumScaleFactor(0.85)
-                    Text(card.isMissing ? card.place : Words.join([card.place, card.provider]))
+                    Text(card.isMissing ? card.place : Words.join([card.origin?.badge ?? "", card.place, card.provider]))
                         .font(t.font(10.5)).foregroundStyle(p.l2).lineLimit(1)
                 }
             }
@@ -687,8 +715,13 @@ struct WidgetServerCard: View {
                 Spacer(minLength: 4)
                 // A CACHED pill already says the age is of history.
                 if let at = card.sampledAt {
-                    Age(date: at, now: card.now, live: ctx.liveDates, compact: true)
-                        .font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).minimumScaleFactor(0.8)
+                    if card.origin != nil {
+                        Text(tr("As of \(Words.clock(Words.time(at, in: .current).time, Words.time(at, in: .current).period))"))
+                            .font(t.font(10)).foregroundStyle(p.l3).lineLimit(1)
+                    } else {
+                        Age(date: at, now: card.now, live: ctx.liveDates, compact: true)
+                            .font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).minimumScaleFactor(0.8)
+                    }
                 }
             }
         }

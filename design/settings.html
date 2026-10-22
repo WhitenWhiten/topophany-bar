@@ -144,7 +144,7 @@
   const half = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 1 0 14Z" fill="currentColor"/></svg>';
   const list = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7.5 5.5h9M7.5 10h9M7.5 14.5h9"/><circle cx="3.9" cy="5.5" r=".9" fill="currentColor"/><circle cx="3.9" cy="10" r=".9" fill="currentColor"/><circle cx="3.9" cy="14.5" r=".9" fill="currentColor"/></svg>';
   const lockI = '<svg viewBox="0 0 12 14" width="10" height="12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="6" width="9" height="6.5" rx="1.6"/><path d="M3.5 6V4.4a2.5 2.5 0 0 1 5 0V6"/></svg>';
-  const tabs = (on) => `<div class="tabs">${[['General', I.gear], ['Appearance', half], ['Sections', list], ['This Mac', I.apple]].map(([t, i]) =>
+  const tabs = (on) => `<div class="tabs">${[['General', I.gear], ['Appearance', half], ['Sections', list], ['This Mac', I.apple], ['Data sources', I.gear]].map(([t, i]) =>
     `<div class="tab ${t === on ? 'on' : ''}">${i}<span>${t}</span></div>`).join('')}</div>`;
   const win = (title, body) => `<div class="win"><div class="win-bar"><div class="lights"><i></i><i></i><i></i></div><div class="win-title">${title}</div></div>${tabs(title)}<div class="win-body">${body}</div></div>`;
   const row = (lab, sub, ctl, pre = '') => `<div class="grow">${pre}<div class="lab"><b>${lab}</b>${sub ? `<span>${sub}</span>` : ''}</div>${ctl || ''}</div>`;
@@ -303,12 +303,25 @@
     </div>
     <p class="foot">This is the card everyone else sees for this Mac, read from the collector. Without a host check on the node, its resources read <i>unknown</i>, never zero.</p>`);
 
+  // D1 extends the same native grouped forms; existing collector views stay intact.
+  const direct = win('Data sources', `
+    <div class="gt">Data sources</div><div class="group">
+      ${row('Read from', 'Connect topo to your Beszel Hub without a Topophany collector', pop('Beszel direct'))}
+      ${row('Direct profile', 'A stable configuration ID', pop('desktop'))}
+    </div>
+    <div class="gt">Beszel sources</div><div class="group">
+      ${row('Synthetic Home Beszel', 'Beszel · 2 selected servers', '<span class="btn">Edit…</span><span class="btn">Sign in…</span>')}
+      ${row('Add Beszel…', 'Source → test connection → choose servers → save', '')}
+    </div>
+    <p class="foot">Account/password is the default; token is an advanced choice. Existing sources use saved authentication. Passwords live only in the current editing session. Widgets are resource snapshots with an As of time.</p>`);
+
   document.getElementById('wins').innerHTML = [
     [general, '<b>General.</b> The app starts <code>topo monitor stream</code> as its child process. topo holds the credentials; the app only reads frames.'],
     [getting, '<b>Getting topo.</b> With none found, or one too old, Download fetches the latest release from GitHub, checks its SHA-256, and switches to it. The menu picks any topo on this Mac, the tested release, or a download to delete. A topo with no saved profile signs in with <code>topo login</code>, in the terminal.'],
     [appearance, '<b>Appearance.</b> Six themes, one meaning. Each shows its colors, as the panel would draw it now.'],
     [sections, '<b>Sections.</b> Status is fixed. The rest can be turned off and reordered.'],
     [local, '<b>This Mac: local readings.</b> RunCat-style live readings of the machine you’re on.'],
+    [direct, '<b>Data sources.</b> Native controls and the established grouped form. Connection success does not promise resource samples.'],
     [server, '<b>This Mac: as a server.</b> The Servers-tab card for this Mac’s node, plus what it observes.'],
   ].map(([w, c]) => `<div><div class="stagew desk wall-dark">${w}</div><p class="wincap">${c}</p></div>`).join('');
 </script>

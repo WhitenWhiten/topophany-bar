@@ -49,7 +49,11 @@ public enum SectionBuilder {
 
     public static func panel(_ input: PanelInput) -> PanelModel {
         let r = input.reading
-        let s = input.settings.sections
+        var s = input.settings.sections
+        let direct = r.frame?.source == "direct" || (r.frame == nil && input.settings.topo.source == "direct")
+        if direct {
+            s.seen = false; s.attention = false; s.map = false; s.applications = false; s.services = false; s.zones = false
+        }
         let status = status(r, engine: input.engine)
         var sections: [PanelModel.Section] = []
         for id in s.order {
@@ -109,6 +113,14 @@ public enum SectionBuilder {
 
     public static func status(_ r: Reading, engine: EngineCondition) -> StatusSection {
         let now = r.now
+        if r.frame?.source == "direct", let row = r.row(RowID.status),
+           case .sources(let value) = r.lastValue(of: row) {
+            let source = SourceStatusSection(value: value, isCurrent: row.isCurrent && r.isLive)
+            var status = StatusSection(kind: .sources, mark: source.mark, updatedAt: r.frame?.generatedAt, now: now)
+            status.sources = source
+            if r.error != nil { status.notice = SourceMessages.configurationRejected }
+            return status
+        }
         func blind(_ b: StatusSection.Blind) -> StatusSection {
             StatusSection(kind: .blind(b), mark: .offline, updatedAt: r.frame?.generatedAt, lastKnown: r.lastKnown, now: now)
         }
@@ -260,14 +272,14 @@ public enum SectionBuilder {
         var current = true
         var nodes: [Entry] = []
         if let row = r.row(RowID.servers), case .servers(let l) = row.value {
-            nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: Mark($0.health), note: $0.note), $0.kind, $0.provider) }
+            nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: Mark($0.health), note: $0.note, origin: $0.origin), $0.kind, $0.provider) }
         } else if let row = r.row(RowID.servers), case .servers(let l) = r.lastValue(of: row) {
             current = false
-            nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: .offline), $0.kind, $0.provider) }
+            nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: .offline, origin: $0.origin), $0.kind, $0.provider) }
         } else {
             let cards = servers(r, nodes: pinned).filter { !$0.isMissing }
             current = !cards.contains { $0.isWithheld }
-            nodes = cards.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: $0.mark), $0.kind, $0.provider) }
+            nodes = cards.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: $0.mark, origin: $0.origin), $0.kind, $0.provider) }
         }
         guard !nodes.isEmpty else { return nil }
         return FleetSection.grouping(nodes, isCurrent: current)
@@ -293,7 +305,7 @@ public enum SectionBuilder {
     }
 
     static func server(_ r: Reading, rowID: String, node: String) -> ServerCardModel? {
-        server(r.row(rowID), node: node, reading: r)
+        server(r.row(rowID) ?? r.rows.first { $0.row.metric == "server.card" && $0.row.select?.node == node }, node: node, reading: r)
     }
 
     static func server(_ row: RowReading?, node: String, reading r: Reading) -> ServerCardModel? {
@@ -338,11 +350,14 @@ public enum SectionBuilder {
         } else {
             pill = Pill.state(c.note, health: c.health)
         }
-        return ServerCardModel(id: c.id, name: c.name, kind: c.kind, provider: Provider.name(c.provider), place: c.place,
+        var model = ServerCardModel(id: c.id, name: c.name, kind: c.kind, provider: Provider.name(c.provider), place: c.place,
                                mark: withheld ? .offline : Mark(c.health), pill: pill, isWithheld: withheld,
                                cpu: cpu, memory: memory, disk: disk, services: services,
                                servicesSummary: servicesSummary(c.services), observes: observes,
                                sampledAt: res?.sampledAt, now: now)
+        model.origin = c.origin
+        if c.origin != nil && c.services.isEmpty { model.servicesSummary = "" }
+        return model
     }
 
     /// "4 services · 3 up · 1 not monitored".
@@ -451,6 +466,7 @@ public enum SectionBuilder {
     static func chrome(_ r: Reading, status: StatusSection, observer: String) -> PanelChrome {
         let connection: PanelChrome.Connection
         switch status.kind {
+        case .sources: connection = status.isBlind ? .notRunning(tr("Not current")) : .connected
         case .verdict: connection = .connected
         // These describe evidence from an answering collector. Its verdict
         // can expire independently of the connection; keep withholding the
@@ -463,7 +479,7 @@ public enum SectionBuilder {
         case .blind(.leaseLapsed): connection = .notRunning(tr("topo stopped answering"))
         case .blind: connection = .unreachable
         }
-        var view = tr("all observers")
+        var view = r.frame?.source == "direct" ? tr("Resource snapshot") : tr("all observers")
         if !observer.isEmpty {
             view = observer
             if let row = r.row(RowID.seen), case .observers(let list) = row.row.value,

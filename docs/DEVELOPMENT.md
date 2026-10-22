@@ -105,3 +105,44 @@ prerelease suffixes such as `-beta.1` are not supported by this workflow.
 The workflow creates a release after signing and notarization succeed, and does
 not overwrite an existing release. GitHub selects the Latest release
 [automatically by date and version](https://cli.github.com/manual/gh_release_create).
+
+## Direct development and acceptance
+
+Use only a synthetic loopback Hub and a temporary direct root. Never point tests
+at a real account or the user's credentials. The canonical fixtures are in
+`docs/contracts/direct-v1`; `DirectContractTests` checks every manifest SHA-256.
+`Tests/Fixtures/DirectDevelopment` is explicitly a separate development double,
+never backend acceptance evidence.
+
+```sh
+python3 /Users/whiten/Desktop/topophany/scripts/direct-contract.py \
+  --serve-fixture-hub \
+  --ready-file /ABS/TEMP/hub-ready.json --objects 2
+```
+
+The ready file is 0600 and contains only synthetic login information. Add
+`--scenario forbidden`, `auth_required`, `missing`, `stale`, `rate_limited` or
+`unavailable` to exercise acquisition states; `--delay-seconds` controls latency.
+Stop the process with SIGTERM. A ready Hub deliberately preserves its record's
+created time: start a new fixture Hub for a fresh sample. Re-reading an unchanged
+record must eventually produce stale resources.
+
+```sh
+TOPOPHANY_DIRECT_BINARY=/Users/whiten/Desktop/topophany/bin/topo \
+TOPOPHANY_DIRECT_READY=/ABS/TEMP/hub-ready.json \
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+  swift test --filter DirectIntegrationTests
+```
+
+This runs SourcesClient and ProcessEngine against real commands, installs and
+replaces requests in one stream, tests CAS/retry, then removes its temporary source.
+Without those environment variables it does not contact a backend. The Go harness
+can also run its complete suite with `--topo ABS_BINARY --out ABS_TEMP_DIR`.
+
+A Debug app accepts `-settings ABS_TEMP/settings.json -topo ABS_BINARY
+-direct-root ABS_TEMP/direct` to isolate both public Settings and Go credentials.
+Normal launches omit direct-root. `AppModel` also accepts a clock, source command
+client and engine factory for deterministic state tests. Existing `-snapshot DIR`
+now includes Data sources; the debug driver's `panelshot` and `settingsshot` capture
+only the test app's own windows. Use PID-directed debug commands when several
+copies run. No signing team, entitlement or installed app change is needed.

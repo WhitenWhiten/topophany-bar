@@ -279,6 +279,7 @@ public struct Application: Sendable, Hashable, Decodable, Identifiable {
 /// `server.card`.
 /// A node with a card in the Servers tab, for choosing nodes (`servers.list`).
 public struct ServerListEntry: Sendable, Hashable, Decodable, Identifiable {
+    public var origin: Origin? = nil
     public var id: String
     public var name: String
     public var kind: String
@@ -288,7 +289,7 @@ public struct ServerListEntry: Sendable, Hashable, Decodable, Identifiable {
     public var health: Health
     public var note: String
 
-    enum CodingKeys: String, CodingKey { case id, name, kind, provider, group, place = "where", health, note }
+    enum CodingKeys: String, CodingKey { case origin, id, name, kind, provider, group, place = "where", health, note }
 
     public init(id: String, name: String, kind: String = "", provider: String = "", group: String = "", place: String = "",
                 health: Health = .unknown, note: String = "") {
@@ -304,6 +305,7 @@ public struct ServerListEntry: Sendable, Hashable, Decodable, Identifiable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        origin = try? c.decodeIfPresent(Origin.self, forKey: .origin)
         id = try c.decode(String.self, forKey: .id)
         name = c.text(.name) ?? id
         kind = c.text(.kind) ?? ""
@@ -366,6 +368,7 @@ public struct ProfileList: Sendable, Hashable, Decodable {
 }
 
 public struct ServerCard: Sendable, Hashable, Decodable, Identifiable {
+    public var origin: Origin? = nil
     public var id: String
     public var name: String
     public var kind: String
@@ -380,7 +383,7 @@ public struct ServerCard: Sendable, Hashable, Decodable, Identifiable {
     public var observes: [ObserverVerdict]
 
     enum CodingKeys: String, CodingKey {
-        case id, name, kind, provider, group, place = "where", health, note, resources, services, observes
+        case origin, id, name, kind, provider, group, place = "where", health, note, resources, services, observes
     }
 
     public init(id: String, name: String, kind: String, provider: String, group: String = "", place: String,
@@ -400,6 +403,7 @@ public struct ServerCard: Sendable, Hashable, Decodable, Identifiable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        origin = try? c.decodeIfPresent(Origin.self, forKey: .origin)
         id = try c.decode(String.self, forKey: .id)
         name = c.text(.name) ?? id
         kind = c.text(.kind) ?? ""
@@ -416,6 +420,7 @@ public struct ServerCard: Sendable, Hashable, Decodable, Identifiable {
     /// One host check's readings on the node. Numbers are `nil` unless the
     /// check is fresh; a `nil` limit means the check sets none.
     public struct Resource: Sendable, Hashable, Decodable {
+        public var origin: Origin? = nil
         public var check: String
         public var observer: String
         public var health: Health
@@ -428,7 +433,7 @@ public struct ServerCard: Sendable, Hashable, Decodable, Identifiable {
         public var process: ProcessMatch?
 
         enum CodingKeys: String, CodingKey {
-            case check, observer, health, freshness, sampledAt = "sampled_at", validUntil = "valid_until"
+            case origin, check, observer, health, freshness, sampledAt = "sampled_at", validUntil = "valid_until"
             case cpu, memory, disk, process
         }
 
@@ -448,6 +453,7 @@ public struct ServerCard: Sendable, Hashable, Decodable, Identifiable {
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
+            origin = try? c.decodeIfPresent(Origin.self, forKey: .origin)
             check = c.text(.check) ?? ""
             observer = c.text(.observer) ?? ""
             health = (try? c.decode(Health.self, forKey: .health)) ?? .unknown
@@ -531,7 +537,7 @@ extension ServerCard {
         let horizon = now.addingTimeInterval(tolerance)
         func lapsed(_ d: Date?) -> Bool { d.map { now >= $0 || $0 > horizon } ?? false }
         c.resources = resources.map { r in
-            guard lapsed(r.validUntil) || (r.sampledAt.map { $0 > horizon } ?? false) else { return r }
+            guard (r.origin != nil && r.validUntil == nil) || lapsed(r.validUntil) || (r.sampledAt.map { $0 > horizon } ?? false) else { return r }
             var x = r
             x.health = .unknown
             if x.freshness == "fresh" { x.freshness = "stale" }

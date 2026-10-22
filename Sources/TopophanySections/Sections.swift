@@ -174,6 +174,7 @@ public struct ServerCardModel: Sendable, Hashable, Identifiable {
         }
     }
 
+    public var origin: Origin? = nil
     public var id: String
     public var name: String
     public var kind: String

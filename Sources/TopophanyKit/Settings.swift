@@ -54,14 +54,18 @@ public struct Settings: Sendable, Hashable, Codable {
         /// How often `topo` refreshes the display, 1 s to 1 h.
         public var interval = "5s"
         /// `client` reads the collector; `preview` reads `topo preview`'s
-        /// synthetic network.
+        /// synthetic network. `direct` references a Beszel profile managed by topo.
         public var source = "client"
+        public var profileRevision = ""
+        /// Node preferences scoped to a mode and stable profile ID. No authentication material.
+        public var scopedPins: [String: [String]] = [:]
+        public var modeProfiles: [String: String] = [:]
         /// `preview` only.
         public var scenario: Int?
 
         public init() {}
 
-        enum CodingKeys: String, CodingKey { case path, profile, observer, interval, source, scenario }
+        enum CodingKeys: String, CodingKey { case path, profile, observer, interval, source, scenario, profileRevision, scopedPins, modeProfiles }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -69,7 +73,10 @@ public struct Settings: Sendable, Hashable, Codable {
             profile = c.text(.profile) ?? ""
             observer = c.text(.observer) ?? ""
             interval = c.text(.interval).flatMap { Interval($0) }.map { $0.clampedToRefresh.description } ?? "5s"
-            source = c.text(.source) == "preview" ? "preview" : "client"
+            source = c.text(.source) ?? "client"
+            profileRevision = c.text(.profileRevision) ?? ""
+            modeProfiles = (try? c.decode([String: String].self, forKey: .modeProfiles)) ?? [:]
+            scopedPins = (try? c.decode([String: [String]].self, forKey: .scopedPins)) ?? [:]
             scenario = c.count(.scenario)
         }
     }

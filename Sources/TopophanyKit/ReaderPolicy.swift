@@ -70,6 +70,9 @@ public struct ReaderPolicy: Sendable {
                let a = f.sequence, let b = incoming.sequence, b <= a {
                 return
             }
+            if let f = frame, f.source != incoming.source || f.datasetID != incoming.datasetID || (incoming.source == "direct" && f.profile != incoming.profile) {
+                lastKnown = nil; lastValues.removeAll()
+            }
             frame = incoming
             self.line = line
             receivedAt = now

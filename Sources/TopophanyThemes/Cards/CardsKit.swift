@@ -225,6 +225,7 @@ struct HeroSymbol: View {
 
     var glyph: Glyph {
         switch status.kind {
+        case .sources: status.isBlind ? .noSignal : status.mark == .up ? .check : status.mark == .degraded ? .bang : .dots
         case .verdict(.clear): .check
         case .verdict(.degraded): .bang
         case .verdict(.incidents), .verdict(.down): .cross

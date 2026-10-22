@@ -101,6 +101,8 @@ enum TerminalLauncher {
         var args: [String] = []
         if s.topo.source == "preview" {
             args += ["preview", "--scenario", String(s.topo.scenario ?? 0)]
+        } else if s.topo.source == "direct" {
+            args += ["--source", "direct", "--profile", s.topo.profile]
         } else if !s.topo.profile.isEmpty {
             args += ["--profile", s.topo.profile]
         }

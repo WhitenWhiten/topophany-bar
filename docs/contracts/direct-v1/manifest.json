@@ -1,0 +1,118 @@
+{
+  "contract_id": "topophany-direct-v1",
+  "fixture_schema": 1,
+  "files": [
+    {
+      "path": "fixtures/capabilities.json",
+      "sha256": "3562f64835961be2f53d29e15f17b9933e2130cb1608d5ab3f1726c1a22e9cda"
+    },
+    {
+      "path": "fixtures/request-direct.json",
+      "sha256": "bcf9e948994b42ea7c216b72a30c4f47d70f41400ac8bf364d932256bb6cbf42"
+    },
+    {
+      "path": "fixtures/sources-inspect-error.json",
+      "sha256": "de4b47335e73f7eee9c75e6d51132e0c92b5c035daaa6bef9ab3d0be96b58378"
+    },
+    {
+      "path": "fixtures/sources-inspect-forbidden.json",
+      "sha256": "8cc350cb404750245f3e4de3a5b38d3a934d73abc36b2e5e1ab07d3b7bb77d6d"
+    },
+    {
+      "path": "fixtures/sources-inspect-mfa.json",
+      "sha256": "01c36dae12ef5a3f37bc51da78a36ad536dc788c1aafa621fdaed239151ec71f"
+    },
+    {
+      "path": "fixtures/sources-inspect-success.json",
+      "sha256": "59ba49d8e543bc04cd4cb79bdd526a4261721d91faae8bc249710132d3734dd5"
+    },
+    {
+      "path": "fixtures/sources-inspect-truncated.json",
+      "sha256": "1804a3df1d6671c51ff77ce44aad5f3427439e40bd35cb253bccd1498c636917"
+    },
+    {
+      "path": "fixtures/sources-invalid-request.json",
+      "sha256": "1cf55f0cf67c490002fe334206b7174e4130aadb882c72a66ea564abc42c23dd"
+    },
+    {
+      "path": "fixtures/sources-list-error.json",
+      "sha256": "817a86c728b17b586355abcf8cc4fb347bafa75a8bd8af0314e4de8c5834a923"
+    },
+    {
+      "path": "fixtures/sources-list-success.json",
+      "sha256": "f700195f547c06197a46acba1023d3bd4ff95d2363f8e9becb8f8afbfcbdf371"
+    },
+    {
+      "path": "fixtures/sources-remove-error.json",
+      "sha256": "0ee0a0820751c8eb04e2ac0cb72143bb376e94c2f03f3ce940bb5b16e050aa30"
+    },
+    {
+      "path": "fixtures/sources-remove-success.json",
+      "sha256": "68ea21fa230aadda2b5703ef9bf562a83027a306ec133ea7ec2de62e63f4fc6a"
+    },
+    {
+      "path": "fixtures/sources-save-error.json",
+      "sha256": "0d7d9b88b50a320f149c2a8ebdcfcfd37c6ea6ffe9aa95434c3a6510ecc54d6c"
+    },
+    {
+      "path": "fixtures/sources-save-success.json",
+      "sha256": "9320e525394fb53ff55fc49343f644132dfa846ac39f0b85bff4d69cecf4cc24"
+    },
+    {
+      "path": "fixtures/stream-auth-required.json",
+      "sha256": "8b4cec4faaf5266a77a1628b6a5cfecf366542e6b2a214d2e3472195668d5522"
+    },
+    {
+      "path": "fixtures/stream-config-switch.json",
+      "sha256": "03e96ae7ef5a27a0f3ab464a21a060a8dd07ebcadea368b51978f92bc2fecc52"
+    },
+    {
+      "path": "fixtures/stream-expired.json",
+      "sha256": "fde4ab020b87ba8560bee6cf1554dd409dedc955d9567b283537f114f8c272ef"
+    },
+    {
+      "path": "fixtures/stream-forbidden.json",
+      "sha256": "9e1fdb1c28b05507878c782942d704e3cd5bd6ac278afc01e1ed02b4440eaf9d"
+    },
+    {
+      "path": "fixtures/stream-loading.json",
+      "sha256": "57468150989fbb924d44d0265ccd37554aeba1a16cdacd10824bb8142a91b761"
+    },
+    {
+      "path": "fixtures/stream-malformed-origin.json",
+      "sha256": "e3cd56f5458bcb1ac0a2f4bf0ad28de00c90e9eab8f227d7e0c55df642885386"
+    },
+    {
+      "path": "fixtures/stream-no-data.json",
+      "sha256": "591b288a8e08b3039f8b2e22ea4a192caa276be081ade6e798af1b588cd0ef74"
+    },
+    {
+      "path": "fixtures/stream-partial.json",
+      "sha256": "30b472424425d5940ca678a89aba04a66391aefd89f35f92650133ffc9bb5202"
+    },
+    {
+      "path": "fixtures/stream-ready.json",
+      "sha256": "dcc93490d7c45956b5c9f15371f10eb1b9629ed1c02941f5e5d6477d8640949f"
+    },
+    {
+      "path": "fixtures/stream-reconnected.json",
+      "sha256": "3a4e3d93f9bfab89dfb4b336d0d53f507570e479013ab62026a5527a5e178671"
+    },
+    {
+      "path": "fixtures/stream-request-error.json",
+      "sha256": "5f51e3f190ad479fc84c58094131ccfe6336f92bd7d5360c4705d696efb81461"
+    },
+    {
+      "path": "fixtures/stream-retrying.json",
+      "sha256": "38a08808874c84715e213772ea1e5a3480e8ae36b44c47744be3544f14d873e5"
+    },
+    {
+      "path": "fixtures/stream-unknown-adapter.json",
+      "sha256": "e993a850abdc7a2cb5e48412dda6d19db942583a76c056836dec84a84263ef64"
+    },
+    {
+      "path": "fixtures/stream-unknown-fields.json",
+      "sha256": "932e0c6efa6d42b34eb531df12323c92b7d0a79a4d9c4c2852889db61e335126"
+    }
+  ]
+}

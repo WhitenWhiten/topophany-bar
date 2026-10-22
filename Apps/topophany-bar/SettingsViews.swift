@@ -143,7 +143,8 @@ struct GeneralSettings: View {
         SettingsForm {
             Section("Topophany") {
                 TopoRow()
-                ProfileRow()
+                if model.settings.topo.source != "direct" { ProfileRow() }
+                else { RowLabel("Beszel direct", "Manage profiles and sources in Data sources") }
                 Picker(selection: model.binding(\.topo.observer)) {
                     Text("All observers").tag("")
                     let known = model.knownObservers
@@ -160,7 +161,7 @@ struct GeneralSettings: View {
                 Picker(selection: model.binding(\.topo.interval)) {
                     ForEach(refreshChoices, id: \.self) { Text(everyText($0)).tag($0) }
                 } label: {
-                    RowLabel("Refresh", "How often topo reads the collector; deadlines are checked every second either way")
+                    RowLabel("Refresh", "How often the display updates; collection runs independently")
                 }
             } header: {
                 HStack(spacing: 6) {
@@ -1108,7 +1109,7 @@ struct ServersPicker: View {
                     Toggle(isOn: pinBinding(s.id)) {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(verbatim: s.name).lineLimit(1)
-                            Text(verbatim: Words.join([s.id, s.kind, s.place])).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                            Text(verbatim: Words.join([s.origin?.detail ?? "", s.id, s.kind, s.place])).font(.callout).foregroundStyle(.secondary).lineLimit(1)
                         }
                     }
                     .toggleStyle(.checkbox)

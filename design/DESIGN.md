@@ -604,3 +604,31 @@ Later: user theme files, EmbeddedEngine and `libtopo`, more renderers.
 - Should Seen from collapse to counts beyond about 20 observers?
 - Should the Terminal theme follow the user's terminal font when one is set?
 - What should the widget heartbeat be: 30 min, or tuned to the observed reload budget?
+
+## 13. Beszel direct (D1)
+
+Direct extends the existing client/preview product with a third, exclusive reading
+mode. Data still flows Engine → Kit → Sections → Themes. Platform-independent
+packages remain AppKit-free. There is no new dashboard or WebView.
+
+Settings adds a Data sources toolbar tab using the existing `SettingsForm`, native
+pickers, secure fields, grouped rows and delete confirmation. The editor follows
+source → test → server selection → save. Source ID and system ID carry identity;
+names are presentation only. Advanced fields expose the Go ranges without a TLS
+bypass. Passwords and tokens never become Settings or App Group properties.
+
+The status card receives `SourceStatusSection`, which describes acquisition rather
+than a collector verdict. Ready says Connected, partial names sources needing
+attention, and loading/no-data/auth/permissions/unavailable remain explicit.
+Count uses Go's attention count. No incident count or All clear is synthesized.
+The same card/row typography and theme tokens apply to Cards and Cells. Beszel is
+a small source annotation beside server identity, with source name in details;
+provider logos retain their established meaning. Unsupported collector sections
+are hidden in direct mode without changing their saved preferences.
+
+Direct widgets use the existing sizes and themes, show an As of time, and become
+history at the original relevant deadlines. A new handoff cannot renew measurements.
+Their node choices carry dataset identity so a Hub/account/profile change cannot
+silently reuse a choice. Static ImageRenderer coverage includes all six themes,
+three languages, acquisition states and affected Widget sizes. Evidence and system
+validation limits are recorded in `docs/contracts/direct-v1/HANDOFF.md`.

@@ -10,6 +10,7 @@ final class PanelController: NSObject {
     struct Actions {
         var openTerminal: () -> Void
         var openSettings: () -> Void
+        var openSources: () -> Void = {}
         var quit: () -> Void
         var openAttention: (AttentionSection.Item?) -> Void
         var toggleQuiet: () -> Void
@@ -150,6 +151,7 @@ final class PanelController: NSObject {
         PanelActions(openTerminal: { [weak self] in self?.actions?.openTerminal() },
                      openSettings: { [weak self] in self?.actions?.openSettings() },
                      quit: { [weak self] in self?.actions?.quit() },
+                     openSources: { [weak self] in self?.actions?.openSources() },
                      openAttention: { [weak self] item in self?.actions?.openAttention(item) },
                      focus: { [weak self] id in self?.model.focus = id },
                      toggleQuiet: { [weak self] in self?.actions?.toggleQuiet() },

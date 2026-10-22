@@ -73,19 +73,23 @@ struct NodeEntity: AppEntity {
     var id: String
     var name: String
     var isMac: Bool
+    var sourceName: String? = nil
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Server"
     static let defaultQuery = NodeQuery()
 
     var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(title: "\(name)", subtitle: isMac ? "This Mac · \(id)" : "\(id)")
+        if id.hasPrefix("direct/") {
+            return DisplayRepresentation(title: "\(name)", subtitle: "\(sourceName ?? "Beszel")")
+        }
+        return DisplayRepresentation(title: "\(name)", subtitle: isMac ? "This Mac · \(id)" : "\(id)")
     }
 }
 
 struct NodeQuery: EntityQuery {
     func entities(for identifiers: [String]) async throws -> [NodeEntity] {
         let all = Self.known()
-        return identifiers.map { id in all.first { $0.id == id } ?? NodeEntity(id: id, name: id, isMac: false) }
+        return identifiers.map { id in all.first { $0.id == id } ?? NodeEntity(id: id, name: id.hasPrefix("direct/") ? String(localized: "Choose a server again", bundle: L10n.bundle(for: .main)) : id, isMac: false) }
     }
 
     func suggestedEntities() async throws -> [NodeEntity] { Self.known() }
@@ -99,15 +103,15 @@ struct NodeQuery: EntityQuery {
         var out: [NodeEntity] = []
         if !s.mac.node.isEmpty {
             let name = if case .server(let c, _)? = panel.mac, !c.isMissing { c.name } else { s.mac.node }
-            out.append(NodeEntity(id: s.mac.node, name: name, isMac: true))
+            out.append(NodeEntity(id: h.selectionID(node: s.mac.node), name: name, isMac: true, sourceName: panel.servers.first { $0.id == s.mac.node }?.origin?.detail))
         }
         let listed = h.servers()
-        for node in s.serverNodes where !out.contains(where: { $0.id == node }) {
+        for node in s.serverNodes where !out.contains(where: { $0.id == h.selectionID(node: node) }) {
             let name = panel.servers.first { $0.id == node && !$0.isMissing }?.name ?? listed.first { $0.id == node }?.name ?? node
-            out.append(NodeEntity(id: node, name: name, isMac: false))
+            out.append(NodeEntity(id: h.selectionID(node: node), name: name, isMac: false, sourceName: listed.first { $0.id == node }?.origin?.detail))
         }
-        for server in listed where !out.contains(where: { $0.id == server.id }) {
-            out.append(NodeEntity(id: server.id, name: server.name, isMac: false))
+        for server in listed where !out.contains(where: { $0.id == h.selectionID(node: server.id) }) {
+            out.append(NodeEntity(id: h.selectionID(node: server.id), name: server.name, isMac: false, sourceName: server.origin?.detail))
         }
         return out
     }
@@ -241,6 +245,10 @@ enum Timelines {
                         family: WidgetFamily, key: String) -> [Entry] {
         let now = Date()
         let h = store.read()
+        var kind = kind
+        if case .server(let selection, let isMac) = kind {
+            kind = .server(node: h?.resolveSelection(selection) ?? "", isMac: isMac)
+        }
         // The language the user chose in the app, for every word drawn.
         L10n.prefer(h?.decodedSettings.language.localization)
         var node: String?
@@ -250,7 +258,7 @@ enum Timelines {
         var map = false
         if case .map = kind { map = true }
         needs.record(key, .init(lists: !map && (family == .systemLarge || family == .systemExtraLarge), node: node, service: service,
-                                map: map, at: now))
+                                map: map, datasetScope: h?.isDirect == true ? h?.datasetScope : nil, at: now))
         let theme = theme(choice, h)
         return WidgetSchedule.entries(h, at: now, server: node, service: service).map { e in
             Entry(date: e.date, model: WidgetModel(kind: kind, right: right, panel: e.panel, isCurrent: e.isCurrent), theme: theme)
