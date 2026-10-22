@@ -164,6 +164,23 @@ import Testing
         #expect(back.sections.order[1] == .mac)
     }
 
+    /// Direct has one reader, so a collector view saved while direct was
+    /// chosen is kept for the mode switched back to, never sent to `topo`.
+    @Test func directKeepsNoCollectorView() throws {
+        let legacy = try JSONDecoder().decode(Settings.self, from: Data(
+            #"{"topo":{"source":"direct","profile":"desktop","observer":"home"}}"#.utf8))
+        #expect(legacy.topo.observer.isEmpty)
+        #expect(legacy.topo.modeObservers == ["client": "home"])
+        let kept = try JSONDecoder().decode(Settings.self, from: Data(
+            #"{"topo":{"source":"direct","observer":"home","modeObservers":{"client":"office"}}}"#.utf8))
+        #expect(kept.topo.observer.isEmpty)
+        #expect(kept.topo.modeObservers == ["client": "office"])
+        var s = Settings()
+        s.topo.modeObservers = ["client": "home", "preview": "office"]
+        let back = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(s))
+        #expect(back.topo.modeObservers == s.topo.modeObservers)
+    }
+
     @Test func missingAndUnknownFields() throws {
         let s = try JSONDecoder().decode(Settings.self, from: Data(#"{"future":1,"topo":{"interval":"90m"},"sections":[{"id":"mac","mode":"off"},{"id":"bogus"},{"id":"status"}]}"#.utf8))
         #expect(s.topo.interval == "1h")

@@ -132,4 +132,36 @@ extension RefreshTests {
         model.stopNow()
     }
 
+    /// A collector view belongs to the mode it was chosen in: direct never
+    /// carries one, and each mode gets back the view it was left in.
+    @Test func viewsStayScopedToTheirMode() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "app-views-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SettingsStore(url: root.appending(path: "settings.json"))
+        var settings = Settings()
+        settings.topo.source = "client"; settings.topo.profile = "home"; settings.topo.observer = "home"
+        settings.sections.mac.mode = .off
+        try store.save(settings)
+        let engine = RecordingEngine()
+        let model = AppModel(store: store, clock: ManualClock(Timestamp.parse("2026-10-21T12:00:00Z")!),
+                             directRoot: root.appending(path: "direct").path, engineFactory: { _ in engine })
+        model.restartEngine()
+        #expect(engine.all.last?.observer == "home")
+        model.selectSource("direct")
+        #expect(engine.all.last?.source == "direct")
+        #expect(engine.all.last?.observer == "")
+        #expect(model.settings.topo.observer.isEmpty)
+        model.selectSource("preview")
+        model.update { $0.topo.observer = "office" }
+        for _ in 0..<10 { await Task.yield() }
+        #expect(engine.all.last?.source == "preview")
+        #expect(engine.all.last?.observer == "office")
+        model.selectSource("client")
+        #expect(engine.all.last?.source == "client")
+        #expect(engine.all.last?.observer == "home")
+        model.selectSource("preview")
+        #expect(engine.all.last?.observer == "office")
+        model.stopNow()
+    }
+
 }

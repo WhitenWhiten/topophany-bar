@@ -60,12 +60,16 @@ public struct Settings: Sendable, Hashable, Codable {
         /// Node preferences scoped to a mode and stable profile ID. No authentication material.
         public var scopedPins: [String: [String]] = [:]
         public var modeProfiles: [String: String] = [:]
+        /// The view each mode was left in, as `modeProfiles` saves profiles.
+        public var modeObservers: [String: String] = [:]
         /// `preview` only.
         public var scenario: Int?
 
         public init() {}
 
-        enum CodingKeys: String, CodingKey { case path, profile, observer, interval, source, scenario, profileRevision, scopedPins, modeProfiles }
+        enum CodingKeys: String, CodingKey {
+            case path, profile, observer, interval, source, scenario, profileRevision, scopedPins, modeProfiles, modeObservers
+        }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -76,8 +80,15 @@ public struct Settings: Sendable, Hashable, Codable {
             source = c.text(.source) ?? "client"
             profileRevision = c.text(.profileRevision) ?? ""
             modeProfiles = (try? c.decode([String: String].self, forKey: .modeProfiles)) ?? [:]
+            modeObservers = (try? c.decode([String: String].self, forKey: .modeObservers)) ?? [:]
             scopedPins = (try? c.decode([String: [String]].self, forKey: .scopedPins)) ?? [:]
             scenario = c.count(.scenario)
+            // Direct has one reader, not a collector view. A view saved while
+            // direct was chosen belongs to the mode switched back to.
+            if source == "direct", !observer.isEmpty {
+                if (modeObservers["client"] ?? "").isEmpty { modeObservers["client"] = observer }
+                observer = ""
+            }
         }
     }
 

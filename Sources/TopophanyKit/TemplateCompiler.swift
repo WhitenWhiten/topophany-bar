@@ -62,8 +62,10 @@ public struct TemplateCompiler: Sendable {
             if s.mac.mode == .server, Self.validNode(s.mac.node), !nodes.contains(s.mac.node) { nodes.append(s.mac.node) }
             nodes += Self.unique(widgets.nodes).filter { !nodes.contains($0) }
             for (i, node) in nodes.enumerated() { rows.append(Self.card(RowID.server(i), node)) }
+            // Direct reads every selected system; `topo` accepts no collector
+            // observer for it, so a saved view never leaks into the request.
             var r = Request(requestID: "settings-\(revision)", source: "direct", profile: settings.topo.profile,
-                            observer: settings.topo.observer, interval: settings.topo.interval, template: Template(title: title, rows: rows))
+                            observer: "", interval: settings.topo.interval, template: Template(title: title, rows: rows))
             r.profileRevision = settings.topo.profileRevision
             return r
         }

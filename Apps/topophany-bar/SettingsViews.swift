@@ -143,17 +143,21 @@ struct GeneralSettings: View {
         SettingsForm {
             Section("Topophany") {
                 TopoRow()
-                if model.settings.topo.source != "direct" { ProfileRow() }
-                else { RowLabel("Beszel direct", "Manage profiles and sources in Data sources") }
-                Picker(selection: model.binding(\.topo.observer)) {
-                    Text("All observers").tag("")
-                    let known = model.knownObservers
-                    if !known.isEmpty { Divider() }
-                    ForEach(known, id: \.id) { o in Text(o.name).tag(o.id) }
-                    let current = model.settings.topo.observer
-                    if !current.isEmpty, !known.contains(where: { $0.id == current }) { Text(current).tag(current) }
-                } label: {
-                    RowLabel("View", "What the collector shows from")
+                if model.settings.topo.source != "direct" {
+                    ProfileRow()
+                    Picker(selection: model.binding(\.topo.observer)) {
+                        Text("All observers").tag("")
+                        let known = model.knownObservers
+                        if !known.isEmpty { Divider() }
+                        ForEach(known, id: \.id) { o in Text(o.name).tag(o.id) }
+                        let current = model.settings.topo.observer
+                        if !current.isEmpty, !known.contains(where: { $0.id == current }) { Text(current).tag(current) }
+                    } label: {
+                        RowLabel("View", "What the collector shows from")
+                    }
+                } else {
+                    // Direct reads every selected system, so there is no view to choose.
+                    RowLabel("Beszel direct", "Manage profiles and sources in Data sources")
                 }
             }
             Section {

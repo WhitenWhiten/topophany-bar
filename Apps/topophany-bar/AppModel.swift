@@ -559,8 +559,11 @@ final class AppModel {
         guard source != settings.topo.source else { return }
         update {
             $0.topo.modeProfiles[$0.topo.source] = $0.topo.profile
+            $0.topo.modeObservers[$0.topo.source] = $0.topo.observer
             $0.topo.source = source
             $0.topo.profile = $0.topo.modeProfiles[source] ?? (source == "direct" ? "desktop" : "")
+            // Direct has no collector view; the other modes keep their own.
+            $0.topo.observer = source == "direct" ? "" : ($0.topo.modeObservers[source] ?? "")
             $0.topo.profileRevision = ""
         }
     }

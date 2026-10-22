@@ -395,8 +395,10 @@ A direct request explicitly names a profile, optionally fences installation with
 `profile_revision`, and projects `sources.status`, `servers.list`, and deduplicated
 `server.card` rows. Template/source/metric support are checked separately from
 protocol support. Row admission is bounded at 128 with an explicit error. Collector
-section preferences survive mode switches. No resource thresholds or network
-health aggregation are implemented by the bar.
+section preferences survive mode switches; the collector view is scoped to its
+mode as profiles are, so direct requests and Terminal arguments carry no observer
+and switching back restores the view that mode was left in. No resource
+thresholds or network health aggregation are implemented by the bar.
 
 The one-shot `sources inspect/save/remove --json-stdin` executor sends authentication
 only on stdin, bounds input/output to 256 KiB / 1 MiB, drains stderr concurrently
@@ -418,7 +420,8 @@ The stream continues across profile/pin/template/language/display updates. Expli
 retry and Mac wake use a debounced `retry_nonce`, only when advertised. Direct-root,
 command-response, engine and clock injection are development dependencies, absent
 from normal Settings. Terminal arguments use `--source direct --profile ID` with
-no Hub URL or authentication. App exit closes its stream and cancels config commands.
+no Hub URL, authentication or observer. App exit closes its stream and cancels
+config commands.
 
 The old statement that stream never writes files applies to client/preview. D1 may
 lock/read/atomically renew its credentials in its private root. It writes no metrics

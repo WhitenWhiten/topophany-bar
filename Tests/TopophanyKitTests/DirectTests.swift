@@ -24,6 +24,17 @@ struct DirectTests {
         let old = try JSONDecoder().decode(Settings.self, from: Data("{}".utf8))
         #expect(old.topo.source == "client")
     }
+    /// Direct reads every selected system; a view saved for another mode never
+    /// reaches the request `topo` validates.
+    @Test func directRequestsCarryNoCollectorView() {
+        var s = Settings(); s.topo.source = "direct"; s.topo.profile = "desktop"; s.topo.observer = "home"
+        let needs = TemplateCompiler.WidgetNeeds(nodes: ["bs-a.system1"])
+        let r = TemplateCompiler().request(for: s, revision: 1, widgets: needs)
+        #expect(r.observer.isEmpty)
+        #expect(r.source == "direct" && r.profile == "desktop")
+        s.topo.observer = ""
+        #expect(r == TemplateCompiler().request(for: s, revision: 1, widgets: needs))
+    }
     @Test func capabilitiesAreScoped() throws {
         let caps = try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"sources":["client","preview","direct"],"metrics":[{"name":"summary.verdict","sources":["client"]}],"direct":{"schema":1,"config_api":1,"adapters":["beszel"],"retry":true,"limits":{"sources_per_profile":64,"objects_per_source":20,"objects_per_profile":256,"template_rows":128}}}"#.utf8))
         #expect(caps.isUsable && caps.supports(source: "direct"))

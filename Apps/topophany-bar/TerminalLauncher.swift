@@ -106,7 +106,8 @@ enum TerminalLauncher {
         } else if !s.topo.profile.isEmpty {
             args += ["--profile", s.topo.profile]
         }
-        if !s.topo.observer.isEmpty { args += ["--observer", s.topo.observer] }
+        // Direct views every selected system; its reader has no collector view.
+        if s.topo.source != "direct", !s.topo.observer.isEmpty { args += ["--observer", s.topo.observer] }
         if let focus, let page = page(for: focus.kind) { args += ["--page", page] }
         return args
     }
