@@ -26,6 +26,10 @@ public enum SourceMessages {
         default: tr("The source could not be configured. Refresh the sources list and try again.")
         }
     }
+    /// The status card's headline: the state, short enough for one line.
+    public static func headline(_ state: String) -> String {
+        state == "partial" ? tr("Needs attention") : Self.state(state)
+    }
     public static func state(_ state: String) -> String {
         switch state {
         case "loading": tr("Connecting")

@@ -14,13 +14,20 @@ struct CardsFleet: View {
     var body: some View {
         Card(p: p) {
             CardTitle(symbol: "square.grid.2x2", title: tr("Fleet"),
-                      meta: Words.join([tr("\(fleet.nodeCount) servers"), tr("\(fleet.providerCount) providers")]), p: p, t: t)
+                      meta: fleet.meta, p: p, t: t)
             FleetGrid(groups: fleet.edges, isCurrent: fleet.isCurrent, p: p, t: t, marks: marks, spacing: 5.5)
             if !fleet.edges.isEmpty, !fleet.servers.isEmpty {
                 Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 6)
             }
             FleetGrid(groups: fleet.servers, isCurrent: fleet.isCurrent, p: p, t: t, marks: marks, spacing: 5.5)
         }
+    }
+}
+
+extension FleetSection {
+    /// "14 servers · 10 providers"; servers no provider runs count none.
+    var meta: String {
+        Words.join([tr("\(nodeCount) servers"), providerCount > 0 ? tr("\(providerCount) providers") : ""])
     }
 }
 
@@ -108,9 +115,6 @@ struct FleetCell: View {
                 }
                 title
             }
-            if let origin = group.nodes.first?.origin {
-                Text(origin.badge).font(t.font(9)).foregroundStyle(p.l3).fixedSize().help(origin.detail)
-            }
             // The stack's spacing alone keeps the marks clear of the name.
             Spacer(minLength: 0)
             HStack(spacing: 2.5) {
@@ -123,7 +127,7 @@ struct FleetCell: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .opacity(isCurrent ? 1 : 0.55)
-        .help(Self.nodes(group))
+        .help(Words.join([Self.nodes(group), group.nodes.first?.origin?.detail ?? ""]))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(Words.join([group.title, group.isEdge ? Words.kind(group.kind) : ""]) + ": " + Self.nodes(group)))
     }

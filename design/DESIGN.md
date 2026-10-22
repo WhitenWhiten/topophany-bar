@@ -618,17 +618,30 @@ names are presentation only. Advanced fields expose the Go ranges without a TLS
 bypass. Passwords and tokens never become Settings or App Group properties.
 
 The status card receives `SourceStatusSection`, which describes acquisition rather
-than a collector verdict. Ready says Connected, partial names sources needing
-attention, and loading/no-data/auth/permissions/unavailable remain explicit.
-Count uses Go's attention count. No incident count or All clear is synthesized.
-The same card/row typography and theme tokens apply to Cards and Cells. Beszel is
-a small source annotation beside server identity, with source name in details;
-provider logos retain their established meaning. Unsupported collector sections
-are hidden in direct mode without changing their saved preferences.
+than a collector verdict. Its headline is the state alone: Connected, Needs
+attention, Connecting, No resource samples, Source unavailable. Under it, Go's
+counts as the collector card words its checks, "3 of 3 servers current", naming
+stale and missing servers only when there are some. Connected draws a signal in its
+tile, never All clear's check. Each source follows with its mark and what its row
+ends in: its servers while connected ("2 of 2 current"), else the state that asks
+for a look, in weight. A row opens Data sources. The foot counts sources and says
+when the frame came. Count uses Go's attention count. No incident count or All
+clear is synthesized. The same card/row typography and theme tokens apply to Cards
+and Cells, where the servers current are the big number. The header names the
+adapter as a collector's names its view. A server card says where it's read from
+in the provider's place ("host · Home Beszel"); Fleet adds no badge, and counts no
+providers when none are known. Provider logos retain their established meaning.
+Unsupported collector sections are hidden in direct mode without changing their
+saved preferences.
 
 Direct widgets use the existing sizes and themes, show an As of time, and become
-history at the original relevant deadlines. A new handoff cannot renew measurements.
-Their node choices carry dataset identity so a Hub/account/profile change cannot
-silently reuse a choice. Static ImageRenderer coverage includes all six themes,
-three languages, acquisition states and affected Widget sizes. Evidence and system
-validation limits are recorded in `docs/contracts/direct-v1/HANDOFF.md`.
+history at the original relevant deadlines. A Status widget is the state and its
+sources in a narrow column; the medium, large and extra large add the pinned
+servers' readings, a row each with CPU, memory and disk (a short meter beside each
+where there is room), "—" where withheld, as many as fit and the rest counted.
+With none pinned, the medium widget's right lists the sources instead. A new handoff cannot renew measurements. Their node choices carry dataset identity so
+a Hub/account/profile change cannot silently reuse a choice. Static ImageRenderer
+coverage includes all six themes, three languages, acquisition states, several
+sources and servers, and the Widget sizes at both the design's and a 1080 pt
+display's bounds. Evidence and system validation limits are recorded in
+`docs/contracts/direct-v1/HANDOFF.md`.

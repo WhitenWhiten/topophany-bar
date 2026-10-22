@@ -221,11 +221,19 @@ struct HeroSymbol: View {
     var size: Double
     var palette: CardsPalette
 
-    enum Glyph { case check, bang, cross, dots, noSignal, clock }
+    enum Glyph { case check, bang, cross, dots, noSignal, clock, signal }
 
     var glyph: Glyph {
         switch status.kind {
-        case .sources: status.isBlind ? .noSignal : status.mark == .up ? .check : status.mark == .degraded ? .bang : .dots
+        // Connected is a signal, never a check: it says nothing about health.
+        case .sources:
+            switch status.isBlind ? nil : status.sources?.value.state {
+            case nil, "unavailable"?, "error"?: .noSignal
+            case "ready"?: .signal
+            case "partial"?: .bang
+            case "loading"?, "retrying"?: .clock
+            default: .dots
+            }
         case .verdict(.clear): .check
         case .verdict(.degraded): .bang
         case .verdict(.incidents), .verdict(.down): .cross
@@ -298,6 +306,13 @@ struct HeroSymbol: View {
                 p.move(to: CGPoint(x: 14, y: 13))
                 p.addLine(to: CGPoint(x: 33.6, y: 33))
                 stroke(p, 2.8)
+            case .signal:
+                for r in [14.5, 8.8] {
+                    var a = Path()
+                    a.addArc(center: CGPoint(x: 23.5, y: 31), radius: r, startAngle: .degrees(-135), endAngle: .degrees(-45), clockwise: false)
+                    stroke(a, 2.8)
+                }
+                ctx.fill(Path(ellipseIn: CGRect(x: 21.2, y: 28.7, width: 4.6, height: 4.6)), with: shade)
             case .clock:
                 stroke(Path(ellipseIn: CGRect(x: 13.5, y: 13.5, width: 20, height: 20)), 2.6)
                 p.move(to: CGPoint(x: 23.5, y: 17.5))

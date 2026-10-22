@@ -2991,38 +2991,6 @@
         }
       }
     },
-    "Resource snapshot": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "リソースのスナップショット"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "资源快照"
-          }
-        }
-      }
-    },
-    "Manage sources in Settings": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "設定でソースを管理"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在设置中管理来源"
-          }
-        }
-      }
-    },
     "As of %@": {
       "localizations": {
         "ja": {
@@ -3039,18 +3007,66 @@
         }
       }
     },
-    "More sources in Settings": {
+    "%lld more in Settings": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "他のソースは設定で確認"
+            "value": "他 %lld 件は設定で"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在设置中查看更多来源"
+            "value": "另有 %lld 个，见设置"
+          }
+        }
+      }
+    },
+    "Sources": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源"
+          }
+        }
+      }
+    },
+    "SERVERS": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバー"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器"
+          }
+        }
+      }
+    },
+    "SOURCES": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源"
           }
         }
       }

@@ -39,60 +39,36 @@ struct CardsWidget: View {
 
     @ViewBuilder func status(_ p: CardsPalette) -> some View {
         if let sources = model.status.sources {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    HeroSymbol(status: model.status, size: 30, palette: p)
-                    Spacer(minLength: 4)
-                    WidgetMark(palette: p, rendering: ctx.widgetRendering)
-                }
-                Text(sources.title).font(t.font(15, .semibold)).lineLimit(2)
-                Text(sources.subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
-                if size != .small {
-                    ForEach(sources.value.sources.prefix(size == .medium ? 1 : 5)) { source in
-                        HStack(spacing: 5) {
-                            CardMark(mark: sources.mark(source), size: 8, color: p.listColor(sources.mark(source)))
-                            Text(source.name).lineLimit(1)
-                            Spacer(minLength: 4)
-                            Text(sources.state(source)).lineLimit(1)
-                        }.font(t.font(11)).foregroundStyle(p.l2)
-                    }
-                }
-                Spacer(minLength: 0)
-                if let at = sources.snapshotAt ?? model.updatedAt {
-                    Text(tr("As of \(Words.clock(Words.time(at, in: .current).time, Words.time(at, in: .current).period))"))
-                        .font(t.font(10)).foregroundStyle(p.l3).lineLimit(1)
-                }
-            }
+            WidgetSources(model: model, sources: sources, size: size, p: p, t: t, ctx: ctx)
         } else {
-        let w = WidgetStatus(status: model.status, p: p, t: t, ctx: ctx)
-        switch size {
-        case .small:
-            narrow(w)
-        case .medium:
-            HStack(alignment: .top, spacing: 16) {
-                narrow(w).frame(width: 136)
-                right(p, attentionRows: 3, appRows: 6)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            }
-        case .large:
-            large(p, w, appRows: 6)
-        case .extraLarge:
-            HStack(alignment: .top, spacing: 24) {
-                large(p, w, appRows: 6)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                VStack(alignment: .leading, spacing: 0) {
-                    if hasAttention, let apps = model.panel.applications {
-                        WidgetApplications(apps: apps, rows: 6, p: p, t: t).padding(.bottom, 12)
-                    }
-                    if let fleet = model.panel.fleet {
-                        WidgetFleet(fleet: fleet, p: p, t: t)
-                    }
+            let w = WidgetStatus(status: model.status, p: p, t: t, ctx: ctx)
+            switch size {
+            case .small:
+                narrow(w)
+            case .medium:
+                HStack(alignment: .top, spacing: 16) {
+                    narrow(w).frame(width: 136)
+                    right(p, attentionRows: 3, appRows: 6)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            case .large:
+                large(p, w, appRows: 6)
+            case .extraLarge:
+                HStack(alignment: .top, spacing: 24) {
+                    large(p, w, appRows: 6)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack(alignment: .leading, spacing: 0) {
+                        if hasAttention, let apps = model.panel.applications {
+                            WidgetApplications(apps: apps, rows: 6, p: p, t: t).padding(.bottom, 12)
+                        }
+                        if let fleet = model.panel.fleet {
+                            WidgetFleet(fleet: fleet, p: p, t: t)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
             }
         }
-    }
-
     }
 
     /// The verdict in a narrow column: the checks fill the room between
@@ -621,7 +597,7 @@ struct WidgetFleet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             WidgetHeading(symbol: "square.grid.2x2", title: tr("Fleet"),
-                          meta: Words.join([tr("\(fleet.nodeCount) servers"), tr("\(fleet.providerCount) providers")]), p: p, t: t)
+                          meta: fleet.meta, p: p, t: t)
                 .padding(.bottom, 2)
             ViewThatFits(in: .vertical) {
                 ForEach(Array(stride(from: fleet.groups.count, through: 1, by: -1)), id: \.self) { n in
@@ -697,7 +673,7 @@ struct WidgetServerCard: View {
                            symbol: isMac ? "apple.logo" : nil)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(card.name).font(t.font(12.5, .semibold)).lineLimit(1).minimumScaleFactor(0.85)
-                    Text(card.isMissing ? card.place : Words.join([card.origin?.badge ?? "", card.place, card.provider]))
+                    Text(card.isMissing ? card.place : Words.join([card.place, card.provider.isEmpty ? card.origin?.detail ?? "" : card.provider]))
                         .font(t.font(10.5)).foregroundStyle(p.l2).lineLimit(1)
                 }
             }
@@ -715,9 +691,10 @@ struct WidgetServerCard: View {
                 Spacer(minLength: 4)
                 // A CACHED pill already says the age is of history.
                 if let at = card.sampledAt {
+                    // A direct snapshot keeps the time it was read: a new
+                    // hand-off can't renew it.
                     if card.origin != nil {
-                        Text(tr("As of \(Words.clock(Words.time(at, in: .current).time, Words.time(at, in: .current).period))"))
-                            .font(t.font(10)).foregroundStyle(p.l3).lineLimit(1)
+                        Text(Words.asOf(at)).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).minimumScaleFactor(0.8)
                     } else {
                         Age(date: at, now: card.now, live: ctx.liveDates, compact: true)
                             .font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).minimumScaleFactor(0.8)

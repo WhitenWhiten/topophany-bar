@@ -399,7 +399,6 @@ struct CardTitle: View {
 // MARK: status
 
 struct CardsStatusCard: View {
-    @Environment(\.panelActions) private var actions
     var status: StatusSection
     var alert: MenuBarAlert = .unavailable
     var download: TopoOffer?
@@ -421,7 +420,7 @@ struct CardsStatusCard: View {
                 HeroSymbol(status: status, size: 44, palette: p)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
-                        Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(status.sources == nil ? 1 : 2)
+                        Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(1)
                             .contentTransition(.numericText()).settles(on: status.title)
                         if alert != .unavailable || download != nil {
                             Spacer(minLength: 0)
@@ -436,22 +435,7 @@ struct CardsStatusCard: View {
             // The words read as one; a button stays a button.
             .accessibilityElement(children: alert == .unavailable && download == nil ? .combine : .contain)
             if let sources = status.sources {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(sources.value.sources.prefix(4)) { source in
-                        HStack(spacing: 6) {
-                            CardMark(mark: sources.mark(source), size: 8, color: p.listColor(sources.mark(source)))
-                            Text(source.name).lineLimit(1).truncationMode(.middle)
-                            Spacer(minLength: 4)
-                            Text(sources.state(source)).lineLimit(1)
-                        }.font(t.font(11)).foregroundStyle(p.l2)
-                    }
-                    if sources.value.sources.count > 4 {
-                        Button(action: actions.openSources) { Text(tr("More sources in Settings")) }.buttonStyle(.plain).font(t.font(11)).foregroundStyle(p.accent)
-                    }
-                    if sources.isCurrent && sources.value.sources.contains(where: { $0.state != "connected" && $0.state != "loading" }) {
-                        Button(action: actions.openSources) { Text(tr("Manage sources in Settings")) }.buttonStyle(.plain).font(t.font(11)).foregroundStyle(p.accent)
-                    }
-                }
+                CardsSourceRows(sources: sources, p: p, t: t)
             } else if status.isBlind {
                 cached
             } else if let c = status.counts?.complete {
@@ -459,7 +443,9 @@ struct CardsStatusCard: View {
                     .accessibilityLabel(tr("\(c.up) up, \(c.warning) warn, \(c.down) down, \(c.unknown) unknown"))
                 legend(c)
             }
-            if let notice = status.notice { Text(notice).font(t.font(11)).foregroundStyle(p.l2).fixedSize(horizontal: false, vertical: true) }
+            if let notice = status.notice {
+                Text(notice).font(t.font(11)).foregroundStyle(p.l2).fixedSize(horizontal: false, vertical: true).padding(.top, 6)
+            }
             meta
         }
     }
@@ -499,19 +485,21 @@ struct CardsStatusCard: View {
             Rectangle().fill(p.sep).frame(height: 0.5).padding(.top, 9)
             HStack {
                 HStack(spacing: 5) {
-                    if status.sources != nil {
-                        Text(tr("Resource snapshot"))
+                    if let sources = status.sources {
+                        Image(systemName: "externaldrive.connected.to.line.below").font(.system(size: 10 * t.scale))
+                        Text(sources.sourceCount)
                     } else {
-                    Image(systemName: "target").font(.system(size: 10 * t.scale))
-                    if let live = status.observersLive, let all = status.observersAll, !status.isBlind {
-                        Text(tr("\(live)/\(all) observers live"))
-                    } else {
-                        Text(tr("Observers not known now"))
-                    }
+                        Image(systemName: "target").font(.system(size: 10 * t.scale))
+                        if let live = status.observersLive, let all = status.observersAll, !status.isBlind {
+                            Text(tr("\(live)/\(all) observers live"))
+                        } else {
+                            Text(tr("Observers not known now"))
+                        }
                     }
                 }
                 Spacer()
-                if let at = status.isBlind ? status.lastKnown?.at : status.updatedAt {
+                // A snapshot keeps the time it was read, current or not.
+                if let at = status.isBlind && status.sources == nil ? status.lastKnown?.at : status.updatedAt {
                     Text(tr("Updated \(Words.ago(at, now: status.now))"))
                 }
             }
@@ -519,6 +507,59 @@ struct CardsStatusCard: View {
             .padding(.top, 8)
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Each source with its mark, and what its row ends in: its servers while
+/// it's connected, or the state that asks for a look. A row opens Data
+/// sources in Settings.
+struct CardsSourceRows: View {
+    var sources: SourceStatusSection
+    var p: CardsPalette
+    var t: CardsType
+    var limit = 4
+    @Environment(\.panelActions) private var actions
+
+    var body: some View {
+        let list = sources.value.sources
+        VStack(spacing: 1) {
+            ForEach(list.prefix(limit)) { s in
+                Button(action: actions.openSources) { row(s) }
+                    .buttonStyle(PressStyle())
+                    .modifier(HoverRow(p: p))
+                    .accessibilityElement(children: .combine)
+            }
+            if list.count > limit {
+                Button(action: actions.openSources) {
+                    HStack(spacing: 2) {
+                        Text(tr("\(list.count - limit) more in Settings"))
+                        Image(systemName: "chevron.right").font(.system(size: 9 * t.scale, weight: .semibold))
+                    }
+                    .font(t.font(11.5, .medium)).foregroundStyle(p.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 3)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressStyle())
+                .modifier(HoverRow(p: p))
+            }
+        }
+    }
+
+    func row(_ s: SourcesStatus.Source) -> some View {
+        let m = sources.mark(s)
+        let look = sources.needsLook(s)
+        return HStack(spacing: 7) {
+            CardMark(mark: m, size: 9, color: p.listColor(m))
+            Text(s.name).foregroundStyle(p.l1).lineLimit(1).truncationMode(.middle)
+            Spacer(minLength: 8)
+            Text(sources.detail(s))
+                .font(t.font(11, look ? .semibold : .regular)).foregroundStyle(look ? p.l1 : p.l3)
+                .lineLimit(1).fixedSize()
+        }
+        .font(t.font(12))
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
     }
 }
 
@@ -776,10 +817,7 @@ struct CardsServer: View {
             HStack(spacing: 9) {
                 NodeAvatar(provider: card.provider, kind: card.kind, size: 28, p: p, symbol: symbol)
                 VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 5) {
-                        Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1)
-                        if let origin = card.origin { Text(origin.badge).font(t.font(9)).foregroundStyle(p.l2).fixedSize().help(origin.detail) }
-                    }
+                    Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1)
                     // The time where it is never gives way; the provider, in
                     // the middle, does first.
                     HStack(spacing: 0) {

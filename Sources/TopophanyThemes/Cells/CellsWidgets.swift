@@ -70,12 +70,16 @@ struct CellsWidget: View {
             return s + [.t(" ", p.text)]
         }
 
-        /// "◉ homelab ……… ● LIVE"
+        /// "◉ homelab ……… ● LIVE"; a direct snapshot names its sources
+        /// instead, since it never says live.
         mutating func head(_ columns: Int) {
             let ch = model.panel.chrome
-            let live: [Seg] = model.status.sources != nil ? [.t(tr("Resource snapshot"), p.muted)] : ch.isLive && model.isCurrent ? [.mark(.up, p), .t(" " + tr("LIVE"), p.up, bold: true)] : [.mark(.offline, p)]
+            let live: [Seg] = if let sources = model.status.sources { [.t(sources.adapter, p.muted)] }
+                else if ch.isLive && model.isCurrent { [.mark(.up, p), .t(" " + tr("LIVE"), p.up, bold: true)] }
+                else { [.mark(.offline, p)] }
             let name = ch.project.isEmpty ? "Topophany" : ch.project
-            w.line([.glyph(.logo, p.accent), .t(" " + CellText.truncate(name, columns - 10), p.text, bold: true)], live,
+            let room = columns - 3 - live.reduce(0) { $0 + $1.width }
+            w.line([.glyph(.logo, p.accent), .t(" " + CellText.truncate(name, max(1, room)), p.text, bold: true)], live,
                    in: .init(x: pad.side, columns: columns))
         }
 
@@ -151,7 +155,7 @@ struct CellsWidget: View {
             let lines = Int(((bottom - w.y - chrome) / w.lineHeight).rounded(.down))
             guard lines >= 2 else { return }
             let b = self.b
-            w.box(title(tr("FLEET"), "\(f.nodeCount)"), [.t(" " + tr("\(f.providerCount) providers") + " ", p.muted)],
+            w.box(title(tr("FLEET"), "\(f.nodeCount)"), f.providerCount > 0 ? [.t(" " + tr("\(f.providerCount) providers") + " ", p.muted)] : [],
                   x0: x0, x1: x1, style: style) { b.fleet(&$0, f, lines: lines) }
         }
 
@@ -169,15 +173,8 @@ struct CellsWidget: View {
         mutating func status(_ size: WidgetSize) {
             let x0 = pad.side, x1 = pad.side + Double(cols) * cell
             head(cols)
-            if model.status.sources != nil {
-                let b = self.b, status = self.status
-                w.box(title(tr("STATUS")), x0: x0, x1: x1, style: style) { w in
-                    b.status(&w, status, short: size == .small, blockHeight: 0)
-                    if let at = status.sources?.snapshotAt ?? model.updatedAt {
-                        let time = Words.time(at, in: .current)
-                        w.line([.t(CellText.truncate(tr("As of \(Words.clock(time.time, time.period))"), w.frame.columns), self.p.faint)])
-                    }
-                }
+            if let sources = status.sources {
+                direct(size, sources, x0: x0, x1: x1)
                 return
             }
             switch size {
@@ -212,6 +209,79 @@ struct CellsWidget: View {
                 }
                 if let f = model.panel.fleet { fleetBox(f, x0: split + cell, x1: x1) }
             }
+        }
+
+        // MARK: Direct
+
+        /// A direct snapshot: its state and sources, as of when it was
+        /// read, and the pinned servers' readings where there's room.
+        mutating func direct(_ size: WidgetSize, _ sources: SourceStatusSection, x0: Double, x1: Double) {
+            let at = sources.snapshotAt ?? model.updatedAt
+            let servers = model.panel.servers
+            switch size {
+            case .small:
+                sourcesBox(sources, at: at, x0: x0, x1: x1, short: true)
+            case .medium:
+                let split = x(22)
+                let top = w.y
+                // Without servers, the sources take the right; the left needn't name them.
+                sourcesBox(sources, at: at, x0: x0, x1: split, short: true, names: !servers.isEmpty)
+                w.y = top
+                if servers.isEmpty { sourceListBox(sources, x0: split + cell, x1: x1) } else { resourcesBox(servers, x0: split + cell, x1: x1) }
+            case .large:
+                sourcesBox(sources, at: at, x0: x0, x1: x1, short: false)
+                if !servers.isEmpty { resourcesBox(servers, x0: x0, x1: x1) }
+            case .extraLarge:
+                let split = x(54)
+                let top = w.y
+                sourcesBox(sources, at: at, x0: x0, x1: split, short: false)
+                w.y = top
+                resourcesBox(servers, x0: split + cell, x1: x1)
+            }
+        }
+
+        /// The state, then its sources: by name alone in a narrow box, with
+        /// the big number and each source's servers in a wide one. When
+        /// it was read ends the box.
+        mutating func sourcesBox(_ s: SourceStatusSection, at: Date?, x0: Double, x1: Double, short: Bool, names: Bool = true) {
+            let b = self.b, p = self.p, st = status
+            let room = linesLeft
+            w.box(title(tr("STATUS")), x0: x0, x1: x1, style: style, tint: b.statusTint(st)) { w in
+                w.line([.mark(st.mark, p), .t(" " + CellText.truncate(st.tuiTitle, w.frame.columns - 2), p.tone(st.mark), bold: true)])
+                let n = w.frame.columns
+                if short {
+                    for line in CellText.wrap(s.subtitle, n, lines: 2) { w.line([.t(line, p.muted)]) }
+                    let used = 1 + CellText.wrap(s.subtitle, n, lines: 2).count + 1
+                    let list = s.value.sources
+                    let fit = names ? max(0, room - used) : 0
+                    let shown = list.count <= fit ? list.count : max(0, fit - 1)
+                    for source in list.prefix(shown) {
+                        w.line([.mark(s.mark(source), p), .t(" " + CellText.truncate(source.name, n - 2), p.text)])
+                    }
+                    if list.count > shown, fit > 0 { w.line([.t("  " + tr("+\(list.count - shown) more"), p.muted)]) }
+                } else {
+                    b.sources(&w, s, tone: p.tone(st.mark), short: false, blockHeight: 48, rows: max(0, room - 6))
+                }
+                if let at { w.line([.t(CellText.truncate(Words.asOf(at), n), p.faint)]) }
+            }
+        }
+
+        /// Each source with what its line ends in, when no server is pinned.
+        mutating func sourceListBox(_ s: SourceStatusSection, x0: Double, x1: Double) {
+            let room = linesLeft
+            guard room > 0 else { return }
+            let b = self.b
+            w.box(title(tr("SOURCES"), "\(s.value.sources.count)"), x0: x0, x1: x1, style: style) { w in
+                b.sourceRows(&w, s, rows: s.value.sources.count <= room ? room : max(1, room - 1))
+            }
+        }
+
+        /// The pinned servers' readings, as many as fit.
+        mutating func resourcesBox(_ cards: [ServerCardModel], x0: Double, x1: Double) {
+            let room = linesLeft
+            guard room >= 2 else { return }
+            let b = self.b
+            w.box(title(tr("SERVERS"), "\(cards.count)"), x0: x0, x1: x1, style: style) { b.resources(&$0, cards, lines: room) }
         }
 
         // MARK: Time zones
@@ -299,13 +369,12 @@ struct CellsWidget: View {
                     row(tr("DSK "), c.disk)
                     let place = c.isMissing ? c.place : (c.origin?.badge ?? (c.place.isEmpty ? c.provider : c.place))
                     if let at = c.sampledAt, c.origin != nil {
-                        let time = Words.time(at, in: .current)
-                        w.line([.t(CellText.truncate(tr("As of \(Words.clock(time.time, time.period))"), n), p.faint)])
-                    } else if let at = c.sampledAt, live, c.origin == nil {
+                        w.line([.t(CellText.truncate(Words.asOf(at), n), p.faint)])
+                    } else if let at = c.sampledAt, live {
                         ages.append(LiveAge(right: w.frame.x + Double(n) * w.cell, y: w.y, date: at, color: p.faint, background: nil))
                         w.line([.t(CellText.truncate(place, n - 8), p.muted)])
                     } else {
-                        let age = c.sampledAt.map { c.origin == nil ? Words.span(since: $0, now: c.now, style: .compact) : tr("As of \(Words.time($0, in: .current).time)") } ?? ""
+                        let age = c.sampledAt.map { Words.span(since: $0, now: c.now, style: .compact) } ?? ""
                         w.line([.t(CellText.truncate(place, n - 6), p.muted)], [.t(c.isWithheld && !age.isEmpty ? tr("last \(age)") : age, p.faint)])
                     }
                 }
@@ -314,7 +383,7 @@ struct CellsWidget: View {
                 head(cols)
                 w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: style) { w in
                     b.server(&w, c, bar: 22, observes: true)
-                    if c.origin != nil, let at = c.sampledAt { w.line([.t(tr("As of \(Words.time(at, in: .current).time)"), self.p.faint)]) }
+                    if c.origin != nil, let at = c.sampledAt { w.line([.t(CellText.truncate(Words.asOf(at), w.frame.columns), self.p.faint)]) }
                 }
             }
         }

@@ -221,8 +221,10 @@ public struct ServerCardModel: Sendable, Hashable, Identifiable {
         self.now = now
     }
 
-    /// "host · Oracle · New York", the kind in the panel's language.
-    public var subtitle: String { Words.join([Words.kind(kind), provider, place]) }
+    /// "host · Oracle · New York", the kind in the panel's language; a
+    /// direct source's server says where it's read from in the provider's
+    /// place, "host · Home Beszel".
+    public var subtitle: String { Words.join([Words.kind(kind), provider.isEmpty ? origin?.detail ?? "" : provider, place]) }
 
     /// The time where it is, "5:17 AM", when its place has a time zone.
     public var localTime: String? {

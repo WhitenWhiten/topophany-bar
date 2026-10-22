@@ -14,40 +14,15 @@ struct CellsBodies {
 
     /// The verdict, the big count, every check by health and the observers.
     func status(_ w: inout CellWriter, _ s: StatusSection, short: Bool = false, blockHeight: Double) {
-        if let sources = s.sources {
-            w.line([.mark(s.mark, p), .t(" " + CellText.truncate(sources.title.uppercased(), w.frame.columns - 2), p.text, bold: true)])
-            for line in CellText.wrap(sources.subtitle, w.frame.columns, lines: 2) { w.line([.t(line, p.muted)]) }
-            if !short {
-                for source in sources.value.sources.prefix(4) {
-                    let state = sources.state(source)
-                    let room = w.frame.columns - CellText.width(state) - 3
-                    w.line([.mark(sources.mark(source), p), .t(" " + CellText.truncate(source.name, max(1, room)), p.text)], [.t(state, p.muted)])
-                }
-            }
-            if sources.value.sources.count > 4 { w.line([.t(CellText.truncate(tr("More sources in Settings"), w.frame.columns), p.muted)]) }
-            if let notice = s.notice { for line in CellText.wrap(notice, w.frame.columns, lines: 2) { w.line([.t(line, p.muted)]) } }
-            return
-        }
         let tone = p.tone(s.mark)
         let title = short ? s.tuiShortTitle : s.tuiTitle
         w.line([.mark(s.mark, p), .t(" " + CellText.truncate(title, w.frame.columns - 2), tone, bold: true)])
-        // The big number and the two lines beside it.
-        let big = s.big
-        let bigW = CellWriter.bigWidth(big.digits)
-        let top = w.y
-        w.bigDigits(big.digits, color: tone, x: w.frame.x + w.cell, y: top, height: blockHeight)
-        let textX = w.frame.x + Double(1 + bigW + 2) * w.cell
-        let cols = w.frame.columns - (1 + bigW + 2)
-        let lines: (String, String)
-        if short {
-            let words = big.top.split(separator: " ", maxSplits: 1).map(String.init)
-            lines = (words.first ?? "", words.count > 1 ? words[1] : "")
-        } else {
-            lines = (big.top, big.bottom)
+        if let sources = s.sources {
+            self.sources(&w, sources, tone: tone, short: short, blockHeight: blockHeight)
+            if let notice = s.notice { for line in CellText.wrap(notice, w.frame.columns, lines: 2) { w.line([.t(line, p.muted)]) } }
+            return
         }
-        w.draw([.t(CellText.truncate(lines.0, cols), p.text)], x: textX, y: top + 2)
-        w.draw([.t(CellText.truncate(lines.1, cols), p.muted)], x: textX, y: top + 2 + w.lineHeight)
-        w.y = top + blockHeight
+        big(&w, s.big, tone: tone, short: short, blockHeight: blockHeight)
         let n = w.frame.columns
         if let c = s.counts?.complete, !s.isBlind {
             let total = Double(max(1, c.up + c.warning + c.down + c.unknown))
@@ -95,6 +70,88 @@ struct CellsBodies {
             }
             w.line(left, right)
         }
+    }
+
+    /// The big number and the two lines beside it.
+    func big(_ w: inout CellWriter, _ big: (digits: String, top: String, bottom: String), tone: RGBA, short: Bool, blockHeight: Double) {
+        let bigW = CellWriter.bigWidth(big.digits)
+        let top = w.y
+        w.bigDigits(big.digits, color: tone, x: w.frame.x + w.cell, y: top, height: blockHeight)
+        let textX = w.frame.x + Double(1 + bigW + 2) * w.cell
+        let cols = w.frame.columns - (1 + bigW + 2)
+        let lines: (String, String)
+        if short {
+            let words = big.top.split(separator: " ", maxSplits: 1).map(String.init)
+            lines = (words.first ?? "", words.count > 1 ? words[1] : "")
+        } else {
+            lines = (big.top, big.bottom)
+        }
+        w.draw([.t(CellText.truncate(lines.0, cols), p.text)], x: textX, y: top + 2)
+        w.draw([.t(CellText.truncate(lines.1, cols), p.muted)], x: textX, y: top + 2 + w.lineHeight)
+        w.y = top + blockHeight
+    }
+
+    /// Direct sources under their state: the servers current as the big
+    /// number, then a line per source ending in its servers, or the state
+    /// that asks for a look. Without room for the number, its words.
+    func sources(_ w: inout CellWriter, _ s: SourceStatusSection, tone: RGBA, short: Bool, blockHeight: Double, rows: Int = 4) {
+        let n = w.frame.columns
+        if blockHeight > 0 {
+            big(&w, s.big, tone: tone, short: false, blockHeight: blockHeight)
+        } else {
+            w.line([.t(CellText.truncate(s.subtitle, n), p.muted)])
+        }
+        guard !short else { return }
+        sourceRows(&w, s, rows: rows)
+    }
+
+    /// A line per source, at most `rows`, ending in its servers or the
+    /// state that asks for a look; those left out are counted.
+    func sourceRows(_ w: inout CellWriter, _ s: SourceStatusSection, rows: Int) {
+        let n = w.frame.columns
+        let list = s.value.sources
+        for source in list.prefix(rows) {
+            let detail = s.detail(source)
+            let look = s.needsLook(source)
+            let room = n - CellText.width(detail) - 3
+            w.line([.mark(s.mark(source), p), .t(" " + CellText.truncate(source.name, max(1, room)), p.text)],
+                   [.t(detail, look ? p.text : p.muted, bold: look)])
+        }
+        if list.count > rows {
+            w.line([.t("  " + CellText.truncate(tr("\(list.count - rows) more in Settings"), n - 2), p.muted)])
+        }
+    }
+
+    /// The pinned servers' readings, a line each under a line of labels:
+    /// CPU, memory and disk as their cards read them, "—" where withheld,
+    /// and where there's room a short bar before each. At most `lines`
+    /// lines; servers left out are counted on the last.
+    func resources(_ w: inout CellWriter, _ cards: [ServerCardModel], lines: Int) {
+        let n = w.frame.columns
+        let fit = (n - 2 - 12 - 3 * 5) / 3 - 1
+        let bar = fit >= 3 ? min(8, fit) : 0
+        let column = 4 + (bar > 0 ? bar + 1 : 0)
+        let name = max(4, n - 2 - 3 * (column + 1))
+        let labels = [tr("CPU"), tr("MEM"), tr("DSK ").trimmingCharacters(in: .whitespaces)]
+        w.line([.t(String(repeating: " ", count: 2 + name), p.text)]
+               + labels.map { .t(" " + CellText.padLeft($0, column), p.faint) })
+        let room = max(0, lines - 1)
+        let shown = cards.count <= room ? cards.count : max(0, room - 1)
+        for c in cards.prefix(shown) {
+            var segs: [Seg] = [.mark(c.mark, p), .t(" " + CellText.pad(CellText.truncate(c.name, name), name), p.text)]
+            for m in [c.cpu, c.memory, c.disk] {
+                segs.append(.t(" ", p.text))
+                if bar > 0 {
+                    segs += [.bar(cells: bar, percent: m.percent, limit: m.limit,
+                                  color: m.percent.map { p.load($0, limit: m.limit) } ?? p.track, withheld: m.percent == nil),
+                             .t(" ", p.text)]
+                }
+                segs.append(.t(m.percent.map { CellText.padLeft(Words.percent($0, digits: 0), 4) } ?? "   —",
+                               m.percent == nil ? p.faint : p.text, bold: m.percent != nil))
+            }
+            w.line(segs)
+        }
+        if cards.count > shown { w.line([.t("  " + CellText.truncate(tr("+\(cards.count - shown) more"), n - 2), p.muted)]) }
     }
 
     // MARK: seen from
@@ -198,8 +255,6 @@ struct CellsBodies {
         func entry(_ lead: [Seg], _ title: String, _ titleColor: RGBA, tag: String, nodes: [FleetSection.Node]) -> [Seg] {
             var tail: [Seg] = nodes.prefix(marks).map { .mark($0.mark, p) }
             if nodes.count > marks { tail.append(.t("+\(nodes.count - marks)", p.faint)) }
-            let badge = nodes.first?.origin?.badge ?? ""
-            if !badge.isEmpty { tail.insert(.t(" " + badge + " ", p.muted), at: 0) }
             let room = cw - 2 - tail.reduce(0) { $0 + $1.width } - 1
             let fits = !tag.isEmpty && CellText.width(title) + CellText.width(tag) <= room
             var segs = lead + [.t(CellText.truncate(title, max(1, room)), titleColor)]
@@ -277,13 +332,18 @@ struct CellsBodies {
                 return segs
             }
             func width(_ segs: [Seg]) -> Int { segs.reduce(0) { $0 + $1.width } }
-            var segs = line(c.provider, c.place)
+            // A direct source's server is read from a source, said where
+            // a provider would be; with no place beside it, it shortens.
+            let provider = c.provider.isEmpty ? c.origin?.detail ?? "" : c.provider
+            var segs = line(provider, c.place)
+            if width(segs) > room, c.place.isEmpty, !provider.isEmpty {
+                segs = line(CellText.truncate(provider, max(1, CellText.width(provider) - (width(segs) - room))), "")
+            }
             if width(segs) > room { segs = line("", c.place) }
             if width(segs) > room {
                 let over = width(segs) - room
                 segs = line("", CellText.truncate(c.place, max(1, CellText.width(c.place) - over)))
             }
-            if let origin = c.origin { segs = [.t(CellText.truncate(origin.detail, max(1, room)), p.muted)] }
             w.line(segs, [.t(ageText, p.faint)])
         }
         func shown(_ m: ServerCardModel.Meter) -> String { m.detail.replacingOccurrences(of: " / ", with: "/") }
@@ -742,7 +802,7 @@ struct CellsPanel: View {
                     w.items.append(.fill(CGRect(x: r.minX - w.cell + 1, y: r.minY, width: 2, height: r.height), p.accent, radius: 0))
                 }
             case .fleet(let f):
-                w.box(title(tr("FLEET"), "\(f.nodeCount)"), [.t(" " + tr("\(f.providerCount) providers") + " ", p.muted)],
+                w.box(title(tr("FLEET"), "\(f.nodeCount)"), f.providerCount > 0 ? [.t(" " + tr("\(f.providerCount) providers") + " ", p.muted)] : [],
                       x0: x0, x1: x1, style: .panel) { b.fleet(&$0, f) }
             case .servers(let cards):
                 for c in cards {

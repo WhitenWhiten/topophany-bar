@@ -479,7 +479,7 @@ public enum SectionBuilder {
         case .blind(.leaseLapsed): connection = .notRunning(tr("topo stopped answering"))
         case .blind: connection = .unreachable
         }
-        var view = r.frame?.source == "direct" ? tr("Resource snapshot") : tr("all observers")
+        var view = status.sources?.adapter ?? tr("all observers")
         if !observer.isEmpty {
             view = observer
             if let row = r.row(RowID.seen), case .observers(let list) = row.row.value,

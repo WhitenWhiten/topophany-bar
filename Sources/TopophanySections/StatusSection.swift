@@ -265,10 +265,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The TUI's big number and the two lines beside it.
     public var big: (digits: String, top: String, bottom: String) {
-        if let sources {
-            let n = sources.isCurrent ? sources.value.counts?.current.map(String.init) ?? "--" : "--"
-            return (n, tr("resource samples"), sources.isCurrent ? sources.subtitle : tr("not current"))
-        }
+        if let sources { return sources.big }
         let of = configured.map { tr("of \($0) configured") } ?? ""
         guard let s = verdictState, let c = counts else {
             let last = lastKnown.map { tr("last snapshot \(Words.ago($0.at, now: now))") } ?? tr("nothing current is known")
