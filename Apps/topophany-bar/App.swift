@@ -164,6 +164,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TerminalLauncher.open(model: model, focus: focus)
     }
 
+    func selectSettingsTab(_ i: Int) { settings?.select(i) }
+
     #if DEBUG
     var statusItemImage: NSImage? { statusItem?.frame }
     var statusButton: NSStatusBarButton? { statusItem?.button }
@@ -175,7 +177,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// A scroll in the panel, as the app's own monitor takes it: true when
     /// the map took it.
     func panelScroll(_ e: NSEvent) -> Bool { panel?.scroll(e) ?? false }
-    func selectSettingsTab(_ i: Int) { settings?.select(i) }
     #endif
 
     func applyLoginItem() {
