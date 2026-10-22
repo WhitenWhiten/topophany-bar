@@ -86,9 +86,12 @@ struct CommitField: View {
 
 /// Measure the full form so the window can fit short tabs. Taller forms
 /// scroll within the window's capped height, including while it resizes.
+/// `minHeight` keeps the window tall enough for a sheet it shows.
 struct SettingsForm<Content: View>: View {
+    var minHeight = 0.0
     @ViewBuilder var content: Content
     @Environment(\.fitSettings) private var fit
+    @State private var measured = 0.0
 
     var body: some View {
         ScrollView(.vertical) {
@@ -99,8 +102,10 @@ struct SettingsForm<Content: View>: View {
                 .frame(maxWidth: .infinity)
                 .fixedSize(horizontal: false, vertical: true)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
-                    fit(CGSize(width: settingsWidth, height: $0))
+                    measured = $0
+                    fit(CGSize(width: settingsWidth, height: max($0, minHeight)))
                 }
+                .onChange(of: minHeight) { fit(CGSize(width: settingsWidth, height: max(measured, minHeight))) }
         }
         .scrollIndicators(.visible)
         .scrollBounceBehavior(.basedOnSize)

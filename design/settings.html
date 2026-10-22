@@ -303,17 +303,18 @@
     </div>
     <p class="foot">This is the card everyone else sees for this Mac, read from the collector. Without a host check on the node, its resources read <i>unknown</i>, never zero.</p>`);
 
-  // D1 extends the same native grouped forms; existing collector views stay intact.
+  // Direct: where readings come from, then the profile and its sources in one group.
   const direct = win('Data sources', `
-    <div class="gt">Data sources</div><div class="group">
-      ${row('Read from', 'Connect topo to your Beszel Hub without a Topophany collector', pop('Beszel direct'))}
-      ${row('Direct profile', 'A stable configuration ID', pop('desktop'))}
+    <div class="group" style="margin-top:12px">
+      ${row('Read from', 'Your Beszel Hub, read by topo; no collector needed', pop('Beszel direct'))}
     </div>
-    <div class="gt">Beszel sources</div><div class="group">
-      ${row('Synthetic Home Beszel', 'Beszel · 2 selected servers', '<span class="btn">Edit…</span><span class="btn">Sign in…</span>')}
-      ${row('Add Beszel…', 'Source → test connection → choose servers → save', '')}
+    <div class="gt">Beszel</div><div class="group">
+      ${row('Profile', 'Where topo keeps these sources and their sign-in', pop('desktop — homelab'))}
+      ${row('Home Beszel', 'beszel.home.example · 3 servers · Connected', `<span class="btn">Edit…</span>${ell}`)}
+      ${row('Office Beszel', 'beszel.office.example:8090 · 1 server · <i class="warn" style="font-style:normal">Sign-in required</i>', `<span class="btn">Sign In…</span>${ell}`)}
+      ${row('<i class="btn" style="font-style:normal;font-weight:400">Add Source…</i>', '', '<span class="btn">Retry Now</span>')}
     </div>
-    <p class="foot">Account/password is the default; token is an advanced choice. Existing sources use saved authentication. Passwords live only in the current editing session. Widgets are resource snapshots with an As of time.</p>`);
+    <p class="foot">Up to 20 servers per source and 256 per profile. Only the running bar reads them, and a TUI opened from it reads on its own. Widgets keep the last snapshot, with its time.</p>`);
 
   document.getElementById('wins').innerHTML = [
     [general, '<b>General.</b> The app starts <code>topo monitor stream</code> as its child process. topo holds the credentials; the app only reads frames.'],
@@ -321,7 +322,7 @@
     [appearance, '<b>Appearance.</b> Six themes, one meaning. Each shows its colors, as the panel would draw it now.'],
     [sections, '<b>Sections.</b> Status is fixed. The rest can be turned off and reordered.'],
     [local, '<b>This Mac: local readings.</b> RunCat-style live readings of the machine you’re on.'],
-    [direct, '<b>Data sources.</b> Native controls and the established grouped form. Connection success does not promise resource samples.'],
+    [direct, '<b>Data sources.</b> A source leads with what it needs: Sign In… when its sign-in lapsed, Edit… otherwise; the rest are in its menu. Its editor tests the Hub, then lists the servers it can see to choose from. A connection promises no samples.'],
     [server, '<b>This Mac: as a server.</b> The Servers-tab card for this Mac’s node, plus what it observes.'],
   ].map(([w, c]) => `<div><div class="stagew desk wall-dark">${w}</div><p class="wincap">${c}</p></div>`).join('');
 </script>

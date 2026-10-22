@@ -612,10 +612,15 @@ mode. Data still flows Engine → Kit → Sections → Themes. Platform-independ
 packages remain AppKit-free. There is no new dashboard or WebView.
 
 Settings adds a Data sources toolbar tab using the existing `SettingsForm`, native
-pickers, secure fields, grouped rows and delete confirmation. The editor follows
-source → test → server selection → save. Source ID and system ID carry identity;
-names are presentation only. Advanced fields expose the Go ranges without a TLS
-bypass. Passwords and tokens never become Settings or App Group properties.
+pickers, secure fields, grouped rows and delete confirmation. One row says where
+readings come from; one Beszel group holds the profile, a row per source (its Hub,
+its servers and, while the bar reads it, its state) and Add Source…. A source's
+button is what it needs, Sign In… when its sign-in lapsed and Edit… otherwise; the
+rest are in its menu. The editor sheet sizes to what it shows and follows source →
+test → server selection (checkboxes, "2 of 20 chosen") → save; Settings grows to
+hold it. Source ID and system ID carry identity; names are presentation only.
+Advanced fields expose the Go ranges without a TLS bypass. Passwords and tokens
+never become Settings or App Group properties.
 
 The status card receives `SourceStatusSection`, which describes acquisition rather
 than a collector verdict. Its headline is the state alone: Connected, Needs

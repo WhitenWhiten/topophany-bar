@@ -4715,38 +4715,6 @@
         }
       }
     },
-    "Beszel direct connects topo to your Beszel Hub. No Topophany collector is needed.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel 直接接続は topo を Beszel Hub に接続します。Topophany コレクターは不要です。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel 直连让 topo 连接 Beszel Hub，无需 Topophany collector。"
-          }
-        }
-      }
-    },
-    "Direct profile": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "直接接続プロファイル"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "直连配置"
-          }
-        }
-      }
-    },
     "Profile ID": {
       "localizations": {
         "ja": {
@@ -4759,22 +4727,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "配置 ID"
-          }
-        }
-      }
-    },
-    "Use profile": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "このプロファイルを使用"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "使用此配置"
           }
         }
       }
@@ -4795,22 +4747,6 @@
         }
       }
     },
-    "Beszel sources": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel ソース"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel 来源"
-          }
-        }
-      }
-    },
     "Remove source": {
       "localizations": {
         "ja": {
@@ -4823,102 +4759,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "移除来源"
-          }
-        }
-      }
-    },
-    "Add a Beszel source to choose servers and view resources.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel ソースを追加し、サーバーを選んでリソースを表示します。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加 Beszel 来源，即可选择服务器并查看资源。"
-          }
-        }
-      }
-    },
-    "Add Beszel…": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel を追加…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加 Beszel…"
-          }
-        }
-      }
-    },
-    "Retry sources": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ソースを再試行"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重试来源"
-          }
-        }
-      }
-    },
-    "Each source can select up to 20 servers, with up to 256 per profile. Saving keeps other sources.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ソースごとに最大20台、プロファイルごとに最大256台を選択できます。他のソースは保持されます。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每个来源最多选择 20 台，每份配置最多 256 台。保存会保留其他来源。"
-          }
-        }
-      }
-    },
-    "Closing the bar stops its collection. A terminal window polls independently. Widgets show resource snapshots.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "バーを終了すると収集は停止します。ターミナルは独立して取得します。ウィジェットはリソースのスナップショットを表示します。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "退出菜单栏应用会停止其采集。终端独立轮询，Widget 展示资源快照。"
-          }
-        }
-      }
-    },
-    "This topo does not support Beszel direct. Choose or download a newer topo in General.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "この topo は Beszel 直接接続に未対応です。「一般」で新しい topo を選択またはダウンロードしてください。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "此 topo 不支持 Beszel 直连。请在「通用」中选择或下载新版 topo。"
           }
         }
       }
@@ -4987,22 +4827,6 @@
         }
       }
     },
-    "Authentication": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "認証"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "认证"
-          }
-        }
-      }
-    },
     "Account and password": {
       "localizations": {
         "ja": {
@@ -5015,22 +4839,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "账号和密码"
-          }
-        }
-      }
-    },
-    "Token (advanced)": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "トークン（詳細）"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Token（高级）"
           }
         }
       }
@@ -5131,166 +4939,6 @@
         }
       }
     },
-    "Collection seconds: %lld": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "収集間隔：%lld 秒"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "采集间隔：%lld 秒"
-          }
-        }
-      }
-    },
-    "Timeout seconds: %lld": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "タイムアウト：%lld 秒"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "超时：%lld 秒"
-          }
-        }
-      }
-    },
-    "Stale seconds: %lld": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "期限：%lld 秒"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "过期窗口：%lld 秒"
-          }
-        }
-      }
-    },
-    "Maximum age seconds: %lld": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最大経過時間：%lld 秒"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最长数据年龄：%lld 秒"
-          }
-        }
-      }
-    },
-    "Test connection": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "接続をテスト"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "测试连接"
-          }
-        }
-      }
-    },
-    "Connected, but no systems are visible to this account.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "接続できましたが、このアカウントに表示可能なシステムはありません。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已连接，但此账号下没有可见系统。"
-          }
-        }
-      }
-    },
-    "Discovery returned a limited list. More systems may be available in Beszel.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "検出リストは制限されています。Beszel に他のシステムがある可能性があります。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发现结果为有限列表，Beszel 中可能还有更多系统。"
-          }
-        }
-      }
-    },
-    "Connection verified. Resource samples may arrive after saving.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "接続を確認しました。リソースのサンプルは保存後に届く場合があります。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "连接验证成功，资源样本可能在保存后到达。"
-          }
-        }
-      }
-    },
-    "The saved profile was read again. Review your source and selection before retrying; no changes are overwritten automatically.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存済みプロファイルを再読み込みしました。再試行前にソースと選択を確認してください。自動上書きはしません。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已重新读取保存的配置。请在重试前核对来源和选择；不会自动覆盖修改。"
-          }
-        }
-      }
-    },
-    "I have reviewed the profile": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "プロファイルを確認しました"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "我已核对配置"
-          }
-        }
-      }
-    },
     "Manage profiles and sources in Data sources": {
       "localizations": {
         "ja": {
@@ -5383,6 +5031,728 @@
           "stringUnit": {
             "state": "translated",
             "value": "已保存的配置"
+          }
+        }
+      }
+    },
+    "A Topophany collector, through topo’s saved profile": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo の保存済みプロファイルを通じて、Topophany コレクターから"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通过 topo 已保存的配置，读取 Topophany 采集器"
+          }
+        }
+      }
+    },
+    "Your Beszel Hub, read by topo; no collector needed": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beszel Hub を topo が読み取ります。コレクターは不要です"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "由 topo 读取你的 Beszel Hub，无需采集器"
+          }
+        }
+      }
+    },
+    "topo’s built-in example network": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo に組み込まれたサンプルのネットワーク"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 内置的示例网络"
+          }
+        }
+      }
+    },
+    "This source isn’t supported; choose another": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このソースには対応していません。別のものを選んでください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不支持此来源，请选择其他来源"
+          }
+        }
+      }
+    },
+    "This topo can’t read Beszel": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この topo は Beszel を読み取れません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 topo 无法读取 Beszel"
+          }
+        }
+      }
+    },
+    "Choose or download a newer topo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "より新しい topo を選ぶか、ダウンロードしてください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择或下载更新版本的 topo"
+          }
+        }
+      }
+    },
+    "Checking topo…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo を確認中…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在检查 topo…"
+          }
+        }
+      }
+    },
+    "New profile": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいプロファイル"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新配置"
+          }
+        }
+      }
+    },
+    "Saved when you add its first source": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最初のソースを追加したときに保存されます"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加第一个来源时保存"
+          }
+        }
+      }
+    },
+    "No sources yet": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソースはまだありません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无来源"
+          }
+        }
+      }
+    },
+    "Add a Beszel Hub, then choose its servers": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beszel Hub を追加して、そのサーバーを選んでください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加一个 Beszel Hub，然后选择其服务器"
+          }
+        }
+      }
+    },
+    "Add Source…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソースを追加…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加来源…"
+          }
+        }
+      }
+    },
+    "Retry Now": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今すぐ再試行"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即重试"
+          }
+        }
+      }
+    },
+    "Up to 20 servers per source and 256 per profile. Only the running bar reads them, and a TUI opened from it reads on its own. Widgets keep the last snapshot, with its time.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 ソースにつき最大 20 台、1 プロファイルにつき最大 256 台。読み取るのは起動中のバーだけで、そこから開いた TUI は別に読み取ります。ウィジェットには最後のスナップショットが、その時刻とともに残ります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每个来源最多 20 台服务器，每个配置最多 256 台。只有运行中的菜单栏应用会读取它们，从它打开的 TUI 会另行读取。小组件保留最后一次快照及其时间。"
+          }
+        }
+      }
+    },
+    "Where topo keeps these sources and their sign-in": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo がこれらのソースとサインイン情報を保管する場所"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 保存这些来源及其登录信息的位置"
+          }
+        }
+      }
+    },
+    "%@ (new)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（新規）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（新）"
+          }
+        }
+      }
+    },
+    "New Profile…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいプロファイル…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建配置…"
+          }
+        }
+      }
+    },
+    "Edit…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "編集…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑…"
+          }
+        }
+      }
+    },
+    "Sign In Again…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再度サインイン…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新登录…"
+          }
+        }
+      }
+    },
+    "Remove…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "削除…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除…"
+          }
+        }
+      }
+    },
+    "More for %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ のその他の操作"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 的更多操作"
+          }
+        }
+      }
+    },
+    "New Beszel source": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい Beszel ソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新的 Beszel 来源"
+          }
+        }
+      }
+    },
+    "Home": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自宅"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "家中"
+          }
+        }
+      }
+    },
+    "Sign in with": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サインイン方法"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录方式"
+          }
+        }
+      }
+    },
+    "API token": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API トークン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API Token"
+          }
+        }
+      }
+    },
+    "Email": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールアドレス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "邮箱"
+          }
+        }
+      }
+    },
+    "Test": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テスト"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "测试"
+          }
+        }
+      }
+    },
+    "Connection": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接"
+          }
+        }
+      }
+    },
+    "Testing…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テスト中…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在测试…"
+          }
+        }
+      }
+    },
+    "Verified · %lld servers visible": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Verified · %lld server visible"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Verified · %lld servers visible"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認済み · サーバー %lld 台が見えます"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已验证 · 可见 %lld 台服务器"
+          }
+        }
+      }
+    },
+    "Test it to choose its servers": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テストするとサーバーを選べます"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "测试后即可选择服务器"
+          }
+        }
+      }
+    },
+    "No servers are visible to this account": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアカウントから見えるサーバーはありません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此账号看不到任何服务器"
+          }
+        }
+      }
+    },
+    "%lld of %lld chosen": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$lld 台中 %1$lld 台を選択"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已选 %1$lld / %2$lld 台"
+          }
+        }
+      }
+    },
+    "The Hub listed only some of its servers. More may be in Beszel.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hub が返したのは一部のサーバーだけです。Beszel にはほかにもあるかもしれません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hub 只列出了部分服务器，Beszel 中可能还有更多。"
+          }
+        }
+      }
+    },
+    "Readings can take a moment to arrive after saving.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存後、読み取り値が届くまで少し時間がかかることがあります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存后，读数可能需要片刻才会到达。"
+          }
+        }
+      }
+    },
+    "I’ve Reviewed It": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認しました"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我已确认"
+          }
+        }
+      }
+    },
+    "The profile was read again. Look it over before trying again; nothing is overwritten on its own.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロファイルを読み直しました。再試行する前に確認してください。自動で上書きされることはありません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已重新读取配置。重试前请先检查；不会自动覆盖任何内容。"
+          }
+        }
+      }
+    },
+    "Choose the Hub's certificate authority, as a PEM file": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hub の認証局を PEM ファイルで選んでください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择 Hub 的证书颁发机构（PEM 文件）"
+          }
+        }
+      }
+    },
+    "A PEM file, for a Hub with its own certificate authority": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "独自の認証局を使う Hub 向けの PEM ファイル"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "适用于使用自有证书颁发机构的 Hub 的 PEM 文件"
+          }
+        }
+      }
+    },
+    "Collect every": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "収集間隔"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "采集间隔"
+          }
+        }
+      }
+    },
+    "Time out after": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイムアウト"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超时"
+          }
+        }
+      }
+    },
+    "Contact valid for": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続の有効期間"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接有效期"
+          }
+        }
+      }
+    },
+    "Samples valid for": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サンプルの有効期間"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "样本有效期"
+          }
+        }
+      }
+    },
+    "s": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "秒"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "秒"
           }
         }
       }
