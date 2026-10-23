@@ -4,6 +4,7 @@ import ApplicationServices
 import ServiceManagement
 import TopophanyEngine
 import TopophanyKit
+import TopophanyThemes
 import TopophanyWidgets
 
 /// Debug builds take commands as distributed notifications named
@@ -32,6 +33,11 @@ import TopophanyWidgets
 ///     trace S               Settings' frame and This Mac's mode, for S seconds
 ///     leaptrace             one quick scroll, with timed scroll offsets,
 ///                           to leaptrace.csv
+///     wheeltrace DY         wheel/trackpad scrolling by DY points, with
+///                           the same timed samples
+///     maptrace in|out       focus and zoom the map, with timed samples
+///     perf start|stop       record panel rebuild and drawing costs, then
+///                           write performance.json
 ///     ax                    the open panel's accessibility tree
 ///     windows               each window's number and frame, the key window,
 ///                           and whether the app is active
@@ -181,8 +187,30 @@ enum DebugDriver {
             guard let win = d.settingsWindow else { return }
             trace(win, model: d.model, seconds: num(1) ?? 2)
         case "leaptrace":
-            guard let win = d.panelWindow else { return }
-            traceLeap(win)
+            guard let win = d.panelWindow, win.isVisible else { return }
+            traceLeap(win) { _ in d.model.leaps += 1 }
+        case "wheeltrace":
+            guard let win = d.panelWindow, win.isVisible else { return }
+            let dy = num(1) ?? 500
+            traceLeap(win) { scrollView in
+                let local = scrollView.convert(NSPoint(x: scrollView.bounds.midX, y: scrollView.bounds.midY), to: nil)
+                let point = CGPoint(x: local.x, y: win.frame.height - local.y)
+                Task { await scroll(win, at: point, dy: dy, dx: 0, panelOf: d) }
+            }
+        case "maptrace":
+            guard let win = d.panelWindow, win.isVisible, d.model.panel.map != nil else { return }
+            let key = w.count > 1 && w[1] == "out" ? "down" : "up"
+            d.model.focus = "map"
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(400))
+                d.panelKey("return")
+                traceLeap(win) { _ in d.panelKey(key) }
+            }
+        case "perf":
+            if w.count > 1, w[1] == "start" { PanelDiagnostics.start() }
+            else {
+                try? PanelDiagnostics.stop().write(to: out.appending(path: "performance.json"), atomically: true, encoding: .utf8)
+            }
         case "login":
             if w.count > 1 { d.model.update { $0.openAtLogin = w[1] == "on" } }
             let status = switch SMAppService.mainApp.status {
@@ -373,7 +401,7 @@ enum DebugDriver {
     }
 
     /// Samples the real scroll position and main-thread stalls during a leap.
-    static func traceLeap(_ win: NSWindow) {
+    static func traceLeap(_ win: NSWindow, leap: @escaping @MainActor (NSScrollView) -> Void) {
         func findScroll(_ view: NSView) -> NSScrollView? {
             if let scroll = view as? NSScrollView { return scroll }
             for child in view.subviews {
@@ -381,18 +409,15 @@ enum DebugDriver {
             }
             return nil
         }
-        guard let root = win.contentView, let scroll = findScroll(root),
-              let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
-                                          timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: win.windowNumber,
-                                          context: nil, characters: " ", charactersIgnoringModifiers: " ",
-                                          isARepeat: false, keyCode: 49) else { return }
+        guard let root = win.contentView, let scroll = findScroll(root) else { return }
         Task { @MainActor in
             let start = ProcessInfo.processInfo.systemUptime
-            var lines = ["milliseconds,offset,content,visible"]
-            NSApp.postEvent(event, atStart: false)
+            var lines = ["milliseconds,offset,content,visible,windowWidth,windowHeight,hostingWidth,hostingHeight"]
+            leap(scroll)
             repeat {
                 let elapsed = (ProcessInfo.processInfo.systemUptime - start) * 1000
-                lines.append("\(elapsed),\(scroll.contentView.bounds.minY),\(scroll.documentView?.frame.height ?? 0),\(scroll.contentSize.height)")
+                lines.append("\(elapsed),\(scroll.contentView.bounds.minY),\(scroll.documentView?.frame.height ?? 0),\(scroll.contentSize.height),"
+                             + "\(win.frame.width),\(win.frame.height),\(root.bounds.width),\(root.bounds.height)")
                 try? await Task.sleep(for: .milliseconds(4))
             } while ProcessInfo.processInfo.systemUptime - start < 1.2
             try? lines.joined(separator: "\n").write(to: out.appending(path: "leaptrace.csv"), atomically: true, encoding: .utf8)

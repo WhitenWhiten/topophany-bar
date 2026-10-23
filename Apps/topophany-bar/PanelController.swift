@@ -39,6 +39,10 @@ final class PanelController: NSObject {
     /// once it has moved, whether the map takes it to its end.
     private var scrollBeganOver = false
     private var scrollOnMap: Bool?
+    /// Coalesce SwiftUI's initial measurement passes without forcing its
+    /// layout synchronously from every timer and incoming data frame.
+    private var pendingSize: CGSize?
+    private var layoutTask: Task<Void, Never>?
 
     /// The band at the panel's foot that drags its height.
     static let footBand = 6.0
@@ -95,6 +99,9 @@ final class PanelController: NSObject {
     func close() {
         guard let p = panel, isOpen else { return }
         isOpen = false
+        layoutTask?.cancel()
+        layoutTask = nil
+        pendingSize = nil
         model.setPanelVisible(false)
         turn += 1
         let closing = turn
@@ -121,8 +128,10 @@ final class PanelController: NSObject {
     }
 
     func update() {
-        guard isOpen else { return }
-        layout()
+        guard isOpen, let panel else { return }
+        // Data refreshes can move the menu bar anchor or change the theme,
+        // but only SwiftUI's size callback needs to resize the window.
+        layout(size: panel.frame.size)
     }
 
     private func makePanel() -> KeyPanel {
@@ -139,9 +148,17 @@ final class PanelController: NSObject {
         p.animationBehavior = .none
         p.isReleasedWhenClosed = false
         p.foot = { [weak self] e in self?.foot(e) == true }
-        let root = PanelRoot(model: model, actions: panelActions, maxHeight: { [weak self] in self?.maxHeight ?? 800 }, map: map)
+        let root = PanelRoot(model: model, actions: panelActions, maxHeight: { [weak self] in self?.maxHeight ?? 800 }, map: map,
+                             onSizeChange: { [weak self] size in self?.contentSizeChanged(size) })
         let h = NSHostingView(rootView: root)
-        h.sizingOptions = [.intrinsicContentSize]
+        // The root reports its ideal size. Intrinsic sizing would measure
+        // the whole view graph again whenever any reading changes.
+        h.sizingOptions = []
+        h.frame = NSRect(origin: .zero, size: p.contentLayoutRect.size)
+        h.autoresizingMask = [.width, .height]
+        h.wantsLayer = true
+        h.layer?.cornerCurve = .continuous
+        h.layer?.masksToBounds = true
         p.contentView = h
         hosting = h
         return p
@@ -181,22 +198,58 @@ final class PanelController: NSObject {
         return h.fittingSize.height
     }
 
-    private func layout() {
+    private func contentSizeChanged(_ size: CGSize) {
+        guard isOpen, size.width > 0, size.height > 0 else { return }
+        pendingSize = size
+        guard layoutTask == nil else { return }
+        layoutTask = Task { @MainActor [weak self] in
+            // Leave SwiftUI's layout pass before changing its host window.
+            await Task.yield()
+            guard let self, !Task.isCancelled else { return }
+            self.layoutTask = nil
+            guard self.isOpen, let size = self.pendingSize else { return }
+            self.pendingSize = nil
+            self.layout(size: size)
+        }
+    }
+
+    private func layout(size measuredSize: CGSize? = nil) {
+        #if DEBUG
+        let interval = PanelDiagnostics.interval("panel.layout")
+        defer { interval?.end() }
+        #endif
         guard let p = panel, let h = hosting else { return }
-        h.layoutSubtreeIfNeeded()
-        let size = h.fittingSize
+        let size: CGSize
+        if let measuredSize {
+            size = measuredSize
+        } else {
+            #if DEBUG
+            PanelDiagnostics.count("panel.measure")
+            #endif
+            // Opening needs one initial measurement before ordering front.
+            // fittingSize is zero when intrinsic sizing is disabled, so
+            // enable it for this measurement alone, then return ownership
+            // of the window's size to the geometry callback.
+            h.sizingOptions = [.intrinsicContentSize]
+            h.layoutSubtreeIfNeeded()
+            size = h.fittingSize
+            h.sizingOptions = []
+        }
+        guard size.width > 0, size.height > 0 else { return }
         guard let s = screen else { return }
         // The glass alone gives the window a square shadow, edged in black
         // past the corners; masked, the shadow follows the panel's shape.
-        h.wantsLayer = true
-        h.layer?.cornerRadius = Renderers.renderer(for: model.theme).panelCornerRadius(model.theme)
-        h.layer?.cornerCurve = .continuous
-        h.layer?.masksToBounds = true
+        let radius = CGFloat(Renderers.renderer(for: model.theme).panelCornerRadius(model.theme))
+        if h.layer?.cornerRadius != radius {
+            h.layer?.cornerRadius = radius
+            p.invalidateShadow()
+        }
         let bf = anchor?.window?.frame ?? NSRect(x: s.frame.midX, y: s.visibleFrame.maxY, width: 0, height: 0)
         var x = bf.midX - size.width / 2
         x = min(max(x, s.visibleFrame.minX + 8), s.visibleFrame.maxX - size.width - 8)
         let top = min(bf.minY, s.visibleFrame.maxY) - 5
-        p.setFrame(NSRect(x: x.rounded(), y: (top - size.height).rounded(), width: size.width, height: size.height), display: true)
+        let frame = NSRect(x: x.rounded(), y: (top - size.height).rounded(), width: size.width, height: size.height)
+        if p.frame != frame { p.setFrame(frame, display: true) }
     }
 
     // MARK: the foot
@@ -222,7 +275,6 @@ final class PanelController: NSObject {
             guard let d = footDrag else { return false }
             footDrag?.moved = true
             height.dragged = min(screenHeight, max(height.shortest, d.height + y - d.pointer))
-            layout()
             return true
         case .leftMouseUp:
             guard let d = footDrag else { return false }
@@ -247,6 +299,11 @@ final class PanelController: NSObject {
         if let m = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown], handler: { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, self.anchor?.window?.frame.contains(NSEvent.mouseLocation) != true else { return }
+                #if DEBUG
+                // A scripted performance capture stays visible while the
+                // developer uses another app; explicit close still works.
+                guard !PanelDiagnostics.isRecording else { return }
+                #endif
                 self.close()
             }
         }) { monitors.append(m) }
@@ -449,6 +506,7 @@ struct PanelRoot: View {
     var map: MapViewport?
     /// Another panel than the model's, to measure.
     var shown: PanelModel?
+    var onSizeChange: ((CGSize) -> Void)?
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.colorScheme) private var systemScheme
@@ -474,6 +532,8 @@ struct PanelRoot: View {
             .environment(\.mapViewport, map)
             .environment(\.locale, L10n.locale)
             .preferredColorScheme(window)
+            .fixedSize()
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { onSizeChange?($0) }
             .overlay(alignment: .bottom) {
                 // The foot, where the panel's height is dragged.
                 Color.clear.frame(height: PanelController.footBand).contentShape(Rectangle())

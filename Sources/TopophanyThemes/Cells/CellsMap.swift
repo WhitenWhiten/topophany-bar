@@ -107,7 +107,9 @@ struct CellsMap {
                     }
                 }
             }
-            return byColor.sorted { $0.key.a < $1.key.a }.map { .points($0.value, $0.key, diameter: diameter) }
+            return byColor.sorted {
+                ($0.key.a, $0.key.r, $0.key.g, $0.key.b) < ($1.key.a, $1.key.r, $1.key.g, $1.key.b)
+            }.map { .points($0.value, $0.key, diameter: diameter) }
         }
     }
 

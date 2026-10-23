@@ -96,4 +96,29 @@ import TopophanySections
         dots.pan(by: CGSize(width: -36, height: 0))
         #expect(abs(dots.transform.offset.x + 10) < 1e-9)
     }
+
+    @Test func preparedCoastSamplesMatchEveryOriginalSample() throws {
+        let map = try #require(MapSnapshots().panel(.incidents).map)
+        let size = CGSize(width: 330, height: 172)
+        let pitch = 2.6
+        let x = Array(stride(from: -pitch, through: size.width + pitch, by: pitch))
+        let y = Array(stride(from: -pitch, through: size.height + pitch, by: pitch))
+        for frame in [MapSection.Frame.fit, .world] {
+            var map = map
+            map.frame = frame
+            for zoom in [1.0, 1.5, 4, 8] {
+                let transform = MapTransform().zoomed(by: zoom, about: CGPoint(x: 100, y: 80))
+                let scene = GeoScene(map, size: size, transform: transform)
+                let prepared = LandCoverage(scene: scene, x: x, y: y, pitch: pitch)
+                var mismatches = 0
+                for (row, py) in y.enumerated() {
+                    for (column, px) in x.enumerated() {
+                        let original = scene.land(around: CGPoint(x: px, y: py), width: pitch, height: pitch, samples: 3)
+                        if prepared.coverage(column: column, row: row) != original { mismatches += 1 }
+                    }
+                }
+                #expect(mismatches == 0, "\(frame), \(zoom)×")
+            }
+        }
+    }
 }

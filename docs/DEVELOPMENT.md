@@ -29,6 +29,56 @@ open build/DerivedData/Build/Products/Debug/topophany-bar.app
 
 The commands above build ad hoc with no developer team or entitlements: the app runs, but macOS does not load the widgets. To build with widgets, omit `TOPOPHANY_SIGN=NO` and set `TOPOPHANY_TEAM` to your own Apple Developer Team ID. The app and widget extension need a shared App Group belonging to that team. `scripts/release.sh` signs with Developer ID, notarizes, and packs the app into a disk image to drag to Applications. `scripts/make-dmg.sh APP OUT.dmg` packs any build the same way, for a look; `swift scripts/make-dmg-background.swift` redraws the image's window.
 
+## Panel performance
+
+Build Debug as above, then measure the real native scroll view with synthetic
+data and temporary settings. The installed app, saved connection and credentials
+are left alone. Both theme renderers run by default; `--theme` can select any
+built-in theme, and `--language` accepts `en`, `ja` or `zh-Hans`.
+
+```sh
+python3 scripts/check-panel-performance.py \
+  build/DerivedData/Build/Products/Debug/topophany-bar.app \
+  --input leap --out build/panel-performance/leaps
+python3 scripts/check-panel-performance.py \
+  build/DerivedData/Build/Products/Debug/topophany-bar.app \
+  --input wheel --out build/panel-performance/wheel
+```
+
+Each run records ten downward and upward scrolls, actual offsets, window and
+hosting bounds, main-thread sampling gaps, view rebuilds and drawing costs.
+The script warms the first render, rejects stationary scrolls and invalid hosting
+bounds, and saves CSV samples and JSON summaries. Sampling gaps detect main-thread
+stalls; they are not GPU frame-rate measurements. An optional `--max-gap-ms 25`
+enforces a local stall budget. `--topo /ABS/PATH/topo` uses that executable's
+synthetic preview network instead of the bundled fixture.
+`--input map` measures keyboard zoom in both directions, including its drawing
+costs; it requires a scenario with a map.
+
+Keep these boundaries when changing the panel:
+
+- The host enables intrinsic sizing only for its initial measurement. Later
+  window sizes come from SwiftUI geometry; data and clock refreshes must never
+  force `fittingSize`, synchronous subtree layout or an unchanged window redraw.
+- `PanelScroller` owns scroll-position writebacks. Content views do not observe
+  offsets or scroll edges; the footer and fixed-size fade mask observe edges.
+- Terminal canvases have the actual dimensions of their section or pinned band.
+  Unchanged sections reuse both their prepared drawing and their raster. Cache
+  keys include data, theme, language, focus and absolute position; map hit areas
+  and focus regions must remain identical to an uncached drawing.
+- Coast antialiasing uses the same nine samples per dot during map zooms.
+  `LandCoverage` prepares each projected row and column once; avoid restoring
+  an inverse projection for every subsample in the animation loop. Keyboard
+  zoom has a fixed duration, so a spring's long tail cannot keep repainting
+  the map after a step. Live canvases allow asynchronous rasterization.
+
+`PanelScrollTests` exercises the real hosted SwiftUI binding graph.
+`PanelLayoutTests` checks window bounds after opening, resizing, theme changes,
+data refreshes and reopening. Pixel tests cover Terminal cropping in all three
+languages. The debug driver's `perf start` keeps its panel open during a capture;
+`perf stop` writes `performance.json` and restores ordinary outside-click closing.
+All performance probes are excluded from Release builds.
+
 ## README screenshots
 
 The two README illustrations render the production SwiftUI views with fixed English demo data and a fixed clock. The panel uses the `degraded` fixture: 66 of 68 checks pass, two warn, none fail, and there are no open incidents. The widget gallery uses the `clear` fixture: all 68 checks pass. A few older service samples can still show a past failure.

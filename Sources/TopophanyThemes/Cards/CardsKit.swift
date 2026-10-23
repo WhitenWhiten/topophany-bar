@@ -3,7 +3,7 @@ import TopophanySections
 
 /// The cards renderer's colors for one appearance. Native leaves every
 /// slot to the system; a theme of this renderer may fill any of them.
-struct CardsPalette {
+struct CardsPalette: Equatable {
     var isDark: Bool
     var l1: Color
     var l2: Color
@@ -137,7 +137,7 @@ struct PressStyle: ButtonStyle {
 
 /// The text sizes of the cards renderer, scaled by the Text size setting,
 /// in the theme's family.
-struct CardsType {
+struct CardsType: Equatable {
     var scale: Double
     var design: Font.Design = .default
 

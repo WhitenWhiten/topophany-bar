@@ -101,7 +101,7 @@ struct MapCanvas: View {
     var body: some View {
         let transform = viewport?.transform ?? .identity
         let painter = CardsMapPainter(map: map, p: p, t: t, detail: detail, vibrant: vibrant)
-        let canvas = MapLayer(painter: painter, transform: transform)
+        let canvas = MapLayer(painter: painter, transform: transform, asynchronous: viewport != nil)
             .clipped()
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(MapWords.summary(map))
@@ -184,6 +184,7 @@ struct MapCanvas: View {
 struct MapLayer: View, @MainActor Animatable {
     var painter: CardsMapPainter
     var transform: MapTransform
+    var asynchronous = false
 
     var animatableData: AnimatablePair<Double, AnimatablePair<Double, Double>> {
         get { AnimatablePair(transform.zoom, AnimatablePair(transform.offset.x, transform.offset.y)) }
@@ -191,7 +192,7 @@ struct MapLayer: View, @MainActor Animatable {
     }
 
     var body: some View {
-        Canvas { ctx, size in painter.draw(ctx, size: size, transform: transform) }
+        Canvas(rendersAsynchronously: asynchronous) { ctx, size in painter.draw(ctx, size: size, transform: transform) }
     }
 }
 

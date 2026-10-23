@@ -13,7 +13,6 @@ struct CardsPanel: View {
     /// The panel's height, and the scroll's within it, as last laid out.
     @State private var panelHeight: Double?
     @State private var scrollFrame: Double = 0
-    @State private var position = ScrollPosition(edge: .top)
     @State private var leapState = PanelScrollState()
 
     var p: CardsPalette { CardsPalette.resolve(ctx) }
@@ -35,6 +34,9 @@ struct CardsPanel: View {
     var scrolls: Bool { ctx.maxHeight != nil && scrollHeight > scrollLimit }
 
     var body: some View {
+        #if DEBUG
+        let _ = PanelDiagnostics.count("cards.body")
+        #endif
         let p = self.p
         VStack(spacing: gap) {
             CardsHeader(chrome: model.chrome, p: p, t: t)
@@ -45,7 +47,7 @@ struct CardsPanel: View {
                 CardsStatusCard(status: model.status, alert: model.alert, download: model.download, p: p, t: t)
                 sections(p)
             }
-            CardsFooter(chrome: model.chrome, p: p, t: t, leapUp: scrolls ? leapState.atEnd : nil, leap: leap)
+            CardsFooter(chrome: model.chrome, p: p, t: t, scrollState: scrolls ? leapState : nil, leap: leap)
         }
         .padding(8)
         .onGeometryChange(for: Double.self) { $0.size.height } action: { panelHeight = $0 }
@@ -57,7 +59,7 @@ struct CardsPanel: View {
     @ViewBuilder
     func sections(_ p: CardsPalette) -> some View {
         ForEach(model.sections) { s in
-            CardsSection(section: s, ctx: ctx, p: p, t: t)
+            CardsSection(section: s, p: p, t: t, focus: ctx.focus).equatable()
         }
     }
 
@@ -65,34 +67,22 @@ struct CardsPanel: View {
     /// beneath Status when it's pinned and with it otherwise, and bring the
     /// keyboard's focus into view.
     func scrolling(_ p: CardsPalette) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical) {
-                VStack(spacing: gap) {
-                    if !model.pinStatus { CardsStatusCard(status: model.status, alert: model.alert, download: model.download, p: p, t: t) }
-                    sections(p)
-                }
-                .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
+        PanelScroller(state: leapState, height: min(scrollHeight, scrollLimit), panelHeight: ctx.maxHeight ?? 0,
+                      focus: ctx.focus, leaps: ctx.leaps) {
+            VStack(spacing: gap) {
+                if !model.pinStatus { CardsStatusCard(status: model.status, alert: model.alert, download: model.download, p: p, t: t) }
+                sections(p)
             }
-            .scrollIndicators(.never)
-            .scrollBounceBehavior(.basedOnSize)
-            .scrollPosition($position)
-            .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState.update(new) }
-            .frame(height: min(scrollHeight, scrollLimit))
-            .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollFrame = $0 }
-            .mask { ScrollEdgeFade(top: scrolls && !leapState.atTop, bottom: scrolls && !leapState.atEnd) }
-            .onChange(of: ctx.focus) { _, focus in
-                guard let focus else { return }
-                withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { proxy.scrollTo(focus) }
-            }
-            .onChange(of: ctx.leaps) { leap() }
+            .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollHeight = $0 }
         }
+        .onGeometryChange(for: Double.self) { $0.size.height } action: { scrollFrame = $0 }
+        .mask { PanelScrollFade(state: leapState, enabled: scrolls) }
     }
 
     /// About half the panel down, or from the end back to the top.
     func leap() {
         guard scrolls, let panel = ctx.maxHeight else { return }
-        let y = leapState.target(panel: panel)
-        withAnimation(leapState.animation(panel: panel, reduceMotion: reduceMotion)) { position.scrollTo(y: y) }
+        leapState.leap(panel: panel, reduceMotion: reduceMotion)
     }
 }
 
@@ -104,9 +94,9 @@ struct ScrollEdgeFade: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            fade([.clear, .black.opacity(0.55), .black]).frame(height: top ? 12 : 0)
+            fade(top ? [.clear, .black.opacity(0.55), .black] : [.black, .black, .black]).frame(height: 12)
             Color.black
-            fade([.black, .black.opacity(0.55), .clear]).frame(height: bottom ? 20 : 0)
+            fade(bottom ? [.black, .black.opacity(0.55), .clear] : [.black, .black, .black]).frame(height: 20)
         }
         .animation(.easeOut(duration: 0.2), value: top)
         .animation(.easeOut(duration: 0.2), value: bottom)
@@ -281,11 +271,13 @@ struct CardsFooter: View {
     var t: CardsType
     /// While the panel scrolls, the quick scroll: whether it's at the end
     /// and goes back up.
-    var leapUp: Bool?
+    var leapUp: Bool? = nil
+    var scrollState: PanelScrollState?
     var leap: () -> Void = {}
     @Environment(\.panelActions) private var actions
 
     var body: some View {
+        let leapUp = scrollState.map { $0.atEnd } ?? leapUp
         HStack {
             let color: Color = chrome.isLive ? p.up : (chrome.connection == .starting ? p.unknown : p.down)
             HStack(spacing: 7) {
@@ -565,25 +557,25 @@ struct CardsSourceRows: View {
 
 // MARK: sections
 
-struct CardsSection: View {
+struct CardsSection: View, Equatable {
     var section: PanelModel.Section
-    var ctx: RenderContext
     var p: CardsPalette
     var t: CardsType
+    var focus: String?
 
     var body: some View {
         switch section {
-        case .seen(let s): CardsSeen(seen: s, p: p, t: t, focus: ctx.focus)
-        case .attention(let a): CardsAttention(attention: a, p: p, t: t, focus: ctx.focus)
-        case .applications(let a): CardsApplications(apps: a, p: p, t: t, focus: ctx.focus)
+        case .seen(let s): CardsSeen(seen: s, p: p, t: t, focus: focus)
+        case .attention(let a): CardsAttention(attention: a, p: p, t: t, focus: focus)
+        case .applications(let a): CardsApplications(apps: a, p: p, t: t, focus: focus)
         case .fleet(let f): CardsFleet(fleet: f, p: p, t: t)
-        case .map(let m): CardsMapCard(map: m, p: p, t: t, focused: ctx.focus == "map")
+        case .map(let m): CardsMapCard(map: m, p: p, t: t, focused: focus == "map")
         case .services(let cards):
             Card(p: p) {
                 CardTitle(symbol: "waveform.path.ecg", title: tr("Services"), meta: tr("\(cards.count) pinned services"), p: p, t: t)
                 ForEach(Array(cards.enumerated()), id: \.element.id) { i, c in
                     if i > 0 { Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 10) }
-                    CardsService(card: c, p: p, t: t, focused: ctx.focus == "service:" + c.id)
+                    CardsService(card: c, p: p, t: t, focused: focus == "service:" + c.id)
                 }
             }
         case .servers(let cards):
@@ -591,7 +583,7 @@ struct CardsSection: View {
                 CardTitle(symbol: "server.rack", title: tr("Servers"), meta: tr("\(cards.count) pinned"), p: p, t: t)
                 ForEach(Array(cards.enumerated()), id: \.element.id) { i, c in
                     if i > 0 { Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 10) }
-                    CardsServer(card: c, p: p, t: t, focused: ctx.focus == "server:" + c.id)
+                    CardsServer(card: c, p: p, t: t, focused: focus == "server:" + c.id)
                 }
             }
         case .zones(let z):
@@ -599,7 +591,7 @@ struct CardsSection: View {
         case .mac(.server(let c, let node)):
             Card(p: p) {
                 CardTitle(symbol: "apple.logo", title: tr("This Mac"), meta: tr("as a server · \(node)"), p: p, t: t)
-                CardsServer(card: c, symbol: "apple.logo", p: p, t: t, focused: ctx.focus == "server:" + c.id)
+                CardsServer(card: c, symbol: "apple.logo", p: p, t: t, focused: focus == "server:" + c.id)
                 if let o = c.observes.first {
                     VStack(spacing: 0) {
                         Rectangle().fill(p.sep).frame(height: 0.5).padding(.top, 8)

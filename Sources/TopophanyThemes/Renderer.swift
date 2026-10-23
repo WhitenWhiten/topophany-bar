@@ -4,7 +4,7 @@ import TopophanySections
 
 /// How a surface is drawn: the theme, light or dark, and what the system
 /// asks for.
-public struct RenderContext: Sendable {
+public struct RenderContext: Sendable, Equatable {
     public enum Backdrop: Sendable, Hashable {
         /// On screen: real materials behind the panel.
         case live

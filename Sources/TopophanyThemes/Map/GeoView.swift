@@ -66,15 +66,26 @@ struct GeoView: Sendable, Hashable {
     /// The inverse of `project`; nil off the world and in a fold's seam,
     /// which is left blank.
     func at(_ px: Double, _ py: Double) -> (lat: Double, lon: Double)? {
+        guard let lat = latitude(at: py), let lon = longitude(at: px) else { return nil }
+        return (lat, lon)
+    }
+
+    /// The projection is separable: a raster can convert each column and
+    /// row once instead of inverting the map for every subsample of a dot.
+    func longitude(at px: Double) -> Double? {
         let s = px * scale / kx
-        let lat = lat0 - py * ky * scale
         for f in folds {
             let a = squeeze(f.a)
             if s > a && s < a + f.seam { return nil }
         }
         let d = unsqueeze(s)
-        guard d >= x0, d < x1, lat >= lo, lat <= hi else { return nil }
-        return (lat, lon0 + d)
+        guard d >= x0, d < x1 else { return nil }
+        return lon0 + d
+    }
+
+    func latitude(at py: Double) -> Double? {
+        let lat = lat0 - py * ky * scale
+        return lat >= lo && lat <= hi ? lat : nil
     }
 
     /// Each fold's seam: where it runs across the map, and how many degrees

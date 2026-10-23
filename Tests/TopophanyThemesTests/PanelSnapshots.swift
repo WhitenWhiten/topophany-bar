@@ -215,11 +215,22 @@ import TopophanySections
         #expect(PanelLeap(offset: 1300, content: 2000, visible: 700).target(panel: 1000) == 0)
     }
 
-    @Test func terminalBandsPreserveEveryVisiblePixel() throws {
+    @Test(arguments: ["en", "ja", "zh-Hans"]) func terminalBandsPreserveEveryVisiblePixel(_ language: String) throws {
+        L10n.force(language)
+        defer { L10n.force("en") }
         let scene = CellsPanel.scene(previewPanel(.incidents), ctx: RenderContext(theme: ThemeStore.terminal, maxHeight: 600))
         let header = try #require(scene.marks["status"])
         let footer = try #require(scene.marks["footer"])
-        for (top, bottom) in [(0.0, header), (header, footer), (footer, scene.size.height)] {
+        let starts = scene.marks.filter { $0.key.hasPrefix("section:") }.map(\.value).sorted()
+        let sections = zip(starts, Array(starts.dropFirst()) + [footer]).map { ($0.0, $0.1) }
+        for (top, bottom) in [(0.0, header), (header, footer), (footer, scene.size.height)] + sections {
+            func rgba(_ image: CGImage) throws -> Data {
+                let context = try #require(CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
+                                                    bytesPerRow: image.width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+                return Data(bytes: try #require(context.data), count: image.width * image.height * 4)
+            }
             func pixels(_ content: CellScene) throws -> Data {
                 let view = CellCanvas(scene: content)
                     .offset(y: -top)
@@ -227,12 +238,40 @@ import TopophanySections
                     .clipped()
                 let renderer = ImageRenderer(content: view)
                 renderer.scale = 2
-                return try #require(renderer.cgImage?.dataProvider?.data) as Data
+                return try rgba(#require(renderer.cgImage))
             }
             let band = scene.band(top: top, bottom: bottom)
             #expect(band.items.count < scene.items.count)
-            #expect(try pixels(band) == pixels(scene))
+            let filtered = try pixels(band)
+            let expected = try pixels(scene)
+            let filteringDifference = zip(filtered, expected).reduce(0) { max($0, abs(Int($1.0) - Int($1.1))) }
+            #expect(filteringDifference <= 1)
+            let cropped = ImageRenderer(content: CellCanvas(scene: scene, top: top, bottom: bottom).clipped())
+            cropped.scale = 2
+            let image = try #require(cropped.cgImage)
+            #expect(image.height == Int((bottom - top) * 2))
+            let actual = try rgba(image)
+            // Different surface sizes can round antialiasing by one 8-bit
+            // level; every visible pixel must otherwise be unchanged.
+            let difference = zip(actual, expected).reduce(0) { max($0, abs(Int($1.0) - Int($1.1))) }
+            #expect(difference <= 1)
         }
+    }
+
+    @Test func terminalHoverOnlyChangesTheAffectedBand() throws {
+        let model = previewPanel(.incidents)
+        let ctx = RenderContext(theme: ThemeStore.terminal, maxHeight: 600)
+        let before = CellsPanel.scene(model, ctx: ctx)
+        let after = CellsPanel.scene(model, ctx: ctx, hover: "quit")
+        let status = try #require(before.marks["status"])
+        let footer = try #require(before.marks["footer"])
+        let sameHeader = CellCanvas(scene: before, top: 0, bottom: status) == CellCanvas(scene: after, top: 0, bottom: status)
+        let sameBody = CellCanvas(scene: before, top: status, bottom: footer) == CellCanvas(scene: after, top: status, bottom: footer)
+        let sameFooter = CellCanvas(scene: before, top: footer, bottom: before.size.height)
+            == CellCanvas(scene: after, top: footer, bottom: after.size.height)
+        #expect(sameHeader)
+        #expect(sameBody)
+        #expect(!sameFooter)
     }
 
     /// While no topo can run: the offer to download one, as it goes and

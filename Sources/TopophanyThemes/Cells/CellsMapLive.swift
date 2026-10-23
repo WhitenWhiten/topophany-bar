@@ -8,9 +8,10 @@ import TopophanySections
 /// map does. Laid over the whole scene, in its coordinates, each part
 /// placed by padding so the
 /// map's frame, which the app's scroll wheel finds it by, is where it shows.
-struct CellsMapLive: View {
+struct CellsMapLive: View, Equatable {
     var map: MapSection
-    var scene: CellScene
+    var metrics: CellMetrics
+    var size: CGSize
     /// Where the map is, and where its count of places is, which the
     /// keys take while it's selected.
     var rect: CGRect
@@ -21,9 +22,14 @@ struct CellsMapLive: View {
     @State private var dragged: CGSize = .zero
     @State private var pinch = 1.0
 
-    var cells: CellsMap { CellsMap(map: map, p: p, metrics: scene.metrics) }
-    var cols: Int { Int((rect.width / scene.metrics.cell).rounded()) }
-    var rows: Int { Int((rect.height / scene.metrics.line).rounded()) }
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.map == rhs.map && lhs.metrics == rhs.metrics && lhs.size == rhs.size
+            && lhs.rect == rhs.rect && lhs.meta == rhs.meta && lhs.p == rhs.p
+    }
+
+    var cells: CellsMap { CellsMap(map: map, p: p, metrics: metrics) }
+    var cols: Int { Int((rect.width / metrics.cell).rounded()) }
+    var rows: Int { Int((rect.height / metrics.line).rounded()) }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -32,20 +38,20 @@ struct CellsMapLive: View {
                 gestures(viewport)
             }
         }
-        .frame(width: scene.size.width, height: scene.size.height, alignment: .topLeading)
+        .frame(width: size.width, height: size.height, alignment: .topLeading)
     }
 
     /// The map as magnified, over the scene's, and while it's selected
     /// what the keys do.
     @ViewBuilder func drawn(_ v: MapViewport) -> some View {
         let t = v.transform
-        let m = scene.metrics
+        let m = metrics
         if t != .identity {
             ZStack {
                 Color(p.ink)
                 TextureFill(texture: p.texture, color: Color(p.grain))
             }
-            .frame(width: scene.size.width, height: scene.size.height)
+            .frame(width: size.width, height: size.height)
             .mask(alignment: .topLeading) {
                 Rectangle().frame(width: rect.width, height: rect.height).offset(x: rect.minX, y: rect.minY)
             }
@@ -53,10 +59,13 @@ struct CellsMapLive: View {
         }
         if t != .identity || v.isSelected {
             let items = t == .identity ? [] : cells.items(x: rect.minX, y: rect.minY, cols: cols, rows: rows, transform: t)
+            let bounds = rect.union(v.isSelected ? (meta ?? rect) : rect).insetBy(dx: -m.cell, dy: -1)
             Canvas(rendersAsynchronously: false) { ctx, _ in
+                ctx.translateBy(x: -bounds.minX, y: -bounds.minY)
                 CellCanvas.draw(items + (v.isSelected ? hint : []), in: &ctx, metrics: m)
             }
-            .frame(width: scene.size.width, height: scene.size.height)
+            .frame(width: bounds.width, height: bounds.height)
+            .offset(x: bounds.minX, y: bounds.minY)
             .allowsHitTesting(false)
         }
     }
@@ -64,7 +73,7 @@ struct CellsMapLive: View {
     /// Selected: the accent's bar down the map's left, as a focused row
     /// has, and the keys in its border where it counts its places.
     var hint: [CellItem] {
-        let m = scene.metrics
+        let m = metrics
         var items: [CellItem] = [.fill(CGRect(x: rect.minX - m.cell + 1, y: rect.minY, width: 2, height: rect.height), p.accent, radius: 0)]
         if let meta {
             let words = " " + tr("↑ ↓ zoom · esc") + " "

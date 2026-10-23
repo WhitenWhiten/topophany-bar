@@ -2,7 +2,7 @@ import SwiftUI
 
 /// How the cards renderer draws beyond its colors, from a theme's style
 /// slots (`StyleSlots.cards`).
-struct CardsStyle {
+struct CardsStyle: Equatable {
     enum Surface: String { case glass, matte, night }
 
     var surface = Surface.glass

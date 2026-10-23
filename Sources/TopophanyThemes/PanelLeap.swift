@@ -29,7 +29,9 @@ struct PanelLeap: Equatable {
     /// Where the next leap lands, as the scroll's offset from the top, in a
     /// panel `panel` points tall.
     func target(panel: Double) -> Double {
-        atEnd ? 0 : min(offset + min(panel / 2, visible), content - visible)
+        let end = max(0, content - visible)
+        let start = min(end, max(0, offset))
+        return atEnd ? 0 : min(start + max(0, min(panel / 2, visible)), end)
     }
 
     /// A return can cross several pages. Keep its pace close to a normal
@@ -49,6 +51,9 @@ struct PanelLeap: Equatable {
 @Observable
 final class PanelScrollState {
     @ObservationIgnored private var geometry = PanelLeap()
+    /// Only PanelScroller binds this value. Binding it in a theme's root
+    /// makes scroll position writebacks invalidate the entire panel.
+    var position = ScrollPosition(edge: .top)
     private(set) var atTop = true
     private(set) var atEnd = true
 
@@ -62,5 +67,10 @@ final class PanelScrollState {
 
     func animation(panel: Double, reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .easeInOut(duration: geometry.duration(panel: panel))
+    }
+
+    func leap(panel: Double, reduceMotion: Bool) {
+        let y = target(panel: panel)
+        withAnimation(animation(panel: panel, reduceMotion: reduceMotion)) { position.scrollTo(y: y) }
     }
 }

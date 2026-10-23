@@ -51,7 +51,7 @@ public enum CellMeterStyle: String, Sendable, Hashable {
 }
 
 /// One thing a cell scene draws, positioned in points.
-public enum CellItem: Sendable {
+public enum CellItem: Sendable, Equatable {
     /// Text on a line whose top is at `y`; one cell per character, two for
     /// wide ones.
     case text(x: Double, y: Double, String, RGBA, bold: Bool)
@@ -75,7 +75,7 @@ public enum CellItem: Sendable {
 
 /// An age that counts up on its own, as a widget's must between reloads:
 /// set as live text over the scene, its right edge at `right`.
-public struct LiveAge: Sendable {
+public struct LiveAge: Sendable, Equatable {
     public var right: Double
     public var y: Double
     public var date: Date
@@ -85,7 +85,7 @@ public struct LiveAge: Sendable {
 }
 
 /// A drawn grid of styled cells and the TUI's vector pieces.
-public struct CellScene: Sendable {
+public struct CellScene: Sendable, Equatable {
     public var size: CGSize
     public var metrics: CellMetrics
     public var items: [CellItem] = []
@@ -110,7 +110,7 @@ public struct CellScene: Sendable {
         result.items = items.filter { item in
             switch item {
             case .text(_, let y, _, _, _), .glyph(_, let y, _, _):
-                return overlaps(y - metrics.line, y + 2 * metrics.line)
+                return overlaps(y - 1, y + metrics.line + 1)
             case .fill(let r, _, _), .box(let r, _, _, _, _), .hatch(let r, _, _),
                  .dots(let r, _, _, _, _), .stripes(let r, _, _):
                 return overlaps(r.minY - 1, r.maxY + 1)
@@ -120,20 +120,45 @@ public struct CellScene: Sendable {
                 return points.contains { overlaps($0.y - diameter, $0.y + diameter) }
             }
         }
-        result.live = live.filter { overlaps($0.y - metrics.line, $0.y + 2 * metrics.line) }
+        result.live = live.filter { overlaps($0.y - 1, $0.y + metrics.line + 1) }
         return result
     }
 }
 
 /// Draws any `CellScene`, crisply at any scale.
-public struct CellCanvas: View {
+public struct CellCanvas: View, Equatable {
     public var scene: CellScene
+    private var top = 0.0
+    private var height: Double?
+    private var asynchronous = false
 
-    public init(scene: CellScene) { self.scene = scene }
+    public init(scene: CellScene, rendersAsynchronously: Bool = false) {
+        self.scene = scene
+        self.asynchronous = rendersAsynchronously
+    }
+
+    /// A band's canvas has the band's actual size. Drawing a whole-panel
+    /// canvas and clipping it afterwards still allocates and rasterizes the
+    /// whole surface, including for a footer only one line tall.
+    init(scene: CellScene, top: Double, bottom: Double, rendersAsynchronously: Bool = false) {
+        self.scene = scene.band(top: top, bottom: bottom)
+        self.top = top
+        self.height = max(0, bottom - top)
+        self.asynchronous = rendersAsynchronously
+    }
+
+    nonisolated public static func == (lhs: CellCanvas, rhs: CellCanvas) -> Bool {
+        lhs.top == rhs.top && lhs.height == rhs.height && lhs.asynchronous == rhs.asynchronous
+            && lhs.scene.size == rhs.scene.size && lhs.scene.metrics == rhs.scene.metrics
+            && lhs.scene.items == rhs.scene.items && lhs.scene.live == rhs.scene.live
+    }
 
     public var body: some View {
-        Canvas(rendersAsynchronously: false) { ctx, _ in Self.draw(scene.items, in: &ctx, metrics: scene.metrics) }
-        .frame(width: scene.size.width, height: scene.size.height)
+        Canvas(rendersAsynchronously: asynchronous) { ctx, _ in
+            ctx.translateBy(x: 0, y: -top)
+            Self.draw(scene.items, in: &ctx, metrics: scene.metrics)
+        }
+        .frame(width: scene.size.width, height: height ?? scene.size.height)
         .overlay(alignment: .topLeading) {
             ForEach(Array(scene.live.enumerated()), id: \.offset) { _, a in
                 Text(.currentDate, format: .reference(to: a.date, allowedFields: [.minute, .hour, .day], maxFieldCount: 1))
@@ -145,13 +170,17 @@ public struct CellCanvas: View {
                     .frame(height: scene.metrics.line)
                     .background(a.background.map { Color($0) } ?? .clear)
                     .frame(width: a.right, alignment: .trailing)
-                    .offset(y: a.y)
+                    .offset(y: a.y - top)
             }
         }
     }
 
     /// Draws `items` in `ctx`.
     static func draw(_ items: [CellItem], in ctx: inout GraphicsContext, metrics m: CellMetrics) {
+        #if DEBUG
+        let interval = PanelDiagnostics.interval("cells.draw")
+        defer { interval?.end() }
+        #endif
         for item in items {
             switch item {
             case .fill(let r, let c, let radius):

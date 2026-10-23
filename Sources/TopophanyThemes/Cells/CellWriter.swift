@@ -2,7 +2,7 @@ import Foundation
 import TopophanySections
 
 /// The cells renderer's palette: the TUI's slots, from a theme's tokens.
-struct CellsPalette {
+struct CellsPalette: Sendable, Equatable {
     var ink, inkHigh, selection, key, line, track: RGBA
     var text, muted, faint, glow, accent, accent2, kind: RGBA
     var up, warn, down, unknown: RGBA

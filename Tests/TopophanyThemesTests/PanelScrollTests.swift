@@ -1,4 +1,6 @@
+import AppKit
 import Observation
+import SwiftUI
 import Synchronization
 import Testing
 @testable import TopophanyThemes
@@ -63,5 +65,51 @@ import Testing
         state.update(PanelLeap(offset: 1300, content: 2000, visible: 700))
         #expect(state.animation(panel: 1000, reduceMotion: true) == nil)
         #expect(state.animation(panel: 1000, reduceMotion: false) != nil)
+    }
+
+    @Test func rubberBandingAndShortContentNeverProduceNegativeTargets() {
+        #expect(PanelLeap(offset: -80, content: 2000, visible: 700).target(panel: 1000) == 500)
+        #expect(PanelLeap(offset: 50, content: 300, visible: 700).target(panel: 1000) == 0)
+        #expect(PanelLeap(offset: -80, content: 300, visible: 700).target(panel: 1000) == 0)
+        #expect(PanelLeap().target(panel: 1000) == 0)
+    }
+
+    /// Exercise SwiftUI's real binding and layout graph, not just the
+    /// observation model. Scroll writebacks and edge crossings must leave
+    /// expensive content intact in both directions.
+    @Test func scrollingDoesNotReevaluateHostedContent() throws {
+        let state = PanelScrollState()
+        let counter = BodyCounter()
+        let host = NSHostingView(rootView:
+            PanelScroller(state: state, height: 300, panelHeight: 400, focus: nil, leaps: 0) {
+                CountedContent(counter: counter)
+            }
+            .frame(width: 300)
+        )
+        host.frame = CGRect(x: 0, y: 0, width: 300, height: 300)
+        host.layoutSubtreeIfNeeded()
+        _ = host.fittingSize
+        let initial = counter.count
+        try #require(initial > 0)
+        for offset in (0...30).map({ Double($0) * 50 }) + (0...30).reversed().map({ Double($0) * 50 }) {
+            state.position.scrollTo(y: offset)
+            state.update(PanelLeap(offset: offset, content: 1800, visible: 300))
+            host.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.001))
+        }
+        #expect(counter.count == initial, "scrolling rebuilt its content \(counter.count - initial) times")
+    }
+}
+
+@MainActor private final class BodyCounter {
+    var count = 0
+}
+
+private struct CountedContent: View {
+    var counter: BodyCounter
+
+    var body: some View {
+        let _ = { counter.count += 1 }()
+        Text("Panel content").frame(width: 300, height: 1800)
     }
 }

@@ -560,17 +560,55 @@ struct CellsPanel: View {
     var model: PanelModel
     var ctx: RenderContext
     var focusFirstAttention = false
-    @Environment(\.panelActions) private var actions
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var hover: String?
-    @State private var position = ScrollPosition(edge: .top)
-    @State private var leapState = PanelScrollState()
+    @State private var scroll = PanelScrollState()
 
     static let columns = 48
     nonisolated static let radius = 12.0
 
+    private var drawingContext: RenderContext {
+        var context = ctx
+        // Keyboard scroll commands change the viewport, not the scene.
+        context.leaps = 0
+        return context
+    }
+
     var body: some View {
-        let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover, drawsLeapDirection: false)
+        CellsPanelContent(model: model, ctx: drawingContext, focusFirstAttention: focusFirstAttention, leapState: scroll)
+            .equatable()
+            .onChange(of: ctx.leaps) {
+                if let height = ctx.maxHeight { scroll.leap(panel: height, reduceMotion: reduceMotion) }
+            }
+    }
+
+    static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false, hover: String? = nil,
+                      leapUp: Bool = false, drawsLeapDirection: Bool = true, cache: CellsPanelCache? = nil) -> CellScene {
+        CellsPanelContent.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover,
+                                leapUp: leapUp, drawsLeapDirection: drawsLeapDirection, cache: cache)
+    }
+}
+
+private struct CellsPanelContent: View, Equatable {
+    var model: PanelModel
+    var ctx: RenderContext
+    var focusFirstAttention = false
+    @Environment(\.panelActions) private var actions
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hover: String?
+    @State private var sectionCache = CellsPanelCache()
+    var leapState: PanelScrollState
+
+    static let columns = 48
+    nonisolated static let radius = 12.0
+
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.model == rhs.model && lhs.ctx == rhs.ctx && lhs.focusFirstAttention == rhs.focusFirstAttention
+            && lhs.leapState === rhs.leapState
+    }
+
+    var body: some View {
+        let scene = Self.scene(model, ctx: ctx, focusFirstAttention: focusFirstAttention, hover: hover,
+                               drawsLeapDirection: false, cache: sectionCache)
         let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
         let p = CellsPalette(ctx.theme)
         fitted(scene)
@@ -610,8 +648,7 @@ struct CellsPanel: View {
     /// About half the panel down, or from the end back to the top.
     func leap() {
         guard let panel = ctx.maxHeight else { return }
-        let y = leapState.target(panel: panel)
-        withAnimation(leapState.animation(panel: panel, reduceMotion: reduceMotion)) { position.scrollTo(y: y) }
+        leapState.leap(panel: panel, reduceMotion: reduceMotion)
     }
 
     /// Status's keycap, from the top: Status stays put while the rest
@@ -655,34 +692,42 @@ struct CellsPanel: View {
             let top = model.pinStatus ? status : header
             VStack(spacing: 0) {
                 slice(scene, top: 0, bottom: top)
-                ScrollViewReader { proxy in
-                    ScrollView(.vertical) {
-                        slice(scene, top: top, bottom: footer)
-                            .overlay(alignment: .topLeading) { focusAnchor(scene, top: top, bottom: footer) }
-                    }
-                    .scrollIndicators(.never)
-                    .scrollPosition($position)
-                    .onScrollGeometryChange(for: PanelLeap.self, of: PanelLeap.init) { _, new in leapState.update(new) }
-                    .frame(height: max(80, maxH - top - (h - footer)))
-                    .onChange(of: ctx.focus) { _, focus in
-                        guard let focus else { return }
-                        withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { proxy.scrollTo(focus) }
-                    }
-                    .onChange(of: ctx.leaps) { leap() }
+                PanelScroller(state: leapState, height: max(80, maxH - top - (h - footer)), panelHeight: maxH,
+                              focus: ctx.focus, leaps: ctx.leaps) {
+                    bodySlices(scene, top: top, bottom: footer)
+                        .overlay(alignment: .topLeading) { focusAnchor(scene, top: top, bottom: footer) }
                 }
                 slice(scene, top: footer, bottom: h)
             }
             .frame(width: scene.size.width)
         } else {
-            CellCanvas(scene: scene).overlay(alignment: .topLeading) { live(scene, top: 0, bottom: scene.size.height) }
+            CellCanvas(scene: scene, rendersAsynchronously: ctx.backdrop == .live).equatable()
+                .overlay(alignment: .topLeading) { live(scene, top: 0, bottom: scene.size.height) }
         }
+    }
+
+    /// Keep each section's raster independent. A clock or a local reading
+    /// changing must not paint the map, fleet and every other row again.
+    func bodySlices(_ scene: CellScene, top: Double, bottom: Double) -> some View {
+        let starts = model.sections.compactMap { scene.marks["section:" + $0.id.rawValue] }
+        let boundaries = [top] + starts.filter { $0 > top && $0 < bottom } + [bottom]
+        return VStack(spacing: 0) {
+            ForEach(0..<(boundaries.count - 1), id: \.self) { i in
+                CellCanvas(scene: scene, top: boundaries[i], bottom: boundaries[i + 1], rendersAsynchronously: ctx.backdrop == .live)
+                    .equatable()
+                    .clipped()
+            }
+        }
+        .overlay(alignment: .topLeading) { live(scene, top: top, bottom: bottom).offset(y: -top) }
+        .contentShape(Rectangle())
     }
 
     /// The map as it moves, where a band from `top` to `bottom` shows it.
     @ViewBuilder func live(_ scene: CellScene, top: Double, bottom: Double) -> some View {
         if let m = model.map, let r = scene.regions["map"], r.maxY > top, r.minY < bottom {
-            CellsMapLive(map: m, scene: scene, rect: r, meta: scene.regions["mapMeta"],
+            CellsMapLive(map: m, metrics: scene.metrics, size: scene.size, rect: r, meta: scene.regions["mapMeta"],
                          p: CellsPalette(ctx.theme))
+                .equatable()
         }
     }
 
@@ -705,10 +750,8 @@ struct CellsPanel: View {
     /// rest of the scene; the band's shape also keeps it from taking the
     /// clicks and scrolls meant for the bands beside it.
     func slice(_ scene: CellScene, top: Double, bottom: Double) -> some View {
-        CellCanvas(scene: scene.band(top: top, bottom: bottom))
-            .overlay(alignment: .topLeading) { live(scene, top: top, bottom: bottom) }
-            .offset(y: -top)
-            .frame(width: scene.size.width, height: bottom - top, alignment: .top)
+        CellCanvas(scene: scene, top: top, bottom: bottom, rendersAsynchronously: ctx.backdrop == .live).equatable()
+            .overlay(alignment: .topLeading) { live(scene, top: top, bottom: bottom).offset(y: -top) }
             .clipped()
             .contentShape(Rectangle())
     }
@@ -716,7 +759,11 @@ struct CellsPanel: View {
     /// - Parameter leapUp: whether the scroll is at its end, and the quick
     ///   scroll's keycap points back up.
     static func scene(_ model: PanelModel, ctx: RenderContext, focusFirstAttention: Bool = false, hover: String? = nil,
-                      leapUp: Bool = false, drawsLeapDirection: Bool = true) -> CellScene {
+                      leapUp: Bool = false, drawsLeapDirection: Bool = true, cache: CellsPanelCache? = nil) -> CellScene {
+        #if DEBUG
+        let interval = PanelDiagnostics.interval("cells.scene")
+        defer { interval?.end() }
+        #endif
         let m = CellMetrics.panel
         let p = CellsPalette(ctx.theme)
         let width = Double(columns) * m.cell + 14
@@ -776,6 +823,25 @@ struct CellsPanel: View {
         }
         marks["status"] = w.y + 2
         for s in model.sections {
+            marks["section:" + s.id.rawValue] = w.y
+            let key = CellsPanelCache.Key(section: s, theme: ctx.theme, y: w.y, focus: ctx.focus,
+                                          focusFirstAttention: focusFirstAttention, language: L10n.localization)
+            if let entry = cache?.entry(for: key) {
+                #if DEBUG
+                PanelDiagnostics.count("cells.section.reused")
+                #endif
+                w.items += entry.items
+                w.y = entry.end
+                if let focus = entry.focus { w.focused = focus }
+                if let map = entry.map { regions["map"] = map }
+                if let meta = entry.mapMeta { regions["mapMeta"] = meta }
+                continue
+            }
+            let start = w.items.count
+            #if DEBUG
+            PanelDiagnostics.count("cells.section.prepared")
+            #endif
+            let oldFocus = w.focused
             switch s {
             case .seen(let seen):
                 w.box(title(tr("SEEN FROM"), seen.total.map { "\($0)" }), x0: x0, x1: x1, style: .panel) { b.seen(&$0, seen) }
@@ -820,6 +886,10 @@ struct CellsPanel: View {
                     b.local(&$0, l)
                 }
             }
+            cache?.store(.init(key: key, items: Array(w.items[start...]), end: w.y,
+                               focus: w.focused != oldFocus ? w.focused : nil,
+                               map: s.id == .map ? regions["map"] : nil,
+                               mapMeta: s.id == .map ? regions["mapMeta"] : nil))
         }
 
         // Footer: keycaps and the connection. Live, the project is cut to

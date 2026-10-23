@@ -51,7 +51,7 @@ public final class MapViewport {
     }
 
     /// How a keyboard step or a way back eases, or nil under Reduce Motion.
-    public static func easing(reduceMotion: Bool) -> Animation? { reduceMotion ? nil : .smooth(duration: 0.28) }
+    public static func easing(reduceMotion: Bool) -> Animation? { reduceMotion ? nil : .easeInOut(duration: 0.28) }
 
     /// One step of the keyboard's zoom: ↑ in, ↓ out.
     public static let step = 1.5

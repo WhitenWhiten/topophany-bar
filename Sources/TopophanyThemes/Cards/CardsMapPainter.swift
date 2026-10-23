@@ -85,6 +85,10 @@ struct CardsMapPainter {
     }
 
     func drawGeo(_ ctx: GraphicsContext, size: CGSize, transform: MapTransform) {
+        #if DEBUG
+        let interval = PanelDiagnostics.interval("map.draw")
+        defer { interval?.end() }
+        #endif
         let scene = GeoScene(map, size: size, transform: transform)
         let bounds = CGRect(origin: .zero, size: size)
         let r = markSize / 2
@@ -125,15 +129,23 @@ struct CardsMapPainter {
         var paths = Array(repeating: Path(), count: levels)
         let strength = landStrength
         let near = markSize / 2 + 2.5
-        var y = y0
-        while y < size.height + pitch {
-            var x = x0
+        func origins(_ start: Double, limit: Double) -> [Double] {
+            var result: [Double] = []
+            var value = start
+            while value < limit + pitch {
+                let center = value + pitch / 2
+                if center > 0, center < limit { result.append(value) }
+                value += pitch
+            }
+            return result
+        }
+        let columns = origins(x0, limit: size.width), rows = origins(y0, limit: size.height)
+        let coverage = LandCoverage(scene: scene, x: columns.map { $0 + pitch / 2 }, y: rows.map { $0 + pitch / 2 }, pitch: pitch)
+        for (row, y) in rows.enumerated() {
             let j = Int(((y - o.y) / pitch).rounded(.down))
-            while x < size.width + pitch {
-                defer { x += pitch }
+            for (column, x) in columns.enumerated() {
                 let c = CGPoint(x: x + pitch / 2, y: y + pitch / 2)
-                guard c.x > 0, c.y > 0, c.x < size.width, c.y < size.height else { continue }
-                let cover = scene.land(around: c, width: pitch, height: pitch, samples: 3)
+                let cover = coverage.coverage(column: column, row: row)
                 guard cover > 0 else { continue }
                 let i = Int(((x - o.x) / pitch).rounded(.down))
                 guard cover >= Self.bayer(i, j) else { continue }
@@ -152,7 +164,6 @@ struct CardsMapPainter {
                 let d = dot * (0.8 + 0.2 * cover + 0.25 * glow)
                 paths[level].addEllipse(in: CGRect(x: c.x - d / 2, y: c.y - d / 2, width: d, height: d))
             }
-            y += pitch
         }
         for (k, path) in paths.enumerated() where !path.isEmpty {
             let a = strength * (Double(k) + 0.5) / Double(levels) * 1.5
