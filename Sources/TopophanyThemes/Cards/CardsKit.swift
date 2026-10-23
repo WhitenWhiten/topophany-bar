@@ -358,6 +358,8 @@ struct StackBar: View {
     var vibrant = false
     /// The height it takes: ticks are taller than the runs they replace.
     nonisolated static let tickHeight = 9.0
+    /// Its ticks' height, less for a bar under a row.
+    var ticks = StackBar.tickHeight
 
     /// A tick's width and the gap after it, or nil when ticks would be too
     /// thin to count.
@@ -377,10 +379,10 @@ struct StackBar: View {
             if let t = Self.ticks(total, width: g.size.width) {
                 tickView(t)
             } else {
-                runs.frame(height: height).frame(maxHeight: .infinity)
+                runs.frame(height: min(height, ticks)).frame(maxHeight: .infinity)
             }
         }
-        .frame(height: Self.tickHeight)
+        .frame(height: ticks)
     }
 
     /// Up, warning and down, as the bar draws them.

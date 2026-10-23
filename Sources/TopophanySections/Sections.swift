@@ -259,6 +259,10 @@ public struct ServerCardModel: Sendable, Hashable, Identifiable {
     public var showsSizes: Bool {
         samples != nil && [cpu, memory, disk].contains { !$0.detail.isEmpty }
     }
+
+    /// Read from a source with no current sample, stale or none yet: its
+    /// pill says which, where its values would be.
+    public var hasNoCurrentSample: Bool { samples == .stale || samples == .missing }
 }
 
 /// This Mac: its own readings, or its server card.

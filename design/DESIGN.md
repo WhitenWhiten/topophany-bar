@@ -695,15 +695,26 @@ place of their switches, and Status says what it shows there: each source's stat
 
 Direct widgets use the existing sizes and themes, show an As of time, and become
 history at the original relevant deadlines. A Status widget is the state and its
-sources in a narrow column; the medium, large and extra large add the pinned
-servers' readings, a row each with CPU, memory and disk (a short meter beside each
-where there is room), "—" where withheld, as many as fit and the rest counted.
+sources in a narrow column, over a bar of the selected servers as the collector's
+bar draws checks: a tick each, current calm, stale and without samples outlined,
+hatched once not current. The subtitle wraps only between its parts, in Japanese
+and Chinese too. The medium, large and extra large add the pinned servers'
+readings, a row each with CPU, memory and disk (a short meter beside each where
+there is room), "—" where withheld, as many as fit and the rest counted; a server
+with no current sample says STALE or NO SAMPLES across its columns instead.
 While every pinned server fits in one, the large and extra large give each a tile
-instead: its mark and name, its source where servers come from more than one, and
-its three meters, with their sizes where the tile is wide. The extra large then
-spans the widget, the state beside its sources above the tiles. The cells renderer
-draws the tiles as boxes. With none pinned, the medium widget's right lists the
-sources instead. A new handoff cannot renew measurements. Their node choices carry dataset identity so
+instead: its mark and name, its source where servers come from more than one (or
+its STALE or NO SAMPLES while the name still fits whole), and its three meters,
+with their sizes where the tile is wide. Past what rows of meters hold, dense
+tiles set the three side by side, each value over its meter, labelled once over
+each column of tiles. The extra large then spans the widget, the state beside its
+sources above the tiles. The cells renderer draws the tiles as boxes. In the large
+widget the sources rows outrank the tiles. With none pinned, the widget lists the
+sources instead, each over its own servers' bar, and the large and extra large say
+where to pin servers. A medium Server widget for a server read from a source,
+which has no services to list, sets its three readings across the widget, each
+large over its meter and its size, its pill and As of time at the top. A new
+handoff cannot renew measurements. Their node choices carry dataset identity so
 a Hub/account/profile change cannot silently reuse a choice. Static ImageRenderer
 coverage includes all six themes, three languages, acquisition states, several
 sources and servers, and the Widget sizes at both the design's and a 1080 pt

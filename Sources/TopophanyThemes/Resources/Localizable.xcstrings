@@ -1677,6 +1677,22 @@
         }
       }
     },
+    "Pin servers in Settings › Sections to show their readings here.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定の「セクション」でサーバーを固定すると、ここに表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在设置的「版块」中固定服务器，即可在此显示其读数。"
+          }
+        }
+      }
+    },
     "Pressure %@ · App %@ GB": {
       "localizations": {
         "ja": {

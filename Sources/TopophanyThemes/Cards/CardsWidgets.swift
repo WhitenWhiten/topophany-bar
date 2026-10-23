@@ -127,8 +127,8 @@ struct CardsWidget: View {
             left
         } else if card.origin != nil, card.services.isEmpty, card.observes.isEmpty {
             // A server read from a source has no services to list: its
-            // meters take the width, with what each measures.
-            WidgetServerCard(card: card, isMac: isMac, p: p, t: t, ctx: ctx, sizes: true)
+            // readings take the width, with what each measures.
+            WidgetSourceServer(card: card, isMac: isMac, p: p, t: t)
         } else {
             HStack(alignment: .top, spacing: 16) {
                 left.frame(width: 136)
@@ -669,15 +669,13 @@ struct WidgetMeter {
     }
 }
 
-/// A Server widget's own card: name, the three meters, state and age;
-/// as wide as the widget, what each meter measures.
+/// A Server widget's own card: name, the three meters, state and age.
 struct WidgetServerCard: View {
     var card: ServerCardModel
     var isMac: Bool
     var p: CardsPalette
     var t: CardsType
     var ctx: RenderContext
-    var sizes = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -693,9 +691,9 @@ struct WidgetServerCard: View {
             .accessibilityElement(children: .combine)
             // One grid, so the label column fits the longest label.
             Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 8) {
-                WidgetMeter(label: tr("CPU"), meter: card.cpu, p: p, t: t, size: sizes).row
-                WidgetMeter(label: tr("Mem"), meter: card.memory, p: p, t: t, size: sizes).row
-                WidgetMeter(label: tr("Disk"), meter: card.disk, p: p, t: t, size: sizes).row
+                WidgetMeter(label: tr("CPU"), meter: card.cpu, p: p, t: t).row
+                WidgetMeter(label: tr("Mem"), meter: card.memory, p: p, t: t).row
+                WidgetMeter(label: tr("Disk"), meter: card.disk, p: p, t: t).row
             }
             .padding(.top, 13).padding(.bottom, 10)
             Spacer(minLength: 0)
@@ -715,6 +713,74 @@ struct WidgetServerCard: View {
                 }
             }
         }
+    }
+}
+
+/// A medium Server widget for a server read from a source, which has no
+/// services to list: its three readings across the widget, each large
+/// over its meter and what it measures, under its name, state and when it
+/// was read, as the panel's card has them.
+struct WidgetSourceServer: View {
+    var card: ServerCardModel
+    var isMac: Bool
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 8) {
+                NodeAvatar(provider: card.isMissing ? "" : card.provider, kind: card.kind, size: 26, p: p,
+                           symbol: isMac ? "apple.logo" : nil)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(card.name).font(t.font(12.5, .semibold)).lineLimit(1).minimumScaleFactor(0.85)
+                    Text(card.isMissing ? card.place : Words.join([card.place, card.provider.isEmpty ? card.origin?.detail ?? "" : card.provider]))
+                        .font(t.font(10.5)).foregroundStyle(p.l2).lineLimit(1)
+                }
+                .accessibilityElement(children: .combine)
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 3) {
+                    PillView(pill: card.pill, palette: p, type: t)
+                    // A direct snapshot keeps the time it was read: a new
+                    // hand-off can't renew it.
+                    if let at = card.sampledAt {
+                        Text(Words.asOf(at)).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+            }
+            Spacer(minLength: 10)
+            HStack(alignment: .top, spacing: 16) {
+                reading(tr("CPU"), card.cpu)
+                reading(tr("Memory"), card.memory)
+                reading(tr("Disk"), card.disk)
+            }
+        }
+    }
+
+    /// "CPU / 28% / ▬▬▬▭▭ / 8 CPUs": the value large, its unit small.
+    func reading(_ label: String, _ m: ServerCardModel.Meter) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(label).font(t.font(10.5)).foregroundStyle(p.l2).lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 1) {
+                if let v = m.percent {
+                    Text(verbatim: String(format: "%.0f", v)).font(t.mono(22, .semibold)).tracking(-0.5).foregroundStyle(p.l1)
+                    Text(verbatim: "%").font(t.mono(13, .semibold)).foregroundStyle(p.l2)
+                    if m.isOverLimit { CardMark(mark: .degraded, size: 10, color: p.warn).padding(.leading, 4) }
+                } else {
+                    Text(verbatim: "—").font(t.mono(22, .semibold)).foregroundStyle(p.l3)
+                }
+            }
+            .lineLimit(1)
+            Meter(percent: m.percent, limit: m.limit, palette: p).padding(.top, 5)
+            // Kept when empty, so the three stay level.
+            Text(m.detail.isEmpty ? " " : m.detail).font(t.font(10)).foregroundStyle(p.l3)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .padding(.top, 5)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(m.percent.map { Words.join(["\(label) \(Words.percent($0, digits: 0))", m.detail]) }
+                                 ?? "\(label) \(tr("unknown"))"))
     }
 }
 

@@ -83,12 +83,12 @@ import TopophanySections
         }
     }
 
-    /// More servers than tiles hold: the large and extra large Status
-    /// widgets list them a row each.
+    /// More servers than tiles of meters hold: the large and extra large
+    /// Status widgets tile them densely, then list them a row each.
     @Test func manyServers() throws {
-        var panel = try model("fleet")
+        var panel = try model("fleet_partial")
         let cards = panel.servers
-        for count in [7, 12] {
+        for count in [5, 7, 12, 20] {
             let many = (0..<count).map { i in
                 var c = cards[i % cards.count]
                 c.id += "-\(i)"
@@ -105,12 +105,18 @@ import TopophanySections
         }
     }
 
-    /// With no server pinned, a medium Status widget lists its sources.
+    /// With no server pinned, a Status widget lists its sources.
     @Test func sourcesWithoutServers() throws {
-        let panel = try model("fleet_partial", pinned: false)
-        for theme in ThemeStore.builtIn {
-            try snapshot("direct-widget-en-unpinned-\(theme.id)-medium-status",
-                         onDesktop(WidgetModel(kind: .status, panel: panel), .medium, theme: theme, dark: theme.appearance != .light))
+        for language in ["en", "ja", "zh-Hans"] {
+            try L10n.with(language) {
+                let panel = try model("fleet_partial", pinned: false)
+                for theme in ThemeStore.builtIn {
+                    for size in [WidgetSize.medium, .large, .extraLarge] {
+                        try snapshot("direct-widget-\(language)-unpinned-\(theme.id)-\(size.rawValue)-status",
+                                     onDesktop(WidgetModel(kind: .status, panel: panel), size, theme: theme, dark: theme.appearance != .light))
+                    }
+                }
+            }
         }
     }
 

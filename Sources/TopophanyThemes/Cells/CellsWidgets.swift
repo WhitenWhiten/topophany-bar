@@ -231,8 +231,10 @@ struct CellsWidget: View {
             case .large:
                 sourcesBox(sources, at: at, x0: x0, x1: x1, short: false)
                 // Boxes while every server fits in one, a line each past that.
-                if !servers.isEmpty, !serverBoxes(servers, x0: x0, x1: x1, per: 1, detail: true),
-                   !serverBoxes(servers, x0: x0, x1: x1, per: 2, detail: false) {
+                if servers.isEmpty {
+                    pinHint(x0: x0, x1: x1)
+                } else if !serverBoxes(servers, x0: x0, x1: x1, per: 1, detail: true),
+                          !serverBoxes(servers, x0: x0, x1: x1, per: 2, detail: false) {
                     resourcesBox(servers, x0: x0, x1: x1)
                 }
             case .extraLarge:
@@ -247,7 +249,13 @@ struct CellsWidget: View {
                 across.sourceListBox(sources, x0: split + cell, x1: x1,
                                      lines: Int(((left - top - chrome) / w.lineHeight).rounded()))
                 across.w.y = max(left, across.w.y)
-                if !servers.isEmpty, across.serverBoxes(servers, x0: x0, x1: x1, per: 2, detail: true)
+                // With none pinned, that's all there is but where to pin them.
+                if servers.isEmpty {
+                    across.pinHint(x0: x0, x1: x1)
+                    self = across
+                    return
+                }
+                if across.serverBoxes(servers, x0: x0, x1: x1, per: 2, detail: true)
                     || across.serverBoxes(servers, x0: x0, x1: x1, per: 4, detail: false) {
                     self = across
                     return
@@ -258,10 +266,31 @@ struct CellsWidget: View {
             }
         }
 
+        /// Where nothing is pinned, a line or two on where to pin servers,
+        /// when they fit; broken between characters in a language without
+        /// spaces.
+        mutating func pinHint(x0: Double, x1: Double) {
+            let n = Int(((x1 - x0) / cell).rounded()) - 2
+            let text = tr("Pin servers in Settings › Sections to show their readings here.")
+            var lines = CellText.wrap(text, n, lines: 2)
+            if !text.contains(" ") {
+                lines = []
+                for ch in text {
+                    if lines.isEmpty || CellText.width(lines[lines.count - 1]) + CellText.width(ch) > n { lines.append("") }
+                    lines[lines.count - 1].append(ch)
+                }
+                if lines.count > 2 { lines = [lines[0], CellText.truncate(lines[1...].joined(), n)] }
+            }
+            guard w.y + style.margin + Double(lines.count) * w.lineHeight <= bottom else { return }
+            w.y += style.margin
+            for line in lines { w.line([.t(" " + line, p.faint)], in: .init(x: x0, columns: n + 2)) }
+        }
+
         /// The pinned servers as boxes, `per` to a row, each titled with
         /// its mark and name, and its source where that tells servers
-        /// apart: its three meters, and with `detail` what each measures.
-        /// Draws nothing, and says so, unless every server fits.
+        /// apart, or why it has nothing current: its three meters, and with
+        /// `detail` what each measures. Draws nothing, and says so, unless
+        /// every server fits.
         mutating func serverBoxes(_ cards: [ServerCardModel], x0: Double, x1: Double, per: Int, detail: Bool) -> Bool {
             let rows = (cards.count + per - 1) / per
             guard w.y + Double(rows) * (chrome + 3 * w.lineHeight) <= bottom + 0.001 else { return false }
@@ -277,11 +306,13 @@ struct CellsWidget: View {
                 let bx0 = x0 + Double(k * (span + 1)) * cell
                 let bx1 = k == per - 1 ? x1 : bx0 + Double(span) * cell
                 // The title's room, past the border's corners and spaces: the
-                // name first, the source in what's left if that says something.
+                // name first, then its state if nothing is current, else the
+                // source in what's left if that says something.
                 let room = Int(((bx1 - bx0) / cell).rounded()) - 8
                 let spare = room - 2 - CellText.width(c.name)
-                let source = sources && spare >= 5 ? c.origin.map { CellText.truncate($0.name, spare) } ?? "" : ""
-                let right: [Seg] = source.isEmpty ? [] : [.t(" " + source + " ", p.muted)]
+                let state = c.hasNoCurrentSample && CellText.width(c.pill.text) + 2 <= spare
+                let source = !state && sources && spare >= 5 ? c.origin.map { CellText.truncate($0.name, spare) } ?? "" : ""
+                let right: [Seg] = state ? b.serverPill(c) : source.isEmpty ? [] : [.t(" " + source + " ", p.muted)]
                 let name = CellText.truncate(c.name, max(1, room - (source.isEmpty ? 0 : CellText.width(source) + 2)))
                 w.box([.t(" ", p.text), .mark(c.mark, p), .t(" " + name + " ", p.text, bold: true)], right,
                       x0: bx0, x1: bx1, style: style) { b.meters(&$0, c, detail: detail) }

@@ -124,8 +124,9 @@ struct CellsBodies {
 
     /// The pinned servers' readings, a line each under a line of labels:
     /// CPU, memory and disk as their cards read them, "—" where withheld,
-    /// and where there's room a short bar before each. At most `lines`
-    /// lines; servers left out are counted on the last.
+    /// and where there's room a short bar before each. A server with no
+    /// current sample says why across its columns. At most `lines` lines;
+    /// servers left out are counted on the last.
     func resources(_ w: inout CellWriter, _ cards: [ServerCardModel], lines: Int) {
         let n = w.frame.columns
         let fit = (n - 2 - 12 - 3 * 5) / 3 - 1
@@ -139,6 +140,10 @@ struct CellsBodies {
         let shown = cards.count <= room ? cards.count : max(0, room - 1)
         for c in cards.prefix(shown) {
             var segs: [Seg] = [.mark(c.mark, p), .t(" " + CellText.pad(CellText.truncate(c.name, name), name), p.text)]
+            if c.hasNoCurrentSample {
+                w.line(segs + [.t(CellText.padLeft(c.pill.text, 3 * (column + 1)), p.muted)])
+                continue
+            }
             for m in [c.cpu, c.memory, c.disk] {
                 segs.append(.t(" ", p.text))
                 if bar > 0 {
