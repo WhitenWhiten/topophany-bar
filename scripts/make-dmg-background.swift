@@ -1,14 +1,18 @@
 // Renders the disk image's window, packaging/dmg/background.png and @2x.
 //
-// The icon's world laid flat, as topo's geo map draws it: the land as a
-// matrix of dots on the TUI's ink, the Pacific between the app and
-// Applications, and the icon's arc of light from Shanghai, under the app,
-// to Los Angeles, under Applications, saying where to drag. One line says
-// what the app is.
+// The world laid flat in the icon's dither: the land in ink on paper, in the
+// homepage's 8×8 ordered (Bayer) dither, the Pacific between the app and
+// Applications, and a route in ink from Shanghai, under the app, to Los
+// Angeles, under Applications, saying where to drag. One line says what the
+// app is.
+//
+// A cell is 2 points, a degree of the map, the grain of the icon's own dither
+// at the 128 points the window shows it: 2 pixels in background.png, 4 in
+// @2x.
 //
 // Finder draws names black in Light and white in Dark, whatever lies under
-// them. Where they fall, the ink deepens to black, which hides the one and
-// carries the other.
+// them. Under the app's name the paper is clear, so it reads in Light and
+// stays out of the way in Dark; Applications has none.
 //
 // The land is design/assets/land.bin: Natural Earth 1:110m land (public
 // domain) in 0.5° cells, row 0 at 90°N, column 0 at 180°W, as topo draws it.
@@ -19,7 +23,6 @@
 // together. dmgbuild joins the two PNGs into one HiDPI TIFF.
 
 import CoreGraphics
-import CoreImage
 import CoreText
 import Foundation
 import ImageIO
@@ -38,19 +41,22 @@ let width = 540.0, height = 340.0
 let app = (x: 150.0, y: 144.0), applications = (x: 390.0, y: 144.0)
 // Finder centers a 13-point name 84 points below its icon.
 let names = app.y + 84
+let cell = 2.0
+let columns = Int(width / cell), rows = Int(height / cell)
 
-typealias RGB = (r: Double, g: Double, b: Double)
-func hex(_ v: UInt32) -> RGB { (Double(v >> 16 & 255) / 255, Double(v >> 8 & 255) / 255, Double(v & 255) / 255) }
-// The TUI's palette, and the icon's.
-let inkTop = hex(0x121D26), inkDeep = hex(0x000000), accent = hex(0x5EEAD4), glow = hex(0xF0FDFA)
-let landDay = hex(0xB4F5E8), landDusk = hex(0x2F9389), landDark = hex(0x1A4448)
-let city = hex(0xFCD34D), ember = hex(0xF59E0B), muted = hex(0x6F7F8D)
+let ink = CGColor(srgbRed: 0x1A / 255, green: 0x1A / 255, blue: 0x1A / 255, alpha: 1)
+let paper = CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1)
+let muted = CGColor(srgbRed: 0x80 / 255, green: 0x80 / 255, blue: 0x80 / 255, alpha: 1)
+let bayer = [
+    0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26,
+    12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22,
+    3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25,
+    15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21,
+]
+func threshold(_ i: Int, _ j: Int) -> Double { (Double(bayer[(j & 7) * 8 + (i & 7)]) + 0.5) / 64 }
 
 func clamp(_ v: Double, _ lo: Double = 0, _ hi: Double = 1) -> Double { min(hi, max(lo, v)) }
 func smoothstep(_ e0: Double, _ e1: Double, _ x: Double) -> Double { let t = clamp((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t) }
-func mix(_ a: RGB, _ b: RGB, _ t: Double) -> RGB {
-    let t = clamp(t); return (a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t)
-}
 
 // MARK: the map
 
@@ -58,27 +64,31 @@ func mix(_ a: RGB, _ b: RGB, _ t: Double) -> RGB {
 let shanghai = (lat: 31.2, lon: 121.5), losAngeles = (lat: 34.05, lon: -118.25)
 let scale = (applications.x - app.x) / (losAngeles.lon + 360 - shanghai.lon)   // points per degree
 let midLat = (shanghai.lat + losAngeles.lat) / 2
-func onMap(_ lat: Double, _ lon: Double) -> (x: Double, y: Double) {
-    var east = lon - shanghai.lon
-    if east < -app.x / scale { east += 360 }
-    return (app.x + east * scale, app.y - (lat - midLat) * scale)
+// The point's place on the globe.
+func geographic(_ x: Double, _ y: Double) -> (lat: Double, lon: Double) {
+    (midLat - (y - app.y) / scale, shanghai.lon + (x - app.x) / scale)
 }
 
 func isLand(_ lat: Double, _ lon: Double) -> Bool {
+    guard lat > -90, lat < 90 else { return false }
     var l = (lon + 180).truncatingRemainder(dividingBy: 360)
     if l < 0 { l += 360 }
     let i = min(359, max(0, Int((90 - lat) * 2))) * 720 + min(719, Int(l * 2))
     return landBits[i >> 3] & (0x80 >> UInt8(i & 7)) != 0
 }
-// The land's dots sit every 2°; a cell is land when enough of it is.
-let step = 2.0
-func landShare(_ lat: Double, _ lon: Double) -> Double {
+// A cell is land when most of it is.
+func isLandCell(_ x: Double, _ y: Double) -> Bool {
     var hits = 0
-    for v in 0..<4 { for u in 0..<4 where isLand(lat - step / 2 + (Double(v) + 0.5) * step / 4, lon - step / 2 + (Double(u) + 0.5) * step / 4) { hits += 1 } }
-    return Double(hits) / 16
+    for v in 0..<4 {
+        for u in 0..<4 {
+            let g = geographic(x + (Double(u) + 0.5) * cell / 4, y + (Double(v) + 0.5) * cell / 4)
+            if isLand(g.lat, g.lon) { hits += 1 }
+        }
+    }
+    return hits >= 8
 }
 
-// The arc bows north from Shanghai toward Los Angeles, as a great circle
+// The route bows north from Shanghai toward Los Angeles, as a great circle
 // does on a flat map. It rises from behind the app's icon and lands on the
 // folder.
 let start = (x: app.x + 30, y: app.y - 20), end = (x: applications.x - 52, y: applications.y - 44)
@@ -87,115 +97,66 @@ func arc(_ u: Double) -> (x: Double, y: Double) {
     let m = 1 - u
     return (m * m * start.x + 2 * m * u * control.x + u * u * end.x, m * m * start.y + 2 * m * u * control.y + u * u * end.y)
 }
-func arcSlope(_ u: Double) -> (x: Double, y: Double) {
-    (2 * (1 - u) * (control.x - start.x) + 2 * u * (end.x - control.x), 2 * (1 - u) * (control.y - start.y) + 2 * u * (end.y - control.y))
+let arcPoints = (0...400).map { arc(Double($0) / 400) }
+func nearestOnArc(_ x: Double, _ y: Double) -> (distance: Double, u: Double) {
+    var best = Double.infinity, at = 0
+    for (k, p) in arcPoints.enumerated() {
+        let d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)
+        if d < best { best = d; at = k }
+    }
+    return (best.squareRoot(), Double(at) / 400)
 }
-// Thin where it sets out, as on the icon.
-func arcWidth(_ u: Double) -> Double { 3.6 * (0.3 + 0.7 * pow(u, 0.8)) }
-let arcPoints = (0...200).map { arc(Double($0) / 200) }
-func distanceToArc(_ x: Double, _ y: Double) -> Double {
-    arcPoints.map { ($0.x - x) * ($0.x - x) + ($0.y - y) * ($0.y - y) }.min()!.squareRoot()
+
+// MARK: the cells
+
+// Which cells take ink: the route, and the land, as dense as the icon's sea
+// near the route and thinning toward the words above, the names below and
+// the window's sides.
+var inked = [Bool](repeating: false, count: columns * rows)
+for j in 0..<rows {
+    for i in 0..<columns {
+        let x = Double(i) * cell, y = Double(j) * cell
+        let cx = x + cell / 2, cy = y + cell / 2
+        let near = nearestOnArc(cx, cy)
+        // Thin where it sets out, as light setting out.
+        var on = near.distance <= (near.u < 0.3 ? 1.1 : 2.1)
+        if !on, near.distance > 6, isLandCell(x, y) {
+            let presence = smoothstep(50, 92, cy) * (1 - smoothstep(app.y + 30, names - 16, cy))
+                * smoothstep(0, 60, cx) * (1 - smoothstep(width - 60, width, cx))
+            let tone = presence * (0.3 + 0.3 * exp(-near.distance / 120))
+            on = tone > threshold(i, j)
+        }
+        inked[j * columns + i] = on
+    }
 }
 
 // MARK: drawing
 
 let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
-func color(_ c: RGB, _ alpha: Double = 1) -> CGColor { CGColor(srgbRed: c.r, green: c.g, blue: c.b, alpha: alpha) }
-func canvas(_ s: Double) -> CGContext {
+
+func render(_ s: Double) -> CGImage {
     let c = CGContext(data: nil, width: Int(width * s), height: Int(height * s), bitsPerComponent: 8, bytesPerRow: 0, space: sRGB,
                       bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
     c.translateBy(x: 0, y: height * s)
     c.scaleBy(x: s, y: -s)  // points, y down
-    c.interpolationQuality = .high
-    return c
-}
-func disc(_ c: CGContext, _ p: (x: Double, y: Double), _ r: Double, _ fill: CGColor) {
-    c.setFillColor(fill)
-    c.fillEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r))
-}
-func place(_ c: CGContext, _ image: CGImage) {
-    c.saveGState()
-    c.translateBy(x: 0, y: height)
-    c.scaleBy(x: 1, y: -1)
-    c.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-    c.restoreGState()
-}
-let blurContext = CIContext(options: [.workingColorSpace: sRGB, .outputColorSpace: sRGB])
-func blurred(_ image: CGImage, _ sigma: Double) -> CGImage {
-    let input = CIImage(cgImage: image)
-    let soft = input.clampedToExtent().applyingGaussianBlur(sigma: sigma).cropped(to: input.extent)
-    return blurContext.createCGImage(soft, from: input.extent, format: .RGBA8, colorSpace: sRGB)!
-}
-
-func render(_ s: Double) -> CGImage {
-    let c = canvas(s)
-
-    // The icon's ink, deepening smoothly to black under the names.
-    let stops = (0...16).map { Double($0) / 16 }
-    let ground = CGGradient(colorsSpace: sRGB, colors: stops.map { color(mix(inkTop, inkDeep, pow($0, 1.6))) } as CFArray,
-                            locations: stops.map { CGFloat($0) })!
-    c.drawLinearGradient(ground, start: .zero, end: CGPoint(x: 0, y: names - 12), options: [.drawsAfterEndLocation])
-
-    // The land, in a band about the arc: clear of the words above and of
-    // the names below. Dots grow and brighten toward the arc.
-    for lat in stride(from: 90 - step / 2, to: -90, by: -step) {
-        for lon in stride(from: -180 + step / 2, to: 180, by: step) {
-            let p = onMap(lat, lon)
-            guard p.x > -4, p.x < width + 4, p.y > 40, p.y < names - 16, landShare(lat, lon) >= 0.375 else { continue }
-            let presence = smoothstep(52, 96, p.y) * (1 - smoothstep(app.y + 24, names - 18, p.y))
-            guard presence > 0.02 else { continue }
-            let near = exp(-distanceToArc(p.x, p.y) / 110)
-            let tone = 0.25 + 0.75 * near
-            let fill = tone > 0.4 ? mix(landDusk, landDay, (tone - 0.4) / 0.6 * 0.7) : mix(landDark, landDusk, tone / 0.4)
-            disc(c, p, step * scale * (0.16 + 0.06 * near), color(fill, presence * (0.42 + 0.38 * near)))
+    c.setShouldAntialias(false)
+    c.setFillColor(paper)
+    c.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    c.setFillColor(ink)
+    for j in 0..<rows {
+        for i in 0..<columns where inked[j * columns + i] {
+            c.fill(CGRect(x: Double(i) * cell, y: Double(j) * cell, width: cell, height: cell))
         }
     }
-
-    // The arc: a soft bloom, then its core, brightening toward Applications.
-    func ribbon(_ w: (Double) -> Double) -> CGPath {
-        var left: [CGPoint] = [], right: [CGPoint] = []
-        for k in 0...200 {
-            let u = Double(k) / 200, p = arc(u), d = arcSlope(u)
-            let l = (d.x * d.x + d.y * d.y).squareRoot(), h = w(u) / 2
-            left.append(CGPoint(x: p.x - d.y / l * h, y: p.y + d.x / l * h))
-            right.append(CGPoint(x: p.x + d.y / l * h, y: p.y - d.x / l * h))
-        }
-        let path = CGMutablePath()
-        path.addLines(between: left + right.reversed())
-        path.closeSubpath()
-        for u in [0.0, 1] {
-            let p = arc(u), h = w(u)
-            path.addEllipse(in: CGRect(x: p.x - h / 2, y: p.y - h / 2, width: h, height: h))
-        }
-        return path
-    }
-    func fillAlong(_ c: CGContext, _ path: CGPath, _ from: CGColor, _ to: CGColor) {
-        c.saveGState()
-        c.addPath(path)
-        c.clip()
-        let g = CGGradient(colorsSpace: sRGB, colors: [from, to] as CFArray, locations: [0, 1])!
-        c.drawLinearGradient(g, start: CGPoint(x: start.x, y: start.y), end: CGPoint(x: end.x, y: end.y), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
-        c.restoreGState()
-    }
-    let bloom = canvas(s)
-    fillAlong(bloom, ribbon { arcWidth($0) * 3 }, color(accent, 0.2), color(accent, 0.9))
-    place(c, blurred(bloom.makeImage()!, 6 * s))
-    let core = mix(glow, accent, 0.12)
-    fillAlong(c, ribbon(arcWidth), color(mix(accent, core, 0.45), 0.8), color(core))
-    // The place it brings to light.
-    let halo = canvas(s)
-    disc(halo, end, 11, color(mix(city, ember, 0.3), 0.85))
-    place(c, blurred(halo.makeImage()!, 5 * s))
-    disc(c, end, 3.6, color(city))
-    disc(c, end, 2, color(mix(city, glow, 0.8)))
 
     // One line.
+    c.setShouldAntialias(true)
     let base = CTFontCreateUIFontForLanguage(.system, 10, nil)!
     let font = CTFontCreateCopyWithAttributes(base, 10, nil, CTFontDescriptorCreateWithAttributes(
         [kCTFontTraitsAttribute: [kCTFontWeightTrait: 0.23] as CFDictionary] as CFDictionary))
     let tracking = 2.0
     let words = CTLineCreateWithAttributedString(CFAttributedStringCreate(nil, "LIGHTWEIGHT NETWORK TOPOLOGY MONITOR" as CFString, [
-        kCTFontAttributeName: font, kCTForegroundColorAttributeName: color(muted), kCTKernAttributeName: tracking,
+        kCTFontAttributeName: font, kCTForegroundColorAttributeName: muted, kCTKernAttributeName: tracking,
     ] as CFDictionary)!)
     c.saveGState()
     c.translateBy(x: (width - CTLineGetTypographicBounds(words, nil, nil, nil) + tracking) / 2, y: 36)

@@ -1,83 +1,36 @@
 import SwiftUI
 
-/// Topophany's mark: a dot-matrix globe lit from the upper left, crossed by
-/// one route. Vectors, so it is crisp at any size.
+/// Topophany's mark: the app icon's globe in 16 cells of ordered dither,
+/// ink on a paper disc in light, its light alone in dark. Each cell's edges
+/// fall on whole pixels, so the dither stays crisp at any size.
 public struct BrandMark: View {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.displayScale) private var displayScale
+
     public init() {}
 
     public var body: some View {
         Canvas { ctx, size in
-            let k = min(size.width, size.height) / 64
-            ctx.translateBy(x: (size.width - 64 * k) / 2, y: (size.height - 64 * k) / 2)
-            ctx.scaleBy(x: k, y: k)
-            for layer in Self.under { layer.draw(in: ctx) }
-            for (x, y, r, c) in Self.dots {
-                ctx.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)), with: .color(Color(rgb: c)))
+            let side = min(size.width, size.height), scale = displayScale
+            let x0 = (size.width - side) / 2, y0 = (size.height - side) / 2
+            func edge(_ k: Int) -> Double { (Double(k) * side / 16 * scale).rounded() / scale }
+            func cells(_ rows: [UInt16]) -> Path {
+                var path = Path()
+                for (y, row) in rows.enumerated() {
+                    for x in 0..<16 where row & (0x8000 >> x) != 0 {
+                        path.addRect(CGRect(x: x0 + edge(x), y: y0 + edge(y), width: edge(x + 1) - edge(x), height: edge(y + 1) - edge(y)))
+                    }
+                }
+                return path
             }
-            for layer in Self.over { layer.draw(in: ctx) }
+            if scheme == .dark {
+                ctx.fill(cells(Self.night), with: .color(Color(rgb: 0xF4F2EC)))
+            } else {
+                ctx.fill(cells(Self.disc), with: .color(.white))
+                ctx.fill(cells(Self.day), with: .color(Color(rgb: 0x1A1A1A)))
+            }
         }
         .accessibilityHidden(true)
-    }
-}
-
-extension BrandMark {
-    enum Shape: Sendable {
-        case circle(Double, Double, Double)
-        /// A band: its outline as x and y in turn, and a circle at each end.
-        case ribbon([Double], ends: [(Double, Double, Double)])
-
-        var path: Path {
-            switch self {
-            case .circle(let x, let y, let r):
-                return Path(ellipseIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r))
-            case .ribbon(let outline, let ends):
-                var band = Path()
-                band.addLines(stride(from: 0, to: outline.count, by: 2).map { CGPoint(x: outline[$0], y: outline[$0 + 1]) })
-                band.closeSubpath()
-                return ends.reduce(band) { $0.union(Shape.circle($1.0, $1.1, $1.2).path) }
-            }
-        }
-    }
-
-    /// Gradient stops are offset, 0xRRGGBB and opacity.
-    enum Paint: Sendable {
-        case color(UInt32, Double)
-        case linear(CGPoint, CGPoint, [(Double, UInt32, Double)])
-        case radial(CGPoint, Double, [(Double, UInt32, Double)])
-
-        var shading: GraphicsContext.Shading {
-            func gradient(_ stops: [(Double, UInt32, Double)]) -> Gradient {
-                Gradient(stops: stops.map { .init(color: Color(rgb: $0.1, opacity: $0.2), location: $0.0) })
-            }
-            switch self {
-            case .color(let c, let opacity): return .color(Color(rgb: c, opacity: opacity))
-            case .linear(let from, let to, let stops): return .linearGradient(gradient(stops), startPoint: from, endPoint: to)
-            case .radial(let centre, let r, let stops):
-                return .radialGradient(gradient(stops), center: centre, startRadius: 0, endRadius: r)
-            }
-        }
-    }
-
-    /// One shape of the mark, filled, or stroked when it has a width.
-    struct Layer: Sendable {
-        var shape: Shape
-        var paint: Paint
-        var stroke: Double?
-        var clip: Shape?
-
-        init(_ shape: Shape, _ paint: Paint, stroke: Double? = nil, clip: Shape? = nil) {
-            (self.shape, self.paint, self.stroke, self.clip) = (shape, paint, stroke, clip)
-        }
-
-        func draw(in context: GraphicsContext) {
-            var ctx = context
-            if let clip { ctx.clip(to: clip.path) }
-            if let stroke {
-                ctx.stroke(shape.path, with: paint.shading, lineWidth: stroke)
-            } else {
-                ctx.fill(shape.path, with: paint.shading)
-            }
-        }
     }
 }
 

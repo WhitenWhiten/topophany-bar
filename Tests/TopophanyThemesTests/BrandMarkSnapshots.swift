@@ -13,7 +13,8 @@ import Testing
                 ForEach(sizes, id: \.self) { s in BrandMark().frame(width: s, height: s) }
             }
             .padding(16)
-            .background(dark ? Color(rgb: 0x202124) : Color(rgb: 0xF1F3F4)))
+            .background(dark ? Color(rgb: 0x202124) : Color(rgb: 0xF1F3F4))
+            .environment(\.colorScheme, dark ? .dark : .light))
             #expect(size == CGSize(width: sizes.reduce(0, +) + 16 * Double(sizes.count + 1), height: 256 + 32))
         }
     }

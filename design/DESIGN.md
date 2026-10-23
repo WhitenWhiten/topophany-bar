@@ -345,7 +345,7 @@ A Time zones widget's timeline is longer: an entry each minute for an hour, twic
 
 ### 7.4 Rendering modes
 
-macOS draws desktop widgets without background or color while another app is in front. Shape-first glyphs keep every state readable there. In that mode, the cells renderer drops its box borders for plain headings, and the mark in a cards widget's corner is the globe's lines, as the menu bar item draws it at rest: flattened to one tone, the colored globe would be a disc, and a disc is up's mark. A tick on the check bar has no shape of its own, so there weight tells them apart: trouble in the full ink, up faint.
+macOS draws desktop widgets without background or color while another app is in front. Shape-first glyphs keep every state readable there. In that mode, the cells renderer drops its box borders for plain headings, and the mark in a cards widget's corner is the globe's lines, as the menu bar item draws it at rest: flattened to one tone, the dithered globe on its paper would be a disc, and a disc is up's mark. A tick on the check bar has no shape of its own, so there weight tells them apart: trouble in the full ink, up faint.
 
 ## 8. Theme architecture
 
@@ -516,7 +516,7 @@ protocol Engine {
   3. **When the engine stops:** restart it after 1, 2, 4 … up to 30 s, and show ◌ until the next frame.
   4. **When the app quits:** stdin closes and `topo` exits.
 
-  Spawning a user-installed binary rules out the App Sandbox, so v1 is distributed with a Developer ID, notarized, on a disk image that the Homebrew cask also installs from. The image's window is the icon's world laid flat: the app and Applications on a dot-matrix Pacific, joined by the icon's arc of light, under one line of words (`scripts/make-dmg-background.swift`). It never scrolls, whatever bars Finder shows, and the names stay out of the way: Applications has none, and the app's sits on black, where Finder's black in Light vanishes and its white in Dark reads.
+  Spawning a user-installed binary rules out the App Sandbox, so v1 is distributed with a Developer ID, notarized, on a disk image that the Homebrew cask also installs from. The image's window is the world laid flat in the icon's dither, ink on paper in its 2-point grain: the app and Applications on either side of the Pacific, joined by a route in ink, under one line of words (`scripts/make-dmg-background.swift`). It never scrolls, whatever bars Finder shows, and the names stay out of the way: Applications has none, and the app's sits on clear paper, where Finder's black in Light reads and its white in Dark vanishes.
 
 #### 10.2.1 Getting topo
 
