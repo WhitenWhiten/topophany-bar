@@ -53,6 +53,34 @@ struct SourcesCommandTests {
 }
 
 extension SourcesCommandTests {
+    @MainActor @Test func komariTakesAnAPIKeyOrNone() async throws {
+        // The inspection echoes what was sent as its warnings.
+        let client = SourcesClient { _, data in
+            let input = try JSONSerialization.jsonObject(with: data!) as! [String: Any]
+            let auth = input["auth"] as! [String: String], source = input["source"] as! [String: Any]
+            let echo = try JSONSerialization.data(withJSONObject: [auth["mode"]!, auth["token"] ?? "", source["adapter"] as! String, "\(source["interval_seconds"]!)"])
+            return .init(status: 0, stdout: Data(#"{"schema":1,"request_id":"\#(input["request_id"] as! String)","ok":true,"data":{"source":{"id":"bs-a","name":"Synthetic","adapter":"komari","url":"http://127.0.0.1"},"systems":[{"id":"d4c8d9a1-4ec5-4c1b-9b95-4c1c8f930b0d","name":"Node"}],"truncated":false,"limits":{"max_selected":20},"warnings":\#(String(decoding: echo, as: UTF8.self))}}"#.utf8))
+        }
+        let editor = SourceEditor(client: client, profile: "desktop", revision: "", adapters: ["beszel", "komari"])
+        #expect(editor.source.adapter == "beszel" && editor.authentication == .password && editor.source.intervalSeconds == 60)
+        #expect(editor.methods == [.password, .token])
+        editor.token = "typed-for-beszel"
+        editor.choose(adapter: "komari")
+        #expect(editor.source.adapter == "komari" && editor.authentication == .token && editor.token.isEmpty)
+        #expect(editor.methods == [.token, .anonymous] && editor.signIn == .token && editor.source.intervalSeconds == 30)
+        editor.authentication = .anonymous; editor.inspect()
+        for _ in 0..<50 where editor.busy { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(editor.inspection?.warnings == ["anonymous", "", "komari", "30"])
+        editor.authentication = .token; editor.token = "synthetic-key"; editor.changed(); editor.inspect()
+        for _ in 0..<50 where editor.busy { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(editor.inspection?.warnings == ["token", "synthetic-key", "komari", "30"])
+        // An interval the user chose stays; an adapter topo doesn't offer is refused.
+        editor.source.intervalSeconds = 45; editor.choose(adapter: "beszel")
+        #expect(editor.source.intervalSeconds == 45 && editor.authentication == .password && editor.token.isEmpty)
+        editor.choose(adapter: "future"); #expect(editor.source.adapter == "beszel")
+        editor.close()
+    }
+
     @MainActor @Test func conflictReadsBeforeRetryAndLateInspectIsIgnored() async throws {
         let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appending(path: "docs/contracts/direct-v1/fixtures")
         let listBytes = try Data(contentsOf: root.appending(path: "sources-list-success.json"))

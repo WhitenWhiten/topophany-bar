@@ -45,6 +45,11 @@ struct DirectTests {
         #expect(throws: SourceProblem.self) { try r.validate(using: caps) }
         let old = try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"sources":["client","preview"]}"#.utf8))
         #expect(!old.supports(source: "direct"))
+        // Direct needs an adapter the app sets up; it offers them in its own order.
+        for (adapters, known) in [(#"["komari"]"#, ["komari"]), (#"["komari","future","beszel"]"#, ["beszel", "komari"]), (#"["future"]"#, [])] {
+            let c = try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"sources":["client","preview","direct"],"direct":{"schema":1,"config_api":1,"adapters":\#(adapters),"retry":true,"limits":{"sources_per_profile":64,"objects_per_source":20,"objects_per_profile":256,"template_rows":128}}}"#.utf8))
+            #expect(c.direct?.known == known && c.supports(source: "direct") == !known.isEmpty)
+        }
     }
     @Test func optionalOriginAndIntegers() throws {
         let data = Data(#"{"id":"bs-a.object","name":"合成","origin":{"adapter":42},"resources":[{"cpu":{"percent":12.5},"memory":{"used_bytes":9007199254740993},"origin":false}],"extra":true}"#.utf8)

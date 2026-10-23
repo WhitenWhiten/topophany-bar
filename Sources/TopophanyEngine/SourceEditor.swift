@@ -6,7 +6,7 @@ import TopophanyKit
 @MainActor @Observable
 public final class SourceEditor: Identifiable {
     public let id = UUID()
-    public enum Authentication: String, CaseIterable { case saved, password, token }
+    public enum Authentication: String, CaseIterable { case saved, password, token, anonymous }
     public var source: DirectSource
     public var authentication: Authentication
     public var identity = ""
@@ -21,19 +21,46 @@ public final class SourceEditor: Identifiable {
     public private(set) var currentProfile: DirectProfile?
     public let allowsSaved: Bool
     public let profile: String
+    /// The adapters a new source can read; an existing source keeps its own.
+    public let adapters: [String]
     @ObservationIgnored private let savedURL: String?
     @ObservationIgnored private let client: SourcesClient
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private var operation: Task<Void, Never>?
     @ObservationIgnored private var closed = false
     @ObservationIgnored public var onSaved: ((DirectSaved) -> Void)?
-    public init(client: SourcesClient, profile: String, revision: String, entry: DirectProfile.Entry? = nil) {
+    public init(client: SourcesClient, profile: String, revision: String, entry: DirectProfile.Entry? = nil,
+                adapters: [String] = ["beszel"]) {
         self.savedURL = entry?.source.url
         self.allowsSaved = entry != nil
         self.client = client; self.profile = profile; self.revision = revision
-        source = entry?.source ?? DirectSource()
-        authentication = entry == nil ? .password : .saved
+        var source = entry?.source ?? DirectSource()
+        if entry == nil, let first = adapters.first {
+            source.adapter = first; source.intervalSeconds = DirectSource.interval(adapter: first)
+        }
+        self.source = source
+        self.adapters = entry.map { [$0.source.adapter] } ?? adapters
+        authentication = entry == nil ? (source.adapter == "komari" ? .token : .password) : .saved
         selected = Set(entry?.selectedObjects ?? [])
+    }
+    /// How this source's adapter takes a sign-in: Beszel an account or a
+    /// token, Komari an API key or none for its public nodes.
+    public var methods: [Authentication] {
+        let own: [Authentication] = source.adapter == "komari" ? [.token, .anonymous] : [.password, .token]
+        return allowsSaved ? [.saved] + own : own
+    }
+    /// Signing in afresh: a password for Beszel, an API key for Komari.
+    public var signIn: Authentication { source.adapter == "komari" ? .token : .password }
+    /// A new source switching what it reads. Secrets typed for the other
+    /// adapter are dropped, and an untouched interval follows the adapter's.
+    public func choose(adapter: String) {
+        guard !allowsSaved, adapter != source.adapter, adapters.contains(adapter) else { return }
+        if source.intervalSeconds == DirectSource.interval(adapter: source.adapter) {
+            source.intervalSeconds = DirectSource.interval(adapter: adapter)
+        }
+        source.adapter = adapter
+        clearSecrets()
+        authentication = signIn
     }
     public var selectionLimit: Int { min(20, inspection?.limits.maxSelected ?? 20) }
     public var canSave: Bool { !busy && !needsReview && inspection != nil && !selected.isEmpty && selected.count <= selectionLimit }
@@ -42,6 +69,7 @@ public final class SourceEditor: Identifiable {
         case .saved: .saved
         case .password: .password(identity: identity, password: password)
         case .token: .token(token)
+        case .anonymous: .anonymous
         }
     }
     /// Called for authentication/URL/collection edits. A late discovery cannot replace the new form.

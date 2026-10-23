@@ -631,7 +631,7 @@ Later: user theme files, EmbeddedEngine and `libtopo`, more renderers.
 - Should the Terminal theme follow the user's terminal font when one is set?
 - What should the widget heartbeat be: 30 min, or tuned to the observed reload budget?
 
-## 13. Beszel direct (D1)
+## 13. Beszel and Komari direct (D1)
 
 Direct extends the existing client/preview product with a third, exclusive reading
 mode. Data still flows Engine → Kit → Sections → Themes. Platform-independent
@@ -639,14 +639,20 @@ packages remain AppKit-free. There is no new dashboard or WebView.
 
 Settings adds a Data sources toolbar tab using the existing `SettingsForm`, native
 pickers, secure fields, grouped rows and delete confirmation. One row says where
-readings come from; one Beszel group holds the profile, a row per source (its Hub,
-its servers and, while the bar reads it, its state) and Add Source…. A source's
-button is what it needs, Sign In… when its sign-in lapsed and Edit… otherwise; the
-rest are in its menu. The editor sheet sizes to what it shows and follows source →
-test → server selection (checkboxes, "2 of 20 chosen") → save; Settings grows to
-hold it. Source ID and system ID carry identity; names are presentation only.
-Advanced fields expose the Go ranges without a TLS bypass. Passwords and tokens
-never become Settings or App Group properties.
+readings come from; one Sources group holds the profile, a row per source (its Hub
+or server, its servers and, while the bar reads it, its state; its kind too where
+the profile mixes Beszel and Komari) and Add Source…. A source's button is what it
+needs, Sign In… when its sign-in lapsed and Edit… otherwise; the rest are in its
+menu. The editor sheet sizes to what it shows and follows source → test → server
+selection (checkboxes, "2 of 20 chosen") → save; Settings grows to hold it. A new
+source chooses its kind first, Beszel or Komari, from the adapters `topo` offers;
+an existing one keeps its own. The kind sets the words and the sign-in: a Hub URL
+with account and password or an API token for Beszel; a server URL with an API key,
+or public servers only, for Komari, read every 30 seconds unless the interval was
+changed. Switching kinds drops what was typed for the other. Source ID and system
+ID carry identity; names are presentation only. Advanced fields expose the Go
+ranges without a TLS bypass. Passwords, tokens and API keys never become Settings
+or App Group properties.
 
 The status card receives `SourceStatusSection`, which describes acquisition rather
 than a collector verdict. Its headline is the state alone: Connected, Needs
@@ -674,12 +680,13 @@ CPUs", "8.4 / 16 GiB"), as the Terminal card's detail column does. Both sizes ta
 the total's binary unit, MiB to PiB: "1.2 / 3.6 TiB". A server whose
 health Go does judge keeps UP, WARN or DOWN.
 
-The rule follows the source, not the mode: Komari reaches the bar only through a
-collector's topology, its servers carrying `origin.adapter` "komari". Their cards
-name it in the provider's place ("host · Komari Monitor"), and an unjudged one
-reads as above. In collector mode, Data sources lists, read-only, the sources the
-collector's server list names (Komari, Beszel), each with its servers; they are
-set up in the topology. Source rows in direct mode lead with a dot, as General's
+The rule follows the source, not the mode: Komari and Beszel servers reach the bar
+directly or through a collector's topology, carrying `origin.adapter` "komari" or
+"beszel". Their cards name it in the provider's place ("host · Komari Monitor"),
+and an unjudged one reads as above. A Komari disk is the aggregate its agent
+reports, not one mount; the editor's server list says so. In collector mode, Data
+sources lists, read-only, the sources the collector's server list names (Komari,
+Beszel), each with its servers; they are set up in the topology. Source rows in direct mode lead with a dot, as General's
 engine row does: green while connected, orange when it asks for a look, a ring
 while it isn't read.
 Unsupported collector sections are hidden in direct mode without changing their

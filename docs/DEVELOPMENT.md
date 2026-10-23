@@ -176,6 +176,24 @@ replaces requests in one stream, tests CAS/retry, then removes its temporary sou
 Without those environment variables it does not contact a backend. The Go harness
 can also run its complete suite with `--topo ABS_BINARY --out ABS_TEMP_DIR`.
 
+For Komari, `Tests/Fixtures/DirectDevelopment/fake-komari.py` serves Komari 1.6's
+three read endpoints on literal loopback, with two public servers and one hidden.
+It is a development double; Go's `scripts/accept_komari.py` runs the official
+binary. Use a `topo` whose capabilities list `komari`:
+
+```sh
+python3 Tests/Fixtures/DirectDevelopment/fake-komari.py \
+  --ready-file /ABS/TEMP/komari-ready.json
+TOPOPHANY_DIRECT_BINARY=/ABS/topo \
+TOPOPHANY_KOMARI_READY=/ABS/TEMP/komari-ready.json \
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+  swift test --filter DirectIntegrationTests
+```
+
+It drives the source editor as the sheet does: public servers without a key, a
+rejected key, then the API key, save, editing with the saved key, a stream to
+ready Komari cards, and removal. SIGTERM stops the server and removes its ready file.
+
 A Debug app accepts `-settings ABS_TEMP/settings.json -topo ABS_BINARY
 -direct-root ABS_TEMP/direct` to isolate both public Settings and Go credentials.
 Normal launches omit direct-root. `AppModel` also accepts a clock, source command

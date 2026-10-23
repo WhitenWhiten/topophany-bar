@@ -7,6 +7,8 @@ public enum SourceAuth: Sendable, Encodable {
     case password(identity: String, password: String)
     case token(String)
     case saved
+    /// Komari's public nodes, read without a key.
+    case anonymous
     enum CodingKeys: String, CodingKey { case mode, identity, password, token }
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
@@ -15,6 +17,7 @@ public enum SourceAuth: Sendable, Encodable {
             try c.encode("password", forKey: .mode); try c.encode(identity, forKey: .identity); try c.encode(password, forKey: .password)
         case .token(let token): try c.encode("token", forKey: .mode); try c.encode(token, forKey: .token)
         case .saved: try c.encode("saved", forKey: .mode)
+        case .anonymous: try c.encode("anonymous", forKey: .mode)
         }
     }
 }

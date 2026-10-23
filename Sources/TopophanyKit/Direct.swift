@@ -18,6 +18,11 @@ public struct DirectSource: Sendable, Hashable, Codable, Identifiable {
     public init(id: String = "bs-" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased(), name: String = "", url: String = "") {
         self.id = id; self.name = name; self.url = url
     }
+    /// The adapters this app can set up, in the order it offers them.
+    public static let adapters = ["beszel", "komari"]
+    /// How often a new source is read. Komari keeps about a minute of
+    /// reports, so topo suggests reading it twice in that minute.
+    public static func interval(adapter: String) -> Int { adapter == "komari" ? 30 : 60 }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)

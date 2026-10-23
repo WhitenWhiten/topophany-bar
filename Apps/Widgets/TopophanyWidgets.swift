@@ -80,7 +80,8 @@ struct NodeEntity: AppEntity {
 
     var displayRepresentation: DisplayRepresentation {
         if id.hasPrefix("direct/") {
-            return DisplayRepresentation(title: "\(name)", subtitle: "\(sourceName ?? "Beszel")")
+            guard let sourceName else { return DisplayRepresentation(title: "\(name)", subtitle: "Direct") }
+            return DisplayRepresentation(title: "\(name)", subtitle: "\(sourceName)")
         }
         return DisplayRepresentation(title: "\(name)", subtitle: isMac ? "This Mac · \(id)" : "\(id)")
     }

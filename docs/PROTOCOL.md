@@ -408,7 +408,17 @@ editing session. Inspect does not carry an implicit token into save. A conflict 
 unknown save outcome reads the profile again and requires review before retrying.
 Closing the editor cancels its process and clears its secret fields.
 
-A source ID is generated once per editor. Returned node IDs are used unchanged;
+Capabilities' `direct.adapters` names what `topo` reads. The bar sets up `beszel`
+and `komari`, in that order, offers only those `topo` lists, and treats direct as
+unsupported when it lists neither. Authentication follows the adapter: Beszel takes
+`password` or `token`, Komari a raw administrator API key as `token` or `anonymous`
+for public nodes; either takes `saved` for an existing source, which keeps its
+adapter. The bar never sends `env`. Object IDs are opaque: 15 characters for
+Beszel, a lowercase UUID for Komari. A new Komari source asks for a 30-second
+interval, as topo's guide suggests for Komari's one-minute recent window.
+
+A source ID is generated once per editor, `bs-` and UUID hex as the contract says,
+whatever its adapter. Returned node IDs are used unchanged;
 `origin` stays distinct from provider. Optional malformed origin fields are ignored
 locally. `profile_revision`, request ID, config revision and dataset ID retain their
 separate meanings. A running frame confirms installation; a matching error rejects

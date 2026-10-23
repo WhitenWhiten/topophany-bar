@@ -306,12 +306,13 @@
   // Direct: where readings come from, then the profile and its sources in one group.
   const direct = win('Data sources', `
     <div class="group" style="margin-top:12px">
-      ${row('Read from', 'Your Beszel Hub, read by topo; no collector needed', pop('Beszel direct'))}
+      ${row('Read from', 'Your Beszel Hub or Komari server, read by topo; no collector needed', pop('Beszel or Komari direct'))}
     </div>
-    <div class="gt">Beszel</div><div class="group">
+    <div class="gt">Sources</div><div class="group">
       ${row('Profile', 'Where topo keeps these sources and their sign-in', pop('desktop — homelab'))}
-      ${row('Home Beszel', 'beszel.home.example · 3 servers · Connected', `<span class="btn">Edit…</span>${ell}`)}
-      ${row('Office Beszel', 'beszel.office.example:8090 · 1 server · <i class="warn" style="font-style:normal">Sign-in required</i>', `<span class="btn">Sign In…</span>${ell}`)}
+      ${row('Home Beszel', 'Beszel · beszel.home.example · 3 servers · Connected', `<span class="btn">Edit…</span>${ell}`)}
+      ${row('Komari Monitor', 'Komari · komari.example.com · 4 servers · Connected', `<span class="btn">Edit…</span>${ell}`)}
+      ${row('Office Beszel', 'Beszel · beszel.office.example:8090 · 1 server · <i class="warn" style="font-style:normal">Sign-in required</i>', `<span class="btn">Sign In…</span>${ell}`)}
       ${row('<i class="btn" style="font-style:normal;font-weight:400">Add Source…</i>', '', '<span class="btn">Retry Now</span>')}
     </div>
     <p class="foot">Up to 20 servers per source and 256 per profile. Only the running bar reads them, and a TUI opened from it reads on its own. Widgets keep the last snapshot, with its time.</p>`);
@@ -322,7 +323,7 @@
     [appearance, '<b>Appearance.</b> Six themes, one meaning. Each shows its colors, as the panel would draw it now.'],
     [sections, '<b>Sections.</b> Status is fixed. The rest can be turned off and reordered.'],
     [local, '<b>This Mac: local readings.</b> RunCat-style live readings of the machine you’re on.'],
-    [direct, '<b>Data sources.</b> A source leads with what it needs: Sign In… when its sign-in lapsed, Edit… otherwise; the rest are in its menu. Its editor tests the Hub, then lists the servers it can see to choose from. A connection promises no samples.'],
+    [direct, '<b>Data sources.</b> A source leads with what it needs: Sign In… when its sign-in lapsed, Edit… otherwise; the rest are in its menu. Its editor picks Beszel or Komari, tests the Hub or server, then lists the servers it can see to choose from. A profile mixing both names each source’s kind. A connection promises no samples.'],
     [server, '<b>This Mac: as a server.</b> The Servers-tab card for this Mac’s node, plus what it observes.'],
   ].map(([w, c]) => `<div><div class="stagew desk wall-dark">${w}</div><p class="wincap">${c}</p></div>`).join('');
 </script>

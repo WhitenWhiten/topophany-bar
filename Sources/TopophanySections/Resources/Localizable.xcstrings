@@ -4373,6 +4373,150 @@
           }
         }
       }
+    },
+    "Changing the server address requires its API key again. Choose API key or public servers only.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーのアドレスを変更すると、API キーを再度入力する必要があります。API キーまたは公開サーバーのみを選択してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更改服务器地址需要重新输入 API 密钥，请选择 API 密钥或仅公开服务器。"
+          }
+        }
+      }
+    },
+    "This Komari server didn’t accept the API key. Enter it again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Komari サーバーは API キーを受け付けませんでした。もう一度入力してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 Komari 服务器未接受该 API 密钥，请重新输入。"
+          }
+        }
+      }
+    },
+    "The Komari server denied this API key access to its servers.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari サーバーは、この API キーによるサーバーへのアクセスを拒否しました。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari 服务器拒绝此 API 密钥访问其服务器。"
+          }
+        }
+      }
+    },
+    "Komari reads with an API key, or its public servers without one. Choose one of them.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari は API キーで読み取るか、キーなしで公開サーバーを読み取ります。どちらかを選択してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari 可使用 API 密钥读取，或不使用密钥读取公开服务器，请选择其一。"
+          }
+        }
+      }
+    },
+    "Could not reach the Komari server. Check the address and try again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari サーバーに接続できません。アドレスを確認して再試行してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法连接 Komari 服务器，请检查地址后重试。"
+          }
+        }
+      }
+    },
+    "The Komari server’s certificate could not be verified. Check its certificate or CA file.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari サーバーの証明書を検証できません。証明書または CA ファイルを確認してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法验证 Komari 服务器证书，请检查证书或 CA 文件。"
+          }
+        }
+      }
+    },
+    "Komari is limiting requests. Wait before trying again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari がリクエストを制限しています。しばらく待って再試行してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari 正在限制请求，请稍后重试。"
+          }
+        }
+      }
+    },
+    "This Komari server’s response is not supported. topo reads Komari 1.6.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Komari サーバーの応答には対応していません。topo が読み取れるのは Komari 1.6 です。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不支持此 Komari 服务器的响应。topo 支持读取 Komari 1.6。"
+          }
+        }
+      }
+    },
+    "This Komari server lists more than the 1,000 servers topo reads.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Komari サーバーには、topo が読み取れる 1,000 台を超えるサーバーがあります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 Komari 服务器列出的服务器超过 topo 可读取的 1,000 台。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

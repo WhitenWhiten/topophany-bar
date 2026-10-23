@@ -162,7 +162,7 @@ struct GeneralSettings: View {
                     }
                 } else {
                     // Direct reads every selected system, so there is no view to choose.
-                    RowLabel("Beszel direct", "Manage profiles and sources in Data sources")
+                    RowLabel("Beszel or Komari direct", "Manage profiles and sources in Data sources")
                 }
             }
             Section {
@@ -869,7 +869,7 @@ struct SectionsSettings: View {
                 }
             } footer: {
                 if model.settings.topo.source == "direct" {
-                    Foot("Beszel direct shows Status, Fleet, Servers and This Mac. The other sections show what a Topophany collector judges, and return as you left them when you read from one.")
+                    Foot("Direct reading shows Status, Fleet, Servers and This Mac. The other sections show what a Topophany collector judges, and return as you left them when you read from one.")
                 } else {
                     Foot("Each section is a row set in the template the app sends to `topo monitor stream`. What makes an entry up, warn or down is set in `topology.json` (for example `max_disk_percent`), not here.")
                 }

@@ -502,6 +502,22 @@
           }
         }
       }
+    },
+    "Direct": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接接続"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直连"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

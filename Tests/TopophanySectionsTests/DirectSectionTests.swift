@@ -27,4 +27,19 @@ struct DirectSectionTests {
             #expect(expired.isBlind && expired.mark == .offline && expired.count == nil)
         }
     }
+    /// A Komari source's problems speak of its server and API key; the
+    /// profile's own stay the same for either adapter.
+    @Test func problemsNameTheAdapter() {
+        L10n.with("en") {
+            #expect(SourceMessages.problem("connection_failed") == "Could not reach the Beszel Hub. Check the address and try again.")
+            #expect(SourceMessages.problem("connection_failed", adapter: "komari") == "Could not reach the Komari server. Check the address and try again.")
+            #expect(SourceMessages.problem("profile_conflict", adapter: "komari") == SourceMessages.problem("profile_conflict"))
+        }
+        for code in ["hub_changed", "auth_required", "forbidden", "auth_method_unsupported", "connection_failed", "tls_error", "rate_limited", "upstream_incompatible", "discovery_limit"] {
+            let english = L10n.with("en") { SourceMessages.problem(code, adapter: "komari") }
+            for language in ["ja", "zh-Hans"] {
+                #expect(L10n.with(language) { SourceMessages.problem(code, adapter: "komari") } != english, "\(code) in \(language)")
+            }
+        }
+    }
 }

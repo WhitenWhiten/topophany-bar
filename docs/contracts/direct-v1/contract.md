@@ -19,7 +19,7 @@ Old `--profiles` remains exclusively collector client profiles.
 |---|---|
 | app | command parsing, JSON envelope, output shape and exit codes |
 | direct storage/auth | stable profile/source identities, config CAS, private credentials, controlled authentication |
-| source.Runtime / probe / Beszel | bounded transport, normalization and atomic source reads |
+| source.Runtime / probe / adapters | bounded transport, normalization and atomic source reads |
 | direct.Session | per-process scheduling, admission, bounded external memory, confirmation, cancellation |
 | report / engine.PrepareExternal | sample deduplication, thresholds, time-independent evidence cache |
 | view | resource selection, source counts/state, origin and expiry |
@@ -31,11 +31,11 @@ Old `--profiles` remains exclusively collector client profiles.
 |---|---|---|
 | profile | nonempty config.ID string | required for direct; stable configuration ID |
 | source.id | config.ID, at most 64 bytes | required; clients generate bs- + lowercase UUID hex |
-| source.name / adapter / url | strings | required; adapter is beszel in v1 |
+| source.name / adapter / url | strings | required; adapter is beszel or komari; detect support through capabilities |
 | source.ca_file | string | omitted = empty |
 | source.interval_seconds / timeout_seconds | integers | omitted = 60 / 8; zero is invalid |
 | source.stale_seconds / max_age_seconds | integers | omitted = 180 / 180; zero is invalid |
-| object_id | 15 lowercase ASCII alphanumeric bytes | actual systems.id, never a name |
+| object_id | adapter-specific string | Beszel: 15 lowercase ASCII alphanumeric systems.id; Komari: canonical lowercase client UUID; never a name |
 | node.id | string | source.id + "." + object_id; object_id retained separately |
 | profile_revision | opaque string | empty on request = latest; nonempty = exact CAS installation fence |
 | dataset_id | opaque string | stable across restarts/renames/token renewals; changes on profile, Hub, subject or selected set changes |
@@ -63,8 +63,12 @@ secret. Unknown fields are ignored; known fields must have the declared type.
 | remove | profile, base_revision, source_id | profile, profile_revision, dataset_id, source_id |
 
 Auth is an exclusive union: password={mode,identity,password}, token={mode,token},
-saved={mode}, env={mode,name}. Password is command-local. Saved requires an
-existing profile/source. Env persists the reference, never the environment value.
+saved={mode}, env={mode,name}, anonymous={mode}. Password is Beszel-only;
+anonymous is Komari-only. Komari token/env values are raw administrator API keys.
+Password is command-local. Saved requires an
+existing profile/source with the same adapter and exact URL. Env persists the
+reference, never the environment value. Komari keys are opaque, nonrenewable and
+bound by a local fingerprint; changing an env key requires explicit env save.
 Save reauthenticates, discovers trusted names and upserts only one source.
 Creation uses base_revision=""; modifications require the current revision.
 A removed final source leaves an empty profile. List never contacts a Hub and
@@ -83,7 +87,7 @@ history_unsupported_in_direct_mode. Unknown codes require generic presentation.
 ## Stream and status
 
 Capabilities retain protocol:1 and add sources=[client,preview,direct] and
-`direct:{schema:1,config_api:1,adapters:[beszel],retry:true,limits:{sources_per_profile:64,objects_per_source:20,objects_per_profile:256,template_rows:128}}`.
+`direct:{schema:1,config_api:1,adapters:[beszel,komari],retry:true,limits:{sources_per_profile:64,objects_per_source:20,objects_per_profile:256,template_rows:128}}`.
 Discovery does no I/O to config, credentials or network. Metrics advertise exact
 supported sources. Direct supports sources.status, servers.list, server.card,
 resource.cpu.used_percent, resource.memory.used_percent, resource.disk.used_percent.
@@ -122,7 +126,7 @@ unknown. These describe data acquisition, not network availability.
 
 | Clock | Owner | May advance when |
 |---|---|---|
-| sample / data deadline | Beszel record.created / report.MergeBinding | a distinct accepted report; deadline = sample + max_age |
+| sample / data deadline | Beszel record.created or Komari updated_at / report.MergeBinding | a distinct accepted report; deadline = sample + max_age |
 | receive / contact deadline | Session admission / report.MergeSource | real receipt / successful source read; deadline = contact + stale_seconds |
 | publication | monitor.Build | projecting at now; never extends source evidence |
 | handoff write | Bar | writing its snapshot; never substitutes any evidence clock |
@@ -145,12 +149,13 @@ row/resource deadline, without the old 30m heartbeat + 15m grace extension.
 | data / contact windows | 180s / 180s |
 | page generation | explicitly count unique object/report pairs, at most 20 |
 | report / source normalized results | existing report 64 KiB / result 16 MiB limits |
-| memory | 4 MiB accepted state, 2 MiB/source with multiple sources, 2 MiB batch; 4 concurrent source reads; 256 Seen IDs + 8 retired epochs/binding |
+| memory | 32 MiB accepted state, 4 MiB/source with multiple sources, 2 MiB batch; 4 concurrent source reads; 256 Seen IDs + 8 retired epochs/binding |
 | retry nonce history | 1024 distinct nonempty values/session; further new values are rejected with state_budget, old values remain idempotent |
 | history | unsupported in direct; no metrics journal/database/listening socket/daemon |
 
 Generated config uses a stable local executor observer without a remote node,
-resource bindings only, primary_disk=root, no active probes or default alarms.
+resource bindings only, primary_disk=root for Beszel or aggregate for Komari,
+no active probes or default alarms.
 Root means adapter primary filesystem, not mount point /. Existing normalized
 status handling remains valid. Private directories 0700, files 0600; public
 configuration contains references only. Credential renewals use locking/version
@@ -177,6 +182,14 @@ Supported resource schema: Beszel v0.21.0 and the four-integer mem schema descri
 in internal/adapters/beszel/README.md; synthetic authentication tests exercise
 PocketBase users auth-with-password/auth-refresh and authenticated user record
 lookup. No claim of arbitrary Beszel version compatibility.
+Komari supports the pinned 1.6.0 schema. Authenticated discovery reads only
+GET /api/admin/client/list (administrator-protected raw array); anonymous
+discovery reads GET /api/nodes (success envelope). Only canonical UUIDs and
+sanitized names leave discovery. Listings over 1000 nodes or 1 MiB fail explicitly.
+There is no authenticated-to-anonymous fallback. API keys are never interpreted
+as PocketBase JWTs or refreshed. Current resource reads use GET /api/recent/:uuid.
+The recent window is about one minute; an explicit 30-second interval is useful.
+Online presence and per-filesystem disks are outside this mapping.
 
 The canonical manifest lists fixture paths and lowercase SHA-256 hashes. Production
 serialization tests check fixture bytes. HANDOFF.md records actual completed

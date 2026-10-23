@@ -699,22 +699,6 @@
         }
       }
     },
-    "Beszel direct shows Status, Fleet, Servers and This Mac. The other sections show what a Topophany collector judges, and return as you left them when you read from one.": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel 直接接続では、ステータス、フリート、サーバー、この Mac を表示します。ほかのセクションは Topophany コレクターの判定を表示するもので、コレクターから読み取るときに、そのままの設定で戻ります。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel 直连显示状态、机群、服务器和本机。其他版块显示 Topophany 采集器的判断，改为从采集器读取时，会按你原来的设置恢复。"
-          }
-        }
-      }
-    },
     "CPU": {
       "localizations": {
         "ja": {
@@ -4763,22 +4747,6 @@
         }
       }
     },
-    "Beszel direct": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel 直接接続"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel 直连"
-          }
-        }
-      }
-    },
     "Unsupported source": {
       "localizations": {
         "ja": {
@@ -5131,22 +5099,6 @@
         }
       }
     },
-    "Your Beszel Hub, read by topo; no collector needed": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beszel Hub を topo が読み取ります。コレクターは不要です"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "由 topo 读取你的 Beszel Hub，无需采集器"
-          }
-        }
-      }
-    },
     "topo’s built-in example network": {
       "localizations": {
         "ja": {
@@ -5175,22 +5127,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "不支持此来源，请选择其他来源"
-          }
-        }
-      }
-    },
-    "This topo can’t read Beszel": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "この topo は Beszel を読み取れません"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "此 topo 无法读取 Beszel"
           }
         }
       }
@@ -5865,6 +5801,310 @@
           "stringUnit": {
             "state": "translated",
             "value": "在采集器的拓扑中设置，并由采集器读取。每台服务器的卡片会注明它从哪个来源读取。"
+          }
+        }
+      }
+    },
+    "Beszel or Komari direct": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beszel・Komari 直接接続"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beszel 或 Komari 直连"
+          }
+        }
+      }
+    },
+    "This topo can’t read Beszel or Komari": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この topo は Beszel も Komari も読み取れません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 topo 无法读取 Beszel 或 Komari"
+          }
+        }
+      }
+    },
+    "Only this profile's source is removed. Servers in Komari are kept.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このプロファイルのソースのみ削除されます。Komari 内のサーバーは保持されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅移除此配置中的来源，保留 Komari 中的服务器。"
+          }
+        }
+      }
+    },
+    "Your Beszel Hub or Komari server, read by topo; no collector needed": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beszel Hub または Komari サーバーを topo が読み取ります。コレクターは不要です"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "由 topo 读取你的 Beszel Hub 或 Komari 服务器，无需采集器"
+          }
+        }
+      }
+    },
+    "Add a Beszel Hub or Komari server, then choose its servers": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beszel Hub または Komari サーバーを追加して、そのサーバーを選んでください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加一个 Beszel Hub 或 Komari 服务器，然后选择其服务器"
+          }
+        }
+      }
+    },
+    "Reading Komari needs a newer topo; choose or download one in General.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari の読み取りには、より新しい topo が必要です。一般で選ぶか、ダウンロードしてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读取 Komari 需要更新版本的 topo，请在“通用”中选择或下载。"
+          }
+        }
+      }
+    },
+    "Type": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "種類"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "类型"
+          }
+        }
+      }
+    },
+    "Server URL": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバー URL"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器地址"
+          }
+        }
+      }
+    },
+    "API key": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API キー"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API 密钥"
+          }
+        }
+      }
+    },
+    "Reads only the servers Komari shows publicly": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari が公開しているサーバーだけを読み取ります"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅读取 Komari 公开显示的服务器"
+          }
+        }
+      }
+    },
+    "A PEM file, for a server with its own certificate authority": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "独自の認証局を使うサーバー向けの PEM ファイル"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "适用于使用自有证书颁发机构的服务器的 PEM 文件"
+          }
+        }
+      }
+    },
+    "Komari source": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari ソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari 来源"
+          }
+        }
+      }
+    },
+    "New source": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新的来源"
+          }
+        }
+      }
+    },
+    "New Komari source": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい Komari ソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新的 Komari 来源"
+          }
+        }
+      }
+    },
+    "Public servers only": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開サーバーのみ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅公开服务器"
+          }
+        }
+      }
+    },
+    "No servers are listed. Hidden ones need an API key.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一覧にサーバーはありません。非公開のサーバーには API キーが必要です。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有列出任何服务器。隐藏的服务器需要 API 密钥。"
+          }
+        }
+      }
+    },
+    "A Komari server’s disk is the total its agent reports, not one mount.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari サーバーのディスクは、エージェントが報告する合計で、1 つのマウントではありません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komari 服务器的磁盘是其代理报告的总量，而非单个挂载点。"
+          }
+        }
+      }
+    },
+    "Choose the server's certificate authority, as a PEM file": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーの認証局を PEM ファイルで選んでください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择服务器的证书颁发机构（PEM 文件）"
+          }
+        }
+      }
+    },
+    "Direct reading shows Status, Fleet, Servers and This Mac. The other sections show what a Topophany collector judges, and return as you left them when you read from one.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接接続では、ステータス、フリート、サーバー、この Mac を表示します。ほかのセクションは Topophany コレクターの判定を表示するもので、コレクターから読み取るときに、そのままの設定で戻ります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直连显示状态、机群、服务器和本机。其他版块显示 Topophany 采集器的判断，改为从采集器读取时，会按你原来的设置恢复。"
           }
         }
       }

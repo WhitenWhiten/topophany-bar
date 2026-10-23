@@ -87,33 +87,39 @@ topophany-bar is source-available under the [PolyForm Noncommercial License 1.0.
 
 [Topophany](https://github.com/WhitenWhiten/topophany) itself is MIT-licensed. Provider logos and other third-party assets retain their own terms; see [Third-party notices](THIRD-PARTY-NOTICES.md).
 
-### Beszel direct
+### Beszel and Komari direct
 
-In Settings → Data sources, choose **Beszel direct**, add your Beszel Hub, and
-use your account and password to **Test connection**. Select up to 20 servers per
-source and save. An API token is available under Authentication for accounts
-whose sign-in method needs it. Editing an existing source uses saved authentication
-unless you choose to sign in again. The app never saves your password.
+In Settings → Data sources, choose **Beszel or Komari direct** and add a source.
+For a Beszel Hub, use your account and password to **Test connection**; an API
+token is there for accounts whose sign-in method needs it. For a Komari server,
+use an administrator API key, or **Public servers only** to read the servers it
+shows without one. Select up to 20 servers per source and save. Editing an
+existing source uses saved authentication unless you choose to sign in again.
+The app never saves your password or API key.
 
-Direct requires a `topo` whose capabilities advertise **Direct v1 / config API 1**.
-Choose or download a newer executable in General if needed. It needs a Beszel Hub,
-but no Topophany collector or handwritten topology. A profile can hold several
-sources; equal server names in different sources remain separate.
+Direct requires a `topo` whose capabilities advertise **Direct v1 / config API 1**,
+and Komari a `topo` that lists `komari` among its direct adapters. Choose or
+download a newer executable in General if needed. It needs a Beszel Hub or a
+Komari 1.6 server, but no Topophany collector or handwritten topology. A profile
+can hold several sources, Beszel and Komari mixed; equal server names in
+different sources remain separate.
 
-CPU, memory and the primary disk use the Hub's sample timestamps. Connection
-status describes data acquisition. Missing and expired measurements stay unknown.
-Beszel judges no health for a server, so its card says how it is read instead:
-**Current**, **Stale** or **No samples**, with its CPUs and memory sizes.
-Closing the bar stops its own collection; an independently opened terminal polls
-on its own. Direct widgets are resource snapshots labelled **As of** and expire
-at their original deadlines; WidgetKit does not promise a five-second refresh.
+CPU, memory and disk use each source's sample timestamps: the Hub's primary disk
+for Beszel, and for Komari the aggregate its agent reports, not one mount. A new
+Komari source is read every 30 seconds, since Komari keeps only about a minute
+of reports. Connection status describes data acquisition. Missing and expired
+measurements stay unknown. Neither judges health for a server, so its card says
+how it is read instead: **Current**, **Stale** or **No samples**, with its CPUs
+and memory sizes. Closing the bar stops its own collection; an independently
+opened terminal polls on its own. Direct widgets are resource snapshots labelled
+**As of** and expire at their original deadlines; WidgetKit does not promise a
+five-second refresh.
 
-### Komari and other collector sources
+### Collector sources
 
-Komari servers reach the bar through a Topophany collector: add a `komari` source
-and its resource checks to the collector's topology, as Topophany's Komari adapter
-guide describes. Their cards say where they're read from in the provider's place
-("host · Komari Monitor"), and keep the collector's verdict where its checks judge
-one. Settings → Data sources lists the Komari and Beszel sources the collector
-reports, with their servers. A Komari server's disk is the aggregate its agent
-reports, not one mount.
+Komari and Beszel servers can also reach the bar through a Topophany collector:
+add a `komari` or `beszel` source and its resource checks to the collector's
+topology, as Topophany's adapter guides describe. Their cards say where they're
+read from in the provider's place ("host · Komari Monitor"), and keep the
+collector's verdict where its checks judge one. Settings → Data sources lists the
+Komari and Beszel sources the collector reports, with their servers.

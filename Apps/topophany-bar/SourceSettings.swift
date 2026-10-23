@@ -5,7 +5,8 @@ import TopophanyKit
 import TopophanySections
 
 /// Where readings come from and, in direct mode, the direct profile and
-/// its Beszel sources: the same grouped form as every other Settings page.
+/// its Beszel and Komari sources: the same grouped form as every other
+/// Settings page.
 struct SourceSettings: View {
     @Environment(AppModel.self) private var model
     @State private var profiles: [DirectProfile] = []
@@ -17,6 +18,8 @@ struct SourceSettings: View {
     @State private var busy = false
     @State private var problem: String?
     @State private var supported = false
+    /// The adapters this topo reads directly, as the app offers them.
+    @State private var adapters: [String] = []
     @State private var checked = false
     @State private var listLoaded = false
     @State private var operation: Task<Void, Never>?
@@ -33,7 +36,7 @@ struct SourceSettings: View {
             Section {
                 Picker(selection: Binding(get: { source }, set: { model.selectSource($0) })) {
                     Text("Topophany collector").tag("client")
-                    Text("Beszel direct").tag("direct")
+                    Text("Beszel or Komari direct").tag("direct")
                     Text("Preview").tag("preview")
                     if !["client", "direct", "preview"].contains(source) {
                         Text("Unsupported source").tag(source)
@@ -48,10 +51,10 @@ struct SourceSettings: View {
             }
             if source == "direct" {
                 if supported {
-                    beszel
+                    directSources
                 } else if checked {
                     Section {
-                        RowLabel("This topo can’t read Beszel", "Choose or download a newer topo")
+                        RowLabel("This topo can’t read Beszel or Komari", "Choose or download a newer topo")
                         TopoRow()
                     }
                 } else {
@@ -75,14 +78,17 @@ struct SourceSettings: View {
         .confirmationDialog("Remove this source?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
             Button("Remove source", role: .destructive) { remove() }
             Button("Cancel", role: .cancel) { removing = nil }
-        } message: { Text("Only this profile's source is removed. Systems in Beszel are kept.") }
+        } message: {
+            Text(removing?.source.adapter == "komari" ? "Only this profile's source is removed. Servers in Komari are kept." as LocalizedStringKey
+                 : "Only this profile's source is removed. Systems in Beszel are kept.")
+        }
         .onDisappear { operation?.cancel(); editor?.close() }
     }
 
     var readFromSubtitle: LocalizedStringKey {
         switch source {
         case "client": "A Topophany collector, through topo’s saved profile"
-        case "direct": "Your Beszel Hub, read by topo; no collector needed"
+        case "direct": "Your Beszel Hub or Komari server, read by topo; no collector needed"
         case "preview": "topo’s built-in example network"
         default: "This source isn’t supported; choose another"
         }
@@ -112,7 +118,7 @@ struct SourceSettings: View {
     }
 
     /// The direct profile, its sources, and adding one.
-    var beszel: some View {
+    var directSources: some View {
         Section {
             profileRow
             if naming {
@@ -126,12 +132,14 @@ struct SourceSettings: View {
                 }
             }
             if let entries = profile?.sources, !entries.isEmpty {
+                let mixed = Set(entries.map(\.source.adapter)).count > 1
                 ForEach(entries) { entry in
-                    SourceRow(entry: entry, status: status(entry), disabled: busy || !listLoaded,
+                    SourceRow(entry: entry, status: status(entry), showsAdapter: mixed, disabled: busy || !listLoaded,
                               edit: { edit(entry) }, signIn: { edit(entry, login: true) }, remove: { removing = entry })
                 }
             } else if listLoaded {
-                RowLabel("No sources yet", "Add a Beszel Hub, then choose its servers")
+                RowLabel("No sources yet", adapters.contains("komari") ? "Add a Beszel Hub or Komari server, then choose its servers"
+                         : "Add a Beszel Hub, then choose its servers")
             }
             if let problem {
                 Label(SourceMessages.problem(problem), systemImage: "exclamationmark.triangle")
@@ -148,7 +156,7 @@ struct SourceSettings: View {
             }
         } header: {
             HStack {
-                Text(verbatim: "Beszel")
+                Text("Sources")
                 Spacer()
                 if busy {
                     ProgressView().controlSize(.small)
@@ -160,7 +168,10 @@ struct SourceSettings: View {
                 }
             }
         } footer: {
-            Foot("Up to 20 servers per source and 256 per profile. Only the running bar reads them, and a TUI opened from it reads on its own. Widgets keep the last snapshot, with its time.")
+            VStack(alignment: .leading, spacing: 4) {
+                Foot("Up to 20 servers per source and 256 per profile. Only the running bar reads them, and a TUI opened from it reads on its own. Widgets keep the last snapshot, with its time.")
+                if !adapters.contains("komari") { Foot("Reading Komari needs a newer topo; choose or download one in General.") }
+            }
         }
     }
 
@@ -216,7 +227,7 @@ struct SourceSettings: View {
             guard !Task.isCancelled else { return }
             checked = true
             guard case .success(let c) = caps, c.supports(source: "direct") else { supported = false; busy = false; return }
-            supported = true
+            supported = true; adapters = c.direct?.known ?? []
             let client = model.sourcesClient(path: path)
             self.client = client
             do {
@@ -229,8 +240,9 @@ struct SourceSettings: View {
     }
     func edit(_ entry: DirectProfile.Entry?, login: Bool = false) {
         guard let client else { return }
-        let editor = SourceEditor(client: client, profile: selectedProfile, revision: profile?.profileRevision ?? "", entry: entry)
-        if login { editor.authentication = .password }
+        let editor = SourceEditor(client: client, profile: selectedProfile, revision: profile?.profileRevision ?? "", entry: entry,
+                                  adapters: adapters)
+        if login { editor.authentication = editor.signIn }
         editor.onSaved = { saved in
             model.useDirect(profile: saved.profile, revision: saved.profileRevision, nodes: saved.nodes.map(\.id), sourceID: saved.sourceID, retry: login)
             editor.close(); self.editor = nil
@@ -252,12 +264,14 @@ struct SourceSettings: View {
     }
 }
 
-/// One Beszel source: its name, its Hub, how many servers it reads and,
-/// while the bar reads it, its state. Sign In… leads when that's what it
-/// needs; the rest are in its menu.
+/// One source: its name, its Hub or server, how many servers it reads and,
+/// while the bar reads it, its state; what it reads too, in a profile that
+/// mixes Beszel and Komari. Sign In… leads when that's what it needs; the
+/// rest are in its menu.
 struct SourceRow: View {
     var entry: DirectProfile.Entry
     var status: SourcesStatus.Source?
+    var showsAdapter = false
     var disabled: Bool
     var edit: () -> Void
     var signIn: () -> Void
@@ -289,7 +303,8 @@ struct SourceRow: View {
                     Text(verbatim: entry.source.name).lineLimit(1)
                 }
                 HStack(spacing: 0) {
-                    Text(verbatim: Words.join([Self.host(entry.source.url), tr("\(entry.nodes.count) servers")]))
+                    Text(verbatim: Words.join((showsAdapter ? [Origin.name(adapter: entry.source.adapter) ?? entry.source.adapter] : [])
+                                              + [Self.host(entry.source.url), tr("\(entry.nodes.count) servers")]))
                     if let status {
                         Text(verbatim: " · ")
                         Text(verbatim: SourceMessages.state(status.state)).foregroundStyle(needsLook ? .orange : .secondary)
@@ -319,13 +334,16 @@ struct SourceRow: View {
     }
 }
 
-/// Adding or editing a source: its Hub and sign-in, a test that lists the
-/// servers it can see, and which of them to read. Sized to what it shows.
+/// Adding or editing a source: what it reads, its Hub or server and
+/// sign-in, a test that lists the servers it can see, and which of them to
+/// read. Sized to what it shows.
 struct SourceEditorForm: View {
     @Bindable var editor: SourceEditor
     var finish: () -> Void
     var onHeight: (Double) -> Void = { _ in }
     @State private var height = 0.0
+
+    var komari: Bool { editor.source.adapter == "komari" }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -362,19 +380,29 @@ struct SourceEditorForm: View {
 
     var form: some View {
         Form {
-            Section(editor.allowsSaved ? "Beszel source" as LocalizedStringKey : "New Beszel source") {
-                TextField("Name", text: $editor.source.name, prompt: Text("Home"))
-                TextField("Hub URL", text: $editor.source.url, prompt: Text(verbatim: "https://beszel.example.com"))
-                Picker("Sign in with", selection: $editor.authentication) {
-                    if editor.allowsSaved { Text("Saved sign-in").tag(SourceEditor.Authentication.saved) }
-                    Text("Account and password").tag(SourceEditor.Authentication.password)
-                    Text("API token").tag(SourceEditor.Authentication.token)
+            Section(title) {
+                if editor.adapters.count > 1 {
+                    Picker("Type", selection: Binding(get: { editor.source.adapter }, set: { editor.choose(adapter: $0) })) {
+                        ForEach(editor.adapters, id: \.self) { a in Text(verbatim: Origin.name(adapter: a) ?? a).tag(a) }
+                    }
+                    .pickerStyle(.segmented)
                 }
-                if editor.authentication == .password {
+                TextField("Name", text: $editor.source.name, prompt: Text("Home"))
+                TextField(komari ? "Server URL" as LocalizedStringKey : "Hub URL", text: $editor.source.url,
+                          prompt: Text(verbatim: komari ? "https://komari.example.com" : "https://beszel.example.com"))
+                Picker("Sign in with", selection: $editor.authentication) {
+                    ForEach(editor.methods, id: \.self) { m in Text(method(m)).tag(m) }
+                }
+                switch editor.authentication {
+                case .password:
                     TextField("Account", text: $editor.identity, prompt: Text("Email"))
                     SecureField("Password", text: $editor.password)
-                } else if editor.authentication == .token {
-                    SecureField("Token", text: $editor.token)
+                case .token:
+                    SecureField(komari ? "API key" as LocalizedStringKey : "Token", text: $editor.token)
+                case .anonymous:
+                    Text("Reads only the servers Komari shows publicly").font(.callout).foregroundStyle(.secondary)
+                case .saved:
+                    EmptyView()
                 }
             }
             .disabled(editor.busy)
@@ -399,7 +427,8 @@ struct SourceEditorForm: View {
                             Button("Choose…") { chooseCA() }
                         }
                     } label: {
-                        RowLabel("CA file", "A PEM file, for a Hub with its own certificate authority")
+                        RowLabel("CA file", komari ? "A PEM file, for a server with its own certificate authority"
+                                 : "A PEM file, for a Hub with its own certificate authority")
                     }
                     SecondsField(title: "Collect every", value: $editor.source.intervalSeconds, range: 1...86400)
                     SecondsField(title: "Time out after", value: $editor.source.timeoutSeconds, range: 1...300)
@@ -413,10 +442,27 @@ struct SourceEditorForm: View {
         }
     }
 
-    /// Whether the Hub answered, and what it said.
+    /// "Beszel source", or "New source" while it can still be either.
+    var title: LocalizedStringKey {
+        if editor.allowsSaved { return komari ? "Komari source" : "Beszel source" }
+        if editor.adapters.count > 1 { return "New source" }
+        return komari ? "New Komari source" : "New Beszel source"
+    }
+
+    /// A way to sign in, in the adapter's words.
+    func method(_ m: SourceEditor.Authentication) -> LocalizedStringKey {
+        switch m {
+        case .saved: "Saved sign-in"
+        case .password: "Account and password"
+        case .token: komari ? "API key" : "API token"
+        case .anonymous: "Public servers only"
+        }
+    }
+
+    /// Whether the Hub or server answered, and what it said.
     @ViewBuilder var connection: some View {
         if let problem = editor.problem {
-            Text(verbatim: SourceMessages.problem(problem)).foregroundStyle(.orange)
+            Text(verbatim: SourceMessages.problem(problem, adapter: editor.source.adapter)).foregroundStyle(.orange)
         } else if editor.busy && editor.inspection == nil {
             Text("Testing…").foregroundStyle(.secondary)
         } else if let result = editor.inspection {
@@ -426,11 +472,12 @@ struct SourceEditorForm: View {
         }
     }
 
-    /// Every server the Hub lists, ticked when it's read.
+    /// Every server the Hub or server lists, ticked when it's read.
     func servers(_ result: DirectInspection) -> some View {
         Section {
             if result.systems.isEmpty {
-                Text("No servers are visible to this account").foregroundStyle(.secondary)
+                Text(komari ? "No servers are listed. Hidden ones need an API key." as LocalizedStringKey
+                     : "No servers are visible to this account").foregroundStyle(.secondary)
             }
             ForEach(result.systems) { system in
                 Toggle(isOn: Binding(get: { editor.selected.contains(system.id) }, set: { on in
@@ -439,7 +486,8 @@ struct SourceEditorForm: View {
                     HStack {
                         Text(verbatim: system.name).lineLimit(1)
                         Spacer()
-                        Text(verbatim: system.id).font(.callout.monospaced()).foregroundStyle(.tertiary).lineLimit(1)
+                        Text(verbatim: system.id).font(.callout.monospaced()).foregroundStyle(.tertiary)
+                            .lineLimit(1).truncationMode(.middle)
                     }
                 }
                 .toggleStyle(.checkbox)
@@ -454,6 +502,7 @@ struct SourceEditorForm: View {
         } footer: {
             VStack(alignment: .leading, spacing: 4) {
                 if result.truncated { Foot("The Hub listed only some of its servers. More may be in Beszel.") }
+                if komari { Foot("A Komari server’s disk is the total its agent reports, not one mount.") }
                 Foot("Readings can take a moment to arrive after saving.")
             }
         }
@@ -488,7 +537,8 @@ struct SourceEditorForm: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.message = tr("Choose the Hub's certificate authority, as a PEM file")
+        panel.message = komari ? tr("Choose the server's certificate authority, as a PEM file")
+            : tr("Choose the Hub's certificate authority, as a PEM file")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         editor.source.caFile = url.path
     }

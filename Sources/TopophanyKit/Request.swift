@@ -154,6 +154,8 @@ public struct Capabilities: Sendable, Hashable, Decodable {
             }
         }
         enum CodingKeys: String, CodingKey { case schema, configAPI = "config_api", adapters, retry, limits }
+        /// The adapters this app sets up that `topo` offers, in the app's order.
+        public var known: [String] { DirectSource.adapters.filter(adapters.contains) }
     }
 
     enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles, direct }
@@ -198,7 +200,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
 
     public func supports(source: String) -> Bool {
         guard isUsable, sources.contains(source) else { return false }
-        if source == "direct" { return direct?.schema == 1 && direct?.configAPI == 1 && direct?.adapters.contains("beszel") == true }
+        if source == "direct" { return direct?.schema == 1 && direct?.configAPI == 1 && direct?.known.isEmpty == false }
         return source == "client" || source == "preview"
     }
     public func supports(metric: String, source: String) -> Bool {

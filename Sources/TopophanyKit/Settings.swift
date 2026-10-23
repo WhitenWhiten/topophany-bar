@@ -54,7 +54,7 @@ public struct Settings: Sendable, Hashable, Codable {
         /// How often `topo` refreshes the display, 1 s to 1 h.
         public var interval = "5s"
         /// `client` reads the collector; `preview` reads `topo preview`'s
-        /// synthetic network. `direct` references a Beszel profile managed by topo.
+        /// synthetic network. `direct` references a Beszel or Komari profile managed by topo.
         public var source = "client"
         public var profileRevision = ""
         /// Node preferences scoped to a mode and stable profile ID. No authentication material.

@@ -4,8 +4,10 @@ public enum SourceMessages {
     public static var templateLimit: String { tr("Too many pinned servers for one template. Choose fewer servers in Sections.") }
     public static var configurationApplying: String { tr("Applying source configuration…") }
     public static var configurationRejected: String { tr("Source configuration was not applied. Review Data sources in Settings.") }
-    public static func problem(_ code: String) -> String {
-        switch code {
+    /// What went wrong, in the words of the adapter the source reads.
+    public static func problem(_ code: String, adapter: String = "beszel") -> String {
+        if adapter == "komari", let text = komari(code) { return text }
+        return switch code {
         case "hub_changed": tr("Changing the Hub address requires signing in again. Choose account and password or token.")
         case "auth_required": tr("Sign in again to this Beszel source.")
         case "forbidden": tr("This account cannot access the requested systems.")
@@ -24,6 +26,21 @@ public enum SourceMessages {
         case "profile_not_found", "source_not_found": tr("This profile or source is no longer available. Refresh the sources list.")
         case "upstream_incompatible": tr("This Beszel Hub response is not supported.")
         default: tr("The source could not be configured. Refresh the sources list and try again.")
+        }
+    }
+    /// Komari takes an API key or none, from a server rather than a Hub.
+    static func komari(_ code: String) -> String? {
+        switch code {
+        case "hub_changed": tr("Changing the server address requires its API key again. Choose API key or public servers only.")
+        case "auth_required": tr("This Komari server didn’t accept the API key. Enter it again.")
+        case "forbidden": tr("The Komari server denied this API key access to its servers.")
+        case "auth_method_unsupported": tr("Komari reads with an API key, or its public servers without one. Choose one of them.")
+        case "connection_failed": tr("Could not reach the Komari server. Check the address and try again.")
+        case "tls_error": tr("The Komari server’s certificate could not be verified. Check its certificate or CA file.")
+        case "rate_limited": tr("Komari is limiting requests. Wait before trying again.")
+        case "upstream_incompatible": tr("This Komari server’s response is not supported. topo reads Komari 1.6.")
+        case "discovery_limit": tr("This Komari server lists more than the 1,000 servers topo reads.")
+        default: nil
         }
     }
     /// The status card's headline: the state, short enough for one line.
