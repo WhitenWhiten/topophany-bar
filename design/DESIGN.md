@@ -63,14 +63,40 @@ DeepSeek Girl, White Night Sky, and imported icons. White Night Sky adapts the
 personal homepage's Bayer 8×8 sky, layered value-noise clouds, shaded disk and
 paper-white horizon to a 3.25:1 panorama. Its 180 cached frames follow a closed
 path through the noise field over 24 seconds; the native layer loops them under
-the same motion policy as other icons. At 26 pt it occupies an 80 pt slot.
+the same motion policy as other icons. They are drawn for the pixels the item
+has, one dot to a pixel at every size and scale, and the last two heights in use
+are kept. At 26 pt it occupies an 80 pt slot.
 DeepSeek Girl uses the approved portrait and a
 matching blink frame: a 140 ms blink every 4.8 seconds, with a quarter-point
 breathing movement. Shared transparent margins are trimmed, leaving the full
 headband and hair visible. Its status badge sits beside the portrait.
 
+An icon can show the status itself, and then no badge sits beside it; the count
+or words still do. White Night's disk is a moon, drawn still over the moving sky:
+
+| Status | The moon | In ink (quiet, or status colors off) |
+|---|---|---|
+| clear | full and bright, as the homepage's disk | the same |
+| degraded | in partial eclipse, its shadow amber, a rim on its lit side | the shadow in ink, ◑ |
+| down | a blood moon, the printed sky beside it reddening | dark throughout |
+| unknown | its outline alone, clouds passing within | the same |
+| offline | its outline in dashes | the same |
+
+Each is its own shape, as the badges are, so without color it says the same. A
+change dissolves the old moon into the new through the Bayer matrix's own order,
+in about half a second, while the sky plays on; with motion off it changes at once.
+
 Import accepts PNG/JPEG still images, GIF/APNG animations with their frame timing,
-or multiple equally sized PNG frames, sorted naturally by filename at 12 fps.
+or multiple equally sized PNG frames, sorted naturally by filename at 12 fps, or a
+folder of them. Files or folders named for a status make a status pack that shows
+the status itself: `clear`, `warning`, `error`, `unknown` and `offline` (also `up`,
+`degraded`, `down`, `正常`, `警告`, `故障`, `エラー` and the like), as `clear.gif`,
+`error-01.png` or `warning/`. A pack needs clear's frames; every file in it is
+named for one status, and all its frames share one size and the import's limits.
+Each status plays its own frames, and a change fades between them. A status the
+pack lacks plays clear's frames without their color, beside the badge, so they
+don't say all is well; quiet or with status colors off, an alert's frames lose
+their color too.
 Imports are normalized to small PNG frames in `MenuBarIcons/<UUID>` beside the
 settings file; the original files are never changed and may subsequently be
 moved. The settings keep only the selected ID, size (18, 22 or 26 pt), and speed.
@@ -149,7 +175,7 @@ Sections run in this default order:
    - **Edges and platforms first,** each on its own and saying what it is: what stands in front of everything else. A hairline, then servers: a provider's together, where its first server is in `topo`'s list, and a node that names no provider on its own, by its name and kind.
    - **Marks:** one per node, `topo`'s. A group has no health of its own and is never tinted for its nodes; the app adds nothing up.
    - **Without `servers.list`:** the pinned servers' cards stand in. When the list isn't current, the names stay and every mark is withheld (◌).
-8. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1).
+8. **Servers.** Off by default. The Servers-tab card for each pinned node: CPU, memory and disk meters against the check's own limit, services, and age. Stale readings are withheld. Each card leads with its provider's logo (section 4.1). As in Terminal, its pill sits beside its name and its age beside where it is; that line fits as Terminal's does, the provider giving way first, then the place shortening, while the kind and the time stay. A foot says its services when it has any.
 9. **Time zones.** The local time where the servers are. See section 5.1.
 10. **This Mac.** See section 5.
 
@@ -195,7 +221,7 @@ A node's provider is who runs it: a company that rents servers, or an edge or a 
 
 A pinned service's card is one family with the Server card: the same head, pill and foot, and in place of CPU, memory and disk, the observers that see the service. `topo` sends it as a `service.card` row, built from the card the Services tab draws; the app adds nothing to it. `design/assets/service.js` draws it in the previews.
 
-- **Head:** the tile of the node it runs on (its provider's logo, section 4.1), its name, and its application and host: "Proxy chain · on BandwagonHost LA". The pill says its state: UP, WARN, DOWN, UNKNOWN, AFFECTED or CACHED.
+- **Head:** the tile of the node it runs on (its provider's logo, section 4.1), its name, and its application and host: "Proxy chain · on BandwagonHost LA". The pill beside the name says its state: UP, WARN, DOWN, UNKNOWN, AFFECTED or CACHED.
 - **Seen from:** a row per observer, in `topo`'s order (worst first), at most three: a mark per check, the observer's place (its name where two share a place), the worst check's recent samples, its median latency over the day (p50) and the day's share up (24h). A row per observer rather than per check, so two paths from one place never read as duplicate rows, and a path that fails beside one that passes stays in sight.
 - **Recent samples:** the one history chart beyond This Mac's sparklines, because it says when something broke. Native: a passing sample rises from a baseline as tall as it took, against the slowest shown, in the accent at half strength; a failure hangs below the line in its color (down, warning for a policy failure, gray otherwise), so trouble differs in place as well as color. No sample, no mark. Terminal: the TUI's blocks, `▁` to `▇` and never a full cell so rows stay apart, in the palette's meter (Paper's hairlines, Dusk's braille); `✖ ▲ ○` for failures and `·` where none was taken, on the track.
 - **Foot:** how many checks and how many fail, the edge in front by its logo and the colos it answered from (`☁ SJC · FRA`), and the age. Terminal: what it depends on (`→`) and the edge (`⇠`).

@@ -13,12 +13,20 @@ public struct CellsRenderer: Renderer {
 
     public func statusItemParts(_ model: StatusItemModel, context: StatusItemContext) -> StatusItemParts {
         let readings = model.readings.isEmpty ? nil : AnyView(CellsReadingsChip(readings: model.readings, ctx: context))
+        let scene = model.scene(in: context)
+        let mark = scene?.showsStatus != true
         let item = HStack(spacing: 4) {
-            if context.drawsPortrait, let portrait = model.portrait(in: context) {
-                MenuBarPortrait(animation: portrait, height: Double(model.iconSize), speed: model.iconSpeed,
+            if context.drawsPortrait, let scene {
+                MenuBarPortrait(scene: scene, height: Double(model.iconSize), speed: model.iconSpeed,
                                 motion: model.activity == .live ? context.motion : .still)
             }
-            CellsStatusItem(model: model, ctx: context)
+            // An icon that shows the status itself leaves the chip its
+            // words alone, and none without them.
+            if mark || !model.tuiText.isEmpty {
+                CellsStatusItem(model: model, ctx: context, mark: mark)
+            } else {
+                Color.clear.frame(width: 1, height: CellsStatusItem.metrics.line)
+            }
         }
         return StatusItemParts(readings: readings, spacing: 4, item: AnyView(item))
     }

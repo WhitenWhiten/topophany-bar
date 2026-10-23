@@ -606,7 +606,7 @@ struct AppearanceSettings: View {
                 }
                 MenuBarIconSettings()
                 Toggle(isOn: model.binding(\.appearance.menuBar.statusColors)) {
-                    RowLabel("Status colors", "Off draws the badge in the menu bar’s own color; its shape still changes")
+                    RowLabel("Status colors", "Off draws the status in the menu bar’s own color; its shape still changes")
                 }
                 .toggleStyle(.switch)
                 Toggle(isOn: model.binding(\.appearance.menuBar.motion)) {

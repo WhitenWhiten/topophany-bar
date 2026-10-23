@@ -68,7 +68,7 @@ struct MenuBarIconSettings: View {
                     }
                 }
             } label: {
-                RowLabel("Custom icons", "PNG, JPEG, GIF or APNG; wide icons supported; multiple PNGs play at 12 fps")
+                RowLabel("Custom icons", "PNG, JPEG, GIF or APNG; files named clear, warning or error show their status in the icon")
             }
             if model.settings.appearance.menuBar.icon != .globe {
                 Picker(selection: model.binding(\.appearance.menuBar.iconSize)) {
@@ -94,10 +94,10 @@ struct MenuBarIconSettings: View {
     private func chooseFiles() {
         let panel = NSOpenPanel()
         panel.title = tr("Import menu bar icon")
-        panel.message = tr("Select one image or animation, or multiple PNG frames. Frames play in filename order.")
+        panel.message = tr("Select an image, an animation, PNG frames or a folder. Files or folders named for a status show it: clear, warning, error, unknown, offline.")
         panel.allowedContentTypes = [.png, .jpeg, .gif, UTType(filenameExtension: "apng") ?? .png]
         panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
+        panel.canChooseDirectories = true
         panel.begin { response in
             guard response == .OK else { return }
             let urls = panel.urls

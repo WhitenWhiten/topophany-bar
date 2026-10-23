@@ -3,7 +3,8 @@ import TopophanySections
 
 /// The menu bar item: a globe with the status badge cut into its corner,
 /// and the count or words beside it. This Mac's readings, when shown, come
-/// before it as a part of their own.
+/// before it as a part of their own. An icon in the globe's place keeps the
+/// badge beside it, unless the icon shows the status itself.
 ///
 /// It moves only to say something. The globe turns while what it shows is
 /// current and comes to rest when nothing current is known; the badge's
@@ -51,14 +52,17 @@ struct CardsStatusItem: View {
     var body: some View {
         HStack(spacing: 0) {
             if let portrait {
+                let scene = portrait.scene(model.mark, tinted: model.tinted)
                 if ctx.drawsPortrait {
-                    MenuBarPortrait(animation: portrait, height: Double(model.iconSize), speed: model.iconSpeed,
+                    MenuBarPortrait(scene: scene, height: Double(model.iconSize), speed: model.iconSpeed,
                                     motion: model.activity == .live ? ctx.motion : .still)
                         .padding(.trailing, 2)
                 }
-                Canvas { c, _ in drawBadge(&c) }
-                    .frame(width: 11, height: 22)
-                    .overlay { ripple }
+                if !scene.showsStatus {
+                    Canvas { c, _ in drawBadge(&c) }
+                        .frame(width: 11, height: 22)
+                        .overlay { ripple }
+                }
             } else {
                 Canvas { c, size in
                     drawGlobe(&c, size)

@@ -141,16 +141,19 @@ struct CardsService: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // The Server card's head: its state beside its name.
             HStack(spacing: 9) {
                 NodeAvatar(provider: card.host.provider, kind: card.host.kind, size: 28, p: p)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1)
+                    HStack(spacing: 8) {
+                        Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1)
+                        Spacer(minLength: 0)
+                        PillView(pill: card.pill, palette: p, type: t)
+                    }
                     if !card.subtitle.isEmpty {
                         Text(card.subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1).truncationMode(.middle)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                PillView(pill: card.pill, palette: p, type: t)
             }
             .accessibilityElement(children: .combine)
             if !card.observers.isEmpty {

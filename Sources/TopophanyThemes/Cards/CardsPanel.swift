@@ -806,20 +806,22 @@ struct CardsServer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // As the Terminal card has them: its state beside its name, and
+            // its age beside where it is.
             HStack(spacing: 9) {
                 NodeAvatar(provider: card.provider, kind: card.kind, size: 28, p: p, symbol: symbol)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1)
-                    // The time where it is never gives way; the provider, in
-                    // the middle, does first.
-                    HStack(spacing: 0) {
-                        Text(card.isMissing ? card.place : card.subtitle).lineLimit(1).truncationMode(.middle)
-                        if !card.isMissing, let time = card.localTime { Text(verbatim: " · " + time).fixedSize() }
+                    HStack(spacing: 8) {
+                        Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1)
+                        Spacer(minLength: 0)
+                        PillView(pill: card.pill, palette: p, type: t)
                     }
-                    .font(t.font(11)).foregroundStyle(p.l2)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        whereabouts.font(t.font(11)).foregroundStyle(p.l2)
+                        Spacer(minLength: 0)
+                        Text(card.age).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).fixedSize()
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                PillView(pill: card.pill, palette: p, type: t)
             }
             .accessibilityElement(children: .combine)
             let sizes = card.showsSizes
@@ -828,16 +830,35 @@ struct CardsServer: View {
                 meter(tr("Memory"), card.memory, sizes: sizes)
                 meter(tr("Disk"), card.disk, sizes: sizes)
             }
-            .padding(.top, 10).padding(.bottom, sizes ? 3 : 7)
-            HStack {
+            .padding(.top, 10)
+            if !card.servicesSummary.isEmpty {
                 Text(card.servicesSummary).lineLimit(1)
-                Spacer(minLength: 8)
-                Text(card.age).lineLimit(1)
+                    .font(t.font(10.5)).foregroundStyle(p.l3)
+                    .padding(.top, sizes ? 3 : 7)
             }
-            .font(t.font(10.5)).foregroundStyle(p.l3)
         }
         .modifier(FocusRing(on: focused, p: p))
         .id("server:" + card.id)
+    }
+
+    /// Where it is, fitted beside its age as the Terminal card fits it: the
+    /// provider gives way first, then the place shortens, or the provider
+    /// with no place beside it. The kind and the time where it is stay.
+    @ViewBuilder var whereabouts: some View {
+        if card.isMissing {
+            Text(card.place).lineLimit(1)
+        } else {
+            let time = card.localTime.map { " · " + $0 } ?? ""
+            let provider = card.provider.isEmpty ? card.origin?.detail ?? "" : card.provider
+            ViewThatFits(in: .horizontal) {
+                Text(verbatim: card.subtitle + time).lineLimit(1).fixedSize()
+                HStack(spacing: 0) {
+                    Text(verbatim: Words.join([Words.kind(card.kind), card.place.isEmpty ? provider : card.place]))
+                        .lineLimit(1).truncationMode(.tail)
+                    if !time.isEmpty { Text(verbatim: time).fixedSize() }
+                }
+            }
+        }
     }
 
     /// `sizes` adds what the meter measures under it, "8 CPUs" or

@@ -12,6 +12,9 @@ import TopophanySections
 struct CellsStatusItem: View {
     var model: StatusItemModel
     var ctx: StatusItemContext
+    /// Whether it leads with the mark: not beside an icon that shows the
+    /// status itself.
+    var mark = true
 
     static let metrics = CellMetrics(fontSize: 11, line: 18)
     /// The TUI's spinner, a frame every 90 ms.
@@ -26,8 +29,8 @@ struct CellsStatusItem: View {
 
     var body: some View {
         let p = CellsPalette(ctx.theme)
-        let text = model.tuiText.isEmpty ? "" : " " + model.tuiText
-        return CellsChip(segments: [glyph(p)] + words(text, p), ctx: ctx, flash: Color(p.tone(model.mark)).opacity(flash))
+        let text = model.tuiText.isEmpty || !mark ? model.tuiText : " " + model.tuiText
+        return CellsChip(segments: (mark ? [glyph(p)] : []) + words(text, p), ctx: ctx, flash: Color(p.tone(model.mark)).opacity(flash))
             .accessibilityLabel(Text(model.accessibilityLabel))
     }
 

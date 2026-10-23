@@ -1,4 +1,5 @@
 import AppKit
+import CoreImage
 import QuartzCore
 import SwiftUI
 import TopophanySections
@@ -20,6 +21,11 @@ import TopophanyThemes
 /// Mac's readings have a layer of their own, drawn once a sample. A turn
 /// repeats every step, so its frames are kept, and once a step's are all
 /// drawn the system plays them on its own until something changes.
+///
+/// An icon in the globe's place plays on a layer of its own. One that
+/// shows the status itself plays that status's frames, or draws White
+/// Night's moon over its sky; a change of status fades between frames, or
+/// dissolves the moon through its dither.
 @MainActor
 final class StatusItemController: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -124,19 +130,31 @@ final class StatusItemController: NSObject {
             && !ProcessInfo.processInfo.isLowPowerModeEnabled
     }
 
-    private var portrait: MenuBarIconAnimation? {
+    /// The icon in the globe's place, drawn to the pixel at `height`
+    /// points on a display of `scale`.
+    private func portrait(height: Double, scale: CGFloat) -> MenuBarIconAnimation? {
         switch model.statusItem.icon {
         case .globe: nil
         case .deepseek: MenuBarIconAnimation.deepseek
-        case .whiteNight: MenuBarIconAnimation.whiteNight
+        case .whiteNight: MenuBarIconAnimation.whiteNight(pixelHeight: Int(((height - 2) * scale).rounded()))
         case .custom: model.customIconAnimation
+        }
+    }
+
+    /// Whether an icon stands in the globe's place.
+    private var hasPortrait: Bool {
+        switch model.statusItem.icon {
+        case .globe: false
+        case .deepseek: MenuBarIconAnimation.deepseek != nil
+        case .whiteNight: true
+        case .custom: model.customIconAnimation != nil
         }
     }
 
     /// Whether the turn runs steadily, nothing else moving: the system can
     /// play its frames.
     private var steady: Bool {
-        portrait == nil && mayMove && change == nil && model.statusItem.activity == .live && turn.velocity == StatusItemTurn.speed
+        !hasPortrait && mayMove && change == nil && model.statusItem.activity == .live && turn.velocity == StatusItemTurn.speed
     }
 
     /// Frames a second the app draws now; 0 while nothing moves or the
@@ -145,7 +163,7 @@ final class StatusItemController: NSObject {
         guard mayMove, !screensAsleep, !hidden, playing == nil else { return 0 }
         if let c = change, now - c.at < StatusItemMotion.changeLength { return 60 }
         let m = model.statusItem
-        return m.activity == .connecting || (portrait == nil && (m.activity == .live || turn.isMoving)) ? 15 : 0
+        return m.activity == .connecting || (!hasPortrait && (m.activity == .live || turn.isMoving)) ? 15 : 0
     }
 
     private func schedule(at now: TimeInterval) {
@@ -231,7 +249,7 @@ final class StatusItemController: NSObject {
         }
         shown = m
         if !steady { stopPlaying(at: now) }
-        if portrait != nil { turn.rest() }
+        if hasPortrait { turn.rest() }
         if !mayMove {
             turn.rest()
             change = nil
@@ -247,13 +265,15 @@ final class StatusItemController: NSObject {
         let dark = b.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let scale = b.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
         let renderer = Renderers.renderer(for: theme)
+        let height = min(Double(m.iconSize), Double(b.window?.frame.height ?? 30) - 2)
+        let portrait = portrait(height: height, scale: scale)
         func context(_ motion: StatusItemMotion) -> StatusItemContext {
             StatusItemContext(theme: theme, menuBarIsDark: dark, motion: motion,
-                              customIcon: model.customIconAnimation, drawsPortrait: false)
+                              customIcon: model.customIconAnimation, drawsPortrait: false, portrait: portrait)
         }
-        let height = min(Double(m.iconSize), Double(b.window?.frame.height ?? 30) - 2)
-        frameView.setPortrait(portrait, height: height, speed: m.iconSpeed,
-                              moving: mayMove && !screensAsleep && !hidden && m.activity == .live)
+        let moves = mayMove && !screensAsleep && !hidden
+        frameView.setPortrait(portrait?.scene(m.mark, tinted: m.tinted), height: height, speed: m.iconSpeed,
+                              moving: moves && m.activity == .live, changes: moves)
 
         // The readings, once a sample.
         let rk = ReadingsKey(readings: m.readings, language: L10n.localization, theme: theme.id, dark: dark, scale: scale)
@@ -283,7 +303,6 @@ final class StatusItemController: NSObject {
         if playing == nil {
             let n = Self.framesPerStep
             let place = (Int((turn.phase * Double(n)).rounded()) % n + n) % n
-            let moves = mayMove && !screensAsleep && !hidden
             let settled = change == nil && !(moves && m.activity == .connecting)
             let cg: CGImage
             if settled, let kept = frames[place] {
@@ -293,7 +312,11 @@ final class StatusItemController: NSObject {
                                               change: change.map { .init(from: $0.from, age: now - $0.at) })
                 let parts = renderer.statusItemParts(drawn, context: context(motion))
                 frameView.spacing = parts.spacing
-                self.renderer.content = parts.item
+                // A kept renderer keeps its last image while nothing in it
+                // shows: beside an icon that shows the status itself, a count
+                // rolling away would leave its width behind. A fill too faint
+                // to draw keeps it drawing.
+                self.renderer.content = AnyView(parts.item.background(Color.black.opacity(0.001)))
                 self.renderer.scale = scale
                 guard let fresh = self.renderer.cgImage else { return }
                 cg = fresh
@@ -338,7 +361,9 @@ private final class FrameView: NSView {
     private let readingsLayer = CALayer()
     private let itemLayer = CALayer()
     private let portraitLayer = CALayer()
-    private var portrait: MenuBarIconAnimation?
+    /// Still over the portrait's frames: White Night's moon.
+    private let overlayLayer = CALayer()
+    private var scene: MenuBarIconScene?
     private var portraitSize = NSSize.zero
     private var portraitKey: PortraitKey?
     private var item: CGImage?
@@ -354,30 +379,68 @@ private final class FrameView: NSView {
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
-        for l in [readingsLayer, portraitLayer, itemLayer] {
+        // A quiet alert's frames lose their color through a filter.
+        layerUsesCoreImageFilters = true
+        for (l, name) in [(readingsLayer, "readings"), (portraitLayer, "portrait"), (overlayLayer, "overlay"), (itemLayer, "item")] {
+            l.name = name
             l.contentsGravity = .resize
             layer?.addSublayer(l)
         }
         portraitLayer.contentsGravity = .resizeAspect
+        overlayLayer.contentsGravity = .resizeAspect
     }
 
     required init?(coder: NSCoder) { nil }
 
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
-    func setPortrait(_ animation: MenuBarIconAnimation?, height: Double, speed: Double, moving: Bool) {
-        let key = PortraitKey(id: animation?.id, height: height, speed: speed, moving: moving)
-        guard key != portraitKey else { return }
+    /// Plays `scene`'s frames with its overlay over them. With `changes`,
+    /// another status of the icon shown comes in: its frames fade over, and
+    /// its overlay dissolves through the dither.
+    func setPortrait(_ scene: MenuBarIconScene?, height: Double, speed: Double, moving: Bool, changes: Bool) {
+        let animation = scene?.animation
+        let key = PortraitKey(id: animation?.id, first: animation?.frames.first.map { ObjectIdentifier($0) },
+                              height: height, speed: speed, moving: moving)
+        let old = self.scene
+        let grayscale = scene?.grayscale == true
+        guard key != portraitKey || scene?.overlay !== old?.overlay || grayscale != (old?.grayscale == true) else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         defer { CATransaction.commit() }
+        let sameIcon = changes && portraitKey.map { $0.icon == key.icon && $0.height == key.height } == true
+        self.scene = scene
+        if scene?.overlay !== old?.overlay {
+            overlayLayer.removeAnimation(forKey: "dissolve")
+            let steps = sameIcon ? MenuBarIconAnimation.dissolve(from: old?.overlay, to: scene?.overlay) : []
+            if steps.count > 1 {
+                let dissolve = CAKeyframeAnimation(keyPath: "contents")
+                dissolve.values = steps
+                dissolve.calculationMode = .discrete
+                dissolve.duration = 0.48
+                overlayLayer.add(dissolve, forKey: "dissolve")
+            }
+            overlayLayer.contents = scene?.overlay
+        }
+        if grayscale != (old?.grayscale == true) {
+            portraitLayer.filters = grayscale ? CIFilter(name: "CIColorControls", parameters: [kCIInputSaturationKey: 0]).map { [$0] } : nil
+        }
+        guard key != portraitKey else { return update() }
+        let fades = sameIcon && portraitKey?.id != key.id
         portraitKey = key
-        portrait = animation
         portraitSize = animation?.size(height: height) ?? .zero
         portraitLayer.removeAllAnimations()
+        if fades {
+            let fade = CATransition()
+            fade.type = .fade
+            fade.duration = 0.3
+            portraitLayer.add(fade, forKey: "status")
+        }
         portraitLayer.contents = animation?.frames.first
-        portraitLayer.magnificationFilter = animation?.id == "whiteNight" ? .nearest : .linear
-        portraitLayer.minificationFilter = animation?.id == "whiteNight" ? .nearest : .linear
+        let filter: CALayerContentsFilter = animation?.id == "whiteNight" ? .nearest : .linear
+        for l in [portraitLayer, overlayLayer] {
+            l.magnificationFilter = filter
+            l.minificationFilter = filter
+        }
         if let animation, moving {
             if animation.frames.count > 1 {
                 let frames = CAKeyframeAnimation(keyPath: "contents")
@@ -403,12 +466,16 @@ private final class FrameView: NSView {
 
     private struct PortraitKey: Equatable {
         var id: String?
+        /// Its first frame: White Night's are drawn to the display's pixels.
+        var first: ObjectIdentifier?
         var height: Double
         var speed: Double
         var moving: Bool
+        /// The icon, whichever status it shows.
+        var icon: String? { id.map { String($0.prefix { $0 != "#" }) } }
     }
 
-    private var portraitWidth: CGFloat { portrait == nil ? 0 : portraitSize.width + 2 }
+    private var portraitWidth: CGFloat { scene == nil ? 0 : portraitSize.width + 2 }
 
     func show(_ image: CGImage, scale: CGFloat) {
         guard image !== item || scale != self.scale else { return }
@@ -450,8 +517,13 @@ private final class FrameView: NSView {
     var snapshot: NSImage? {
         guard let item else { return nil }
         let r = points(readings), i = points(item), all = size
-        // This layer's contents and every animation value are CGImages.
-        let portraitImage = portraitLayer.presentation()?.contents.map { $0 as! CGImage } ?? portrait?.frames.first
+        // These layers' contents and every animation value are CGImages.
+        var portraitImage = portraitLayer.presentation()?.contents.map { $0 as! CGImage } ?? scene?.animation.frames.first
+        if scene?.grayscale == true, let color = portraitImage {
+            let gray = CIImage(cgImage: color).applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 0])
+            portraitImage = CIContext().createCGImage(gray, from: gray.extent) ?? color
+        }
+        let overlayImage = overlayLayer.presentation()?.contents.map { $0 as! CGImage } ?? scene?.overlay
         let portraitSize = portraitSize, portraitWidth = portraitWidth
         return NSImage(size: all, flipped: false) { [readings] _ in
             guard let c = NSGraphicsContext.current?.cgContext else { return false }
@@ -462,7 +534,9 @@ private final class FrameView: NSView {
                                  width: portraitSize.width - 2, height: portraitSize.height - 2)
                 let ratio = min(box.width / CGFloat(portraitImage.width), box.height / CGFloat(portraitImage.height))
                 let width = CGFloat(portraitImage.width) * ratio, height = CGFloat(portraitImage.height) * ratio
-                c.draw(portraitImage, in: CGRect(x: box.midX - width / 2, y: box.midY - height / 2, width: width, height: height))
+                let rect = CGRect(x: box.midX - width / 2, y: box.midY - height / 2, width: width, height: height)
+                c.draw(portraitImage, in: rect)
+                if let overlayImage { c.draw(overlayImage, in: rect) }
             }
             c.draw(item, in: CGRect(x: all.width - i.width, y: (all.height - i.height) / 2, width: i.width, height: i.height))
             return true
@@ -488,6 +562,8 @@ private final class FrameView: NSView {
         portraitLayer.frame = CGRect(x: x + all.width - i.width - portraitWidth + 1,
                                      y: y + (all.height - portraitSize.height) / 2 + 1,
                                      width: max(0, portraitSize.width - 2), height: max(0, portraitSize.height - 2))
+        overlayLayer.contentsScale = scale
+        overlayLayer.frame = portraitLayer.frame
         itemLayer.contents = item
         itemLayer.contentsScale = scale
         itemLayer.frame = CGRect(x: x + all.width - i.width, y: y + (all.height - i.height) / 2, width: i.width, height: i.height)

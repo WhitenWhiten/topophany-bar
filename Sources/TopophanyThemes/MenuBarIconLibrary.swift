@@ -1,11 +1,32 @@
 import Foundation
 import ImageIO
+import TopophanySections
 
 /// Small decoded frames shared by the settings preview and the native layer.
+///
+/// An icon can show the status itself: a status pack plays its own frames
+/// for each status it has, and White Night draws its moon over the sky.
+/// For any other status it plays its own frames, with the badge beside it;
+/// a pack's are its clear frames, without their color, so they don't say
+/// all is well.
 public struct MenuBarIconAnimation: Sendable {
     public let id: String
     public let frames: [CGImage]
     public let durations: [Double]
+    /// A status pack's frames for each status it shows, by mark: where they
+    /// are among `frames`. A pack always has clear's.
+    public var statuses: [Mark: Range<Int>] = [:]
+    /// Drawn still over every frame, for each status the icon shows that
+    /// way: White Night's moon.
+    public var overlays: [Mark: Overlay] = [:]
+
+    public struct Overlay: Sendable {
+        public var color: CGImage
+        /// Without color, for a quiet alert or with status colors off: its
+        /// shape still says which status it is.
+        public var ink: CGImage
+    }
+
     public var duration: Double { durations.reduce(0, +) }
     public var aspectRatio: Double { Double(frames[0].width) / Double(frames[0].height) }
     public var keyTimes: [NSNumber] {
@@ -32,6 +53,34 @@ public struct MenuBarIconAnimation: Sendable {
         return CGSize(width: width.rounded(.up), height: height)
     }
 
+    /// Whether it shows any status itself.
+    public var showsStatuses: Bool { !statuses.isEmpty || !overlays.isEmpty }
+
+    /// What it shows for `mark`; `tinted` is false while the alert is quiet
+    /// or status colors are off.
+    public func scene(_ mark: Mark, tinted: Bool) -> MenuBarIconScene {
+        if let overlay = overlays[mark] {
+            return MenuBarIconScene(animation: base, overlay: tinted ? overlay.color : overlay.ink, showsStatus: true)
+        }
+        if let range = statuses[mark] {
+            // A pack's art carries its own colors: an alert's loses them
+            // as the badge would.
+            return MenuBarIconScene(animation: part(range, mark), showsStatus: true,
+                                    grayscale: !tinted && (mark == .degraded || mark == .down))
+        }
+        return MenuBarIconScene(animation: base, grayscale: !statuses.isEmpty)
+    }
+
+    /// What plays for a status it doesn't show: a pack's clear frames, or
+    /// else all its own.
+    var base: MenuBarIconAnimation {
+        statuses[.up].map { part($0, .up) } ?? MenuBarIconAnimation(id: id, frames: frames, durations: durations)
+    }
+
+    private func part(_ range: Range<Int>, _ mark: Mark) -> MenuBarIconAnimation {
+        MenuBarIconAnimation(id: id + "#" + mark.rawValue, frames: Array(frames[range]), durations: Array(durations[range]))
+    }
+
     public static let deepseek: MenuBarIconAnimation? = {
         guard let open = Bundle.module.url(forResource: "deepseek-menu", withExtension: "png"),
               let blink = Bundle.module.url(forResource: "deepseek-blink", withExtension: "png"),
@@ -41,15 +90,58 @@ public struct MenuBarIconAnimation: Sendable {
     }()
 }
 
+/// What a menu bar icon shows for one status: the frames it plays, and
+/// what it draws over them.
+public struct MenuBarIconScene: Sendable {
+    public var animation: MenuBarIconAnimation
+    /// Drawn still over every frame.
+    public var overlay: CGImage?
+    /// The icon shows the status itself, so no badge is drawn beside it.
+    public var showsStatus: Bool
+    /// Its frames drawn without color: an alert quieted, or status colors
+    /// off.
+    public var grayscale: Bool
+
+    public init(animation: MenuBarIconAnimation, overlay: CGImage? = nil, showsStatus: Bool = false, grayscale: Bool = false) {
+        self.animation = animation
+        self.overlay = overlay
+        self.showsStatus = showsStatus
+        self.grayscale = grayscale
+    }
+}
+
 public struct MenuBarIconAsset: Codable, Sendable, Equatable, Identifiable {
     public let id: String
     public var name: String
     public let durations: [Double]
-    public var isAnimated: Bool { durations.count > 1 }
+    /// A status pack's frames for each status it shows, by mark: the index
+    /// of the first and how many.
+    public var statuses: [String: [Int]]?
+
+    public var isAnimated: Bool {
+        guard let ranges = ranges, !ranges.isEmpty else { return durations.count > 1 }
+        return ranges.values.contains { $0.count > 1 }
+    }
+
+    /// The statuses it shows itself, in their order.
+    public var shows: [Mark] { Mark.allCases.filter { ranges?[$0] != nil } }
+
+    /// Its statuses' frames by mark, each among its frames; `nil` when one
+    /// isn't, or a pack has no clear frames. A mark this app doesn't know
+    /// is left out.
+    var ranges: [Mark: Range<Int>]? {
+        var out: [Mark: Range<Int>] = [:]
+        for (key, span) in statuses ?? [:] {
+            guard let mark = Mark(rawValue: key) else { continue }
+            guard span.count == 2, span[0] >= 0, span[1] > 0, span[0] + span[1] <= durations.count else { return nil }
+            out[mark] = span[0]..<span[0] + span[1]
+        }
+        return out.isEmpty || out[.up] != nil ? out : nil
+    }
 }
 
 public enum MenuBarIconError: Error, LocalizedError {
-    case unsupported, tooLarge, tooManyFrames, mismatchedSizes, empty, missing, invalidName
+    case unsupported, tooLarge, tooManyFrames, mismatchedSizes, empty, missing, invalidName, unnamedStatus, noClearStatus
     public var errorDescription: String? {
         switch self {
         case .unsupported: "Choose a PNG, JPEG, GIF, APNG, or a sequence of PNG frames."
@@ -59,6 +151,8 @@ public enum MenuBarIconError: Error, LocalizedError {
         case .empty: "The image is empty or could not be decoded."
         case .missing: "This custom icon is unavailable. The default icon is shown instead."
         case .invalidName: "Enter a name of up to 80 characters."
+        case .unnamedStatus: "Name every file or folder of a status icon for its status: clear, warning, error, unknown or offline."
+        case .noClearStatus: "A status icon needs frames named clear, for when all is well."
         }
     }
 }
@@ -66,6 +160,9 @@ public enum MenuBarIconError: Error, LocalizedError {
 /// An app-owned library beside the settings file. Each immutable import is
 /// a UUID directory of normalized PNG frames and a small manifest. The
 /// user's originals are never modified and are no longer needed afterward.
+///
+/// Files or folders named for a status ("clear.gif", "error/") make a
+/// status pack: its frames for each status show the status themselves.
 public struct MenuBarIconLibrary: Sendable {
     public let directory: URL
     public init(directory: URL) { self.directory = directory }
@@ -80,7 +177,7 @@ public struct MenuBarIconLibrary: Sendable {
         guard let data = try? Data(contentsOf: url), data.count < 64_000,
               let asset = try? JSONDecoder().decode(MenuBarIconAsset.self, from: data),
               asset.id == id, !asset.durations.isEmpty, asset.durations.count <= 180,
-              asset.durations.allSatisfy({ $0.isFinite && $0 >= 0.02 && $0 <= 10 }) else {
+              asset.durations.allSatisfy({ $0.isFinite && $0 >= 0.02 && $0 <= 10 }), asset.ranges != nil else {
             throw MenuBarIconError.missing
         }
         return asset
@@ -101,16 +198,31 @@ public struct MenuBarIconLibrary: Sendable {
                   let image = Self.thumbnail(source, index: 0) else { throw MenuBarIconError.missing }
             return image
         }
-        return MenuBarIconAnimation(id: id, frames: frames, durations: asset.durations)
+        return MenuBarIconAnimation(id: id, frames: frames, durations: asset.durations, statuses: asset.ranges ?? [:])
     }
 
     @discardableResult
     public func importFiles(_ urls: [URL], frameRate: Double = 12) throws -> MenuBarIconAsset {
-        let sorted = urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-        let decoded = try Self.decode(sorted, frameRate: frameRate)
+        guard !urls.isEmpty else { throw MenuBarIconError.empty }
+        let chosen = Self.files(urls)
+        let named = chosen.filter { $0.status != nil }
+        let decoded: MenuBarIconAnimation
+        let name: String
+        if named.isEmpty {
+            let sorted = chosen.map(\.url).sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            guard let first = sorted.first else { throw MenuBarIconError.empty }
+            decoded = try Self.decode(sorted, frameRate: frameRate)
+            name = urls.count == 1 && Self.isFolder(urls[0]) ? urls[0].lastPathComponent : first.deletingPathExtension().lastPathComponent
+        } else {
+            guard named.count == chosen.count else { throw MenuBarIconError.unnamedStatus }
+            decoded = try Self.decodePack(Dictionary(grouping: named.map { ($0.status!, $0.url) }, by: \.0).mapValues { $0.map(\.1) },
+                                          frameRate: frameRate)
+            name = Self.packName(urls)
+        }
         let id = UUID().uuidString
-        let asset = MenuBarIconAsset(id: id, name: String((sorted[0].deletingPathExtension().lastPathComponent).prefix(80)),
-                                    durations: decoded.durations)
+        let statuses = decoded.statuses.isEmpty ? nil
+            : Dictionary(uniqueKeysWithValues: decoded.statuses.map { ($0.key.rawValue, [$0.value.lowerBound, $0.value.count]) })
+        let asset = MenuBarIconAsset(id: id, name: String(name.prefix(80)), durations: decoded.durations, statuses: statuses)
         let fm = FileManager.default
         try fm.createDirectory(at: directory, withIntermediateDirectories: true)
         let staging = directory.appending(path: ".import-\(id)", directoryHint: .isDirectory)
@@ -139,6 +251,91 @@ public struct MenuBarIconLibrary: Sendable {
 
     public func remove(_ id: String) throws { try FileManager.default.removeItem(at: folder(id)) }
 
+    // MARK: status packs
+
+    /// The words a file or folder can be named for each status by, in the
+    /// app's three languages.
+    static let statusNames: [(Mark, [String])] = [
+        (.up, ["clear", "up", "ok", "normal", "healthy", "正常"]),
+        (.degraded, ["warning", "warnings", "warn", "degraded", "警告", "注意"]),
+        (.down, ["error", "errors", "down", "incident", "incidents", "critical", "fail", "failure", "故障", "错误", "エラー", "障害"]),
+        (.unknown, ["unknown", "incomplete", "未知", "不明"]),
+        (.offline, ["offline", "离线", "オフライン"]),
+    ]
+
+    /// The status a name begins with, as a word of its own: "clear",
+    /// "warning-02", "error_3"; `nil` for "frame1" or "cleared".
+    static func status(named name: String) -> Mark? {
+        let word = String(name.lowercased().prefix { $0.isLetter })
+        return statusNames.first { $0.1.contains(word) }?.0
+    }
+
+    static let imageExtensions: Set<String> = ["png", "apng", "gif", "jpg", "jpeg"]
+
+    static func isFolder(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+    }
+
+    /// Each file chosen, with the status its name or its folder's is for. A
+    /// folder is read one level down: its images, and the images in its
+    /// folders named for a status.
+    static func files(_ urls: [URL]) -> [(url: URL, status: Mark?)] {
+        func items(_ folder: URL) -> [URL] {
+            ((try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.isDirectoryKey],
+                                                           options: [.skipsHiddenFiles])) ?? [])
+        }
+        func images(_ folder: URL) -> [URL] {
+            items(folder).filter { !isFolder($0) && imageExtensions.contains($0.pathExtension.lowercased()) }
+        }
+        var out: [(url: URL, status: Mark?)] = []
+        for url in urls {
+            guard isFolder(url) else {
+                out.append((url, status(named: url.deletingPathExtension().lastPathComponent)))
+                continue
+            }
+            if let named = status(named: url.lastPathComponent) {
+                out += images(url).map { ($0, named) }
+                continue
+            }
+            for item in items(url) {
+                if isFolder(item) {
+                    if let named = status(named: item.lastPathComponent) { out += images(item).map { ($0, named) } }
+                } else if imageExtensions.contains(item.pathExtension.lowercased()) {
+                    out.append((item, status(named: item.deletingPathExtension().lastPathComponent)))
+                }
+            }
+        }
+        return out
+    }
+
+    /// A pack is named for the folder that holds it.
+    static func packName(_ urls: [URL]) -> String {
+        var folder = urls.count == 1 && isFolder(urls[0]) ? urls[0] : urls[0].deletingLastPathComponent()
+        if status(named: folder.lastPathComponent) != nil { folder.deleteLastPathComponent() }
+        let name = folder.lastPathComponent
+        return name.isEmpty || name == "/" ? "Status icon" : name
+    }
+
+    /// Each status's files, in natural filename order, as frames of one
+    /// size that share one boundary, so the icon holds still as its status
+    /// changes.
+    static func decodePack(_ groups: [Mark: [URL]], frameRate: Double) throws -> MenuBarIconAnimation {
+        guard groups[.up] != nil else { throw MenuBarIconError.noClearStatus }
+        var reader = FrameReader()
+        var frames: [CGImage] = [], durations: [Double] = [], statuses: [Mark: Range<Int>] = [:]
+        for mark in Mark.allCases {
+            guard let urls = groups[mark] else { continue }
+            let sorted = urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            let read = try reader.read(sorted, frameRate: frameRate)
+            statuses[mark] = frames.count..<frames.count + read.frames.count
+            frames += read.frames
+            durations += read.durations
+        }
+        return MenuBarIconAnimation(id: "decoded", frames: try cropped(frames), durations: durations, statuses: statuses)
+    }
+
+    // MARK: decoding
+
     static func thumbnail(_ source: CGImageSource, index: Int) -> CGImage? {
         CGImageSourceCreateThumbnailAtIndex(source, index, [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
@@ -148,48 +345,66 @@ public struct MenuBarIconLibrary: Sendable {
     }
 
     static func decode(_ urls: [URL], frameRate: Double) throws -> MenuBarIconAnimation {
-        guard !urls.isEmpty else { throw MenuBarIconError.empty }
-        guard urls.count <= 180 else { throw MenuBarIconError.tooManyFrames }
-        var frames: [CGImage] = [], durations: [Double] = []
-        var bytes = 0, dimensions: CGSize?
-        for url in urls {
-            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-            bytes += size
-            guard bytes <= 32 * 1024 * 1024 else { throw MenuBarIconError.tooLarge }
-            guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
-                  let type = CGImageSourceGetType(source) as String?,
-                  ["public.png", "public.jpeg", "com.compuserve.gif"].contains(type) else { throw MenuBarIconError.unsupported }
-            let count = CGImageSourceGetCount(source)
-            guard count > 0 else { throw MenuBarIconError.empty }
-            guard frames.count + count <= 180 else { throw MenuBarIconError.tooManyFrames }
-            if urls.count > 1 && (type != "public.png" || count != 1) { throw MenuBarIconError.unsupported }
-            for index in 0..<count {
-                guard let props = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [CFString: Any],
-                      let width = props[kCGImagePropertyPixelWidth] as? Int,
-                      let height = props[kCGImagePropertyPixelHeight] as? Int else { throw MenuBarIconError.empty }
-                guard width > 0, height > 0, width <= 4096, height <= 4096 else { throw MenuBarIconError.tooLarge }
-                let next = CGSize(width: width, height: height)
-                if let dimensions, dimensions != next { throw MenuBarIconError.mismatchedSizes }
-                dimensions = next
-                guard let image = thumbnail(source, index: index) else { throw MenuBarIconError.empty }
-                frames.append(image)
-                let gif = props[kCGImagePropertyGIFDictionary] as? [CFString: Any] ?? [:]
-                let png = props[kCGImagePropertyPNGDictionary] as? [CFString: Any] ?? [:]
-                let delay = (gif[kCGImagePropertyGIFUnclampedDelayTime] ?? gif[kCGImagePropertyGIFDelayTime]
-                    ?? png[kCGImagePropertyAPNGUnclampedDelayTime] ?? png[kCGImagePropertyAPNGDelayTime]) as? Double
-                let fallback = urls.count > 1 ? 1 / min(30, max(1, frameRate.isFinite ? frameRate : 12)) : 0.1
-                let duration = delay.flatMap { $0.isFinite && $0 > 0 ? $0 : nil } ?? fallback
-                durations.append(min(10, max(0.02, duration)))
+        var reader = FrameReader()
+        let read = try reader.read(urls, frameRate: frameRate)
+        return MenuBarIconAnimation(id: "decoded", frames: try cropped(read.frames), durations: read.durations)
+    }
+
+    /// Reads frames within an import's limits, which a pack's statuses
+    /// share: 32 MB and 180 frames in all, each frame the same size.
+    struct FrameReader {
+        var bytes = 0
+        var count = 0
+        var dimensions: CGSize?
+
+        mutating func read(_ urls: [URL], frameRate: Double) throws -> (frames: [CGImage], durations: [Double]) {
+            guard !urls.isEmpty else { throw MenuBarIconError.empty }
+            guard count + urls.count <= 180 else { throw MenuBarIconError.tooManyFrames }
+            var frames: [CGImage] = [], durations: [Double] = []
+            for url in urls {
+                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                bytes += size
+                guard bytes <= 32 * 1024 * 1024 else { throw MenuBarIconError.tooLarge }
+                guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
+                      let type = CGImageSourceGetType(source) as String?,
+                      ["public.png", "public.jpeg", "com.compuserve.gif"].contains(type) else { throw MenuBarIconError.unsupported }
+                let n = CGImageSourceGetCount(source)
+                guard n > 0 else { throw MenuBarIconError.empty }
+                guard count + n <= 180 else { throw MenuBarIconError.tooManyFrames }
+                if urls.count > 1 && (type != "public.png" || n != 1) { throw MenuBarIconError.unsupported }
+                for index in 0..<n {
+                    guard let props = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [CFString: Any],
+                          let width = props[kCGImagePropertyPixelWidth] as? Int,
+                          let height = props[kCGImagePropertyPixelHeight] as? Int else { throw MenuBarIconError.empty }
+                    guard width > 0, height > 0, width <= 4096, height <= 4096 else { throw MenuBarIconError.tooLarge }
+                    let next = CGSize(width: width, height: height)
+                    if let dimensions, dimensions != next { throw MenuBarIconError.mismatchedSizes }
+                    dimensions = next
+                    guard let image = MenuBarIconLibrary.thumbnail(source, index: index) else { throw MenuBarIconError.empty }
+                    frames.append(image)
+                    count += 1
+                    let gif = props[kCGImagePropertyGIFDictionary] as? [CFString: Any] ?? [:]
+                    let png = props[kCGImagePropertyPNGDictionary] as? [CFString: Any] ?? [:]
+                    let delay = (gif[kCGImagePropertyGIFUnclampedDelayTime] ?? gif[kCGImagePropertyGIFDelayTime]
+                        ?? png[kCGImagePropertyAPNGUnclampedDelayTime] ?? png[kCGImagePropertyAPNGDelayTime]) as? Double
+                    let fallback = urls.count > 1 ? 1 / min(30, max(1, frameRate.isFinite ? frameRate : 12)) : 0.1
+                    let duration = delay.flatMap { $0.isFinite && $0 > 0 ? $0 : nil } ?? fallback
+                    durations.append(min(10, max(0.02, duration)))
+                }
             }
+            return (frames, durations)
         }
-        // One common alpha boundary avoids jitter between animation frames.
+    }
+
+    /// Every frame cropped to one common alpha boundary, which avoids
+    /// jitter between frames.
+    static func cropped(_ frames: [CGImage]) throws -> [CGImage] {
         let bounds = try frames.reduce(CGRect.null) { try $0.union(alphaBounds($1)) }
         guard !bounds.isNull else { throw MenuBarIconError.empty }
-        let cropped = try frames.map { image in
+        return try frames.map { image in
             guard let crop = image.cropping(to: bounds) else { throw MenuBarIconError.empty }
             return crop
         }
-        return MenuBarIconAnimation(id: "decoded", frames: cropped, durations: durations)
     }
 
     private static func alphaBounds(_ image: CGImage) throws -> CGRect {

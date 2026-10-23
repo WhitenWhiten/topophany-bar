@@ -90,29 +90,79 @@ import TopophanySections
         }
     }
 
+    /// White Night's moon says each status itself, with no badge: a row
+    /// per status in color and quieted, then each size of the panorama.
     @Test func whiteNightPanorama() throws {
+        func night(_ scenario: FixtureEngine.Scenario, show: TopophanyKit.Settings.Appearance.Show = .count, quiet: Bool = false,
+                   size: Int = 26) -> StatusItemModel {
+            var m = item(scenario, show: show, quiet: quiet)
+            m.icon = .whiteNight
+            m.iconSize = size
+            return m
+        }
         for theme in [ThemeStore.native, ThemeStore.terminal] {
             let rows = VStack(alignment: .leading, spacing: 12) {
                 ForEach([false, true], id: \.self) { dark in
-                    ForEach([18, 22, 26], id: \.self) { size in
-                        HStack(spacing: 20) {
-                            ForEach([0.0, 6, 12, 18], id: \.self) { time in
-                                let model = {
-                                    var m = item(.degraded)
-                                    m.icon = .whiteNight
-                                    m.iconSize = size
-                                    return m
-                                }()
-                                drawn(model, theme: theme, dark: dark,
-                                      motion: StatusItemMotion(moves: true, time: time))
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(panelScenarios, id: \.self) { s in
+                            HStack(spacing: 20) {
+                                ForEach(TopophanyKit.Settings.Appearance.Show.allCases, id: \.self) { show in
+                                    drawn(night(s, show: show), theme: theme, dark: dark)
+                                }
+                                if s == .degraded || s == .incidents {
+                                    drawn(night(s, quiet: true), theme: theme, dark: dark)
+                                }
                             }
                         }
-                        .padding(10)
-                        .background(dark ? Color(white: 0.11) : Color(white: 0.95))
+                        HStack(spacing: 20) {
+                            ForEach([18, 22, 26], id: \.self) { size in
+                                drawn(night(.incidents, show: .symbol, size: size), theme: theme, dark: dark,
+                                      motion: StatusItemMotion(moves: true, time: 6))
+                            }
+                        }
                     }
+                    .padding(10)
+                    .background(dark ? Color(white: 0.11) : Color(white: 0.95))
                 }
             }
             try snapshot("item-white-night-\(theme.id)", rows)
+        }
+    }
+
+    /// A pack's own frames for the statuses it has, and the badge beside
+    /// its clear frames for those it hasn't.
+    @Test func statusPack() throws {
+        func tile(_ rgb: UInt32, _ shape: Int) -> CGImage? {
+            let context = CGContext(data: nil, width: 48, height: 48, bitsPerComponent: 8, bytesPerRow: 48 * 4,
+                                    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            context?.setFillColor(CGColor(red: Double(rgb >> 16) / 255, green: Double(rgb >> 8 & 255) / 255,
+                                          blue: Double(rgb & 255) / 255, alpha: 1))
+            let r = CGRect(x: 6, y: 6, width: 36, height: 36)
+            switch shape {
+            case 0: context?.fillEllipse(in: r)
+            case 1:
+                context?.move(to: CGPoint(x: 24, y: 42)); context?.addLine(to: CGPoint(x: 44, y: 8)); context?.addLine(to: CGPoint(x: 4, y: 8))
+                context?.fillPath()
+            default: context?.fill(r)
+            }
+            return context?.makeImage()
+        }
+        let frames = try [tile(0x34C759, 0), tile(0xFF9500, 1), tile(0xFF3B30, 2)].map { try #require($0) }
+        let pack = MenuBarIconAnimation(id: "pack", frames: frames, durations: [1, 1, 1],
+                                        statuses: [.up: 0..<1, .degraded: 1..<2, .down: 2..<3])
+        for theme in [ThemeStore.native, ThemeStore.terminal] {
+            let rows = VStack(alignment: .leading, spacing: 6) {
+                ForEach(panelScenarios, id: \.self) { s in
+                    HStack(spacing: 20) {
+                        ForEach([false, true], id: \.self) { quiet in
+                            let m = { var m = item(s, quiet: quiet); m.icon = .custom; m.iconSize = 22; return m }()
+                            Renderers.renderer(for: theme).statusItem(m, context: StatusItemContext(theme: theme, menuBarIsDark: true,
+                                                                                                  customIcon: pack))
+                        }
+                    }
+                }
+            }
+            try snapshot("item-pack-\(theme.id)", OnDesktop(dark: true, padding: 12) { rows })
         }
     }
 

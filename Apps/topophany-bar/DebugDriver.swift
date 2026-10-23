@@ -55,6 +55,7 @@ import TopophanyWidgets
 ///     menu                  the menu bar item's right-click menu, as text
 ///     itemshot              the menu bar item as last drawn, to item.png
 ///     icon globe|deepseek|whiteNight   choose the menu bar icon
+///     quiet                 quiet the menu bar's alert, or show it again
 ///     iconimport JSON       import a JSON array of paths and select it
 ///     iconrename NAME       rename the selected custom icon
 ///     iconremove            remove the selected custom icon
@@ -248,6 +249,8 @@ enum DebugDriver {
             if w.count > 1, let icon = TopophanyKit.Settings.Appearance.MenuBar.Icon(rawValue: w[1]) {
                 d.model.update { $0.appearance.menuBar.icon = icon }
             }
+        case "quiet":
+            d.model.toggleQuiet()
         case "iconimport":
             do {
                 let paths = try JSONDecoder().decode([String].self, from: Data(w.dropFirst().joined(separator: " ").utf8))
@@ -270,10 +273,17 @@ enum DebugDriver {
             }
         case "iconinfo":
             let bar = d.model.settings.appearance.menuBar
+            let item = d.model.statusItem
             var lines = ["icon \(bar.icon.rawValue), size \(bar.iconSize), speed \(bar.iconSpeed), motion \(bar.motion)",
+                         "status \(item.mark.rawValue) \(item.activity) text '\(item.text)' tinted \(item.tinted)",
                          "library \(d.model.iconLibrary.directory.path)", "custom frames \(d.model.customIconAnimation?.frames.count ?? 0)"]
             lines += d.model.customIcons.map { "\($0.id) \($0.name) \($0.durations)" }
             func layers(_ layer: CALayer) {
+                if let name = layer.name {
+                    let image = layer.contents.map { $0 as! CGImage }
+                    lines.append("layer \(name) contents \(image.map { "\($0.width)x\($0.height)" } ?? "none")"
+                                 + " filters \(layer.filters?.count ?? 0) magnification \(layer.magnificationFilter.rawValue)")
+                }
                 for key in layer.animationKeys() ?? [] {
                     lines.append("animation \(key) duration \(layer.animation(forKey: key)?.duration ?? 0)")
                 }

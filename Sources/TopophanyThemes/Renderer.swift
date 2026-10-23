@@ -79,14 +79,18 @@ public struct StatusItemContext: Sendable {
     public var customIcon: MenuBarIconAnimation?
     /// The app renders the portrait in its own native animation layer.
     public var drawsPortrait: Bool
+    /// The icon in the globe's place as the app plays it, drawn to its
+    /// display's pixels; `nil` to draw it twice over.
+    public var portrait: MenuBarIconAnimation?
 
     public init(theme: Theme, menuBarIsDark: Bool, motion: StatusItemMotion = .still,
-                customIcon: MenuBarIconAnimation? = nil, drawsPortrait: Bool = true) {
+                customIcon: MenuBarIconAnimation? = nil, drawsPortrait: Bool = true, portrait: MenuBarIconAnimation? = nil) {
         self.theme = theme
         self.menuBarIsDark = menuBarIsDark
         self.motion = motion
         self.customIcon = customIcon
         self.drawsPortrait = drawsPortrait
+        self.portrait = portrait
     }
 }
 

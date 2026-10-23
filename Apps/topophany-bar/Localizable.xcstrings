@@ -315,6 +315,22 @@
         }
       }
     },
+    "A status icon needs frames named clear, for when all is well.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ステータスアイコンには、すべて正常なときに表示する clear という名前のフレームが必要です。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态图标需要名为 clear 的帧，用于一切正常时显示。"
+          }
+        }
+      }
+    },
     "About Topophany": {
       "localizations": {
         "ja": {
@@ -2123,6 +2139,22 @@
         }
       }
     },
+    "Name every file or folder of a status icon for its status: clear, warning, error, unknown or offline.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ステータスアイコンのファイルやフォルダには、すべてステータス名を付けてください：clear（正常）、warning（警告）、error（エラー）、unknown（不明）、offline（オフライン）。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态图标的每个文件或文件夹都需以其状态命名：clear（正常）、warning（警告）、error（故障）、unknown（未知）或 offline（离线）。"
+          }
+        }
+      }
+    },
     "Native": {
       "localizations": {
         "ja": {
@@ -2411,18 +2443,18 @@
         }
       }
     },
-    "Off draws the badge in the menu bar’s own color; its shape still changes": {
+    "Off draws the status in the menu bar’s own color; its shape still changes": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "オフにすると、バッジはメニューバー自体の色で描かれます。形は引き続き変わります"
+            "value": "オフにすると、ステータスはメニューバー自体の色で描かれます。形は引き続き変わります"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关闭后，徽标以菜单栏自身的颜色绘制；其形状仍会变化"
+            "value": "关闭后，状态以菜单栏自身的颜色绘制；其形状仍会变化"
           }
         }
       }
@@ -2535,6 +2567,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "其他…"
+          }
+        }
+      }
+    },
+    "PNG, JPEG, GIF or APNG; files named clear, warning or error show their status in the icon": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG・JPEG・GIF・APNG。clear・warning・error と名付けたファイルは、そのステータスをアイコン自体で示します"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG、JPEG、GIF 或 APNG；命名为 clear、warning 或 error 的文件会在图标中显示对应状态"
           }
         }
       }
@@ -3179,18 +3227,18 @@
         }
       }
     },
-    "Select one image or animation, or multiple PNG frames. Frames play in filename order.": {
+    "Select an image, an animation, PNG frames or a folder. Files or folders named for a status show it: clear, warning, error, unknown, offline.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "画像やアニメーションを1つ、または複数のPNGフレームを選択します。ファイル名順に再生されます。"
+            "value": "画像、アニメーション、PNG フレーム、またはフォルダを選択します。ステータス名のファイルやフォルダは、そのステータスを示します：clear（正常）、warning（警告）、error（エラー）、unknown（不明）、offline（オフライン）。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "选择一张图片或动画，或多张 PNG 帧。帧按文件名顺序播放。"
+            "value": "选择一张图片、一个动画、多张 PNG 帧或一个文件夹。以状态命名的文件或文件夹会显示该状态：clear（正常）、warning（警告）、error（故障）、unknown（未知）、offline（离线）。"
           }
         }
       }
@@ -4663,22 +4711,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "白夜の空"
-          }
-        }
-      }
-    },
-    "PNG, JPEG, GIF or APNG; wide icons supported; multiple PNGs play at 12 fps": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PNG、JPEG、GIF 或 APNG；支持宽图标，多张 PNG 以 12 帧/秒播放"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PNG・JPEG・GIF・APNG。横長アイコン対応。複数の PNG は毎秒12コマで再生"
           }
         }
       }
