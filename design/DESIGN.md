@@ -59,17 +59,13 @@ Out of scope for v1:
 ### 3.1 Motion
 
 Settings › Appearance › Menu bar icon offers the default renderer, the built-in
-DeepSeek Girl, White Night Sky, and imported icons. White Night Sky adapts the
-personal homepage's Bayer 8×8 sky, layered value-noise clouds, shaded disk and
-paper-white horizon to a 3.25:1 panorama. Its 180 cached frames follow a closed
-path through the noise field over 24 seconds; the native layer loops them under
-the same motion policy as other icons. They are drawn for the pixels the item
-has, one dot to a pixel at every size and scale, and the last two heights in use
-are kept. At 26 pt it occupies an 80 pt slot.
-DeepSeek Girl uses the approved portrait and a
-matching blink frame: a 140 ms blink every 4.8 seconds, with a quarter-point
-breathing movement. Shared transparent margins are trimmed, leaving the full
-headband and hair visible. Its status badge sits beside the portrait.
+White Night, and imported icons. White Night adapts the personal homepage's
+Bayer 8×8 sky, layered value-noise clouds, shaded disk and paper-white horizon
+to a 3.25:1 panorama. Its 180 cached frames follow a closed path through the
+noise field over 24 seconds; the native layer loops them under the same motion
+policy as other icons. They are drawn for the pixels the item has, one dot to a
+pixel at every size and scale, and the last two heights in use are kept. At
+26 pt it occupies an 80 pt slot.
 
 An icon can show the status itself, and then no badge sits beside it; the count
 or words still do. White Night's disk is a moon, drawn still over the moving sky:

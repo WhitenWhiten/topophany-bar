@@ -61,7 +61,7 @@ With a signed build installed, open topophany-bar once, then right-click the des
 | In Settings | What you can change |
 |---|---|
 | **General** | Profile, observer, refresh rate, launch at login, language and a global shortcut to toggle the panel |
-| **Appearance** | Native, Terminal, Aurora, Linen, Paper and Dusk themes; menu bar text, colors, motion and icons, including imported images or animations. White Night Sky's moon shows the status itself, and a blood moon means something is down; name imported files `clear`, `warning` and `error` to make your own |
+| **Appearance** | Native, Terminal, Aurora, Linen, Paper and Dusk themes; menu bar text, colors, motion and icons, including imported images or animations. White Night's moon shows the status itself, and a blood moon means something is down; name imported files `clear`, `warning` and `error` to make your own |
 | **Sections** | Visible sections and their order, pinned servers and services, map framing and time zones |
 | **This Mac** | Local readings, a collector-backed card for this Mac, or neither |
 

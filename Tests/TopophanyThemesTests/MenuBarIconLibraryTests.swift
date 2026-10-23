@@ -123,16 +123,6 @@ struct MenuBarIconLibraryTests {
         }
     }
 
-    @Test func builtInBlinkKeepsConsistentGeometry() throws {
-        let animation = try #require(MenuBarIconAnimation.deepseek)
-        #expect(animation.frames.count == 2)
-        #expect(animation.frames[0].width == animation.frames[1].width)
-        #expect(animation.frames[0].height == animation.frames[1].height)
-        #expect(animation.frame(at: 0) === animation.frames[0])
-        #expect(animation.frame(at: 4.7) === animation.frames[1])
-        #expect(animation.frame(at: 4.81) === animation.frames[0])
-    }
-
     @Test func wideImportsKeepTheirResolutionAndLayoutAfterReload() throws {
         try withLibrary { root, library in
             let context = try #require(CGContext(data: nil, width: 312, height: 96, bitsPerComponent: 8,

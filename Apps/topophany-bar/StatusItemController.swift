@@ -135,7 +135,6 @@ final class StatusItemController: NSObject {
     private func portrait(height: Double, scale: CGFloat) -> MenuBarIconAnimation? {
         switch model.statusItem.icon {
         case .globe: nil
-        case .deepseek: MenuBarIconAnimation.deepseek
         case .whiteNight: MenuBarIconAnimation.whiteNight(pixelHeight: Int(((height - 2) * scale).rounded()))
         case .custom: model.customIconAnimation
         }
@@ -145,7 +144,6 @@ final class StatusItemController: NSObject {
     private var hasPortrait: Bool {
         switch model.statusItem.icon {
         case .globe: false
-        case .deepseek: MenuBarIconAnimation.deepseek != nil
         case .whiteNight: true
         case .custom: model.customIconAnimation != nil
         }
@@ -450,15 +448,6 @@ private final class FrameView: NSView {
                 frames.duration = animation.duration / speed
                 frames.repeatCount = .infinity
                 portraitLayer.add(frames, forKey: "frames")
-            }
-            if animation.id == "deepseek" {
-                let breath = CAKeyframeAnimation(keyPath: "transform.translation.y")
-                breath.values = [0, 0.25, 0, -0.25, 0]
-                breath.keyTimes = [0, 0.25, 0.5, 0.75, 1]
-                breath.calculationMode = .cubic
-                breath.duration = 4.8 / speed
-                breath.repeatCount = .infinity
-                portraitLayer.add(breath, forKey: "breath")
             }
         }
         update()

@@ -1067,22 +1067,6 @@
         }
       }
     },
-    "DeepSeek Girl": {
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DeepSeek 娘"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DeepSeek 娘"
-          }
-        }
-      }
-    },
     "Default": {
       "localizations": {
         "ja": {
@@ -4683,18 +4667,18 @@
         }
       }
     },
-    "White Night Sky": {
+    "White Night": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "白夜天空"
+            "value": "白夜"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "白夜の空"
+            "value": "白夜"
           }
         }
       }

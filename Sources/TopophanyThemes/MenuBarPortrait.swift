@@ -8,7 +8,6 @@ extension StatusItemModel {
         if icon != .globe, let played = context.portrait { return played }
         return switch icon {
         case .globe: nil
-        case .deepseek: MenuBarIconAnimation.deepseek
         case .whiteNight: MenuBarIconAnimation.whiteNight(pixelHeight: (iconSize - 2) * 2)
         case .custom: context.customIcon
         }
@@ -31,7 +30,6 @@ struct MenuBarPortrait: View {
     var body: some View {
         let animation = scene.animation
         let time = motion.moves ? motion.time * speed : 0
-        let phase = animation.id == "deepseek" && motion.moves ? sin(time * 2 * .pi / 4.8) : 0
         let size = animation.size(height: height)
         let crisp = animation.id == "whiteNight"
         ZStack {
@@ -40,7 +38,6 @@ struct MenuBarPortrait: View {
         }
         .grayscale(scene.grayscale ? 1 : 0)
         .frame(width: size.width - 2, height: size.height - 2)
-        .offset(y: phase * 0.25)
         .frame(width: size.width, height: size.height)
         .accessibilityHidden(true)
     }
@@ -48,14 +45,5 @@ struct MenuBarPortrait: View {
     func picture(_ image: CGImage, crisp: Bool) -> some View {
         Image(decorative: image, scale: 2)
             .renderingMode(.original).resizable().interpolation(crisp ? .none : .high).scaledToFit()
-    }
-}
-
-struct DeepSeekMenuIcon: View {
-    var motion: StatusItemMotion
-    var body: some View {
-        if let animation = MenuBarIconAnimation.deepseek {
-            MenuBarPortrait(scene: MenuBarIconScene(animation: animation), height: 26, speed: 1, motion: motion)
-        }
     }
 }

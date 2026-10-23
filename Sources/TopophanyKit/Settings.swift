@@ -100,7 +100,7 @@ public struct Settings: Sendable, Hashable, Codable {
         public enum Show: String, Sendable, Hashable, Codable, CaseIterable { case symbol, count, words }
 
         public struct MenuBar: Sendable, Hashable, Codable {
-            public enum Icon: String, Sendable, Hashable, Codable, CaseIterable { case globe, deepseek, whiteNight, custom }
+            public enum Icon: String, Sendable, Hashable, Codable, CaseIterable { case globe, whiteNight, custom }
             /// This Mac's readings the item can show beside its globe.
             public enum Reading: String, Sendable, Hashable, Codable, CaseIterable { case cpu, memory, network }
 

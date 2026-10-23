@@ -80,14 +80,6 @@ public struct MenuBarIconAnimation: Sendable {
     private func part(_ range: Range<Int>, _ mark: Mark) -> MenuBarIconAnimation {
         MenuBarIconAnimation(id: id + "#" + mark.rawValue, frames: Array(frames[range]), durations: Array(durations[range]))
     }
-
-    public static let deepseek: MenuBarIconAnimation? = {
-        guard let open = Bundle.module.url(forResource: "deepseek-menu", withExtension: "png"),
-              let blink = Bundle.module.url(forResource: "deepseek-blink", withExtension: "png"),
-              let animation = try? MenuBarIconLibrary.decode([open, blink], frameRate: 12) else { return nil }
-        return MenuBarIconAnimation(id: "deepseek", frames: animation.frames,
-                                   durations: [4.66, 0.14])
-    }()
 }
 
 /// What a menu bar icon shows for one status: the frames it plays, and

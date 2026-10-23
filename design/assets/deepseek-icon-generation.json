@@ -1,7 +1,0 @@
-{
-  "tool": "built-in image_gen",
-  "reference": "../../Sources/TopophanyThemes/Resources/deepseek-menu.png",
-  "output": "../../Sources/TopophanyThemes/Resources/deepseek-blink.png",
-  "transparent_background": true,
-  "prompt": "Edit this exact transparent blue-haired maid portrait to create a CLOSED-EYES BLINK FRAME for animation. Change ONLY the two eyes: close both eyelids into short soft curved navy upper-lash lines following the original eye positions; replace visible blue irises and white sclera with the same surrounding pale skin. Keep eyebrows and tiny neutral mouth unchanged. Preserve absolutely all other pixels, character identity, hair shape, ahoge, headband, bows, cheek outline, clothing, lighting, colors, position, scale and proportions as closely as possible. Same framing and dimensions as input, no added margins or cropping, no text, no watermark, true transparent background. This is a technical animation frame, not a redesign, no new expression other than the closed eyelids."
-}

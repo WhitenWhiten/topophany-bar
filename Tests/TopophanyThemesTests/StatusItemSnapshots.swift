@@ -56,40 +56,6 @@ import TopophanySections
         }
     }
 
-    @Test func deepseekPortrait() throws {
-        // A missing packaged image used to leave an empty space next to
-        // the badge. Verify actual colored pixels, not just layout size.
-        let renderer = ImageRenderer(content: DeepSeekMenuIcon(motion: .still))
-        renderer.scale = 2
-        let image = try #require(renderer.cgImage)
-        let context = try #require(CGContext(data: nil, width: image.width, height: image.height,
-                                            bitsPerComponent: 8, bytesPerRow: image.width * 4,
-                                            space: CGColorSpaceCreateDeviceRGB(),
-                                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
-        let pixels = try #require(context.data).assumingMemoryBound(to: UInt8.self)
-        let bluePixels = (0..<(image.width * image.height)).filter {
-            pixels[$0 * 4 + 3] > 128 && Int(pixels[$0 * 4 + 2]) > Int(pixels[$0 * 4]) + 20
-        }.count
-        #expect(bluePixels > 100)
-        for theme in [ThemeStore.native, ThemeStore.terminal] {
-            for dark in [true, false] {
-                let rows = VStack(alignment: .leading, spacing: 0) {
-                    ForEach(panelScenarios, id: \.self) { scenario in
-                        bar(dark: dark) {
-                            ForEach(TopophanyKit.Settings.Appearance.Show.allCases, id: \.self) { show in
-                                let base = item(scenario, show: show)
-                                let portrait = { var m = base; m.icon = .deepseek; return m }()
-                                drawn(portrait, theme: theme, dark: dark)
-                            }
-                        }
-                    }
-                }
-                try snapshot("item-deepseek-\(theme.id)-\(dark ? "dark" : "light")", rows)
-            }
-        }
-    }
-
     /// White Night's moon says each status itself, with no badge: a row
     /// per status in color and quieted, then each size of the panorama.
     @Test func whiteNightPanorama() throws {
