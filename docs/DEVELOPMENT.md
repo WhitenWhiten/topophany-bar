@@ -31,6 +31,10 @@ The commands above build ad hoc with no developer team or entitlements: the app 
 
 ## Panel performance
 
+Follow the state, layout, drawing and animation boundaries in the repository's
+[engineering rules](../AGENTS.md). The commands below support targeted diagnosis
+when changing a hot path; they are not a required suite for unrelated edits.
+
 Build Debug as above, then measure the real native scroll view with synthetic
 data and temporary settings. The installed app, saved connection and credentials
 are left alone. Both theme renderers run by default; `--theme` can select any
@@ -54,23 +58,6 @@ enforces a local stall budget. `--topo /ABS/PATH/topo` uses that executable's
 synthetic preview network instead of the bundled fixture.
 `--input map` measures keyboard zoom in both directions, including its drawing
 costs; it requires a scenario with a map.
-
-Keep these boundaries when changing the panel:
-
-- The host enables intrinsic sizing only for its initial measurement. Later
-  window sizes come from SwiftUI geometry; data and clock refreshes must never
-  force `fittingSize`, synchronous subtree layout or an unchanged window redraw.
-- `PanelScroller` owns scroll-position writebacks. Content views do not observe
-  offsets or scroll edges; the footer and fixed-size fade mask observe edges.
-- Terminal canvases have the actual dimensions of their section or pinned band.
-  Unchanged sections reuse both their prepared drawing and their raster. Cache
-  keys include data, theme, language, focus and absolute position; map hit areas
-  and focus regions must remain identical to an uncached drawing.
-- Coast antialiasing uses the same nine samples per dot during map zooms.
-  `LandCoverage` prepares each projected row and column once; avoid restoring
-  an inverse projection for every subsample in the animation loop. Keyboard
-  zoom has a fixed duration, so a spring's long tail cannot keep repainting
-  the map after a step. Live canvases allow asynchronous rasterization.
 
 `PanelScrollTests` exercises the real hosted SwiftUI binding graph.
 `PanelLayoutTests` checks window bounds after opening, resizing, theme changes,

@@ -13,6 +13,8 @@ Tests/Snapshots/out/
 [Cc][Ll][Aa][Uu][Dd][Ee].md
 CLAUDE.local.md
 AGENTS.md
+# The repository's shared engineering rules belong in version control.
+!/AGENTS.md
 AGENTS.override.md
 GEMINI.md
 .claude/
