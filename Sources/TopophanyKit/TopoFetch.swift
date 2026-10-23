@@ -7,7 +7,7 @@ public enum TopoBuild: Sendable, Hashable {
     case tested
 
     /// The release this app was tested with.
-    public static let testedVersion = "1.4.1"
+    public static let testedVersion = "1.5.0"
 }
 
 /// Getting `topo` from its releases, as the panel and Settings show it.
