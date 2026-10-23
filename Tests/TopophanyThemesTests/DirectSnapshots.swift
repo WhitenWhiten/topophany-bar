@@ -83,6 +83,28 @@ import TopophanySections
         }
     }
 
+    /// More servers than tiles hold: the large and extra large Status
+    /// widgets list them a row each.
+    @Test func manyServers() throws {
+        var panel = try model("fleet")
+        let cards = panel.servers
+        for count in [7, 12] {
+            let many = (0..<count).map { i in
+                var c = cards[i % cards.count]
+                c.id += "-\(i)"
+                c.name += "-\(i)"
+                return c
+            }
+            panel.sections = panel.sections.map { if case .servers = $0 { .servers(many) } else { $0 } }
+            for theme in [ThemeStore.native, ThemeStore.terminal] {
+                for size in [WidgetSize.large, .extraLarge] {
+                    try snapshot("direct-widget-en-\(count)-servers-\(theme.id)-\(size.rawValue)",
+                                 onDesktop(WidgetModel(kind: .status, panel: panel), size, theme: theme, dark: true))
+                }
+            }
+        }
+    }
+
     /// With no server pinned, a medium Status widget lists its sources.
     @Test func sourcesWithoutServers() throws {
         let panel = try model("fleet_partial", pinned: false)

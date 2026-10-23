@@ -474,9 +474,11 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
     }
 
     @Test func sizesAndRates() {
-        #expect(Words.gib(Int64(7.4 * Double(1 << 30))) == "7.4")
-        #expect(Words.gib(16 << 30) == "16")
-        #expect(Words.gib(150 << 30) == "150")
+        #expect(Words.sizes(Int64(7.4 * Double(1 << 30)), of: 16 << 30) == "7.4 / 16 GiB")
+        #expect(Words.sizes(150 << 30, of: 256 << 30) == "150 / 256 GiB")
+        #expect(Words.sizes(Int64(3.6 * Double(1 << 40)), of: Int64(7.3 * Double(1 << 40))) == "3.6 / 7.3 TiB")
+        #expect(Words.sizes(380 << 20, of: 512 << 20) == "380 / 512 MiB")
+        #expect(Words.sizes(1 << 52, of: 1 << 53) == "4 / 8 PiB")
         #expect(Words.gb(107_100_000_000) == "107.1")
         #expect(Words.rate(343_900) == "343.9 kB/s")
         #expect(Words.rate(12) == "12 B/s")

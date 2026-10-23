@@ -444,6 +444,21 @@ struct StackBar: View {
 /// A reading against the check's own limit, in the theme's meter: past
 /// the limit it reads in the warning color. Unknown is hatched, never
 /// empty.
+/// A tile's ground within a card: a fill on glass, an outline at night,
+/// a fainter fill on matte.
+struct TileGround: View {
+    var p: CardsPalette
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: p.style.surface == .matte ? 3 : 9, style: .continuous)
+        switch p.style.surface {
+        case .glass: shape.fill(p.fill2)
+        case .night: shape.strokeBorder(p.cardEdge, lineWidth: 0.75)
+        case .matte: shape.fill(p.fill2.opacity(0.6))
+        }
+    }
+}
+
 struct Meter: View {
     var percent: Double?
     var limit: Double?

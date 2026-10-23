@@ -17,6 +17,13 @@ struct WidgetSources: View {
     var status: StatusSection { model.status }
     var servers: [ServerCardModel] { model.panel.servers }
 
+    /// "2 of 4 current · 1 stale · 1 without samples", wrapping only
+    /// between its parts: each kept whole, a "·" never starting a line.
+    var subtitle: String {
+        status.subtitle.components(separatedBy: " · ").map { $0.replacingOccurrences(of: " ", with: "\u{00A0}") }
+            .joined(separator: "\u{00A0}· ")
+    }
+
     var body: some View {
         switch size {
         case .small:
@@ -43,23 +50,58 @@ struct WidgetSources: View {
                 rows(detail: true, most: 3).padding(.top, 10)
                 if !servers.isEmpty {
                     gap
-                    WidgetResources(cards: servers, meters: true, p: p, t: t)
+                    // Tiles while every server fits as one, a row each past that.
+                    ViewThatFits(in: .vertical) {
+                        WidgetServerTiles(cards: servers, columns: 1, sizes: true, p: p, t: t)
+                        WidgetServerTiles(cards: servers, columns: 2, sizes: false, p: p, t: t)
+                        WidgetResources(cards: servers, meters: true, p: p, t: t)
+                    }
+                    .layoutPriority(1)
                 }
                 Spacer(minLength: 8)
                 foot(wide: true)
             }
         case .extraLarge:
-            HStack(alignment: .top, spacing: 24) {
-                VStack(alignment: .leading, spacing: 0) {
-                    big
-                    rows(detail: true, most: 8).padding(.top, 10)
-                    Spacer(minLength: 8)
-                    foot(wide: true)
+            if servers.isEmpty {
+                columns
+            } else {
+                ViewThatFits(in: .vertical) {
+                    tiles(columns: 2, sizes: true)
+                    tiles(columns: 4, sizes: false)
+                    columns
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                WidgetResources(cards: servers, meters: true, p: p, t: t)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+        }
+    }
+
+    /// The state and its sources over the servers' tiles, across the
+    /// widget.
+    func tiles(columns: Int, sizes: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 24) {
+                big.frame(maxWidth: .infinity)
+                rows(detail: true, most: 3).frame(maxWidth: .infinity)
+            }
+            gap
+            WidgetServerTiles(cards: servers, columns: columns, sizes: sizes, p: p, t: t)
+            Spacer(minLength: 8)
+            foot(wide: true)
+        }
+    }
+
+    /// The state and its sources beside the servers' rows: for more
+    /// servers than tiles can hold.
+    var columns: some View {
+        HStack(alignment: .top, spacing: 24) {
+            VStack(alignment: .leading, spacing: 0) {
+                big
+                rows(detail: true, most: 8).padding(.top, 10)
+                Spacer(minLength: 8)
+                foot(wide: true)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            WidgetResources(cards: servers, meters: true, p: p, t: t)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
@@ -76,7 +118,7 @@ struct WidgetSources: View {
             }
             Text(status.title).font(t.font(16, .semibold)).tracking(-0.24).lineLimit(1)
                 .padding(.top, 10)
-            Text(status.subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
+            Text(subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 2).padding(.bottom, 8)
             if size == .small { rows(detail: false) }
@@ -90,7 +132,7 @@ struct WidgetSources: View {
             HeroSymbol(status: status, size: 44, palette: p)
             VStack(alignment: .leading, spacing: 2) {
                 Text(status.title).font(t.font(18, .semibold)).tracking(-0.27).lineLimit(1)
-                Text(status.subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
+                Text(subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -146,6 +188,62 @@ struct WidgetSources: View {
         }
         .font(t.font(10.5)).foregroundStyle(p.l3)
         .lineLimit(1)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The pinned servers as tiles, `columns` to a row, each with its three
+/// meters; a wide tile adds what each measures. Drawn only where every
+/// server fits.
+struct WidgetServerTiles: View {
+    var cards: [ServerCardModel]
+    var columns: Int
+    var sizes: Bool
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        // A tile names its source only where that tells servers apart.
+        let sources = Set(cards.compactMap(\.origin?.sourceID)).count > 1
+        VStack(alignment: .leading, spacing: 0) {
+            WidgetHeading(symbol: "server.rack", title: tr("Servers"), meta: "\(cards.count)", p: p, t: t)
+            Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(Array(stride(from: 0, to: cards.count, by: columns)), id: \.self) { i in
+                    GridRow {
+                        ForEach(0..<columns, id: \.self) { k in
+                            if i + k < cards.count {
+                                tile(cards[i + k], source: sources)
+                            } else {
+                                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    func tile(_ c: ServerCardModel, source: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                CardMark(mark: c.mark, size: 8, color: p.listColor(c.mark))
+                Text(c.name).font(t.font(11.5, .semibold)).foregroundStyle(p.l1).lineLimit(1).layoutPriority(1)
+                Spacer(minLength: 6)
+                if source, let name = c.origin?.name {
+                    Text(name).font(t.font(10)).foregroundStyle(p.l3).lineLimit(1)
+                }
+            }
+            Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 5) {
+                WidgetMeter(label: tr("CPU"), meter: c.cpu, p: p, t: t, size: sizes).row
+                WidgetMeter(label: tr("Mem"), meter: c.memory, p: p, t: t, size: sizes).row
+                WidgetMeter(label: tr("Disk"), meter: c.disk, p: p, t: t, size: sizes).row
+            }
+            .padding(.top, 6)
+        }
+        .padding(EdgeInsets(top: 7, leading: 9, bottom: 8, trailing: 9))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background { TileGround(p: p) }
         .accessibilityElement(children: .combine)
     }
 }

@@ -1,18 +1,18 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "%@ / %@ GiB": {
+    "%@ / %@ %@": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ / %@ GiB"
+            "value": "%@ / %@ %@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ / %@ GiB"
+            "value": "%@ / %@ %@"
           }
         }
       }

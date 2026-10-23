@@ -848,7 +848,11 @@ struct SectionsSettings: View {
                     HStack(spacing: 10) {
                         Color.clear.frame(width: 12)
                         IconTile(symbol: "globe", color: Color(red: 0.19, green: 0.82, blue: 0.35))
-                        RowLabel("Status", "The verdict, checks by health, observers live")
+                        if model.settings.topo.source == "direct" {
+                            RowLabel("Status", "Each source’s state, and its servers current")
+                        } else {
+                            RowLabel("Status", "The verdict, checks by health, observers live")
+                        }
                     }
                 }
                 ReorderableRows(ids: order) { rest in
@@ -864,7 +868,11 @@ struct SectionsSettings: View {
                     Text("drag to reorder").fontWeight(.regular).foregroundStyle(.tertiary)
                 }
             } footer: {
-                Foot("Each section is a row set in the template the app sends to `topo monitor stream`. What makes an entry up, warn or down is set in `topology.json` (for example `max_disk_percent`), not here.")
+                if model.settings.topo.source == "direct" {
+                    Foot("Beszel direct shows Status, Fleet, Servers and This Mac. The other sections show what a Topophany collector judges, and return as you left them when you read from one.")
+                } else {
+                    Foot("Each section is a row set in the template the app sends to `topo monitor stream`. What makes an entry up, warn or down is set in `topology.json` (for example `max_disk_percent`), not here.")
+                }
             }
             Section("When the panel scrolls") {
                 Toggle(isOn: model.binding(\.sections.pinStatus)) {
@@ -880,7 +888,8 @@ struct SectionsSettings: View {
     }
 }
 
-/// A section's handle, icon and name.
+/// A section's handle, icon and name; faint while the panel reads a
+/// source that has no word on it.
 struct SectionLabel: View {
     @Environment(AppModel.self) private var model
     var id: SectionID
@@ -888,8 +897,11 @@ struct SectionLabel: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "line.3.horizontal").font(.system(size: 11)).foregroundStyle(.tertiary).frame(width: 12)
-            IconTile(symbol: symbol, color: color)
-            label
+            HStack(spacing: 10) {
+                IconTile(symbol: symbol, color: color)
+                label
+            }
+            .opacity(model.settings.topo.source == "direct" && id.needsCollector ? 0.5 : 1)
         }
     }
 
@@ -940,17 +952,23 @@ struct SectionLabel: View {
     }
 }
 
-/// A section's own controls, then its switch.
+/// A section's own controls, then its switch; what it needs instead,
+/// while the panel reads a source that has no word on it.
 struct SectionControls: View {
     @Environment(AppModel.self) private var model
     var id: SectionID
 
     var body: some View {
-        HStack(spacing: 10) {
-            controls
-            Toggle("", isOn: Binding(get: { model.settings.sections.isEnabled(id) },
-                                     set: { on in model.update { $0.sections.setEnabled(id, on) } }))
-                .toggleStyle(.switch).labelsHidden()
+        if model.settings.topo.source == "direct", id.needsCollector {
+            Label("Needs a collector", systemImage: "network").labelStyle(.titleAndIcon)
+                .font(.callout).foregroundStyle(.tertiary)
+        } else {
+            HStack(spacing: 10) {
+                controls
+                Toggle("", isOn: Binding(get: { model.settings.sections.isEnabled(id) },
+                                         set: { on in model.update { $0.sections.setEnabled(id, on) } }))
+                    .toggleStyle(.switch).labelsHidden()
+            }
         }
     }
 

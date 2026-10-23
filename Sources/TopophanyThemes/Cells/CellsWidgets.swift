@@ -230,14 +230,65 @@ struct CellsWidget: View {
                 if servers.isEmpty { sourceListBox(sources, x0: split + cell, x1: x1) } else { resourcesBox(servers, x0: split + cell, x1: x1) }
             case .large:
                 sourcesBox(sources, at: at, x0: x0, x1: x1, short: false)
-                if !servers.isEmpty { resourcesBox(servers, x0: x0, x1: x1) }
+                // Boxes while every server fits in one, a line each past that.
+                if !servers.isEmpty, !serverBoxes(servers, x0: x0, x1: x1, per: 1, detail: true),
+                   !serverBoxes(servers, x0: x0, x1: x1, per: 2, detail: false) {
+                    resourcesBox(servers, x0: x0, x1: x1)
+                }
             case .extraLarge:
                 let split = x(54)
                 let top = w.y
+                // Across the widget: the state beside its sources, over the
+                // servers' boxes, while every server fits in one.
+                var across = self
+                across.sourcesBox(sources, at: at, x0: x0, x1: split, short: false, names: false)
+                let left = across.w.y
+                across.w.y = top
+                across.sourceListBox(sources, x0: split + cell, x1: x1,
+                                     lines: Int(((left - top - chrome) / w.lineHeight).rounded()))
+                across.w.y = max(left, across.w.y)
+                if !servers.isEmpty, across.serverBoxes(servers, x0: x0, x1: x1, per: 2, detail: true)
+                    || across.serverBoxes(servers, x0: x0, x1: x1, per: 4, detail: false) {
+                    self = across
+                    return
+                }
                 sourcesBox(sources, at: at, x0: x0, x1: split, short: false)
                 w.y = top
                 resourcesBox(servers, x0: split + cell, x1: x1)
             }
+        }
+
+        /// The pinned servers as boxes, `per` to a row, each titled with
+        /// its mark and name, and its source where that tells servers
+        /// apart: its three meters, and with `detail` what each measures.
+        /// Draws nothing, and says so, unless every server fits.
+        mutating func serverBoxes(_ cards: [ServerCardModel], x0: Double, x1: Double, per: Int, detail: Bool) -> Bool {
+            let rows = (cards.count + per - 1) / per
+            guard w.y + Double(rows) * (chrome + 3 * w.lineHeight) <= bottom + 0.001 else { return false }
+            let b = self.b, p = self.p
+            let sources = Set(cards.compactMap(\.origin?.sourceID)).count > 1
+            let total = Int(((x1 - x0) / cell).rounded())
+            let span = (total - (per - 1)) / per
+            var top = w.y, end = w.y
+            for (i, c) in cards.enumerated() {
+                let k = i % per
+                if k == 0 { top = end }
+                w.y = top
+                let bx0 = x0 + Double(k * (span + 1)) * cell
+                let bx1 = k == per - 1 ? x1 : bx0 + Double(span) * cell
+                // The title's room, past the border's corners and spaces: the
+                // name first, the source in what's left if that says something.
+                let room = Int(((bx1 - bx0) / cell).rounded()) - 8
+                let spare = room - 2 - CellText.width(c.name)
+                let source = sources && spare >= 5 ? c.origin.map { CellText.truncate($0.name, spare) } ?? "" : ""
+                let right: [Seg] = source.isEmpty ? [] : [.t(" " + source + " ", p.muted)]
+                let name = CellText.truncate(c.name, max(1, room - (source.isEmpty ? 0 : CellText.width(source) + 2)))
+                w.box([.t(" ", p.text), .mark(c.mark, p), .t(" " + name + " ", p.text, bold: true)], right,
+                      x0: bx0, x1: bx1, style: style) { b.meters(&$0, c, detail: detail) }
+                end = max(end, w.y)
+            }
+            w.y = end
+            return true
         }
 
         /// The state, then its sources: by name alone in a narrow box, with
@@ -260,19 +311,23 @@ struct CellsWidget: View {
                     }
                     if list.count > shown, fit > 0 { w.line([.t("  " + tr("+\(list.count - shown) more"), p.muted)]) }
                 } else {
-                    b.sources(&w, s, tone: p.tone(st.mark), short: false, blockHeight: 48, rows: max(0, room - 6))
+                    b.sources(&w, s, tone: p.tone(st.mark), short: !names, blockHeight: 48, rows: max(0, room - 6))
                 }
                 if let at { w.line([.t(CellText.truncate(Words.asOf(at), n), p.faint)]) }
             }
         }
 
-        /// Each source with what its line ends in, when no server is pinned.
-        mutating func sourceListBox(_ s: SourceStatusSection, x0: Double, x1: Double) {
+        /// Each source with what its line ends in, when no server is pinned
+        /// or beside the state; at least `lines` tall, to end with a box
+        /// beside it.
+        mutating func sourceListBox(_ s: SourceStatusSection, x0: Double, x1: Double, lines: Int = 0) {
             let room = linesLeft
             guard room > 0 else { return }
             let b = self.b
             w.box(title(tr("SOURCES"), "\(s.value.sources.count)"), x0: x0, x1: x1, style: style) { w in
+                let start = w.y
                 b.sourceRows(&w, s, rows: s.value.sources.count <= room ? room : max(1, room - 1))
+                while w.y < start + Double(min(lines, room)) * w.lineHeight - 0.001 { w.blank() }
             }
         }
 
@@ -358,15 +413,7 @@ struct CellsWidget: View {
                 var ages: [LiveAge] = []
                 w.box(title(kind), b.serverPill(c), x0: x0, x1: x1, style: style) { w in
                     let n = w.frame.columns
-                    func row(_ label: String, _ m: ServerCardModel.Meter) {
-                        let v = m.percent.map { CellText.padLeft(Words.percent($0, digits: 0), 4) } ?? "   —"
-                        w.line([.t(label, p.muted), .t(v, m.percent == nil ? p.faint : p.text, bold: m.percent != nil), .t(" ", p.text),
-                                .bar(cells: n - 9, percent: m.percent, limit: m.limit,
-                                     color: m.percent.map { p.load($0, limit: m.limit) } ?? p.track, withheld: m.percent == nil)])
-                    }
-                    row(tr("CPU "), c.cpu)
-                    row(tr("MEM "), c.memory)
-                    row(tr("DSK "), c.disk)
+                    b.meters(&w, c)
                     let place = c.isMissing ? c.place : (c.origin?.badge ?? (c.place.isEmpty ? c.provider : c.place))
                     if let at = c.sampledAt, c.origin != nil {
                         w.line([.t(CellText.truncate(Words.asOf(at), n), p.faint)])

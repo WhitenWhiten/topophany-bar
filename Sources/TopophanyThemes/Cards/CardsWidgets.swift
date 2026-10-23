@@ -123,8 +123,12 @@ struct CardsWidget: View {
     @ViewBuilder func server(_ p: CardsPalette) -> some View {
         let card = model.server ?? placeholder
         let left = WidgetServerCard(card: card, isMac: isMac, p: p, t: t, ctx: ctx)
-        if size == .small || card.origin != nil {
+        if size == .small {
             left
+        } else if card.origin != nil, card.services.isEmpty, card.observes.isEmpty {
+            // A server read from a source has no services to list: its
+            // meters take the width, with what each measures.
+            WidgetServerCard(card: card, isMac: isMac, p: p, t: t, ctx: ctx, sizes: true)
         } else {
             HStack(alignment: .top, spacing: 16) {
                 left.frame(width: 136)
@@ -623,13 +627,15 @@ struct WidgetFleet: View {
     }
 }
 
-/// "CPU ▬▬▬▏ 26%": a label, the meter against its limit, the value.
+/// "CPU ▬▬▬▏ 26%": a label, the meter against its limit, the value, and
+/// where there's room what it measures: "8.4 / 16 GiB".
 @MainActor
 struct WidgetMeter {
     var label: String
     var meter: ServerCardModel.Meter
     var p: CardsPalette
     var t: CardsType
+    var size = false
 
     /// As a row of a Grid of meters.
     var row: some View {
@@ -637,6 +643,10 @@ struct WidgetMeter {
             labelText.frame(minWidth: 30, alignment: .leading)
             Meter(percent: meter.percent, limit: meter.limit, palette: p)
             valueText
+            if size {
+                Text(meter.detail).font(t.font(10.5)).foregroundStyle(p.l3).fixedSize()
+                    .gridColumnAlignment(.trailing)
+            }
         }
         .lineLimit(1)
         .accessibilityElement(children: .ignore)
@@ -654,17 +664,20 @@ struct WidgetMeter {
     }
 
     var spoken: Text {
-        Text(meter.percent.map { "\(label) \(Words.percent($0, digits: 0))" } ?? "\(label) \(tr("unknown"))")
+        let value = meter.percent.map { "\(label) \(Words.percent($0, digits: 0))" } ?? "\(label) \(tr("unknown"))"
+        return Text(size && !meter.detail.isEmpty ? value + ", " + meter.detail : value)
     }
 }
 
-/// A Server widget's own card: name, the three meters, state and age.
+/// A Server widget's own card: name, the three meters, state and age;
+/// as wide as the widget, what each meter measures.
 struct WidgetServerCard: View {
     var card: ServerCardModel
     var isMac: Bool
     var p: CardsPalette
     var t: CardsType
     var ctx: RenderContext
+    var sizes = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -680,9 +693,9 @@ struct WidgetServerCard: View {
             .accessibilityElement(children: .combine)
             // One grid, so the label column fits the longest label.
             Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 8) {
-                WidgetMeter(label: tr("CPU"), meter: card.cpu, p: p, t: t).row
-                WidgetMeter(label: tr("Mem"), meter: card.memory, p: p, t: t).row
-                WidgetMeter(label: tr("Disk"), meter: card.disk, p: p, t: t).row
+                WidgetMeter(label: tr("CPU"), meter: card.cpu, p: p, t: t, size: sizes).row
+                WidgetMeter(label: tr("Mem"), meter: card.memory, p: p, t: t, size: sizes).row
+                WidgetMeter(label: tr("Disk"), meter: card.disk, p: p, t: t, size: sizes).row
             }
             .padding(.top, 13).padding(.bottom, 10)
             Spacer(minLength: 0)

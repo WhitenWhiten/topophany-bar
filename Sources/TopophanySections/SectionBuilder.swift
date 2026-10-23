@@ -42,6 +42,17 @@ public struct PanelInput: Sendable {
     }
 }
 
+extension SectionID {
+    /// A section of what a collector judges, which a direct source has no
+    /// word on: hidden while the panel reads one, its saved choice kept.
+    public var needsCollector: Bool {
+        switch self {
+        case .seen, .attention, .map, .applications, .services, .zones: true
+        case .status, .fleet, .servers, .mac: false
+        }
+    }
+}
+
 /// Builds section models from frames. Every state, count and health here
 /// was sent by `topo`; the builder only selects, orders and words them.
 public enum SectionBuilder {
@@ -52,7 +63,7 @@ public enum SectionBuilder {
         var s = input.settings.sections
         let direct = r.frame?.source == "direct" || (r.frame == nil && input.settings.topo.source == "direct")
         if direct {
-            s.seen = false; s.attention = false; s.map = false; s.applications = false; s.services = false; s.zones = false
+            for id in SectionID.allCases where id.needsCollector { s.setEnabled(id, false) }
         }
         let status = status(r, engine: input.engine)
         var sections: [PanelModel.Section] = []
@@ -340,7 +351,7 @@ public enum SectionBuilder {
         let res = c.resources.first
         func size(_ used: Int64?, _ total: Int64?) -> String {
             guard let used, let total else { return "" }
-            return tr("\(Words.gib(used)) / \(Words.gib(total)) GiB")
+            return Words.sizes(used, of: total)
         }
         let cpu = ServerCardModel.Meter(percent: withheld ? nil : res?.cpu?.percent, limit: res?.cpu?.limit,
                                         detail: res?.cpu?.logical.map { tr("\($0) CPUs") } ?? "")

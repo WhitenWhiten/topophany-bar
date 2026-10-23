@@ -285,7 +285,7 @@ Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary
 | Kind | Small 170×170 | Medium 364×170 | Large 364×364 | Extra large 752×364 |
 |---|---|---|---|---|
 | **Status** | verdict, a mark per check, observers, age | Status, plus Needs attention (or Applications when nothing needs attention) | Status with legend, Seen from, Needs attention | Large, plus Applications and Fleet |
-| **Server** | one node: CPU, memory and disk against limits, state, age | plus its services and what it observes from there | n/a | n/a |
+| **Server** | one node: CPU, memory and disk against limits, state, age | plus its services and what it observes from there; a server read from a source with neither, each meter's size instead | n/a | n/a |
 | **Service** | one service: three observers, each with a mark per check, its latency and recent samples; state, age | plus how it is reached, where it runs, what it depends on, and where the edge in front answered from | n/a | n/a |
 | **Time zones** | each zone's time, its places and marks | plus each zone's day ribbon, offset and name | each zone on a taller row, with its day | n/a |
 | **Map** | the map, each place's mark, a short name where it fits | the map with its places named | plus each node named beside its place | the same, wider |
@@ -644,7 +644,8 @@ sample has expired, NO SAMPLES before one is usable; both ◌, and a stale card'
 age reads "last reading …". The same marks lead Fleet's servers, the widgets'
 rows and a Terminal card's title; a listed server whose card isn't read stays ○.
 With nothing else to say, a Native card adds each meter's size beneath it ("8
-CPUs", "8.4 / 16 GiB"), as the Terminal card's detail column does. A server whose
+CPUs", "8.4 / 16 GiB"), as the Terminal card's detail column does. Both sizes take
+the total's binary unit, MiB to PiB: "1.2 / 3.6 TiB". A server whose
 health Go does judge keeps UP, WARN or DOWN.
 
 The rule follows the source, not the mode: Komari reaches the bar only through a
@@ -656,14 +657,20 @@ set up in the topology. Source rows in direct mode lead with a dot, as General's
 engine row does: green while connected, orange when it asks for a look, a ring
 while it isn't read.
 Unsupported collector sections are hidden in direct mode without changing their
-saved preferences.
+saved preferences. Settings → Sections lists them faint, "Needs a collector" in
+place of their switches, and Status says what it shows there: each source's state.
 
 Direct widgets use the existing sizes and themes, show an As of time, and become
 history at the original relevant deadlines. A Status widget is the state and its
 sources in a narrow column; the medium, large and extra large add the pinned
 servers' readings, a row each with CPU, memory and disk (a short meter beside each
 where there is room), "—" where withheld, as many as fit and the rest counted.
-With none pinned, the medium widget's right lists the sources instead. A new handoff cannot renew measurements. Their node choices carry dataset identity so
+While every pinned server fits in one, the large and extra large give each a tile
+instead: its mark and name, its source where servers come from more than one, and
+its three meters, with their sizes where the tile is wide. The extra large then
+spans the widget, the state beside its sources above the tiles. The cells renderer
+draws the tiles as boxes. With none pinned, the medium widget's right lists the
+sources instead. A new handoff cannot renew measurements. Their node choices carry dataset identity so
 a Hub/account/profile change cannot silently reuse a choice. Static ImageRenderer
 coverage includes all six themes, three languages, acquisition states, several
 sources and servers, and the Widget sizes at both the design's and a 1080 pt

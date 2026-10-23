@@ -154,6 +154,26 @@ struct CellsBodies {
         if cards.count > shown { w.line([.t("  " + CellText.truncate(tr("+\(cards.count - shown) more"), n - 2), p.muted)]) }
     }
 
+    /// A server's three meters, a line each: "CPU  28% ▮▮▮▮▯▯▯", and with
+    /// `detail`, what each measures at the end where there's room.
+    func meters(_ w: inout CellWriter, _ c: ServerCardModel, detail: Bool = false) {
+        let n = w.frame.columns
+        func shown(_ m: ServerCardModel.Meter) -> String { m.detail.replacingOccurrences(of: " / ", with: "/") }
+        let widest = detail ? [c.cpu, c.memory, c.disk].map { CellText.width(shown($0)) }.max() ?? 0 : 0
+        let fits = widest > 0 && n - 9 - widest - 1 >= 6
+        let bar = fits ? n - 9 - widest - 1 : n - 9
+        func row(_ label: String, _ m: ServerCardModel.Meter) {
+            let v = m.percent.map { CellText.padLeft(Words.percent($0, digits: 0), 4) } ?? "   —"
+            w.line([.t(label, p.muted), .t(v, m.percent == nil ? p.faint : p.text, bold: m.percent != nil), .t(" ", p.text),
+                    .bar(cells: bar, percent: m.percent, limit: m.limit,
+                         color: m.percent.map { p.load($0, limit: m.limit) } ?? p.track, withheld: m.percent == nil)],
+                   fits && !m.detail.isEmpty ? [.t(shown(m), p.muted)] : [])
+        }
+        row(tr("CPU "), c.cpu)
+        row(tr("MEM "), c.memory)
+        row(tr("DSK "), c.disk)
+    }
+
     // MARK: seen from
 
     func seen(_ w: inout CellWriter, _ s: SeenFromSection, max: Int = 99) {

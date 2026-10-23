@@ -683,6 +683,22 @@
         }
       }
     },
+    "Beszel direct shows Status, Fleet, Servers and This Mac. The other sections show what a Topophany collector judges, and return as you left them when you read from one.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beszel 直接接続では、ステータス、フリート、サーバー、この Mac を表示します。ほかのセクションは Topophany コレクターの判定を表示するもので、コレクターから読み取るときに、そのままの設定で戻ります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beszel 直连显示状态、机群、服务器和本机。其他版块显示 Topophany 采集器的判断，改为从采集器读取时，会按你原来的设置恢复。"
+          }
+        }
+      }
+    },
     "CPU": {
       "localizations": {
         "ja": {
@@ -1271,6 +1287,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "每个版块都是应用发送给 `topo monitor stream` 的模板中的一组行。条目何时为正常、警告或故障 由 `topology.json` 设定（例如 `max_disk_percent`），而不是在这里。"
+          }
+        }
+      }
+    },
+    "Each source’s state, and its servers current": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "各ソースの状態と、最新のサーバー数"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每个来源的状态，以及其中最新的服务器数"
           }
         }
       }
@@ -2103,6 +2135,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "原生"
+          }
+        }
+      }
+    },
+    "Needs a collector": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクターが必要"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要采集器"
           }
         }
       }

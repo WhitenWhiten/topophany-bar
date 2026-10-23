@@ -167,9 +167,15 @@ public enum Words {
         String(format: "%.\(digits)f%%", v)
     }
 
-    /// Binary sizes, as servers report them: "7.4", "16", "150".
-    public static func gib(_ bytes: Int64) -> String {
-        number(Double(bytes) / Double(1 << 30))
+    /// Binary sizes, as servers report them, both in the total's unit:
+    /// "7.4 / 16 GiB", "3.6 / 7.3 TiB", "380 / 512 MiB".
+    public static func sizes(_ used: Int64, of total: Int64) -> String {
+        var unit = Double(1 << 20), name = "MiB"
+        for next in ["GiB", "TiB", "PiB"] where Double(total) >= unit * 1024 {
+            unit *= 1024
+            name = next
+        }
+        return tr("\(number(Double(used) / unit)) / \(number(Double(total) / unit)) \(name)")
     }
 
     /// Decimal sizes, as macOS shows its own disks: "107.1".

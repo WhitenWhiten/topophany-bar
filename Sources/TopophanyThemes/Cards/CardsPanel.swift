@@ -1122,14 +1122,7 @@ struct CardsLocal: View {
         }
         .padding(EdgeInsets(top: 7, leading: 8, bottom: 6, trailing: 8))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            let shape = RoundedRectangle(cornerRadius: p.style.surface == .matte ? 3 : 9, style: .continuous)
-            switch p.style.surface {
-            case .glass: shape.fill(p.fill2)
-            case .night: shape.strokeBorder(p.cardEdge, lineWidth: 0.75)
-            case .matte: shape.fill(p.fill2.opacity(0.6))
-            }
-        }
+        .background { TileGround(p: p) }
         .accessibilityElement(children: .combine)
     }
 
