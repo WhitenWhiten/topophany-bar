@@ -1,5 +1,5 @@
 #!/bin/bash
-# Render both README illustrations from native SwiftUI views and synthetic fixtures.
+# Render the README illustrations from native SwiftUI views and synthetic fixtures.
 set -euo pipefail
 
 usage() {
@@ -43,17 +43,29 @@ render_dir=$(mktemp -d "${TMPDIR:-/tmp}/topophany-readme.XXXXXX")
 trap 'rm -rf "$render_dir"' EXIT
 cd "$repo_root"
 
+# Rendered name, then the README's.
+images=(
+    readme-hero.png:hero.png
+    readme-menu-bar.png:menu-bar.png
+    readme-white-night.gif:white-night.gif
+    readme-direct.png:direct-sources.png
+    readme-themes.png:themes.png
+    readme-widgets.png:widget-gallery.png
+)
+
 # Isolated output prevents a failed render from publishing stale snapshots.
-# These two render cases use fixed English demo data, without launching the app.
+# These render cases use fixed English demo data, without launching the app.
 TOPOPHANY_SNAPSHOT_DIR="$render_dir" xcrun swift test --filter ReadmeSnapshots
-for name in readme-panels readme-widgets; do
-    if [[ ! -s "$render_dir/$name.png" ]]; then
-        printf 'Error: renderer did not produce %s.png; existing images were not changed.\n' "$name" >&2
+for pair in "${images[@]}"; do
+    if [[ ! -s "$render_dir/${pair%%:*}" ]]; then
+        printf 'Error: renderer did not produce %s; existing images were not changed.\n' "${pair%%:*}" >&2
         exit 1
     fi
 done
 
 mkdir -p "$output_dir"
-cp "$render_dir/readme-panels.png" "$output_dir/panel-columns.png"
-cp "$render_dir/readme-widgets.png" "$output_dir/widget-gallery.png"
-printf 'Generated:\n  %s/panel-columns.png\n  %s/widget-gallery.png\n' "$output_dir" "$output_dir"
+printf 'Generated:\n'
+for pair in "${images[@]}"; do
+    cp "$render_dir/${pair%%:*}" "$output_dir/${pair#*:}"
+    printf '  %s/%s\n' "$output_dir" "${pair#*:}"
+done

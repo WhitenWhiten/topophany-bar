@@ -68,9 +68,9 @@ All performance probes are excluded from Release builds.
 
 ## README screenshots
 
-The two README illustrations render the production SwiftUI views with fixed English demo data and a fixed clock. The panel uses the `degraded` fixture: 66 of 68 checks pass, two warn, none fail, and there are no open incidents. The widget gallery uses the `clear` fixture: all 68 checks pass. A few older service samples can still show a past failure.
+The README's illustrations render the production SwiftUI views with fixed English demo data and a fixed clock. The hero and the panel themes use the `degraded` and `incidents` fixtures; the widget gallery uses `clear`. The Beszel and Komari image reads `Tests/Fixtures/DirectDevelopment/mixed.json`, a direct profile with a Beszel Hub and a Komari server.
 
-Generate and replace both images with one command:
+Generate and replace every image with one command:
 
 ```sh
 ./scripts/make-readme-screenshots.sh
@@ -86,12 +86,16 @@ To preview changes without replacing the README assets, pass an output directory
 
 Outputs:
 
-- `panel-columns.png`: Native and Terminal panels, each split into two equal-height columns. The renderer measures section boundaries and chooses the split nearest the middle, keeping cards intact without manual pixel offsets.
-- `widget-gallery.png`: ten widgets covering all five types and three themes, including a medium Map and four small widgets.
+- `hero.png`: the menu bar with White Night, the Native panel centered beneath it as the app places it, and widgets on the desktop.
+- `white-night.gif`: White Night's 24-second loop through clear, degraded, down and clear, at 4× so each dot of its dither lands on 2 × 2 pixels. Moons dissolve as the app plays them, and the words roll.
+- `menu-bar.png`: every status as White Night, the globe and the Terminal chip, and This Mac's readings beside the item, at 4×.
+- `direct-sources.png`: direct mode with both kinds of source, in the panel and two widgets.
+- `themes.png`: the panel's status, attention and This Mac sections in all six built-in themes.
+- `widget-gallery.png`: ten widgets covering all five types and six themes.
 
-The layouts and scenario choices live in `Tests/TopophanyThemesTests/ReadmeSnapshots.swift`. The script renders into a temporary directory and only copies the images after both renders succeed, so an unsuccessful run cannot reuse stale screenshots. `TOPOPHANY_SNAPSHOT_DIR` overrides the snapshot output directory for this run; ordinary snapshot tests still write to `Tests/Snapshots/out`.
+The layouts and scenario choices live in `Tests/TopophanyThemesTests/ReadmeSnapshots.swift`. The script renders into a temporary directory and only copies the images after every render succeeds, so an unsuccessful run cannot reuse stale screenshots. `TOPOPHANY_SNAPSHOT_DIR` overrides the snapshot output directory for this run; ordinary snapshot tests still write to `Tests/Snapshots/out`. Native's panel renders translucent without the window's blur, so keep panels clear of widgets in a composition.
 
-Inspect both generated images before committing them. Keep private network data and credentials out of documentation screenshots.
+Inspect every generated image before committing them. Keep private network data and credentials out of documentation screenshots.
 
 ## Releasing on GitHub
 

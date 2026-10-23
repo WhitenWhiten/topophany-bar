@@ -19,11 +19,13 @@ let snapshotDirectory: URL = {
 }()
 
 /// Renders a view to a PNG at 2x and returns its size in points.
+/// `opaque` leaves out the alpha channel, for a view its desktop fills.
 @MainActor
 @discardableResult
-func snapshot(_ name: String, scale: Double = 2, _ view: some View) throws -> CGSize {
+func snapshot(_ name: String, scale: Double = 2, opaque: Bool = false, _ view: some View) throws -> CGSize {
     let r = ImageRenderer(content: view)
     r.scale = scale
+    r.isOpaque = opaque
     let image = try #require(r.cgImage, "nothing rendered for \(name)")
     let url = snapshotDirectory.appending(path: name + ".png")
     let dest = try #require(CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil))
