@@ -42,6 +42,10 @@ struct SourceSettings: View {
                     RowLabel("Read from", readFromSubtitle)
                 }
             }
+            if source == "client" {
+                let listed = ListedSource.from(model.reading)
+                if !listed.isEmpty { collectorSources(listed) }
+            }
             if source == "direct" {
                 if supported {
                     beszel
@@ -81,6 +85,29 @@ struct SourceSettings: View {
         case "direct": "Your Beszel Hub, read by topo; no collector needed"
         case "preview": "topo’s built-in example network"
         default: "This source isn’t supported; choose another"
+        }
+    }
+
+    /// The sources the collector reads servers from, such as Komari or a
+    /// Beszel Hub: set up in its topology, so here only to see.
+    func collectorSources(_ listed: [ListedSource]) -> some View {
+        Section {
+            ForEach(listed) { s in
+                LabeledContent {
+                    Text(verbatim: Origin.name(adapter: s.adapter) ?? s.adapter).foregroundStyle(.secondary)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: s.name).lineLimit(1)
+                        Text(verbatim: s.servers.joined(separator: ", "))
+                            .font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                    }
+                    .help(Text(verbatim: s.servers.joined(separator: "\n")))
+                }
+            }
+        } header: {
+            Text("On the collector")
+        } footer: {
+            Foot("Set up in the collector’s topology, and read there. Each server’s card says which source it’s read from.")
         }
     }
 
@@ -257,7 +284,10 @@ struct SourceRow: View {
             .disabled(disabled)
         } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: entry.source.name).lineLimit(1)
+                HStack(spacing: 6) {
+                    dot
+                    Text(verbatim: entry.source.name).lineLimit(1)
+                }
                 HStack(spacing: 0) {
                     Text(verbatim: Words.join([Self.host(entry.source.url), tr("\(entry.nodes.count) servers")]))
                     if let status {
@@ -266,7 +296,19 @@ struct SourceRow: View {
                     }
                 }
                 .font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                .padding(.leading, 13)
             }
+            .help(Text(verbatim: entry.nodes.map(\.name).joined(separator: "\n")))
+        }
+    }
+
+    /// Its state at a glance, as General marks the engine's: filled while
+    /// it's read or asks for a look, a ring while it isn't read now.
+    @ViewBuilder var dot: some View {
+        switch status?.state {
+        case "connected": Circle().fill(.green).frame(width: 7, height: 7)
+        case "loading", nil: Circle().strokeBorder(.secondary, lineWidth: 1).frame(width: 7, height: 7)
+        default: Circle().fill(.orange).frame(width: 7, height: 7)
         }
     }
 

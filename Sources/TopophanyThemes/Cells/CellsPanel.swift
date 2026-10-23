@@ -314,7 +314,7 @@ struct CellsBodies {
                 observes: Bool = false, short: Bool = false, clock: Bool = false) {
         focusRow(&w, "server:" + c.id, lines: 4)
         let age = c.sampledAt.map { Words.ago($0, now: c.now, style: .compact) } ?? ""
-        let ageText = c.isWithheld ? tr("last \(age)") : age
+        let ageText = c.isWithheld || c.samples == .stale ? tr("last \(age)") : age
         if c.isMissing {
             w.line([.t(c.place, p.muted)])
         } else {

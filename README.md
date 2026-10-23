@@ -102,6 +102,18 @@ sources; equal server names in different sources remain separate.
 
 CPU, memory and the primary disk use the Hub's sample timestamps. Connection
 status describes data acquisition. Missing and expired measurements stay unknown.
+Beszel judges no health for a server, so its card says how it is read instead:
+**Current**, **Stale** or **No samples**, with its CPUs and memory sizes.
 Closing the bar stops its own collection; an independently opened terminal polls
 on its own. Direct widgets are resource snapshots labelled **As of** and expire
 at their original deadlines; WidgetKit does not promise a five-second refresh.
+
+### Komari and other collector sources
+
+Komari servers reach the bar through a Topophany collector: add a `komari` source
+and its resource checks to the collector's topology, as Topophany's Komari adapter
+guide describes. Their cards say where they're read from in the provider's place
+("host · Komari Monitor"), and keep the collector's verdict where its checks judge
+one. Settings → Data sources lists the Komari and Beszel sources the collector
+reports, with their servers. A Komari server's disk is the aggregate its agent
+reports, not one mount.

@@ -174,7 +174,20 @@ public struct ServerCardModel: Sendable, Hashable, Identifiable {
         }
     }
 
+    /// How a server read from a source, with no health judged for it, is
+    /// read: its mark and pill say this instead of UNKNOWN.
+    public enum Samples: Sendable, Hashable {
+        /// Within its deadline, as `topo` judged the resource.
+        case current
+        /// A sample that has expired.
+        case stale
+        /// No usable sample yet.
+        case missing
+    }
+
     public var origin: Origin? = nil
+    /// `nil` where `topo` judges the server's health itself.
+    public var samples: Samples? = nil
     public var id: String
     public var name: String
     public var kind: String
@@ -234,11 +247,17 @@ public struct ServerCardModel: Sendable, Hashable, Identifiable {
         }
     }
 
-    /// "4s ago", or "last reading 3 min ago" when withheld.
+    /// "4s ago", or "last reading 3 min ago" when withheld or stale.
     public var age: String {
         guard let sampledAt else { return isMissing ? "" : tr("no reading") }
         let a = Words.ago(sampledAt, now: now)
-        return isWithheld ? tr("last reading \(a)") : a
+        return isWithheld || samples == .stale ? tr("last reading \(a)") : a
+    }
+
+    /// Whether the card is read from a source alone, so its sizes ("8 CPUs",
+    /// "7.4 / 16 GiB") are all it says besides the meters.
+    public var showsSizes: Bool {
+        samples != nil && [cpu, memory, disk].contains { !$0.detail.isEmpty }
     }
 }
 

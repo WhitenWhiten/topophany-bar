@@ -67,12 +67,61 @@ import TopophanySections
         }
     }
 
+    /// A small Server widget for servers whose readings aren't current,
+    /// where the pill is widest: STALE and NO SAMPLES.
+    @Test func serversWithoutCurrentReadings() throws {
+        let panel = try model("fleet_partial")
+        for theme in ThemeStore.builtIn {
+            for card in panel.servers where card.samples != .current {
+                let widget = WidgetModel(kind: .server(node: card.id, isMac: false), panel: panel)
+                let name = "direct-widget-en-\(card.name)-\(theme.id)-small-server"
+                try snapshot(name, onDesktop(widget, .small, theme: theme, dark: theme.appearance != .light))
+                if let bounds = WidgetSnapshots.smaller[.small] {
+                    try snapshot(name + "-1080", onDesktop(widget, .small, bounds: bounds, theme: theme, dark: theme.appearance != .light))
+                }
+            }
+        }
+    }
+
     /// With no server pinned, a medium Status widget lists its sources.
     @Test func sourcesWithoutServers() throws {
         let panel = try model("fleet_partial", pinned: false)
         for theme in ThemeStore.builtIn {
             try snapshot("direct-widget-en-unpinned-\(theme.id)-medium-status",
                          onDesktop(WidgetModel(kind: .status, panel: panel), .medium, theme: theme, dark: theme.appearance != .light))
+        }
+    }
+
+    /// A collector whose servers are read from Komari and a Beszel Hub:
+    /// judged ones keep their pills, a stale one says so.
+    @Test func collectorSourcePanels() throws {
+        let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/CollectorSources")
+        let now = Timestamp.parse("2026-10-21T12:00:00Z")!
+        let data = try Data(contentsOf: root.appending(path: "komari.json"))
+        let frame = try #require(FrameDecoder.frame(from: data))
+        var policy = ReaderPolicy(); policy.receive(frame, line: data, at: now)
+        var s = Settings(); s.sections.servers = true; s.sections.fleet = true; s.sections.mac.mode = .off
+        s.sections.seen = false; s.sections.map = false; s.sections.zones = false
+        s.sections.serverNodes = frame.rows.compactMap(\.select?.node)
+        let panel = SectionBuilder.panel(.init(reading: policy.evaluate(at: now), engine: .running, settings: s))
+        for language in ["en", "ja", "zh-Hans"] {
+            try L10n.with(language) {
+                let m = SectionBuilder.panel(.init(reading: policy.evaluate(at: now), engine: .running, settings: s))
+                for theme in ThemeStore.builtIn {
+                    for dark in theme.id == "native" ? [true, false] : [theme.appearance != .light] {
+                        let ctx = RenderContext(theme: theme, colorScheme: dark ? .dark : .light)
+                        try snapshot("komari-\(language)-\(theme.id)-\(dark ? "dark" : "light")", OnDesktop(dark: dark) {
+                            Renderers.renderer(for: theme).panel(m, context: ctx).transaction { $0.disablesAnimations = true }
+                        })
+                    }
+                }
+            }
+        }
+        for theme in ThemeStore.builtIn {
+            for (size, node) in [(WidgetSize.small, "hk-1"), (.small, "fra-3"), (.medium, "tokyo-2")] {
+                let widget = WidgetModel(kind: .server(node: node, isMac: false), panel: panel)
+                try snapshot("komari-widget-\(theme.id)-\(size.rawValue)-\(node)", onDesktop(widget, size, theme: theme, dark: theme.appearance != .light))
+            }
         }
     }
 

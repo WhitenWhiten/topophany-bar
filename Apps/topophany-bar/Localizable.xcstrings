@@ -5756,6 +5756,38 @@
           }
         }
       }
+    },
+    "On the collector": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクター上のソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "采集器上的来源"
+          }
+        }
+      }
+    },
+    "Set up in the collector’s topology, and read there. Each server’s card says which source it’s read from.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクターのトポロジーで設定され、そこで読み取られます。各サーバーのカードに、どのソースから読み取るかが表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在采集器的拓扑中设置，并由采集器读取。每台服务器的卡片会注明它从哪个来源读取。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

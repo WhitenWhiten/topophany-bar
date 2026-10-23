@@ -636,6 +636,25 @@ and Cells, where the servers current are the big number. The header names the
 adapter as a collector's names its view. A server card says where it's read from
 in the provider's place ("host · Home Beszel"); Fleet adds no badge, and counts no
 providers when none are known. Provider logos retain their established meaning.
+
+Go judges no health for a direct server, so its card, never UNKNOWN for that,
+says how it is read, from the selected resource's own freshness and health:
+CURRENT in the resource's mark (● while Go calls the reading up), STALE once a
+sample has expired, NO SAMPLES before one is usable; both ◌, and a stale card's
+age reads "last reading …". The same marks lead Fleet's servers, the widgets'
+rows and a Terminal card's title; a listed server whose card isn't read stays ○.
+With nothing else to say, a Native card adds each meter's size beneath it ("8
+CPUs", "8.4 / 16 GiB"), as the Terminal card's detail column does. A server whose
+health Go does judge keeps UP, WARN or DOWN.
+
+The rule follows the source, not the mode: Komari reaches the bar only through a
+collector's topology, its servers carrying `origin.adapter` "komari". Their cards
+name it in the provider's place ("host · Komari Monitor"), and an unjudged one
+reads as above. In collector mode, Data sources lists, read-only, the sources the
+collector's server list names (Komari, Beszel), each with its servers; they are
+set up in the topology. Source rows in direct mode lead with a dot, as General's
+engine row does: green while connected, orange when it asks for a look, a ring
+while it isn't read.
 Unsupported collector sections are hidden in direct mode without changing their
 saved preferences.
 

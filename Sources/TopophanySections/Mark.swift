@@ -93,4 +93,14 @@ public struct Pill: Sendable, Hashable {
     }
 
     public static var cached: Pill { Pill(text: tr("CACHED"), mark: .offline) }
+
+    /// A source-read server's samples: CURRENT in the mark `topo` gave
+    /// its reading, or STALE and NO SAMPLES, which have nothing current.
+    public static func samples(_ s: ServerCardModel.Samples, mark: Mark) -> Pill {
+        switch s {
+        case .current: Pill(text: tr("CURRENT"), mark: mark)
+        case .stale: Pill(text: tr("STALE"), mark: .offline)
+        case .missing: Pill(text: tr("NO SAMPLES"), mark: .offline)
+        }
+    }
 }

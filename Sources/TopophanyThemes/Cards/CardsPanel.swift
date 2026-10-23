@@ -822,12 +822,13 @@ struct CardsServer: View {
                 PillView(pill: card.pill, palette: p, type: t)
             }
             .accessibilityElement(children: .combine)
+            let sizes = card.showsSizes
             HStack(alignment: .top, spacing: 10) {
-                meter(tr("CPU"), card.cpu)
-                meter(tr("Memory"), card.memory)
-                meter(tr("Disk"), card.disk)
+                meter(tr("CPU"), card.cpu, sizes: sizes)
+                meter(tr("Memory"), card.memory, sizes: sizes)
+                meter(tr("Disk"), card.disk, sizes: sizes)
             }
-            .padding(.top, 10).padding(.bottom, 7)
+            .padding(.top, 10).padding(.bottom, sizes ? 3 : 7)
             HStack {
                 Text(card.servicesSummary).lineLimit(1)
                 Spacer(minLength: 8)
@@ -839,8 +840,10 @@ struct CardsServer: View {
         .id("server:" + card.id)
     }
 
-    func meter(_ label: String, _ m: ServerCardModel.Meter) -> some View {
-        VStack(spacing: 5) {
+    /// `sizes` adds what the meter measures under it, "8 CPUs" or
+    /// "7.4 / 16 GiB": on a card that has nothing else to say.
+    func meter(_ label: String, _ m: ServerCardModel.Meter, sizes: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .firstTextBaseline) {
                 Text(label).font(t.font(10.5)).foregroundStyle(p.l2)
                 Spacer(minLength: 2)
@@ -852,10 +855,16 @@ struct CardsServer: View {
                 }
             }
             Meter(percent: m.percent, limit: m.limit, palette: p)
+            if sizes {
+                // Kept when empty, so the three meters stay level.
+                Text(m.detail.isEmpty ? " " : m.detail).font(t.font(10)).foregroundStyle(p.l3)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(m.percent.map { "\(label) \(Words.percent($0, digits: 0))" } ?? "\(label) \(tr("unknown"))")
+        .accessibilityLabel(m.percent.map { Words.join(["\(label) \(Words.percent($0, digits: 0))", sizes ? m.detail : ""]) }
+                            ?? "\(label) \(tr("unknown"))")
     }
 }
 

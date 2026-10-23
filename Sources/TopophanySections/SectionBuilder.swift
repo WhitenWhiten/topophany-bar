@@ -272,7 +272,8 @@ public enum SectionBuilder {
         var current = true
         var nodes: [Entry] = []
         if let row = r.row(RowID.servers), case .servers(let l) = row.value {
-            nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: Mark($0.health), note: $0.note, origin: $0.origin), $0.kind, $0.provider) }
+            let mark = listMarks(r, l)
+            nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: mark($0), note: $0.note, origin: $0.origin), $0.kind, $0.provider) }
         } else if let row = r.row(RowID.servers), case .servers(let l) = r.lastValue(of: row) {
             current = false
             nodes = l.map { (.init(id: $0.id, name: $0.name, place: $0.place, mark: .offline, origin: $0.origin), $0.kind, $0.provider) }
@@ -283,6 +284,20 @@ public enum SectionBuilder {
         }
         guard !nodes.isEmpty else { return nil }
         return FleetSection.grouping(nodes, isCurrent: current)
+    }
+
+    /// Each listed server's mark: its health, or, for a server read from a
+    /// source that `topo` judges no health for, its samples where its card
+    /// is read too. Without its card it stays unknown.
+    static func listMarks(_ r: Reading, _ list: [ServerListEntry]) -> (ServerListEntry) -> Mark {
+        func unjudged(_ e: ServerListEntry) -> Bool { e.origin != nil && e.health == .unknown && e.note.isEmpty }
+        var read: [String: Mark] = [:]
+        if list.contains(where: unjudged) {
+            for row in r.rows where row.row.metric == "server.card" {
+                if case .serverCard(let c) = row.value, let s = samples(c) { read[c.id] = s.mark }
+            }
+        }
+        return { e in unjudged(e) ? read[e.id] ?? .unknown : Mark(e.health) }
     }
 
     // MARK: servers
@@ -343,21 +358,36 @@ public enum SectionBuilder {
                                      text: withheld ? tr("not known while offline") : observesText(o))
         }
         let pill: Pill
+        var mark = withheld ? .offline : Mark(c.health)
+        let read = withheld ? nil : samples(c)
         if withheld {
             pill = .cached
+        } else if let read {
+            mark = read.mark
+            pill = Pill.samples(read.samples, mark: read.mark)
         } else if c.note.isEmpty {
             pill = Pill.health(c.health)
         } else {
             pill = Pill.state(c.note, health: c.health)
         }
         var model = ServerCardModel(id: c.id, name: c.name, kind: c.kind, provider: Provider.name(c.provider), place: c.place,
-                               mark: withheld ? .offline : Mark(c.health), pill: pill, isWithheld: withheld,
+                               mark: mark, pill: pill, isWithheld: withheld,
                                cpu: cpu, memory: memory, disk: disk, services: services,
                                servicesSummary: servicesSummary(c.services), observes: observes,
                                sampledAt: res?.sampledAt, now: now)
         model.origin = c.origin
+        model.samples = read?.samples
         if c.origin != nil && c.services.isEmpty { model.servicesSummary = "" }
         return model
+    }
+
+    /// A server read from a source that `topo` judges no health for: how
+    /// its readings stand, by the resource's own freshness and health.
+    /// Past its deadline a resource is already stale (`applyingDeadlines`).
+    static func samples(_ c: ServerCard) -> (samples: ServerCardModel.Samples, mark: Mark)? {
+        guard c.origin != nil, c.health == .unknown, c.note.isEmpty else { return nil }
+        guard let r = c.resources.first, r.sampledAt != nil, r.freshness != "never" else { return (.missing, .offline) }
+        return r.freshness == "fresh" ? (.current, Mark(r.health)) : (.stale, .offline)
     }
 
     /// "4 services · 3 up · 1 not monitored".
@@ -401,7 +431,8 @@ public enum SectionBuilder {
         var current = true
         var listed: [(id: String, name: String, place: String, mark: Mark)] = []
         if let row = r.row(RowID.servers), case .servers(let l) = row.value {
-            listed = l.map { ($0.id, $0.name, $0.place, Mark($0.health)) }
+            let mark = listMarks(r, l)
+            listed = l.map { ($0.id, $0.name, $0.place, mark($0)) }
         } else if let row = r.row(RowID.servers), case .servers(let l) = r.lastValue(of: row) {
             current = false
             listed = l.map { ($0.id, $0.name, $0.place, .offline) }

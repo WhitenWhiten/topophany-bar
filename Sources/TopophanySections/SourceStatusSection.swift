@@ -17,7 +17,9 @@ public struct SourceStatusSection: Sendable, Hashable {
     }
     /// Who the sources are: "Beszel", or "Direct" when they're mixed.
     public var adapter: String {
-        !value.sources.isEmpty && value.sources.allSatisfy { $0.adapter == "beszel" } ? "Beszel" : tr("Direct")
+        let names = Set(value.sources.map { Origin.name(adapter: $0.adapter) })
+        guard names.count == 1, let name = names.first, let known = name else { return tr("Direct") }
+        return known
     }
     /// "3 of 3 servers current", or what isn't: "1 of 2 current · 1 without samples".
     public var subtitle: String {
@@ -66,9 +68,57 @@ public struct SourceStatusSection: Sendable, Hashable {
         return source.state == "connected" ? .up : .unknown
     }
 }
+
+/// A source a collector reads servers from, such as a Komari server or a
+/// Beszel Hub in its topology, as its server list names it.
+public struct ListedSource: Sendable, Hashable, Identifiable {
+    public var id: String
+    public var name: String
+    /// As `topo` sent it: "komari", "beszel".
+    public var adapter: String
+    /// Its servers' names, in the list's order.
+    public var servers: [String]
+
+    public init(id: String, name: String, adapter: String, servers: [String]) {
+        self.id = id
+        self.name = name
+        self.adapter = adapter
+        self.servers = servers
+    }
+
+    /// The servers listed from a source, each source once, in the order
+    /// of its first server: the last list `topo` sent, current or not.
+    public static func from(_ r: Reading) -> [ListedSource] {
+        guard let row = r.row(TemplateCompiler.RowID.servers) else { return [] }
+        let list: [ServerListEntry]
+        if case .servers(let l) = row.value { list = l } else if case .servers(let l) = r.lastValue(of: row) { list = l } else { return [] }
+        var out: [ListedSource] = []
+        for s in list {
+            guard let o = s.origin else { continue }
+            if let i = out.firstIndex(where: { $0.id == o.sourceID }) {
+                out[i].servers.append(s.name)
+            } else {
+                out.append(ListedSource(id: o.sourceID, name: o.name, adapter: o.adapter, servers: [s.name]))
+            }
+        }
+        return out
+    }
+}
+
 extension Origin {
-    public var badge: String { adapter == "beszel" ? "Beszel" : tr("Source") }
-    /// "Beszel · Home", or the source's name alone when it already says Beszel.
+    /// The software an adapter reads, as it names itself: "Beszel",
+    /// "Komari"; `nil` for one this app doesn't know.
+    public static func name(adapter: String) -> String? {
+        switch adapter {
+        case "beszel": "Beszel"
+        case "komari": "Komari"
+        default: nil
+        }
+    }
+
+    public var badge: String { Self.name(adapter: adapter) ?? tr("Source") }
+    /// "Beszel · Home", or the source's name alone when it already says
+    /// Beszel: "Komari Monitor".
     public var detail: String {
         name.localizedCaseInsensitiveContains(badge) ? name : Words.join([badge, name])
     }
