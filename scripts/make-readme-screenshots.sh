@@ -51,11 +51,19 @@ images=(
     readme-direct.png:direct-sources.png
     readme-themes.png:themes.png
     readme-widgets.png:widget-gallery.png
+    readme-icon.png:icon.png
+    readme-icon-dark.png:icon-dark.png
 )
 
 # Isolated output prevents a failed render from publishing stale snapshots.
 # These render cases use fixed English demo data, without launching the app.
 TOPOPHANY_SNAPSHOT_DIR="$render_dir" xcrun swift test --filter ReadmeSnapshots
+# The icon as macOS draws it, light and dark, by Icon Composer's ictool.
+ictool="$(dirname "$DEVELOPER_DIR")/Applications/Icon Composer.app/Contents/Executables/ictool"
+for rendition in Default:readme-icon.png Dark:readme-icon-dark.png; do
+    "$ictool" Apps/topophany-bar/AppIcon.icon --export-image --output-file "$render_dir/${rendition#*:}" \
+        --platform macOS --rendition "${rendition%%:*}" --width 256 --height 256 --scale 1 >/dev/null
+done
 for pair in "${images[@]}"; do
     if [[ ! -s "$render_dir/${pair%%:*}" ]]; then
         printf 'Error: renderer did not produce %s; existing images were not changed.\n' "${pair%%:*}" >&2

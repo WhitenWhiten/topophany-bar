@@ -92,6 +92,7 @@ Outputs:
 - `direct-sources.png`: direct mode with both kinds of source, in the panel and two widgets.
 - `themes.png`: the panel's status, attention and This Mac sections in all six built-in themes.
 - `widget-gallery.png`: ten widgets covering all five types and six themes.
+- `icon.png` and `icon-dark.png`: the app icon as macOS draws it in light and dark, exported at 256 pixels by Icon Composer's `ictool`.
 
 The layouts and scenario choices live in `Tests/TopophanyThemesTests/ReadmeSnapshots.swift`. The script renders into a temporary directory and only copies the images after every render succeeds, so an unsuccessful run cannot reuse stale screenshots. `TOPOPHANY_SNAPSHOT_DIR` overrides the snapshot output directory for this run; ordinary snapshot tests still write to `Tests/Snapshots/out`. Native's panel renders translucent without the window's blur, so keep panels clear of widgets in a composition.
 

@@ -1,12 +1,15 @@
 <p align="center">
-  <img src="design/assets/mark.svg" alt="" width="64" height="64">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/icon-dark.png">
+    <img src="docs/assets/icon.png" alt="" width="128" height="128">
+  </picture>
 </p>
 
 <h1 align="center">topophany-bar</h1>
 
 <p align="center">
   <strong>Your homelab, servers and services, at a glance in the macOS menu bar.</strong><br>
-  A derivative project of <a href="https://github.com/WhitenWhiten/topophany">Topophany</a> that brings its network monitoring to the menu bar and desktop widgets, and reads Beszel and Komari directly.
+  The macOS companion to <a href="https://github.com/WhitenWhiten/topophany">Topophany</a>: its network monitoring in the menu bar and desktop widgets, with Beszel and Komari servers read directly.
 </p>
 
 <p align="center">
@@ -24,7 +27,7 @@
 
 <p align="center">
   <img src="docs/assets/hero.png" alt="A macOS desktop: the White Night icon in the menu bar, its moon in partial eclipse beside a count of 2; the Native panel open beneath it, showing a degraded network with two warnings, the observers that see them and a map; and Status, Server, Time Zones, Service and Map widgets on the desktop" width="1000">
-  <br><sub>A demo network with 66 of 68 checks passing and two warnings. Every image in this README is rendered by the app's own SwiftUI views from synthetic demo data.</sub>
+  <br><sub>A demo network with 66 of 68 checks passing and two warnings. Every screenshot in this README is rendered by the app's own SwiftUI views from synthetic demo data.</sub>
 </p>
 
 See what needs attention from the menu bar, open the panel to find where the problem is seen, and jump into Topophany's terminal UI for the evidence. No collector? Point the app at a Beszel Hub or a Komari server and keep their servers in view instead.
@@ -76,7 +79,7 @@ topophany-bar can read servers straight from a Beszel Hub or a Komari server thr
 
 Editing an existing source uses its saved authentication unless you choose to sign in again. The app never saves your password or API key.
 
-Direct requires a `topo` whose capabilities advertise **Direct v1 / config API 1**, and Komari a `topo` that lists `komari` among its direct adapters; choose or download a newer executable in **Settings → General** if needed. Sources must be a Beszel Hub or a Komari 1.6 server.
+Direct mode needs a `topo` that advertises **Direct v1 / config API 1** (Topophany 1.4.2 or later), and Komari one that lists `komari` among its direct adapters (1.5.0 or later); choose or download a newer one in **Settings → General** if needed. Sources must be a Beszel Hub or a Komari 1.6 server.
 
 ### What you see
 
@@ -157,7 +160,7 @@ Drag the panel's bottom edge to resize it. **Lock Geo Map** is enabled by defaul
 
 ## How it fits with Topophany
 
-[Topophany](https://github.com/WhitenWhiten/topophany) runs the checks, collects evidence and determines network health. **topophany-bar is its macOS companion:** it reads that information through `topo` and presents it in the menu bar, panel and widgets. In direct mode, `topo` reads your Beszel and Komari sources itself, without a collector. Closing the app does not stop your collectors or workers.
+[Topophany](https://github.com/WhitenWhiten/topophany) runs the checks, collects evidence and determines network health; you can try its terminal UI in the browser at [topophany.com](https://topophany.com/demo/). **topophany-bar is its macOS companion:** it reads that information through `topo` and presents it in the menu bar, panel and widgets. In direct mode, `topo` reads your Beszel and Komari sources itself, without a collector. Closing the app does not stop your collectors or workers.
 
 Expired evidence is shown as unavailable or cached, so an old healthy result does not remain current. Sign-in credentials stay with `topo`; the app does not read or store tokens. This Mac's local readings stay on the Mac and are never uploaded.
 
