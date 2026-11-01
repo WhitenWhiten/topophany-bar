@@ -27,6 +27,11 @@ struct CellsBodies {
         // Under the count, as the TUI sets it since 1.5.2: what the checks
         // establish about services, apart from what they conclude.
         if !short, let coverage = s.coverageText { w.line([.t(CellText.truncate(coverage, n), p.muted)]) }
+        // Why the rest are unknown, where topo says: the Terminal has no
+        // tooltip to say it in.
+        if !short, !s.coverageIsComplete, let reasons = s.coverageReasons {
+            for line in CellText.wrap(reasons, n, lines: 2) { w.line([.t(line, p.faint)]) }
+        }
         if let c = s.counts?.complete, !s.isBlind {
             let total = Double(max(1, c.up + c.warning + c.down + c.unknown))
             func share(_ v: Int) -> Int { Int((Double(v) / total * Double(n)).rounded()) }

@@ -21,7 +21,9 @@ import TopophanyKit
             let cards = SectionBuilder.services(r, ids: ["memos", "blog", "home-rproxy"])
             let memos = try #require(cards.first { $0.id == "memos" }?.scope)
             #expect(memos.conclusion == "Unreachable from where it’s checked; not an outage by itself")
-            #expect(memos.detail == "app unknown · path down · workers up")
+            // The app's availability is left to the reason below it.
+            #expect(memos.detail == "path down · workers up")
+            #expect(memos.why == "App availability unknown: current checks don’t establish it")
             #expect(memos.hints == ["Checked from one place only: add a local health check"])
             #expect(memos.mark == .down)
             let blog = try #require(cards.first { $0.id == "blog" }?.scope)
@@ -60,6 +62,42 @@ import TopophanyKit
             // An unknown hint code is never shown as text.
             let other = try JSONDecoder().decode(ServiceCard.Assessment.self, from: Data(#"{"state":"up","hints":["future_hint"]}"#.utf8))
             #expect(SectionBuilder.scope(other) == nil)
+        }
+    }
+}
+
+extension AssessmentTests {
+    @Test func coverageSaysWhyTheRestAreUnknown() throws {
+        try L10n.with("en") {
+            let (r, _) = try reading()
+            let status = SectionBuilder.panel(PanelInput(reading: r, engine: .running, settings: Settings())).status
+            #expect(status.coverageText == "Service availability: 12/23 known")
+            #expect(status.coverageReasons == "5 no app check · 3 awaiting samples · 2 unconfirmed · 1 unmonitored")
+            #expect(status.coverageHelp?.hasPrefix("Availability is unknown for 11 of 23 services: 5 no app check") == true)
+        }
+    }
+
+    @Test func reasonsThatDontAddUpAreIgnored() throws {
+        let bad = #"{"observer":"","services":10,"known":8,"reasons":{"no_samples":1}}"#
+        #expect(try JSONDecoder().decode(ServiceCoverage.self, from: Data(bad.utf8)).reasons.isEmpty)
+        let negative = #"{"observer":"","services":10,"known":8,"reasons":{"no_samples":3,"stale":-1}}"#
+        #expect(try JSONDecoder().decode(ServiceCoverage.self, from: Data(negative.utf8)).reasons.isEmpty)
+        let old = #"{"observer":"","services":10,"known":8}"#
+        #expect(try JSONDecoder().decode(ServiceCoverage.self, from: Data(old.utf8)).reasons.isEmpty)
+    }
+
+    @Test func aServiceSaysWhyItsAvailabilityIsUnknown() throws {
+        try L10n.with("en") {
+            let (r, _) = try reading()
+            let cards = SectionBuilder.services(r, ids: ["memos", "home-rproxy"])
+            #expect(cards.first { $0.id == "memos" }?.scope?.why == "App availability unknown: current checks don’t establish it")
+            #expect(cards.first { $0.id == "home-rproxy" }?.scope == nil)
+            // A reason alone, without an assessment, is still said.
+            #expect(SectionBuilder.scope(nil, unknownReason: "no_application_check")?.why == "App availability unknown: no application check establishes it")
+            let list = try #require(r.rows.first { $0.row.metric == "services.list" })
+            guard case .services(let entries) = list.value else { Issue.record("no list"); return }
+            #expect(entries.first { $0.id == "postgres" }?.unknownReason == "no_application_check")
+            #expect(entries.first { $0.id == "home-rproxy" }?.unknownReason == "")
         }
     }
 }

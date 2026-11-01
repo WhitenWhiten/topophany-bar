@@ -128,22 +128,27 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         public var mark: Mark
         /// "Its local health check fails"; empty where the pill says it all.
         public var conclusion: String
-        /// "app down · path up · workers up".
+        /// "app down · path up · workers up"; the app's left out where `why`
+        /// says it is unknown.
         public var detail: String
+        /// "App availability unknown: no application check establishes it".
+        public var why: String
         /// What would let topo say more.
         public var hints: [String]
 
-        public init(mark: Mark, conclusion: String, detail: String, hints: [String]) {
+        public init(mark: Mark, conclusion: String, detail: String, why: String = "", hints: [String]) {
             self.mark = mark
             self.conclusion = conclusion
             self.detail = detail
+            self.why = why
             self.hints = hints
         }
 
     }
 
     public var monitor: MonitorCardModel? = nil
-    /// `topo`'s assessment, where it adds to the pill.
+    /// `topo`'s assessment and why availability is unknown, where they add
+    /// to the pill.
     public var scope: Scope? = nil
     /// The first diagnosis, where one line has room for it.
     public var diagnosticSummary = ""
@@ -388,15 +393,17 @@ extension SectionBuilder {
         card.firstByte = checks.first { $0.freshness == "fresh" && !$0.firstByte.isEmpty }?.firstByte ?? ""
         card.memo = c.memo
         card.runbook = runbookURL(c.runbook)
-        card.scope = scope(c.assessment)
+        // Unmonitored and not-seen-from-here cards say why already.
+        card.scope = scope(c.assessment, unknownReason: card.isUnmonitored || card.isElsewhere ? "" : c.unknownReason)
         return card
     }
 
     /// The assessment's conclusion where it says more than the pill: a
     /// failing or warning local health check, or a path failure that is
     /// not by itself an outage. Up or unknown with nothing to suggest, none.
-    public static func scope(_ a: ServiceCard.Assessment?) -> ServiceCardModel.Scope? {
-        guard let a else { return nil }
+    public static func scope(_ a: ServiceCard.Assessment?, unknownReason: String = "") -> ServiceCardModel.Scope? {
+        let why = unknownReason.isEmpty ? "" : tr("App availability unknown: \(StatusSection.unknownWhy(unknownReason))")
+        guard let a else { return why.isEmpty ? nil : .init(mark: .unknown, conclusion: "", detail: "", why: why, hints: []) }
         let conclusion: String, mark: Mark
         switch a.state {
         case "local_fail": (conclusion, mark) = (tr("Its local health check fails"), .down)
@@ -411,7 +418,7 @@ extension SectionBuilder {
             default: nil
             }
         }
-        guard !conclusion.isEmpty || !hints.isEmpty else { return nil }
+        guard !conclusion.isEmpty || !hints.isEmpty || !why.isEmpty else { return nil }
         func word(_ w: String) -> String {
             switch w {
             case "up": tr("up")
@@ -421,8 +428,9 @@ extension SectionBuilder {
             default: tr("unknown")
             }
         }
-        let detail = tr("app \(word(a.availability)) · path \(word(a.pathReachability)) · workers \(word(a.workerOnline))")
-        return .init(mark: mark, conclusion: conclusion, detail: conclusion.isEmpty ? "" : detail, hints: hints)
+        let app = a.availability == "unknown" && !why.isEmpty ? "" : tr("app \(word(a.availability))")
+        let detail = Words.join([app, tr("path \(word(a.pathReachability))"), tr("workers \(word(a.workerOnline))")])
+        return .init(mark: mark, conclusion: conclusion, detail: conclusion.isEmpty ? "" : detail, why: why, hints: hints)
     }
 
     /// Only a web page opens from the panel: an absolute http(s) URL with a

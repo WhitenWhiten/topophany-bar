@@ -34,7 +34,8 @@ extension CellsBodies {
         let scope = details && !c.isBlank ? c.scope : nil
         let conclusion = scope.map { CellText.wrap($0.conclusion, n - 2, lines: 2) } ?? []
         let hints = (scope?.hints ?? []).map { CellText.wrap($0, n - 2, lines: 2) }
-        let scopeLines = conclusion.count + (conclusion.isEmpty ? 0 : 1) + hints.reduce(0) { $0 + $1.count }
+        let why = CellText.wrap(scope?.why ?? "", n - 2, lines: 2)
+        let scopeLines = conclusion.count + (conclusion.isEmpty ? 0 : 1) + why.count + hints.reduce(0) { $0 + $1.count }
         let extra = (memo ? 1 : 0) + day.count + (runbook == nil ? 0 : 1) + scopeLines
         focusRow(&w, c.focusID, lines: 1 + max(1, rows.count) + diagnoses.count + more + extra + (foot ? 1 : 0))
         if c.isMissing {
@@ -56,6 +57,9 @@ extension CellsBodies {
                 w.line((i == 0 ? [.mark(scope.mark, p), .t(" ", p.text)] : [.t("  ", p.text)]) + [.t(line, p.text)])
             }
             if !conclusion.isEmpty { w.line([.t("  " + CellText.truncate(scope.detail, n - 2), p.faint)]) }
+            for (i, line) in why.enumerated() {
+                w.line((i == 0 ? [.mark(.unknown, p), .t(" ", p.text)] : [.t("  ", p.text)]) + [.t(line, p.muted)])
+            }
             for lines in hints {
                 for (i, line) in lines.enumerated() { w.line([.t((i == 0 ? "› " : "  ") + line, p.faint)]) }
             }

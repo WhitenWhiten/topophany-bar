@@ -59,7 +59,50 @@ public struct StatusSection: Sendable, Hashable {
         guard coverageText != nil, let coverage else { return nil }
         let unknown = coverage.services - coverage.known
         guard unknown > 0 else { return tr("Current checks establish every service’s availability.") }
+        if let reasons = coverageReasons {
+            return tr("Availability is unknown for \(unknown) of \(coverage.services) services: \(reasons). The verdict covers active checks only.")
+        }
         return tr("Availability is unknown for \(unknown) of \(coverage.services) services. The verdict covers active checks only; Topophany’s Services tab gives each reason.")
+    }
+
+    /// Why the rest are unknown, most first: "5 no app check · 3 awaiting
+    /// samples"; `nil` from a `topo` that sends no reasons.
+    public var coverageReasons: String? {
+        guard coverageText != nil, let reasons = coverage?.reasons, !reasons.isEmpty else { return nil }
+        return reasons.sorted { ($1.value, $0.key) < ($0.value, $1.key) }
+            .map { "\($0.value) " + Self.unknownLabel($0.key) }.joined(separator: " · ")
+    }
+
+    /// A reason availability is unknown, as a count's label.
+    public static func unknownLabel(_ code: String) -> String {
+        switch code {
+        case "cached": tr("cached")
+        case "draft": tr("draft")
+        case "unmonitored": tr("unmonitored")
+        case "suspended": tr("paused")
+        case "outside_view": tr("outside view")
+        case "no_application_check": tr("no app check")
+        case "stale": tr("expired")
+        case "no_samples": tr("awaiting samples")
+        case "application_unconfirmed": tr("unconfirmed")
+        default: tr("other")
+        }
+    }
+
+    /// Why one service's availability is unknown, as a clause.
+    public static func unknownWhy(_ code: String) -> String {
+        switch code {
+        case "cached": tr("only cached evidence is available")
+        case "draft": tr("the topology has no live evidence yet")
+        case "unmonitored": tr("no check measures it")
+        case "suspended": tr("its checks are paused or in maintenance")
+        case "outside_view": tr("this observer doesn’t check it")
+        case "no_application_check": tr("no application check establishes it")
+        case "stale": tr("its application evidence expired")
+        case "no_samples": tr("waiting for its first application sample")
+        case "application_unconfirmed": tr("current checks don’t establish it")
+        default: tr("Topophany’s Services tab says why")
+        }
     }
 
     public var notice: String? = nil

@@ -575,8 +575,14 @@ selected view, independently of the check verdict. Known includes healthy,
 degraded and failed availability. Invalid counts are withheld; older frames
 omit the caption. The caption disappears when the verdict is cached or expired.
 It uses Topophany 1.5.2's wording ("Service availability: 3/23 known") and, in
-Terminal, the TUI's place under the count. The stream carries no per-service
-reasons, so Native's tooltip points to Topophany's Services tab for them.
+Terminal, the TUI's place under the count. A `topo` after 1.5.2 adds
+`coverage.reasons`, closed codes counted ("5 no app check · 3 awaiting
+samples"). They're accepted only when they sum to the unknown services. Native's
+tooltip and a second Terminal line name them, most first. Without them, Native's
+tooltip points to Topophany's Services tab. `services.list` entries and
+`service.card` may carry `unknown_reason` with the same codes. A service card
+then says "App availability unknown: …", leaving the app out of the assessment's
+readings. Unmonitored and not-seen-from-here cards say why already.
 It updates with the status model, adding no timer or background task; only the
 status drawing region gains a line and existing layout measures its size.
 

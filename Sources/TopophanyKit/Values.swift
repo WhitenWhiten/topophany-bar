@@ -69,7 +69,10 @@ public struct ServiceCoverage: Sendable, Hashable, Decodable {
     public var observer: String
     public var services: Int
     public var known: Int
-    enum CodingKeys: String, CodingKey { case observer, services, known }
+    /// Why the rest are unknown: closed codes counted, from a `topo` that
+    /// sends them. Empty unless they account for exactly the unknown ones.
+    public var reasons: [String: Int]
+    enum CodingKeys: String, CodingKey { case observer, services, known, reasons }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         observer = try c.decode(String.self, forKey: .observer)
@@ -78,6 +81,10 @@ public struct ServiceCoverage: Sendable, Hashable, Decodable {
         guard (0...4096).contains(services), (0...services).contains(known), observer.utf8.count <= 96 else {
             throw DecodingError.dataCorruptedError(forKey: .known, in: c, debugDescription: "Invalid coverage")
         }
+        let reasons = ((try? c.decodeIfPresent([String: Int].self, forKey: .reasons)) ?? nil) ?? [:]
+        let valid = reasons.count <= 16 && reasons.allSatisfy { $0.key.utf8.count <= 32 && $0.value > 0 }
+            && reasons.values.reduce(0, +) == services - known
+        self.reasons = valid ? reasons : [:]
     }
 }
 
@@ -989,11 +996,13 @@ public struct ServiceCard: Sendable, Hashable, Decodable, Identifiable {
     public var memo: String
     /// `nil` from a `topo` that doesn't send it.
     public var assessment: Assessment? = nil
+    /// Why its availability is unknown, a closed code; `""` when known.
+    public var unknownReason = ""
 
     enum CodingKeys: String, CodingKey {
         case id, name, application, environment, runtime, health, note, evidence, reason, monitored, elsewhere, host
         case seenFrom = "seen_from", endpoints, answeredFrom = "answered_from", dependsOn = "depends_on", usedBy = "used_by"
-        case runbook, memo, assessment
+        case runbook, memo, assessment, unknownReason = "unknown_reason"
     }
 
     public init(id: String, name: String, application: Ref? = nil, environment: String = "", runtime: String = "",
@@ -1043,6 +1052,7 @@ public struct ServiceCard: Sendable, Hashable, Decodable, Identifiable {
         runbook = c.text(.runbook) ?? ""
         memo = c.text(.memo) ?? ""
         assessment = (try? c.decodeIfPresent(Assessment.self, forKey: .assessment)) ?? nil
+        unknownReason = c.text(.unknownReason) ?? ""
     }
 }
 
@@ -1102,8 +1112,10 @@ public struct ServiceListEntry: Sendable, Hashable, Decodable, Identifiable {
     public var note: String
     public var monitored: Bool?
     public var host: Host?
+    /// Why its availability is unknown, a closed code; `""` when known.
+    public var unknownReason = ""
 
-    enum CodingKeys: String, CodingKey { case id, name, application, health, note, monitored, host }
+    enum CodingKeys: String, CodingKey { case id, name, application, health, note, monitored, host, unknownReason = "unknown_reason" }
 
     public init(id: String, name: String, application: String = "", health: Health = .unknown, note: String = "",
                 monitored: Bool? = true, host: Host? = nil) {
@@ -1123,6 +1135,7 @@ public struct ServiceListEntry: Sendable, Hashable, Decodable, Identifiable {
         application = c.text(.application) ?? ""
         health = (try? c.decode(Health.self, forKey: .health)) ?? .unknown
         note = c.text(.note) ?? ""
+        unknownReason = c.text(.unknownReason) ?? ""
         monitored = try? c.decodeIfPresent(Bool.self, forKey: .monitored)
         host = (try? c.decodeIfPresent(Host.self, forKey: .host)) ?? nil
     }

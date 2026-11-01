@@ -245,10 +245,17 @@ struct ServiceScope: View {
             if !scope.conclusion.isEmpty {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     CardMark(mark: scope.mark, size: 8, color: p.listColor(scope.mark))
-                    Text(scope.conclusion).foregroundStyle(p.l1).lineLimit(2)
+                    Text(scope.conclusion).foregroundStyle(p.l1).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 .font(t.font(11.5))
                 Text(scope.detail).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).padding(.leading, 14)
+            }
+            if !scope.why.isEmpty {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    CardMark(mark: .unknown, size: 8, color: p.listColor(.unknown))
+                    Text(scope.why).foregroundStyle(p.l2).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
+                .font(t.font(11)).padding(.top, scope.conclusion.isEmpty ? 0 : 2)
             }
             ForEach(scope.hints, id: \.self) { hint in
                 Label(hint, systemImage: "lightbulb").font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(2)

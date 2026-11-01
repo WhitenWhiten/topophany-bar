@@ -79,8 +79,11 @@ import TopophanySections
         let f = try #require(FrameDecoder.frame(from: line))
         let now = try #require(f.generatedAt)
         var policy = ReaderPolicy(); policy.receive(f, line: line, at: now)
+        let reading = policy.evaluate(at: now)
         var model = previewPanel(.clear)
-        model.sections = [.services(SectionBuilder.services(policy.evaluate(at: now), ids: ["memos", "blog", "home-rproxy"]))]
+        // The fixture's own verdict, with the reasons coverage gives.
+        model.status = SectionBuilder.panel(PanelInput(reading: reading, engine: .running, settings: TopophanyKit.Settings())).status
+        model.sections = [.services(SectionBuilder.services(reading, ids: ["memos", "blog", "home-rproxy"]))]
         for theme in [ThemeStore.native, ThemeStore.terminal] {
             let ctx = RenderContext(theme: theme, colorScheme: .dark)
             try snapshot("service-assessment-\(theme.id)", OnDesktop(dark: true) { Renderers.renderer(for: theme).panel(model, context: ctx) })
