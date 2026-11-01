@@ -94,6 +94,11 @@ public struct Pill: Sendable, Hashable {
 
     public static var cached: Pill { Pill(text: tr("CACHED"), mark: .offline) }
 
+    /// No state to say, for something never read: a widget whose server,
+    /// service or check isn't chosen, or hasn't arrived. Drawn as nothing,
+    /// where CACHED would claim an old reading.
+    public static var none: Pill { Pill(text: "", mark: .offline) }
+
     /// A source-read server's samples: CURRENT in the mark `topo` gave
     /// its reading, or STALE and NO SAMPLES, which have nothing current.
     public static func samples(_ s: ServerCardModel.Samples, mark: Mark) -> Pill {

@@ -1061,6 +1061,12 @@
     },
     "Choose one in Edit Widget": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one in Edit Widget"
+          }
+        },
         "ja": {
           "stringUnit": {
             "state": "translated",
@@ -2295,6 +2301,12 @@
     },
     "choose one in Edit Widget": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "choose one in Edit Widget"
+          }
+        },
         "ja": {
           "stringUnit": {
             "state": "translated",

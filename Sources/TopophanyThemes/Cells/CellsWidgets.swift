@@ -429,7 +429,7 @@ struct CellsWidget: View {
             let none = ServerCardModel.Meter(percent: nil, limit: nil, detail: "")
             return ServerCardModel(id: node, name: node.isEmpty ? tr("no server chosen") : node, kind: "", provider: "",
                                    place: node.isEmpty ? tr("choose one in Edit Widget") : tr("not received yet"),
-                                   mark: .offline, pill: .cached, isWithheld: true, isMissing: true, cpu: none, memory: none,
+                                   mark: .offline, pill: .none, isWithheld: true, isMissing: true, cpu: none, memory: none,
                                    disk: none, services: [], servicesSummary: "", observes: [], sampledAt: nil, now: status.now)
         }
 
@@ -479,10 +479,24 @@ extension CellsWidget.Layout {
         let x0 = CellsWidget.pad.side, x1 = CellsWidget.pad.side + Double(cols) * cell
         let b = self.b, p = self.p
         guard let c = model.monitor, let m = c.monitor else {
-            let id = if case .monitor(let pin) = model.kind { pin.entity } else { "" }
-            let why = id.isEmpty ? tr("choose one in Edit Widget") : model.status.sources != nil ? tr("not read in direct mode") : tr("not received yet")
-            w.line([.mark(.offline, p), .t(" " + CellText.truncate(id.isEmpty ? tr("no check chosen") : id, cols - 2), p.text, bold: true)])
-            for line in CellText.wrap(why, cols, lines: 2) { w.line([.t(line, p.muted)]) }
+            // Waiting as a Service widget waits: its name, and why nothing
+            // is shown in the box its card would fill.
+            var id = "", link = false
+            if case .monitor(let pin) = model.kind { id = pin.entity; link = pin.kind == .link }
+            let why = id.isEmpty ? tr("choose one in Edit Widget")
+                : model.status.sources != nil ? tr("not read in direct mode") : tr("not received yet")
+            let name = id.isEmpty ? tr("no check chosen") : id
+            let title: [Seg]
+            if size == .small {
+                w.line([.mark(.offline, p), .t(" " + CellText.truncate(name, cols - 2), p.text, bold: true)])
+                title = [.t(" " + (link ? tr("LINK") : tr("CHECK")) + " ", p.accent, bold: true)]
+            } else {
+                head(cols)
+                title = [.t(" ", p.text), .mark(.offline, p), .t(" " + name + " ", p.text, bold: true)]
+            }
+            w.box(title, [], x0: x0, x1: x1, style: style) { w in
+                for line in CellText.wrap(why, w.frame.columns, lines: 2) { w.line([.t(line, p.muted)]) }
+            }
             return
         }
         let age = c.isWithheld ? tr("last") : c.sampledAt.map { Words.span(since: $0, now: c.now, style: .compact) } ?? ""

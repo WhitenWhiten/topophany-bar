@@ -523,19 +523,22 @@ struct PillView: View {
     var plain = false
 
     var body: some View {
-        Text(pill.text)
-            .font(type.font(9.5, .bold))
-            .tracking(plain ? 0.6 : 0.45)
-            .lineLimit(1)
-            .fixedSize()
-            .foregroundStyle(pill.mark == .unknown || pill.mark == .offline ? palette.l2 : palette.color(pill.mark))
-            .padding(.horizontal, plain ? 0 : 6)
-            .padding(.vertical, 2)
-            .background {
-                if !plain {
-                    RoundedRectangle(cornerRadius: palette.style.chip(5), style: .continuous).fill(palette.tint(pill.mark))
+        // `Pill.none`: nothing was read, so there's no state to say.
+        if !pill.text.isEmpty {
+            Text(pill.text)
+                .font(type.font(9.5, .bold))
+                .tracking(plain ? 0.6 : 0.45)
+                .lineLimit(1)
+                .fixedSize()
+                .foregroundStyle(pill.mark == .unknown || pill.mark == .offline ? palette.l2 : palette.color(pill.mark))
+                .padding(.horizontal, plain ? 0 : 6)
+                .padding(.vertical, 2)
+                .background {
+                    if !plain {
+                        RoundedRectangle(cornerRadius: palette.style.chip(5), style: .continuous).fill(palette.tint(pill.mark))
+                    }
                 }
-            }
+        }
     }
 }
 

@@ -13,7 +13,9 @@ extension CellsBodies {
     }
 
     func servicePill(_ c: ServiceCardModel) -> [Seg] {
-        [.pill(" " + c.pill.text + " ", fg: c.pill.mark == .unknown || c.pill.mark == .offline ? p.muted : p.tone(c.pill.mark),
+        // `Pill.none`: nothing was read, so there's no state to say.
+        guard !c.pill.text.isEmpty else { return [] }
+        return [.pill(" " + c.pill.text + " ", fg: c.pill.mark == .unknown || c.pill.mark == .offline ? p.muted : p.tone(c.pill.mark),
                bg: p.pillBackground(c.pill.mark))]
     }
 
@@ -140,7 +142,7 @@ extension CellsWidget.Layout {
         let id = if case .service(let s) = model.kind { s } else { "" }
         return ServiceCardModel(id: id, name: id.isEmpty ? tr("no service chosen") : id, application: "",
                                 host: .init(name: "", kind: "", provider: ""), hostMark: .offline, mark: .offline,
-                                pill: .cached, isWithheld: true, isMissing: true, observers: [], checks: [],
+                                pill: .none, isWithheld: true, isMissing: true, observers: [], checks: [],
                                 placeholder: id.isEmpty ? tr("choose one in Edit Widget") : tr("not received yet"),
                                 sampledAt: nil, now: status.now)
     }

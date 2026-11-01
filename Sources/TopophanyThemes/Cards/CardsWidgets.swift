@@ -183,7 +183,7 @@ struct CardsWidget: View {
         let why = id.isEmpty ? tr("Choose one in Edit Widget") : model.status.sources != nil ? tr("Not read in direct mode") : tr("Not received yet")
         return ServiceCardModel(id: id, name: id.isEmpty ? tr("No check chosen") : id, application: "",
                                 host: .init(name: "", kind: "", provider: ""), hostMark: .offline, mark: .offline,
-                                pill: .cached, isWithheld: true, isMissing: true, observers: [], checks: [],
+                                pill: .none, isWithheld: true, isMissing: true, observers: [], checks: [],
                                 placeholder: why, sampledAt: nil, now: model.status.now)
     }
 
@@ -192,7 +192,7 @@ struct CardsWidget: View {
         let id = if case .service(let s) = model.kind { s } else { "" }
         return ServiceCardModel(id: id, name: id.isEmpty ? tr("No service chosen") : id, application: "",
                                 host: .init(name: "", kind: "", provider: ""), hostMark: .offline, mark: .offline,
-                                pill: .cached, isWithheld: true, isMissing: true, observers: [], checks: [],
+                                pill: .none, isWithheld: true, isMissing: true, observers: [], checks: [],
                                 placeholder: id.isEmpty ? tr("Choose one in Edit Widget") : tr("Not received yet"),
                                 sampledAt: nil, now: model.status.now)
     }
@@ -203,7 +203,7 @@ struct CardsWidget: View {
         let none = ServerCardModel.Meter(percent: nil, limit: nil, detail: "")
         return ServerCardModel(id: node, name: node.isEmpty ? tr("No server chosen") : node, kind: "", provider: "",
                                place: node.isEmpty ? tr("Choose one in Edit Widget") : tr("Not received yet"),
-                               mark: .offline, pill: .cached, isWithheld: true, isMissing: true, cpu: none, memory: none,
+                               mark: .offline, pill: .none, isWithheld: true, isMissing: true, cpu: none, memory: none,
                                disk: none, services: [], servicesSummary: "", observes: [], sampledAt: nil,
                                now: model.status.now)
     }

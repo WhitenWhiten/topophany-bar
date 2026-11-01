@@ -341,7 +341,8 @@ struct CellsBodies {
     }
 
     func serverPill(_ c: ServerCardModel) -> [Seg] {
-        [.pill(" " + c.pill.text + " ", fg: c.pill.mark == .unknown || c.pill.mark == .offline ? p.muted : p.tone(c.pill.mark),
+        guard !c.pill.text.isEmpty else { return [] }
+        return [.pill(" " + c.pill.text + " ", fg: c.pill.mark == .unknown || c.pill.mark == .offline ? p.muted : p.tone(c.pill.mark),
                bg: p.pillBackground(c.pill.mark))]
     }
 
