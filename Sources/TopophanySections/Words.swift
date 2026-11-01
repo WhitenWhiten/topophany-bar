@@ -158,6 +158,24 @@ public enum Words {
         "\(Int(v.rounded())) ms"
     }
 
+    /// A latency in a column's room, at most six characters: "46 ms", then
+    /// from a second "1.43 s", "14.3 s", "143 s". Seconds keep ten
+    /// milliseconds' precision below ten seconds.
+    public static func latency(_ v: Double) -> String {
+        let (number, unit) = latencyParts(v)
+        return number + " " + unit
+    }
+
+    /// `latency` as its number and unit, for a unit set apart.
+    public static func latencyParts(_ v: Double) -> (number: String, unit: String) {
+        let ms = v.rounded()
+        guard ms >= 1000 else { return ("\(Int(ms))", "ms") }
+        let s = ms / 1000
+        if s < 9.995 { return (String(format: "%.2f", s), "s") }
+        if s < 99.95 { return (String(format: "%.1f", s), "s") }
+        return ("\(Int(s.rounded()))", "s")
+    }
+
     /// A share of the day: "98.3%", and "100%" from 99.95 up.
     public static func share(_ v: Double) -> String {
         v >= 99.95 ? "100%" : String(format: "%.1f%%", v)

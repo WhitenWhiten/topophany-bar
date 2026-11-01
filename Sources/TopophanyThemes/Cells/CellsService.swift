@@ -54,7 +54,7 @@ extension CellsBodies {
             segs.append(.t(String(repeating: " ", count: marks - segs.count + 1), p.text))
             segs += [.t(CellText.pad(CellText.truncate(o.label, place), place), p.text), .t(" ", p.text),
                      .samples(o.history, cells: spark), .t(" ", p.text),
-                     .t(CellText.padLeft(o.p50.map(Words.ms) ?? "—", value), o.p50 == nil ? p.faint : p.text),
+                     .t(CellText.padLeft(o.p50.map(Words.latency) ?? "—", value), o.p50 == nil ? p.faint : p.text),
                      .t("  ", p.text), .t(CellText.padLeft(o.up24h.map(Words.share) ?? "—", share), p.muted)]
             w.line(segs)
         }
@@ -145,7 +145,7 @@ extension CellsWidget.Layout {
             var used = 0
             for o in rows where used + 2 <= room {
                 let marks: [Seg] = o.marks.prefix(2).map { .mark($0, p) }
-                let value = o.p50.map(Words.ms) ?? "—"
+                let value = o.p50.map(Words.latency) ?? "—"
                 w.line(marks + [.t(" " + CellText.truncate(o.label, n - 8 - marks.count), p.text)],
                        [.t(value, o.p50 == nil ? p.faint : p.text)])
                 w.line([.t("  ", p.text), .samples(o.history, cells: n - 2)])

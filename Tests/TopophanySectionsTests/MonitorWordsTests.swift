@@ -271,6 +271,16 @@ import TopophanyKit
         }
     }
 
+    @Test func aLatencyFitsItsColumn() {
+        let cases: [(Double, String)] = [(4, "4 ms"), (46.4, "46 ms"), (999.4, "999 ms"), (999.6, "1.00 s"), (1430, "1.43 s"),
+                                         (9994, "9.99 s"), (9996, "10.0 s"), (14_320, "14.3 s"), (99_960, "100 s"), (143_000, "143 s")]
+        for (ms, text) in cases {
+            #expect(Words.latency(ms) == text, "\(ms)")
+            #expect(Words.latency(ms).count <= 6, "\(ms)")
+        }
+        #expect(Words.latencyParts(1430) == ("1.43", "s"))
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])

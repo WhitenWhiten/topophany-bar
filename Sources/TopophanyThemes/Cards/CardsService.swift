@@ -118,13 +118,14 @@ struct ServiceRows: View {
     @ViewBuilder func latency(_ ms: Double?) -> some View {
         if let ms {
             if compact {
+                let (number, unit) = Words.latencyParts(ms)
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text(Words.number(ms)).font(t.mono(11, .semibold)).foregroundStyle(p.l1)
-                    Text(verbatim: "ms").font(t.font(9, .medium)).foregroundStyle(p.l3)
+                    Text(verbatim: number).font(t.mono(11, .semibold)).foregroundStyle(p.l1)
+                    Text(verbatim: unit).font(t.font(9, .medium)).foregroundStyle(p.l3)
                 }
                 .fixedSize()
             } else {
-                Text(Words.ms(ms)).font(t.mono(11.5, .semibold)).foregroundStyle(p.l1).fixedSize()
+                Text(Words.latency(ms)).font(t.mono(11.5, .semibold)).foregroundStyle(p.l1).fixedSize()
             }
         } else {
             Text("—").font(t.mono(11.5, .semibold)).foregroundStyle(p.l3)
