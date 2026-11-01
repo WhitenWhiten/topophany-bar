@@ -65,6 +65,64 @@ private final class RecordingEngine: Engine, Sendable {
 }
 
 extension RefreshTests {
+    @Test func clientRetryWaitsForAcquisitionAndKeepsOneEngine() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "client-retry-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SettingsStore(url: root.appending(path: "settings.json"))
+        var settings = Settings(); settings.topo.source = "client"; settings.topo.profile = "S2"; settings.sections.mac.mode = .off
+        try store.save(settings)
+        let clock = ManualClock(Timestamp.parse("2026-11-01T10:00:00Z")!)
+        let engine = RecordingEngine()
+        var starts = 0
+        let m = AppModel(store: store, clock: clock, engineFactory: { _ in starts += 1; return engine })
+        m.restartEngine()
+        defer { m.stopNow() }
+        m.handle(.capabilities(try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"sources":["client"],"client_retry":true,"collector_read":true}"#.utf8))))
+        m.handle(.status(.running(.init(pid: 0, path: "fixture", version: "test", startedAt: clock.now()))))
+        var f = try #require(FrameDecoder.frame(from: FixtureEngine.lines(.clear)[0]))
+        f.source = "client"; f.requestID = try #require(engine.all.first?.requestID); f.instance = "collector-test"; f.sequence = 1
+        f.generatedAt = clock.now(); f.publisherExpiresAt = clock.now().addingTimeInterval(30)
+        for i in f.rows.indices { f.rows[i].validUntil = clock.now().addingTimeInterval(20); f.rows[i].sampledAt = clock.now() }
+        f.collectorRead = try JSONDecoder().decode(CollectorRead.self, from: Data(#"{"state":"ok","completed_at":"2026-11-01T10:00:00Z","last_success_at":"2026-11-01T10:00:00Z"}"#.utf8))
+        m.handle(.frame(f, line: Data()))
+        m.setPanelVisible(true)
+        #expect(engine.all.count == 1, "fresh panel must not refetch")
+        m.retryCollector(); m.retryCollector()
+        for _ in 0..<10 { await Task.yield() }
+        #expect(engine.all.count == 2 && starts == 1)
+        #expect(m.applyingRequestID == nil && m.refreshingCollector)
+        let retry = try #require(engine.all.last)
+        #expect(retry.retryNonce != nil && retry.template == engine.all[0].template)
+        f.requestID = retry.requestID; f.sequence = 2
+        m.handle(.frame(f, line: Data())) // acknowledgment with old clocks
+        #expect(m.refreshingCollector)
+        clock.advance(1); f.sequence = 3
+        f.collectorRead?.completedAt = clock.now(); f.collectorRead?.lastSuccessAt = clock.now()
+        m.handle(.frame(f, line: Data()))
+        #expect(!m.refreshingCollector)
+        m.retryCollector()
+        for _ in 0..<10 { await Task.yield() }
+        #expect(engine.all.count == 2, "five-second cooldown")
+        clock.advance(5)
+        m.retryCollector()
+        for _ in 0..<10 { await Task.yield() }
+        let nextRetry = try #require(engine.all.last)
+        // A read already in flight can complete before the retry acknowledgment.
+        f.sequence = 4; f.collectorRead?.completedAt = clock.now()
+        m.handle(.frame(f, line: Data()))
+        #expect(!m.refreshingCollector)
+        f.sequence = 5; f.requestID = nextRetry.requestID
+        m.handle(.frame(f, line: Data()))
+        #expect(m.activeRequestID == nextRetry.requestID)
+        // Switching profile cannot carry last-known health across datasets.
+        m.update { $0.topo.profile = "Other" }
+        for _ in 0..<10 { await Task.yield() }
+        f.requestID = try #require(engine.all.last?.requestID); f.sequence = 6
+        for i in f.rows.indices { f.rows[i].value = .none; f.rows[i].reason = "source_unavailable" }
+        m.handle(.frame(f, line: Data()))
+        #expect(m.reading.lastKnown == nil && m.reading.lastValues.isEmpty)
+    }
+
     @Test func directRequestsAndRapidSwitchingStayInOneProcess() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "app-direct-" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

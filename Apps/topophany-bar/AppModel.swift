@@ -52,6 +52,15 @@ final class AppModel {
     private(set) var applyingRequestID: String?
     private(set) var activeRequestID: String?
     private(set) var configurationProblem: String?
+    private(set) var refreshingCollector = false
+    @ObservationIgnored private var updateTask: Task<Void, Never>?
+    @ObservationIgnored private var pendingUpdate: Request?
+    @ObservationIgnored private var applyingRequest: Request?
+    @ObservationIgnored private var activeRequest: Request?
+    @ObservationIgnored private var collectorRetryRequest: Request?
+    @ObservationIgnored private var collectorRetryAt: Date?
+    @ObservationIgnored private var collectorRetryBaseline: Date?
+    @ObservationIgnored private var lastCollectorRetryAt: Date?
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
     /// Debug injection uses only temporary roots and synthetic credentials.
     var directRoot: String? {
@@ -312,7 +321,7 @@ final class AppModel {
         locate()
         startEngine()
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.retryDirect() }
+            MainActor.assumeIsolated { self?.retryCurrentSource() }
         }
         startLocal()
         let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
@@ -329,6 +338,7 @@ final class AppModel {
         if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
         tick?.invalidate()
         engineTask?.cancel()
+        updateTask?.cancel(); pendingUpdate = nil
         locateTask?.cancel(); profilesTask?.cancel()
         (engine as? ProcessEngine)?.closeInputNow()
         localTask?.cancel()
@@ -434,13 +444,69 @@ final class AppModel {
     }
 
     private func send() {
-        guard let engine else { return }
+        guard engine != nil else { return }
         let r = currentRequest()
+        finishCollectorRetry(); collectorRetryRequest = nil
+        applyingRequest = r
         applyingRequestID = r.requestID; configurationProblem = nil
-        Task {
-            do { try await engine.update(r) }
-            catch { if applyingRequestID == r.requestID { applyingRequestID = nil; configurationProblem = (error as? SourceProblem)?.code ?? "configuration_failed"; refresh() } }
+        enqueue(r)
+    }
+
+    /// One writer, with only the latest pending configuration. An old async
+    /// update cannot overtake a newer configuration or a different engine.
+    private func enqueue(_ request: Request) {
+        guard let engine else { return }
+        pendingUpdate = request
+        guard updateTask == nil else { return }
+        updateTask = Task { [weak self] in
+            guard let self else { return }
+            defer { if self.engine === engine { updateTask = nil } }
+            while !Task.isCancelled, self.engine === engine, let r = pendingUpdate {
+                pendingUpdate = nil
+                do { try await engine.update(r) }
+                catch {
+                    guard self.engine === engine else { return }
+                    if applyingRequestID == r.requestID {
+                        applyingRequestID = nil; applyingRequest = nil
+                        configurationProblem = (error as? SourceProblem)?.code ?? "configuration_failed"
+                    }
+                    if collectorRetryRequest?.requestID == r.requestID { finishCollectorRetry() }
+                    refresh()
+                }
+            }
         }
+    }
+
+    var canRefreshCollector: Bool {
+        effectiveSettings.topo.source == "client" && capabilities?.clientRetry == true &&
+        engineStatus.isRunning && applyingRequestID == nil && !refreshingCollector && activeRequest != nil
+    }
+
+    func retryCurrentSource() {
+        if effectiveSettings.topo.source == "direct" { retryDirect() }
+        else { retryCollector() }
+    }
+
+    func retryCollector() {
+        let now = clock.now()
+        guard canRefreshCollector, var r = activeRequest,
+              lastCollectorRetryAt.map({ now.timeIntervalSince($0) >= 5 }) ?? true else { return }
+        revision += 1
+        r.requestID = "refresh-\(revision)"; r.retryNonce = UUID().uuidString
+        collectorRetryRequest = r; collectorRetryAt = now; lastCollectorRetryAt = now
+        collectorRetryBaseline = policy.frame?.collectorRead?.completedAt
+        refreshingCollector = true
+        enqueue(r)
+        refresh()
+    }
+
+    private func finishCollectorRetry() {
+        refreshingCollector = false; collectorRetryAt = nil; collectorRetryBaseline = nil
+    }
+
+    private func sameReadingScope(_ a: Request, _ b: Request) -> Bool {
+        a.source == b.source && a.profile == b.profile && a.credentials == b.credentials &&
+        a.project == b.project && a.observer == b.observer
     }
 
     #if DEBUG
@@ -454,6 +520,8 @@ final class AppModel {
 
     func restartEngine() {
         let old = engine
+        updateTask?.cancel(); updateTask = nil; pendingUpdate = nil
+        finishCollectorRetry(); collectorRetryRequest = nil; lastCollectorRetryAt = nil
         engineTask?.cancel()
         engine = nil
         if let p = old as? ProcessEngine { p.closeInputNow() }
@@ -478,7 +546,7 @@ final class AppModel {
         }
         engine = e
         let request = currentRequest()
-        activeRequestID = nil; applyingRequestID = request.requestID
+        activeRequestID = nil; applyingRequestID = request.requestID; applyingRequest = request
         let stream = e.start(request)
         engineTask = Task { [weak self] in
             for await event in stream {
@@ -492,18 +560,26 @@ final class AppModel {
         let now = clock.now()
         switch event {
         case .frame(let f, let line):
-            guard engine == nil || f.requestID == applyingRequestID || f.requestID == activeRequestID || fixture != nil else { return }
+            guard engine == nil || f.requestID == applyingRequestID || f.requestID == activeRequestID || f.requestID == collectorRetryRequest?.requestID || fixture != nil else { return }
             if f.lifecycle == .running {
                 guard f.source == effectiveSettings.topo.source,
                       f.source != "direct" || f.profile == effectiveSettings.topo.profile else { return }
                 if f.requestID == applyingRequestID {
+                    if let next = applyingRequest, let old = activeRequest, !sameReadingScope(old, next) { policy = ReaderPolicy() }
+                    activeRequest = applyingRequest; applyingRequest = nil
                     activeRequestID = f.requestID; applyingRequestID = nil; configurationProblem = nil
+                } else if f.requestID == collectorRetryRequest?.requestID {
+                    activeRequestID = f.requestID; activeRequest = collectorRetryRequest; collectorRetryRequest = nil
                 }
             } else if f.lifecycle == .error {
+                if f.requestID == collectorRetryRequest?.requestID { finishCollectorRetry(); refresh(); return }
                 guard f.requestID == applyingRequestID else { return }
-                applyingRequestID = nil; configurationProblem = f.error?.code ?? "configuration_failed"
+                applyingRequestID = nil; applyingRequest = nil; configurationProblem = f.error?.code ?? "configuration_failed"
             }
             policy.receive(f, line: line, at: now)
+            if refreshingCollector, f.lifecycle == .running, let completed = f.collectorRead?.completedAt,
+               completed <= now.addingTimeInterval(ReaderPolicy.futureTolerance),
+               collectorRetryBaseline.map({ completed > $0 }) ?? true { finishCollectorRetry() }
             if f.lifecycle == .running { lastFrameAt = now }
         case .status(let s):
             engineStatus = s
@@ -664,7 +740,10 @@ final class AppModel {
     func setPanelVisible(_ visible: Bool) {
         guard panelVisible != visible else { return }
         panelVisible = visible
-        if visible { refresh() }
+        if visible {
+            refresh()
+            if status.isBlind || !reading.isLive || reading.frame?.collectorRead?.state == "error" { retryCollector() }
+        }
     }
 
     func setSettingsVisible(_ visible: Bool) {
@@ -675,9 +754,12 @@ final class AppModel {
 
     func refresh(at time: Date? = nil) {
         let now = time ?? clock.now()
+        if let began = collectorRetryAt, now.timeIntervalSince(began) >= 10 { finishCollectorRetry() }
         let r = policy.evaluate(at: now)
         reading = r
         var status = SectionBuilder.status(r, engine: engineCondition)
+        if let profile = activeRequest?.profile, !profile.isEmpty { status.collector?.name = profile }
+        status.collector?.refreshing = refreshingCollector
         if configurationProblem != nil { status.notice = configurationProblem == "template_limit" ? SourceMessages.templateLimit : SourceMessages.configurationRejected }
         else if applyingRequestID != nil { status.notice = SourceMessages.configurationApplying }
         self.status = status

@@ -342,6 +342,7 @@ final class PanelController: NSObject {
     }
 
     private func key(_ code: UInt16, command cmd: Bool, characters: String) -> Bool {
+        if cmd && characters.lowercased() == "r" { model.retryCurrentSource(); return true }
         if map.isSelected, model.panel.map != nil, !cmd {
             let easing = MapViewport.easing(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
             switch code {
@@ -529,6 +530,15 @@ struct PanelRoot: View {
         Renderers.renderer(for: model.theme).panel(shown ?? model.panel, context: ctx)
             .id(model.settings.language)
             .environment(\.panelActions, actions)
+            .contextMenu {
+                if model.effectiveSettings.topo.source == "client", model.capabilities?.clientRetry == true {
+                    Button("Refresh", action: model.retryCollector).disabled(!model.canRefreshCollector)
+                    if let collector = model.status.collector {
+                        Divider()
+                        Text(verbatim: collector.detail)
+                    }
+                }
+            }
             .environment(\.mapViewport, map)
             .environment(\.locale, L10n.locale)
             .preferredColorScheme(window)
