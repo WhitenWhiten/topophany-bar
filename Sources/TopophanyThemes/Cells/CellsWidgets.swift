@@ -443,9 +443,16 @@ struct CellsWidget: View {
                 let p = self.p
                 let live = ctx.liveDates
                 var ages: [LiveAge] = []
+                let room = linesLeft
                 w.box(title(kind), b.serverPill(c), x0: x0, x1: x1, style: style) { w in
                     let n = w.frame.columns
+                    let top = w.y
                     b.meters(&w, c)
+                    // Where it is and its age at the foot of the box, as a
+                    // Service widget sets where it runs, so the box holds
+                    // the widget rather than leaving its foot empty.
+                    let used = Int(((w.y - top) / w.lineHeight).rounded())
+                    if room - used > 1 { w.blank(Double(room - used - 1) * w.lineHeight) }
                     let place = c.isMissing ? c.place : (c.origin?.badge ?? (c.place.isEmpty ? c.provider : c.place))
                     if let at = c.sampledAt, c.origin != nil {
                         w.line([.t(CellText.truncate(Words.asOf(at), n), p.faint)])
@@ -531,6 +538,9 @@ extension CellsWidget.Layout {
                 }
             }
             if let check, samples, used < room {
+                // The history at the foot of the box, as a Service widget
+                // sets where it runs, so the box holds the widget.
+                if room - used > 1 { w.blank(Double(room - used - 1) * w.lineHeight) }
                 let latency = size == .small ? "" : check.p50.map { check.p50Label + " " + Words.latency($0) } ?? ""
                 w.line([.samples(check.history, cells: max(4, n - CellText.width(latency) - 1))], [.t(latency, p.muted)])
             }
