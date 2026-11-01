@@ -1,0 +1,359 @@
+{
+  "machine": "Apple M6 macOS arm64",
+  "build": "Debug",
+  "synthetic": true,
+  "concurrent_verification_possible": true,
+  "scenarios": [
+    {
+      "theme": "native",
+      "language": "zh-Hans",
+      "input": "wheel",
+      "traces": [
+        {
+          "from": 498.0,
+          "to": 996.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 24.32029170449823
+        },
+        {
+          "from": 996.0,
+          "to": 1491.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 16.776249976828694
+        },
+        {
+          "from": 1491.0,
+          "to": 993.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 11.29216665867716
+        },
+        {
+          "from": 993.0,
+          "to": 495.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 14.941416680812836
+        },
+        {
+          "from": 495.0,
+          "to": 0.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 14.245083380956203
+        },
+        {
+          "from": 0.0,
+          "to": 498.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 11.308791697956622
+        },
+        {
+          "from": 498.0,
+          "to": 996.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 19.34583333786577
+        },
+        {
+          "from": 996.0,
+          "to": 1441.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 15.072000038344413
+        },
+        {
+          "from": 1441.0,
+          "to": 943.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 20.15804167604074
+        },
+        {
+          "from": 943.0,
+          "to": 445.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 9.752833342645317
+        }
+      ],
+      "counters": {
+        "cards.body": {
+          "count": 23,
+          "maximumMilliseconds": 0,
+          "milliseconds": 0
+        },
+        "panel.layout": {
+          "count": 22,
+          "maximumMilliseconds": 0.044625019654631615,
+          "milliseconds": 0.5997084081172943
+        }
+      }
+    },
+    {
+      "theme": "terminal",
+      "language": "zh-Hans",
+      "input": "wheel",
+      "traces": [
+        {
+          "from": 498.0,
+          "to": 996.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 20.350791688542813
+        },
+        {
+          "from": 996.0,
+          "to": 1125.0,
+          "updates": 1,
+          "maximumGapMilliseconds": 31.38845833018422
+        },
+        {
+          "from": 1125.0,
+          "to": 627.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 24.96445830911398
+        },
+        {
+          "from": 627.0,
+          "to": 129.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 16.197083285078406
+        },
+        {
+          "from": 129.0,
+          "to": 0.0,
+          "updates": 1,
+          "maximumGapMilliseconds": 36.72029165318236
+        },
+        {
+          "from": 0.0,
+          "to": 498.0,
+          "updates": 5,
+          "maximumGapMilliseconds": 24.559999990742654
+        },
+        {
+          "from": 498.0,
+          "to": 996.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 33.01162499701604
+        },
+        {
+          "from": 996.0,
+          "to": 1125.0,
+          "updates": 2,
+          "maximumGapMilliseconds": 30.184333387296647
+        },
+        {
+          "from": 1125.0,
+          "to": 627.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 23.2785833068192
+        },
+        {
+          "from": 627.0,
+          "to": 129.0,
+          "updates": 6,
+          "maximumGapMilliseconds": 28.54450000450015
+        }
+      ],
+      "counters": {
+        "cells.draw": {
+          "count": 76,
+          "maximumMilliseconds": 9.257374971639365,
+          "milliseconds": 168.29420812427998
+        },
+        "cells.scene": {
+          "count": 22,
+          "maximumMilliseconds": 3.13541671494022,
+          "milliseconds": 51.51966668199748
+        },
+        "cells.section.prepared": {
+          "count": 96,
+          "maximumMilliseconds": 0,
+          "milliseconds": 0
+        },
+        "cells.section.reused": {
+          "count": 102,
+          "maximumMilliseconds": 0,
+          "milliseconds": 0
+        },
+        "panel.layout": {
+          "count": 22,
+          "maximumMilliseconds": 0.03629166167229414,
+          "milliseconds": 0.5216248100623488
+        }
+      }
+    },
+    {
+      "theme": "native",
+      "language": "zh-Hans",
+      "input": "map",
+      "traces": [
+        {
+          "from": 134.5,
+          "to": 134.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 39.44620833499357
+        },
+        {
+          "from": 134.5,
+          "to": 134.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 38.34679169813171
+        },
+        {
+          "from": 134.5,
+          "to": 134.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 21.038666658569127
+        },
+        {
+          "from": 134.5,
+          "to": 184.5,
+          "updates": 4,
+          "maximumGapMilliseconds": 19.048958376515657
+        },
+        {
+          "from": 184.5,
+          "to": 184.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 20.873500034213066
+        },
+        {
+          "from": 184.5,
+          "to": 184.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 17.975708295125514
+        },
+        {
+          "from": 184.5,
+          "to": 184.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 24.749916687142104
+        },
+        {
+          "from": 184.5,
+          "to": 184.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 25.639666710048914
+        },
+        {
+          "from": 184.5,
+          "to": 184.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 19.15612496668473
+        },
+        {
+          "from": 184.5,
+          "to": 184.5,
+          "updates": 0,
+          "maximumGapMilliseconds": 19.9635416502133
+        }
+      ],
+      "counters": {
+        "cards.body": {
+          "count": 32,
+          "maximumMilliseconds": 0,
+          "milliseconds": 0
+        },
+        "map.draw": {
+          "count": 324,
+          "maximumMilliseconds": 22.45637500891462,
+          "milliseconds": 2262.377707695123
+        },
+        "panel.layout": {
+          "count": 30,
+          "maximumMilliseconds": 0.03591668792068958,
+          "milliseconds": 0.5842084065079689
+        }
+      }
+    },
+    {
+      "theme": "terminal",
+      "language": "zh-Hans",
+      "input": "map",
+      "traces": [
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 12.442125007510185
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 7.191458309534937
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 10.63833333319053
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 24.50174995465204
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 7.496416685171425
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 9.672500018496066
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 10.507333325222135
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 8.56220832793042
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 8.790416701231152
+        },
+        {
+          "from": 70.0,
+          "to": 70.0,
+          "updates": 0,
+          "maximumGapMilliseconds": 17.711125023197383
+        }
+      ],
+      "counters": {
+        "cells.draw": {
+          "count": 75,
+          "maximumMilliseconds": 3.604249970521778,
+          "milliseconds": 79.23816656693816
+        },
+        "cells.scene": {
+          "count": 30,
+          "maximumMilliseconds": 3.6720833159051836,
+          "milliseconds": 29.695291828829795
+        },
+        "cells.section.prepared": {
+          "count": 132,
+          "maximumMilliseconds": 0,
+          "milliseconds": 0
+        },
+        "cells.section.reused": {
+          "count": 138,
+          "maximumMilliseconds": 0,
+          "milliseconds": 0
+        },
+        "panel.layout": {
+          "count": 30,
+          "maximumMilliseconds": 0.0662917154841125,
+          "milliseconds": 0.5903335986658931
+        }
+      }
+    }
+  ]
+}
