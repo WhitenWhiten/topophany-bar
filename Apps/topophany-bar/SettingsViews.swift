@@ -1594,10 +1594,13 @@ struct ZoneMenu: View {
 
 struct MacSettings: View {
     @Environment(AppModel.self) private var model
+    /// The proxy engine editor's height while it's open, which the window
+    /// grows to hold, as Data sources grows for its editor.
+    @State private var sheetHeight = 0.0
 
     var body: some View {
         let mode = model.settings.sections.mac.mode
-        SettingsForm {
+        SettingsForm(minHeight: sheetHeight > 0 ? sheetHeight + 20 : 0) {
             Section("Show this Mac") {
                 HStack(spacing: 10) {
                     ModeCard(mode: .local, symbol: "cpu", title: "Local readings",
@@ -1611,7 +1614,7 @@ struct MacSettings: View {
             }
             if mode == .local { LocalReadingsSettings() }
             if mode == .server { MacServerSettings() }
-            ProxyEngineSettings()
+            ProxyEngineSettings(sheetHeight: $sheetHeight)
         }
     }
 }
@@ -1621,6 +1624,7 @@ struct MacSettings: View {
 /// panel reads from, and never changes it.
 struct ProxyEngineSettings: View {
     @Environment(AppModel.self) private var model
+    @Binding var sheetHeight: Double
     @State private var editor: LocalEditor?
     @State private var removing: LocalChecks.Entry?
     @State private var problem: String?
@@ -1649,14 +1653,15 @@ struct ProxyEngineSettings: View {
         } footer: {
             Foot("topo reads the engine’s status on this Mac and never changes its settings. Its card comes first under Pinned, whatever the panel reads from.")
         }
-        .sheet(item: $editor) { session in
-            Localized(content: LocalEditorForm(editor: session, finish: { session.close(); editor = nil })).environment(model)
+        .sheet(item: $editor, onDismiss: { sheetHeight = 0 }) { session in
+            Localized(content: LocalEditorForm(editor: session, finish: { session.close(); editor = nil },
+                                               onHeight: { sheetHeight = $0 })).environment(model)
         }
         .confirmationDialog("Stop watching this engine?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
             Button("Stop Watching", role: .destructive) { remove() }
             Button("Cancel", role: .cancel) { removing = nil }
         } message: {
-            Text("topo forgets its address and password. The proxy app is not changed.")
+            Text("topo forgets its address and secret. The proxy app is not changed.")
         }
         .onDisappear { operation?.cancel(); editor?.close() }
     }
@@ -1720,50 +1725,22 @@ struct ProxyEngineSettings: View {
 struct LocalEditorForm: View {
     @Bindable var editor: LocalEditor
     var finish: () -> Void
+    var onHeight: (Double) -> Void = { _ in }
+    @State private var height = 0.0
 
     var body: some View {
         VStack(spacing: 0) {
-            Form {
-                Section(editor.isNew ? "New proxy engine" : "Proxy engine") {
-                    TextField("Name", text: $editor.check.name, prompt: Text("Proxy engine"))
-                    TextField(text: $editor.check.url, prompt: Text(verbatim: LocalCheck.defaultURL)) {
-                        RowLabel("Address", "The external controller in the proxy app’s settings")
-                    }
-                    Picker("Password", selection: $editor.secret) {
-                        ForEach(editor.secrets, id: \.self) { s in Text(secretName(s)).tag(s) }
-                    }
-                    if editor.secret == .token {
-                        SecureField(text: $editor.token) { RowLabel("Secret", "The controller secret, also in the proxy app’s settings") }
-                    }
-                }
-                .disabled(editor.busy)
-                Section {
-                    LabeledContent {
-                        Button("Test") { editor.inspect() }.disabled(editor.busy || editor.check.url.isEmpty)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Connection")
-                            connection.font(.callout).fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                }
-                if let result = editor.inspection { expectations(result) }
-                Section {
-                    DisclosureGroup("Advanced") {
-                        SecondsField(title: "Read every", value: $editor.check.intervalSeconds, range: 5...3600)
-                        SecondsField(title: "Time out after", value: $editor.check.timeoutSeconds, range: 1...30)
-                    }
-                }
-                .disabled(editor.busy)
-                if editor.needsReview {
-                    Section {
-                        Text("It may have been saved anyway. Save again to keep this form.").font(.callout).foregroundStyle(.secondary)
-                        Button("Continue") { editor.acknowledgeReview() }
-                    }
-                }
+            // Sized to what it shows, as the source editor is: short until a
+            // test adds what to watch, scrolling past 600 pt.
+            ScrollView {
+                form
+                    .formStyle(.grouped)
+                    .scrollDisabled(true)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
             }
-            .formStyle(.grouped)
-            .frame(minHeight: 300, idealHeight: 460)
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(height: min(max(height, 120), 600))
             Divider()
             HStack {
                 if editor.busy { ProgressView().controlSize(.small) }
@@ -1774,6 +1751,7 @@ struct LocalEditorForm: View {
             .padding(16)
         }
         .frame(width: 480)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight($0) }
         .onChange(of: editor.check.url) { editor.changed() }
         .onChange(of: editor.secret) { editor.token = ""; editor.changed() }
         .onChange(of: editor.token) { editor.changed() }
@@ -1785,11 +1763,55 @@ struct LocalEditorForm: View {
         .onDisappear { editor.close() }
     }
 
+    var form: some View {
+        Form {
+            Section(editor.isNew ? "New proxy engine" : "Proxy engine") {
+                TextField("Name", text: $editor.check.name, prompt: Text("Proxy engine"))
+                TextField(text: $editor.check.url, prompt: Text(verbatim: LocalCheck.defaultURL)) {
+                    RowLabel("Address", "The external controller in the proxy app’s settings")
+                }
+                // As the source editor asks how to sign in, then for that.
+                Picker("Sign in with", selection: $editor.secret) {
+                    ForEach(editor.secrets, id: \.self) { s in Text(secretName(s)).tag(s) }
+                }
+                if editor.secret == .token {
+                    SecureField(text: $editor.token) { RowLabel("Secret", "The controller secret, also in the proxy app’s settings") }
+                }
+            }
+            .disabled(editor.busy)
+            Section {
+                LabeledContent {
+                    Button("Test") { editor.inspect() }.disabled(editor.busy || editor.check.url.isEmpty)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Connection")
+                        connection.font(.callout).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            if let result = editor.inspection { expectations(result) }
+            Section {
+                DisclosureGroup("Advanced") {
+                    SecondsField(title: "Read every", value: $editor.check.intervalSeconds, range: 5...3600)
+                    SecondsField(title: "Time out after", value: $editor.check.timeoutSeconds, range: 1...30)
+                }
+            }
+            .disabled(editor.busy)
+            if editor.needsReview {
+                Section {
+                    Text("It may have been saved anyway. Save again to keep this form.").font(.callout).foregroundStyle(.secondary)
+                    Button("Continue") { editor.acknowledgeReview() }
+                }
+            }
+        }
+    }
+
+    /// mihomo's word for it, as the proxy app's settings show it.
     func secretName(_ s: LocalEditor.Secret) -> LocalizedStringKey {
         switch s {
-        case .saved: "Saved password"
-        case .token: "Enter the secret"
-        case .none: "None"
+        case .saved: "Saved secret"
+        case .token: "Secret"
+        case .none: "No secret"
         }
     }
 

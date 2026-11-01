@@ -6825,18 +6825,18 @@
         }
       }
     },
-    "topo forgets its address and password. The proxy app is not changed.": {
+    "topo forgets its address and secret. The proxy app is not changed.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "topo はアドレスとパスワードを削除します。プロキシアプリは変更されません。"
+            "value": "topo はアドレスとシークレットを削除します。プロキシアプリは変更されません。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "topo 会删除它的地址和密码。代理应用不会被更改。"
+            "value": "topo 会删除它的地址和密钥。代理应用不会被更改。"
           }
         }
       }
@@ -6969,34 +6969,34 @@
         }
       }
     },
-    "Saved password": {
+    "Saved secret": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "保存済みのパスワード"
+            "value": "保存済みのシークレット"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已保存的密码"
+            "value": "已保存的密钥"
           }
         }
       }
     },
-    "Enter the secret": {
+    "No secret": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "シークレットを入力"
+            "value": "シークレットなし"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "输入密钥"
+            "value": "无密钥"
           }
         }
       }
