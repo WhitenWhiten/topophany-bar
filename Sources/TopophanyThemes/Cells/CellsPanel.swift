@@ -844,10 +844,17 @@ private struct CellsPanelContent: View, Equatable {
         // first, then the project.
         let lead: [Seg] = [.glyph(.logo, p.accent), .t(" TOPOPHANY", p.accent, bold: true), .t(" ╱ ", p.faint)]
         let headRoom = columns - lead.reduce(0) { $0 + $1.width } - live.reduce(0) { $0 + $1.width } - 2
-        let project = CellText.truncate(ch.project, max(1, headRoom))
-        let viewRoom = headRoom - CellText.width(project) - 3
-        var left = lead + [.t(project, p.text, bold: true)]
-        if viewRoom >= 4, !ch.view.isEmpty { left.append(.t(" · " + CellText.truncate(ch.view, viewRoom), p.faint)) }
+        var left = lead
+        if ch.project.isEmpty {
+            // Before a profile names its project, the view takes its place
+            // rather than following an empty name: "TOPOPHANY ╱ all observers".
+            if !ch.view.isEmpty { left.append(.t(CellText.truncate(ch.view, max(1, headRoom)), p.faint)) }
+        } else {
+            let project = CellText.truncate(ch.project, max(1, headRoom))
+            let viewRoom = headRoom - CellText.width(project) - 3
+            left.append(.t(project, p.text, bold: true))
+            if viewRoom >= 4, !ch.view.isEmpty { left.append(.t(" · " + CellText.truncate(ch.view, viewRoom), p.faint)) }
+        }
         w.line(left, live)
         w.y = 28
 
