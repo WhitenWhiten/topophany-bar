@@ -492,6 +492,16 @@ policies, failed response assertions, and the monitor's own read errors
 metrics). A monitor error stays the monitor's, never the service's. Unknown codes
 fall back to the outcome's words, and the expanded card keeps the stage and code.
 
+A mihomo card's expanded rows read its facts in plain words: mode and TUN against
+their expectations, the core's last delay with the age `core_last_checked` gives
+it, the reference's publication age, and one row per provider in
+`provider_comparison` (`name=status`, optionally followed by counts in
+parentheses). A match says so. A mismatch names missing and extra counts, a
+changed order, or that the provider isn't loaded, then the loaded members from
+`provider.<name>`. Settling says how many are loaded and when the core last
+loaded it. Closed words from credential-bearing controllers say only whether
+it differs. A partial entry cut at the fact budget is dropped.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report

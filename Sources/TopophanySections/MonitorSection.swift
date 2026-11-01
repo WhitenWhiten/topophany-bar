@@ -7,7 +7,14 @@ public struct MonitorCardModel: Sendable, Hashable {
     public struct Field: Sendable, Hashable, Identifiable {
         public var label: String
         public var value: String
-        public var id: String { label }
+        /// Unique within a check: a provider may share a label's name.
+        public var key: String
+        public var id: String { key }
+        public init(label: String, value: String, key: String? = nil) {
+            self.label = label
+            self.value = value
+            self.key = key ?? label
+        }
     }
     public struct Check: Sendable, Hashable, Identifiable {
         public var id: String
@@ -135,17 +142,105 @@ public enum MonitorWords {
         return .init(label: tr("Policy"), value: value)
     }
 
-    public static func fields(_ c: ServiceCard.Check) -> [MonitorCardModel.Field] {
+    /// The expanded card's readings, once per data update: ages are as of
+    /// `now`, the reading's own clock.
+    public static func fields(_ c: ServiceCard.Check, now: Date) -> [MonitorCardModel.Field] {
         guard let d = c.diagnostic else { return [] }
         var out: [MonitorCardModel.Field] = policyField(d).map { [$0] } ?? []
-        guard c.kind == "mihomo" else { return out }
-        for (key, label) in [("mode", tr("Mode")), ("tun_enabled", "TUN"), ("provider_comparison", tr("Providers")), ("core_delay_ms", tr("Core last delay"))] {
-            guard let value = d.facts[key], !value.isEmpty else { continue }
-            var text = key == "core_delay_ms" ? value + " ms" : value
-            if let expected = d.expected[key], expected != value { text = Words.join([text, tr("Expected \(expected)")]) }
-            out.append(.init(label: label, value: text))
+        switch c.kind {
+        case "mihomo": out += mihomoFields(d, now: now)
+        default: break
         }
         return out
+    }
+
+    static func onOff(_ value: String) -> String {
+        switch value {
+        case "true": tr("On")
+        case "false": tr("Off")
+        default: value
+        }
+    }
+
+    /// `text`, and what was expected where that differs.
+    static func expecting(_ d: CheckDiagnostic, _ key: String, _ text: String, shown: (String) -> String = { $0 }) -> String {
+        guard let e = d.expected[key], e != d.facts[key] else { return text }
+        return Words.join([text, tr("Expected \(shown(e))")])
+    }
+
+    static func mihomoFields(_ d: CheckDiagnostic, now: Date) -> [MonitorCardModel.Field] {
+        let f = d.facts
+        var out: [MonitorCardModel.Field] = []
+        if let mode = f["mode"], !mode.isEmpty { out.append(.init(label: tr("Mode"), value: expecting(d, "mode", mode))) }
+        if let tun = f["tun_enabled"], !tun.isEmpty { out.append(.init(label: "TUN", value: expecting(d, "tun_enabled", onOff(tun), shown: onOff))) }
+        if let delay = f["core_delay_ms"], !delay.isEmpty {
+            // The core's own last test, as old as it says: never fresh by implication.
+            let checked = f["core_last_checked"].flatMap(Timestamp.parse)
+            out.append(.init(label: tr("Core last delay"), value: Words.join([delay + " ms", checked.map { Words.ago($0, now: now) } ?? ""])))
+        }
+        for p in ProviderComparison.parse(f["provider_comparison"] ?? "") {
+            out.append(.init(label: p.name, value: p.words(members: f["provider." + p.name],
+                                                           loadedAt: f["provider_updated_at." + p.name].flatMap(Timestamp.parse), now: now),
+                             key: "provider." + p.name))
+        }
+        if let published = f["provider_reference_published_at"].flatMap(Timestamp.parse) {
+            out.append(.init(label: tr("Reference published"), value: Words.ago(published, now: now)))
+        }
+        return out
+    }
+
+    /// One provider in mihomo's `provider_comparison`: `name=status`, with
+    /// `(expected:4 loaded:4 missing:0 extra:0 order_changed:true present:true)`
+    /// from a controller that sends its details. A summary cut at topo's fact
+    /// budget loses its last, partial entry rather than misreading it.
+    struct ProviderComparison: Equatable {
+        var name: String
+        var status: String
+        var details: [String: String]
+
+        static let statuses: Set<String> = ["match", "mismatch", "settling", "unverified"]
+
+        static func parse(_ summary: String) -> [ProviderComparison] {
+            summary.components(separatedBy: "; ").compactMap { entry in
+                var head = Substring(entry)
+                var details: [String: String] = [:]
+                if entry.hasSuffix(")"), let open = entry.lastIndex(of: "(") {
+                    head = entry[..<open]
+                    for pair in entry[entry.index(after: open)..<entry.index(before: entry.endIndex)].split(separator: " ") {
+                        let kv = pair.split(separator: ":", maxSplits: 1)
+                        if kv.count == 2 { details[String(kv[0])] = String(kv[1]) }
+                    }
+                }
+                guard let eq = head.lastIndex(of: "=") else { return nil }
+                let name = String(head[..<eq]), status = String(head[head.index(after: eq)...])
+                guard !name.isEmpty, statuses.contains(status) else { return nil }
+                return ProviderComparison(name: name, status: status, details: details)
+            }
+        }
+
+        func count(_ key: String) -> Int? { details[key].flatMap(Int.init) }
+
+        func words(members: String?, loadedAt: Date?, now: Date) -> String {
+            switch status {
+            case "match": return tr("Matches")
+            case "settling":
+                var parts = [tr("Loading the published list")]
+                if let loaded = count("loaded"), let expected = count("expected") { parts.append(tr("\(loaded) of \(expected) loaded")) }
+                if let loadedAt { parts.append(tr("last loaded \(Words.ago(loadedAt, now: now))")) }
+                return Words.join(parts)
+            case "unverified": return tr("Not verified; the reference changed")
+            default:
+                if details["present"] == "false" { return tr("Not loaded") }
+                var parts: [String] = []
+                if let n = count("missing"), n > 0 { parts.append(tr("\(n) missing")) }
+                if let n = count("extra"), n > 0 { parts.append(tr("\(n) extra")) }
+                if details["order_changed"] == "true" { parts.append(tr("Order changed")) }
+                if parts.isEmpty { parts.append(tr("Differs")) }
+                // What the core loaded, in its order: names topo already showed.
+                if let members, !members.isEmpty { parts.append(members.replacingOccurrences(of: ",", with: ", ")) }
+                return Words.join(parts)
+            }
+        }
     }
 
     /// At most two relevant readings; missing values are never interpreted as zero.
@@ -154,7 +249,8 @@ public enum MonitorWords {
         let f = d.facts
         if c.kind == "mihomo" {
             if let chain = f["reported_chain"], !chain.isEmpty { return tr("Reported route: \(chain.replacingOccurrences(of: " -> ", with: " → ").replacingOccurrences(of: "withheld_secret_request", with: tr("withheld")))") }
-            return Words.join([f["mode"] ?? "", f["tun_enabled"].map { "TUN " + $0 } ?? ""])
+            let tun = f["tun_enabled"].map { $0 == "true" ? tr("TUN on") : $0 == "false" ? tr("TUN off") : "" } ?? ""
+            return Words.join([f["mode"] ?? "", tun])
         }
         if let n = f["ready_connections"] ?? f["tunnel_connections"] {
             let count = d.expected["connections"].map { n + "/" + $0 } ?? n
@@ -226,7 +322,7 @@ extension SectionBuilder {
                 return .init(id: k.id, name: k.name, source: Words.join([c.observer.name, MonitorWords.evidence(k.diagnostic?.evidence ?? "")]),
                              mark: current ? Mark(k.health) : .offline, summary: MonitorWords.summary(k), reading: MonitorWords.reading(k),
                              code: k.diagnostic?.code.isEmpty == false ? Words.join([k.diagnostic?.stage ?? "", k.diagnostic?.code ?? ""]) : "", history: history,
-                             p50: k.latency?.p50, p50Label: k.diagnostic?.evidence == "reported" ? tr("Read p50") : "p50", fields: MonitorWords.fields(k), up24h: k.up24h)
+                             p50: k.latency?.p50, p50Label: k.diagnostic?.evidence == "reported" ? tr("Read p50") : "p50", fields: MonitorWords.fields(k, now: r.now), up24h: k.up24h)
             }
             let mark: Mark = missing ? .unknown : !current ? .offline : affected && health == .up ? .degraded : Mark(health)
             let pill: Pill = missing ? .health(.unknown) : !current ? .cached

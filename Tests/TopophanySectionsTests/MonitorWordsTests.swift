@@ -122,6 +122,47 @@ import TopophanyKit
         }
     }
 
+    @Test func mihomoProvidersReadInPlainWords() throws {
+        try L10n.with("en") {
+            let drift = try F.monitor(Self.mihomo("drift", outcome: "policy", code: "provider_membership_mismatch", facts: [
+                "mode": "rule", "tun_enabled": "false", "core_delay_ms": "41", "core_last_checked": "2026-11-01T07:31:46Z",
+                "provider.airport": "HK-02,JP-01,SG-01,US-01",
+                "provider_comparison": "airport=mismatch(expected:4 loaded:4 missing:0 extra:0 order_changed:true present:true); backup=match(expected:2 loaded:2 missing:0 extra:0 order_changed:false present:true); gone=mismatch(expected:2 loaded:0 missing:2 extra:0 order_changed:false present:false); trim=mismatch(expected:3 loaded:2 missing:1 extra:1 order_changed:false present:true); cut=mismatch(expected:4 loa",
+            ], expected: ["mode": "rule", "tun_enabled": "true"]))
+            #expect(F.field(drift, "Mode") == "rule")
+            #expect(F.field(drift, "TUN") == "Off · Expected On")
+            #expect(F.field(drift, "Core last delay") == "41 ms · 6 min ago")
+            #expect(F.field(drift, "airport") == "Order changed · HK-02, JP-01, SG-01, US-01")
+            #expect(F.field(drift, "backup") == "Matches")
+            #expect(F.field(drift, "gone") == "Not loaded")
+            #expect(F.field(drift, "trim") == "1 missing · 1 extra")
+            // The cut-off entry is dropped, not misread; the raw summary is gone.
+            #expect(F.field(drift, "cut") == nil && F.field(drift, "Providers") == nil)
+            #expect(drift.reading == "rule · TUN off")
+            // A credential-bearing controller sends closed words only.
+            let private_ = try F.monitor(Self.mihomo("private", outcome: "policy", code: "provider_membership_mismatch",
+                                                      facts: ["provider_comparison": "airport=mismatch; backup=match"]))
+            #expect(F.field(private_, "airport") == "Differs")
+        }
+    }
+
+    @Test func aLoadingReferenceSaysHowFarAlongItIs() throws {
+        try L10n.with("en") {
+            let loading = try F.monitor(Self.mihomo("loading", outcome: "policy", code: "provider_membership_mismatch", facts: [
+                "provider_reference_settling": "true", "provider_reference_published_at": "2026-11-01T07:35:46Z",
+                "provider_updated_at.edge-local": "2026-11-01T07:20:46Z",
+                "provider_comparison": "edge-local=settling(expected:3 loaded:2 missing:1 extra:0 order_changed:false present:true); fixed=unverified",
+            ]))
+            #expect(loading.summary == "Provider update loading")
+            #expect(F.field(loading, "edge-local") == "Loading the published list · 2 of 3 loaded · last loaded 17 min ago")
+            #expect(F.field(loading, "fixed") == "Not verified; the reference changed")
+            #expect(F.field(loading, "Reference published") == "2 min ago")
+            // A provider named like a field keeps its own row.
+            let named = try F.monitor(Self.mihomo("named", facts: ["mode": "rule", "provider_comparison": "Mode=match"]))
+            #expect(named.checks.first?.fields.filter { $0.label == "Mode" }.count == 2)
+        }
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])
