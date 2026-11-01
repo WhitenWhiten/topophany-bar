@@ -320,7 +320,10 @@ extension SectionBuilder {
                 .init(id: d.id, name: d.name, mark: d.affected == true && d.health == .up ? .degraded : Mark(d.health))
             },
             usedBy: c.usedBy.count, reason: c.reason, sampledAt: checks.compactMap(\.sampledAt).max(), now: now)
-        if !withheld, let check = checks.first(where: { $0.diagnostic?.outcome == "fail" || $0.diagnostic?.outcome == "policy" || $0.diagnostic?.outcome == "error" }) {
+        // A check the edge answered in the app's place passes without
+        // reaching it: say so rather than "all passing".
+        if !withheld, let check = checks.first(where: { $0.diagnostic?.outcome == "fail" || $0.diagnostic?.outcome == "policy" || $0.diagnostic?.outcome == "error" })
+            ?? checks.first(where: { $0.diagnostic.flatMap(MonitorWords.edgeStandIn) != nil }) {
             card.diagnosticSummary = MonitorWords.summary(check)
         }
         return withheld ? card.withheld(at: now) : card

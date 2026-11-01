@@ -41,8 +41,20 @@ public enum MonitorWords {
         }
     }
 
+    /// What answered in the application's place, when the edge in front
+    /// did: a challenge page, or Cloudflare Access asking for a login. Either
+    /// way the origin was not asked, whatever the check's outcome says.
+    public static func edgeStandIn(_ d: CheckDiagnostic) -> String? {
+        if d.facts["edge_mitigation"] == "challenge" { return tr("Edge served a challenge; app not reached") }
+        if d.facts["edge_access"] == "login_redirect" { return tr("Access asked for a login; app not reached") }
+        return nil
+    }
+
     public static func summary(_ c: ServiceCard.Check) -> String {
         guard let d = c.diagnostic else { return tr("Not known now") }
+        // A passing or failing request the edge answered says nothing of the
+        // app; a policy or monitor error keeps its own words.
+        if d.outcome == "ok" || d.outcome == "fail", let standIn = edgeStandIn(d) { return standIn }
         switch d.code {
         case "tunnel_not_ready": return tr("No tunnel session")
         case "connections_below_expected": return tr("Fewer connections than expected")

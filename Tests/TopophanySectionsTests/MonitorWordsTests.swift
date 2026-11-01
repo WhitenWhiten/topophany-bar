@@ -48,4 +48,40 @@ import TopophanyKit
             #expect(F.field(tunnel, "Policy") == "Not verified")
         }
     }
+
+    static func edge(_ id: String, outcome: String = "ok", code: String = "", _ facts: [String: String]) -> [String: Any] {
+        F.check(id, health: outcome == "ok" ? "up" : outcome == "fail" ? "down" : "degraded", diagnostic: [
+            "outcome": outcome, "evidence": "measured", "stage": "http", "code": code,
+            "facts": facts.merging(["edge_provider": "cloudflare", "response_proof": "verified_https"]) { a, _ in a },
+        ], colo: facts["edge_pop"] ?? "")
+    }
+
+    @Test func theEdgeAnsweringInTheAppsPlaceIsNotAPass() throws {
+        try L10n.with("en") {
+            let access = try F.monitor(Self.edge("grafana", ["edge_pop": "NRT", "edge_access": "login_redirect"]))
+            #expect(access.summary == "Access asked for a login; app not reached")
+            // A status assertion failing on the redirect says the same.
+            let failed = try F.monitor(Self.edge("grafana-200", outcome: "fail", code: "unexpected_status", ["edge_access": "login_redirect"]))
+            #expect(failed.summary == "Access asked for a login; app not reached")
+            // A challenge is named first, as topo's engine does.
+            let both = try F.monitor(Self.edge("both", ["edge_mitigation": "challenge", "edge_access": "login_redirect"]))
+            #expect(both.summary == "Edge served a challenge; app not reached")
+            // A policy keeps its own words; the pill stays topo's.
+            let policy = try F.monitor(Self.edge("pops", outcome: "policy", code: "pop_mismatch", ["edge_access": "login_redirect"]))
+            #expect(policy.summary != "Access asked for a login; app not reached")
+            let card = try F.card(Self.edge("pill", ["edge_access": "login_redirect"]))
+            #expect(card.mark == .up)
+        }
+    }
+
+    @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
+        try L10n.with("en") {
+            let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])
+            let access = Self.edge("t-site", ["edge_pop": "NRT", "edge_access": "login_redirect"])
+            let card = try F.serviceCard(F.service("site", seenFrom: [("MacBook", [plain]), ("Tokyo", [access])]))
+            #expect(card.diagnosticSummary == "Access asked for a login; app not reached")
+            let calm = try F.serviceCard(F.service("calm", seenFrom: [("MacBook", [plain])]))
+            #expect(calm.diagnosticSummary.isEmpty)
+        }
+    }
 }

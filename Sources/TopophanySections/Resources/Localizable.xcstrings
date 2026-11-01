@@ -6043,6 +6043,38 @@
           }
         }
       }
+    },
+    "Edge served a challenge; app not reached": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エッジがチャレンジを返した（アプリには未到達）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "边缘返回了质询页面；未到达应用"
+          }
+        }
+      }
+    },
+    "Access asked for a login; app not reached": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access がログインを要求（アプリには未到達）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access 要求登录；未到达应用"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

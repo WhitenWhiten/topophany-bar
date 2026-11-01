@@ -64,4 +64,30 @@ enum MonitorFixtures {
     static func field(_ m: MonitorCardModel, _ label: String) -> String? {
         m.checks.first?.fields.first { $0.label == label }?.value
     }
+
+    /// A service value seen from each observer by its checks; `extra`
+    /// overrides or adds top-level fields.
+    static func service(_ id: String, health: String = "up", seenFrom: [(label: String, checks: [[String: Any]])],
+                        extra: [String: Any] = [:]) -> [String: Any] {
+        var v: [String: Any] = [
+            "id": id, "name": "Example Site", "application": ["id": "web", "name": "Website"], "environment": "", "runtime": "",
+            "health": health, "note": "", "evidence": "measured", "reason": "", "monitored": true, "elsewhere": false,
+            "host": ["id": "vps", "name": "Tokyo VPS", "kind": "host", "provider": "Vultr", "where": "Tokyo", "health": "up"],
+            "seen_from": seenFrom.map { o -> [String: Any] in
+                let observer = o.checks.first?["observer"] ?? ["id": "obs", "name": o.label]
+                return ["observer": observer, "label": o.label, "health": o.checks.first?["health"] ?? "up", "checks": o.checks]
+            },
+            "endpoints": [["id": "www", "network": "public", "address": "https://www.example.com/", "health": health,
+                           "via": [["id": "cf", "name": "Cloudflare", "kind": "edge", "provider": "Cloudflare"]]]],
+            "answered_from": NSNull(), "depends_on": [] as [Any], "used_by": [] as [Any], "runbook": "", "memo": "",
+        ]
+        v.merge(extra) { _, new in new }
+        return v
+    }
+
+    static func serviceCard(_ value: [String: Any]) throws -> ServiceCardModel {
+        let id = try #require(value["id"] as? String)
+        let r = try reading([row("service.card", select: ["service": id], health: value["health"] as? String ?? "up", value)])
+        return try #require(SectionBuilder.services(r, ids: [id]).first)
+    }
 }

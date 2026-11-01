@@ -479,6 +479,12 @@ A mihomo runtime read is said to match its policy only when one is declared:
 `policy` other than `not_configured`, or, from a `topo` without the field, an
 expectation or a provider comparison. Otherwise it says no policy is declared.
 
+When an HTTP check's facts say the edge answered in the application's place
+(`edge_mitigation: "challenge"`, then `edge_access: "login_redirect"`), an `ok`
+or `fail` card says so instead of passing or failing: the origin was not asked,
+as Topophany's engine words it. A service card with no failing, policy or error
+check says the same instead of "all passing". Health and pills remain `topo`'s.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report
