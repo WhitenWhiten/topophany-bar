@@ -305,13 +305,14 @@ struct SignInForm: View {
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 7) {
                 GridRow {
                     Text("Server").foregroundStyle(.secondary).gridColumnAlignment(.trailing)
-                    TextField("", text: $server, prompt: Text(verbatim: "https://collector.example.com"))
+                    TextField("Server", text: $server, prompt: Text(verbatim: "https://collector.example.com"))
                 }
-                GridRow { Text("Project").foregroundStyle(.secondary); TextField("", text: $project, prompt: Text(verbatim: "homelab")) }
-                GridRow { Text("Profile").foregroundStyle(.secondary); TextField("", text: $profile) }
-                GridRow { Text("Viewer token").foregroundStyle(.secondary); SecureField("", text: $token) }
+                GridRow { Text("Project").foregroundStyle(.secondary); TextField("Project", text: $project, prompt: Text(verbatim: "homelab")) }
+                GridRow { Text("Profile").foregroundStyle(.secondary); TextField("Profile", text: $profile, prompt: Text(verbatim: "")) }
+                GridRow { Text("Viewer token").foregroundStyle(.secondary); SecureField("Viewer token", text: $token, prompt: Text(verbatim: "")) }
             }
-            .textFieldStyle(.roundedBorder).disabled(busy)
+            // The text beside each field shows its name; VoiceOver reads it.
+            .textFieldStyle(.roundedBorder).labelsHidden().disabled(busy)
             DisclosureGroup("Advanced") {
                 TextField("Trusted CA file (optional)", text: $caFile)
                 Toggle("Allow unencrypted HTTP for this connection", isOn: $allowInsecure)
@@ -976,19 +977,40 @@ struct SectionLabel: View {
         }
     }
 
-    @ViewBuilder var label: some View {
+    var label: some View { RowLabel(id.title, subtitle) }
+
+    var subtitle: LocalizedStringKey {
         switch id {
-        case .status: RowLabel("Status", "The verdict, checks by health, observers live")
-        case .seen: RowLabel("Seen from", "Which observers see a problem, and that the others don’t")
-        case .attention: RowLabel("Needs attention", "Open incidents first, then anything else that needs a look")
-        case .applications: RowLabel("Applications", "Services folded into the applications you declare")
-        case .services: RowLabel("Pinned", "Services, checks and links you follow")
-        case .fleet: RowLabel("Fleet", "Every server, edge and platform topo lists, by who runs it")
-        case .servers: RowLabel("Servers", "The Servers-tab card of each server you pin")
-        case .zones: RowLabel("Time zones", "The time where your servers are, and each one’s health")
-        case .map where model.mapGraph: RowLabel("Map", "Where your servers are, and the lines between them")
-        case .map: RowLabel("Map", "Your servers placed by name, until this topo sends its map")
-        case .mac: RowLabel("This Mac", "Set up under This Mac")
+        case .status: "The verdict, checks by health, observers live"
+        case .seen: "Which observers see a problem, and that the others don’t"
+        case .attention: "Open incidents first, then anything else that needs a look"
+        case .applications: "Services folded into the applications you declare"
+        case .services: "Services, checks and links you follow"
+        case .fleet: "Every server, edge and platform topo lists, by who runs it"
+        case .servers: "The Servers-tab card of each server you pin"
+        case .zones: "The time where your servers are, and each one’s health"
+        case .map where model.mapGraph: "Where your servers are, and the lines between them"
+        case .map: "Your servers placed by name, until this topo sends its map"
+        case .mac: "Set up under This Mac"
+        }
+    }
+}
+
+extension SectionID {
+    /// The section's name, as Sections lists it; VoiceOver names the
+    /// section's switch and menu by it too.
+    var title: LocalizedStringKey {
+        switch self {
+        case .status: "Status"
+        case .seen: "Seen from"
+        case .attention: "Needs attention"
+        case .applications: "Applications"
+        case .services: "Pinned"
+        case .fleet: "Fleet"
+        case .servers: "Servers"
+        case .zones: "Time zones"
+        case .map: "Map"
+        case .mac: "This Mac"
         }
     }
 }
@@ -1006,8 +1028,8 @@ struct SectionControls: View {
         } else {
             HStack(spacing: 10) {
                 controls
-                Toggle("", isOn: Binding(get: { model.settings.sections.isEnabled(id) },
-                                         set: { on in model.update { $0.sections.setEnabled(id, on) } }))
+                Toggle(id.title, isOn: Binding(get: { model.settings.sections.isEnabled(id) },
+                                               set: { on in model.update { $0.sections.setEnabled(id, on) } }))
                     .toggleStyle(.switch).labelsHidden()
             }
         }
@@ -1016,7 +1038,7 @@ struct SectionControls: View {
     @ViewBuilder var controls: some View {
         switch id {
         case .attention:
-            Picker("", selection: model.binding(\.sections.attentionLimit)) {
+            Picker(id.title, selection: model.binding(\.sections.attentionLimit)) {
                 Text("3 rows").tag(3)
                 Text("5 rows").tag(5)
             }
@@ -1042,7 +1064,7 @@ struct MapFramePicker: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        Picker("", selection: Binding(get: { model.settings.sections.mapFrame },
+        Picker(SectionID.map.title, selection: Binding(get: { model.settings.sections.mapFrame },
                                       set: { frame in model.update { $0.sections.mapFrame = frame } })) {
             // The map card's and the Map widget's words for its framings.
             Text("Every place").tag(Sections.MapFrame.fit)
@@ -1906,7 +1928,7 @@ struct LocalReadingsSettings: View {
             reading(.cpu, "CPU", "Total, system and user, with the last \(historyMinutes) min")
             reading(.memory, "Memory", "Pressure, app, wired and compressed, as Activity Monitor counts them") {}
             reading(.storage, "Storage", "Used and total space") {
-                Picker("", selection: model.binding(\.sections.mac.volume)) {
+                Picker("Storage", selection: model.binding(\.sections.mac.volume)) {
                     Text("Startup disk").tag("")
                     ForEach(LocalReadingsMonitor.volumes(), id: \.path) { v in
                         if v.path != "/" { Text(verbatim: v.name).tag(v.path) }
@@ -1915,7 +1937,7 @@ struct LocalReadingsSettings: View {
                 .labelsHidden().fixedSize()
             }
             reading(.network, "Network", "Throughput and address") {
-                Picker("", selection: model.binding(\.sections.mac.interface)) {
+                Picker("Network", selection: model.binding(\.sections.mac.interface)) {
                     Text(automatic).tag("")
                     ForEach(LocalReadingsMonitor.interfaces(), id: \.name) { i in Text(verbatim: i.displayName).tag(i.name) }
                 }
