@@ -229,6 +229,18 @@ public enum Words {
         return (i == 0 ? String(format: "%.0f", v) : number(v)) + " " + units[i]
     }
 
+    /// Decimal byte counts, as transfer totals: "340 MB", "1.2 GB".
+    public static func bytes(_ count: Double) -> String {
+        let units = ["B", "kB", "MB", "GB", "TB", "PB"]
+        var v = max(0, count)
+        var i = 0
+        while i < units.count - 1, v >= 999.5 {
+            v /= 1000
+            i += 1
+        }
+        return (i == 0 ? String(format: "%.0f", v) : number(v)) + " " + units[i]
+    }
+
     /// A rate without its unit when the unit is shown beside it: "343.9".
     public static func rateNumber(_ bytesPerSecond: Double) -> String {
         rate(bytesPerSecond).split(separator: " ").first.map(String.init) ?? ""

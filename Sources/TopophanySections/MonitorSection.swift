@@ -110,6 +110,27 @@ public enum MonitorWords {
         case "metrics_unavailable": return tr("Connector metrics unavailable")
         case "api_unavailable": return tr("Cloudflare API unavailable")
         case "tun_state_unavailable": return tr("TUN state not reported")
+        // Tailscale and WireGuard: what this observer's own runtime reports.
+        case "backend_needs_login": return tr("Tailscale needs a login")
+        case "backend_needs_machine_auth": return tr("Tailscale awaits device approval")
+        case "backend_stopped": return tr("Tailscale stopped")
+        case "backend_not_ready": return tr("Tailscale starting")
+        case "unsupported_backend_state": return tr("Tailscale state not recognized")
+        case "peer_offline": return tr("Peer reported offline")
+        case "peer_online_unavailable": return tr("Peer’s online state not reported")
+        case "peer_not_found": return c.kind == "wireguard" ? tr("Peer not on the interface") : tr("Peer not in this node’s status")
+        case "ambiguous_peer": return tr("More than one peer matches")
+        case "peer_snapshot_changed": return tr("Peers changed while reading")
+        case "peer_diagnostic_ip_unavailable": return tr("Peer has no address to ping")
+        case "diagnostic_ping_timed_out": return tr("Peer didn’t answer the ping")
+        case "diagnostic_timeout", "diagnostic_canceled": return tr("Ping didn’t finish")
+        case "tailscale_unavailable_or_permission_denied": return tr("Tailscale not readable by the monitor")
+        case "wireguard_unavailable_or_permission_denied": return tr("WireGuard not readable by the monitor")
+        case "command_not_found": return tr("Command not found on the worker")
+        case "command_permission_denied": return tr("Command not permitted on the worker")
+        case "unsupported_tailscale_response", "unsupported_tailscale_diagnostic_response", "unsupported_wireguard_response",
+             "invalid_handshake_timestamp", "invalid_transfer_counter", "invalid_allowed_ips", "invalid_keepalive_interval":
+            return tr("Response not recognized")
         default: break
         }
         if d.facts["provider_reference_settling"] == "true" { return tr("Provider update loading") }
@@ -120,6 +141,11 @@ public enum MonitorWords {
         case "ok":
             if c.kind == "cloudflared" { return tr("Tunnel established; service unproven") }
             if c.kind == "mihomo" { return declaresPolicy(d) ? tr("Runtime matches policy") : tr("Runtime reported; no policy declared") }
+            // Reported by the local runtime; neither proves the service.
+            if c.kind == "tailscale" {
+                return d.facts["diagnostic_response"] == "received" ? tr("Peer answered a ping; service unproven") : tr("Peer reported online; service unproven")
+            }
+            if c.kind == "wireguard" { return tr("Peer counters read; tunnel unproven") }
             return d.evidence == "reported" ? tr("Reported check passing") : tr("Check passing")
         default: return tr("Evidence incomplete")
         }
@@ -185,6 +211,8 @@ public enum MonitorWords {
         case "mihomo": out += mihomoFields(d, now: now)
         case "cloudflared": out += cloudflaredFields(d)
         case "cloudflare": out += cloudflareFields(d, now: now)
+        case "tailscale": out += tailscaleFields(d, now: now)
+        case "wireguard": out += wireguardFields(d, now: now)
         default: out += traceFields(d) + probePolicyFields(d)
         }
         return out
@@ -299,10 +327,29 @@ public enum MonitorWords {
         }
     }
 
-    /// At most two relevant readings; missing values are never interpreted as zero.
-    public static func reading(_ c: ServiceCard.Check) -> String {
+    /// At most two relevant readings; missing values are never interpreted
+    /// as zero. Ages are as of `now`, the reading's own clock.
+    public static func reading(_ c: ServiceCard.Check, now: Date) -> String {
         guard let d = c.diagnostic else { return "" }
         let f = d.facts
+        if c.kind == "tailscale" {
+            // A ping measured the route; otherwise the status's own hint.
+            let path = switch f["diagnostic_response"] {
+            case "received": Words.join([f["diagnostic_latency_ms"].flatMap(Double.init).map { tr("ping \(Words.latency($0))") } ?? "",
+                                         pingRoute(f["diagnostic_route"] ?? "")])
+            case "timed_out": tr("ping timed out")
+            default: transportHint(f["transport_hint"] ?? "", short: true)
+            }
+            let presence = f["online_reported"] == "false" ? f["last_seen"].flatMap(Timestamp.parse).map { tr("last seen \(Words.ago($0, now: now))") } ?? ""
+                : f["active_reported"] == "false" ? tr("idle") : ""
+            return Words.join([path, presence])
+        }
+        if c.kind == "wireguard" {
+            guard f["rx_bytes"] != nil || f["last_handshake"] != nil else { return "" }
+            let handshake = f["last_handshake"].flatMap(Timestamp.parse).map { tr("handshake \(Words.ago($0, now: now))") } ?? tr("no handshake yet")
+            let traffic = f["rx_bytes"].flatMap(Double.init).flatMap { rx in f["tx_bytes"].flatMap(Double.init).map { "↓ \(Words.bytes(rx)) ↑ \(Words.bytes($0))" } } ?? ""
+            return Words.join([handshake, traffic])
+        }
         if c.kind == "mihomo" {
             if let chain = f["reported_chain"], !chain.isEmpty { return tr("Reported route: \(chain.replacingOccurrences(of: " -> ", with: " → ").replacingOccurrences(of: "withheld_secret_request", with: tr("withheld")))") }
             let tun = f["tun_enabled"].map { $0 == "true" ? tr("TUN on") : $0 == "false" ? tr("TUN off") : "" } ?? ""
@@ -412,6 +459,89 @@ public enum MonitorWords {
         return out
     }
 
+    static func backendState(_ word: String) -> String {
+        switch word {
+        case "Running": tr("Running")
+        case "NeedsLogin": tr("Needs a login")
+        case "NeedsMachineAuth": tr("Awaiting device approval")
+        case "Stopped": tr("Stopped")
+        case "Starting": tr("Starting")
+        case "NoState": tr("Not started")
+        default: tr("Not recognized")
+        }
+    }
+
+    /// The local status's hint at the path, which no packet proved.
+    static func transportHint(_ word: String, short: Bool = false) -> String {
+        switch word {
+        case "direct_endpoint_reported": short ? tr("direct endpoint") : tr("Direct endpoint reported")
+        case "peer_relay_reported": short ? tr("peer relay") : tr("Peer relay reported")
+        case "relay_preference_reported": short ? tr("DERP relay") : tr("DERP relay preferred")
+        default: short ? "" : tr("Not reported")
+        }
+    }
+
+    /// The route a ping measured.
+    static func pingRoute(_ word: String) -> String {
+        switch word {
+        case "direct": tr("direct")
+        case "derp": tr("via DERP")
+        case "peer_relay": tr("via peer relay")
+        default: ""
+        }
+    }
+
+    /// Tailscale's own status of this observer and the peer, then the
+    /// optional ping. Idle is not offline; neither proves the service.
+    static func tailscaleFields(_ d: CheckDiagnostic, now: Date) -> [MonitorCardModel.Field] {
+        let f = d.facts
+        var out: [MonitorCardModel.Field] = []
+        if let state = f["backend_state"] { out.append(.init(label: "Tailscale", value: backendState(state))) }
+        if let n = f["health_warning_count"].flatMap(Int.init), n > 0 { out.append(.init(label: tr("Health warnings"), value: String(n))) }
+        if let online = f["online_reported"] {
+            out.append(.init(label: tr("Online"), value: online == "unknown" ? tr("Not reported") : yesNo(online)))
+        }
+        if let active = f["active_reported"] { out.append(.init(label: tr("Active"), value: active == "false" ? tr("Idle") : yesNo(active))) }
+        if let seen = f["last_seen"] {
+            // Reported for some peers only, usually offline ones.
+            if let at = Timestamp.parse(seen) { out.append(.init(label: tr("Last seen"), value: Words.ago(at, now: now))) }
+            else if f["online_reported"] != "true" { out.append(.init(label: tr("Last seen"), value: tr("Not reported"))) }
+        }
+        if let hint = f["transport_hint"] { out.append(.init(label: tr("Path"), value: transportHint(hint))) }
+        if let proto = f["diagnostic_protocol"] {
+            let result = switch f["diagnostic_response"] {
+            case "received": Words.join([f["diagnostic_latency_ms"].flatMap(Double.init).map(Words.latency) ?? "", pingRoute(f["diagnostic_route"] ?? "")])
+            case "timed_out": tr("timed out")
+            default: ""
+            }
+            out.append(.init(label: tr("Ping"), value: Words.join([proto == "tsmp" ? "TSMP" : "Disco", result])))
+        }
+        return out
+    }
+
+    /// `wg show`'s account of the peer. An old handshake alone is not a
+    /// tunnel failure.
+    static func wireguardFields(_ d: CheckDiagnostic, now: Date) -> [MonitorCardModel.Field] {
+        let f = d.facts
+        var out: [MonitorCardModel.Field] = []
+        if let at = f["last_handshake"].flatMap(Timestamp.parse) { out.append(.init(label: tr("Last handshake"), value: Words.ago(at, now: now))) }
+        else if f["rx_bytes"] != nil { out.append(.init(label: tr("Last handshake"), value: tr("None yet"))) }
+        if let rx = f["rx_bytes"].flatMap(Double.init) { out.append(.init(label: tr("Received"), value: Words.bytes(rx))) }
+        if let tx = f["tx_bytes"].flatMap(Double.init) { out.append(.init(label: tr("Sent"), value: Words.bytes(tx))) }
+        if f["sampling_atomicity"] == "separate_command_reads_not_atomic", f["rx_bytes"] != nil {
+            out.append(.init(label: tr("Snapshot"), value: tr("Two reads, not atomic")))
+        }
+        switch f["allowed_ips_match"] {
+        case "true": out.append(.init(label: tr("Allowed IPs"), value: tr("Matches")))
+        case "false": out.append(.init(label: tr("Allowed IPs"), value: tr("Differs")))
+        default: break
+        }
+        func keepalive(_ v: String) -> String { v == "0" ? tr("Off") : "\(v) s" }
+        if let k = f["keepalive_seconds"] { out.append(.init(label: tr("Keepalive"), value: expecting(d, "keepalive_seconds", keepalive(k), shown: keepalive))) }
+        else if f["keepalive_match"] == "false" { out.append(.init(label: tr("Keepalive"), value: tr("Differs"))) }
+        return out
+    }
+
     /// A trace check's protocol readings, beside its colo, WARP and Gateway.
     static func traceFields(_ d: CheckDiagnostic) -> [MonitorCardModel.Field] {
         [("HTTP", "trace_http"), ("TLS", "trace_tls")].compactMap { label, key in
@@ -441,7 +571,7 @@ extension SectionBuilder {
                 // An HTTP check names the edge that answered it; a trace check is Cloudflare's.
                 else if let edge = c.check.diagnostic?.facts["edge_provider"], !edge.isEmpty { provider = Provider.name(edge) }
                 else if c.check.diagnostic?.facts.keys.contains(where: { $0.hasPrefix("trace_") }) == true { provider = "Cloudflare" }
-                if current { summary = MonitorWords.summary(c.check); reading = MonitorWords.reading(c.check) }
+                if current { summary = MonitorWords.summary(c.check); reading = MonitorWords.reading(c.check, now: r.now) }
             case .linkCard(let c):
                 name = c.summary.name; health = c.summary.health; affected = c.summary.affected
                 sampledAt = c.summary.sampledAt; checks = c.checks
@@ -458,7 +588,7 @@ extension SectionBuilder {
                     }
                     // The connector's reading precedes the API's account of the same tunnel.
                     let primary = checks.first { $0.check.kind == "cloudflared" } ?? checks.first
-                    reading = primary.map { MonitorWords.reading($0.check) } ?? ""
+                    reading = primary.map { MonitorWords.reading($0.check, now: r.now) } ?? ""
                 }
             default: break
             }
@@ -481,7 +611,7 @@ extension SectionBuilder {
                     })
                 } else { history = .none }
                 return .init(id: k.id, name: k.name, source: Words.join([c.observer.name, MonitorWords.evidence(k.diagnostic?.evidence ?? "")]),
-                             mark: current ? Mark(k.health) : .offline, summary: MonitorWords.summary(k), reading: MonitorWords.reading(k),
+                             mark: current ? Mark(k.health) : .offline, summary: MonitorWords.summary(k), reading: MonitorWords.reading(k, now: r.now),
                              code: k.diagnostic?.code.isEmpty == false ? Words.join([k.diagnostic?.stage ?? "", k.diagnostic?.code ?? ""]) : "", history: history,
                              p50: k.latency?.p50, p50Label: k.diagnostic?.evidence == "reported" ? tr("Read p50") : "p50", fields: MonitorWords.fields(k, now: r.now), up24h: k.up24h)
             }

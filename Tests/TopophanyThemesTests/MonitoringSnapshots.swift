@@ -90,6 +90,26 @@ import TopophanySections
         }
     }
 
+    /// Preview scenario 10's Tailscale peer, read from the local status.
+    @Test func tailscaleCheckInBothRenderers() throws {
+        let url = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/Monitoring/assessment.ndjson")
+        let line = try Data(contentsOf: url)
+        let f = try #require(FrameDecoder.frame(from: line))
+        let now = try #require(f.generatedAt)
+        var policy = ReaderPolicy(); policy.receive(f, line: line, at: now)
+        let pin = MonitorPin(kind: .check, id: "w-ts-transit")
+        for lang in ["en", "zh-Hans"] {
+            L10n.force(lang)
+            defer { L10n.force(nil) }
+            var model = previewPanel(.clear)
+            model.sections = [.services(SectionBuilder.monitors(policy.evaluate(at: now), pins: [pin], expanded: [pin]))]
+            for theme in [ThemeStore.native, ThemeStore.terminal] {
+                let ctx = RenderContext(theme: theme, colorScheme: .dark)
+                try snapshot("tailscale-\(theme.id)-\(lang)", OnDesktop(dark: true) { Renderers.renderer(for: theme).panel(model, context: ctx) })
+            }
+        }
+    }
+
     @Test func collectorStatusUsesExistingFooter() throws {
         for lang in ["en", "zh-Hans", "ja"] {
             TopophanySections.L10n.force(lang)

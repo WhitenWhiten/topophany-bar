@@ -501,6 +501,18 @@ certificate's `tls_not_after` date (in the Mac's time zone), the `tls_min_days`
 warning window, the budget and the last request's duration. Without these fields
 the code alone is named as before.
 
+Tailscale and WireGuard checks read this observer's own runtime, in the closed
+shapes `topo` exports (any other value under those keys is withheld upstream).
+A Tailscale card names the backend state, whether the peer is reported online
+and active (idle is not offline), when it was last seen if reported, the path
+`transport_hint` suggests, and an optional ping's protocol, latency and route.
+Its reading is the ping or the hinted path, then "last seen" for an offline
+peer or "idle". A WireGuard card reads the last handshake's age (or none yet),
+received and sent bytes from two non-atomic reads, and its AllowedIPs and
+keepalive against the declared policy; an old handshake is not judged a
+failure. Both kinds' passing summaries say the service or tunnel is unproven,
+and their backend, peer and command codes are named.
+
 A mihomo card's expanded rows read its facts in plain words: mode and TUN against
 their expectations, the core's last delay with the age `core_last_checked` gives
 it, the reference's publication age, and one row per provider in

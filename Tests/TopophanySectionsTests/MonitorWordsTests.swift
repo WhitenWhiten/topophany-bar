@@ -366,6 +366,98 @@ import TopophanyKit
         }
     }
 
+    @Test func tailscaleReadsTheLocalStatusAndItsPing() throws {
+        try L10n.with("en") {
+            func peer(_ outcome: String, code: String = "", _ facts: [String: String]) -> [String: Any] {
+                F.check("ts-\(code.isEmpty ? outcome : code)", kind: "tailscale", health: outcome == "ok" ? "up" : "unknown", diagnostic: [
+                    "outcome": outcome, "evidence": "reported", "stage": "adapter", "code": code, "policy": "not_configured", "facts": facts,
+                ])
+            }
+            let running = ["backend_state": "Running", "online_reported": "true", "active_reported": "true", "last_seen": "not reported",
+                           "transport_hint": "direct_endpoint_reported"]
+            let plain = try F.monitor(peer("ok", running))
+            #expect(plain.summary == "Peer reported online; service unproven")
+            #expect(plain.reading == "direct endpoint")
+            // Online and not reported: no Last seen row.
+            #expect(plain.checks.first?.fields.map(\.label) == ["Policy", "Tailscale", "Online", "Active", "Path"])
+            #expect(F.field(plain, "Path") == "Direct endpoint reported")
+
+            var pinged = running
+            pinged.merge(["diagnostic_protocol": "tsmp", "diagnostic_response": "received", "diagnostic_route": "derp", "diagnostic_latency_ms": "48"]) { $1 }
+            let ping = try F.monitor(peer("ok", pinged))
+            #expect(ping.summary == "Peer answered a ping; service unproven")
+            #expect(ping.reading == "ping 48 ms · via DERP")
+            #expect(F.field(ping, "Ping") == "TSMP · 48 ms · via DERP")
+
+            let offline = try F.monitor(peer("unknown", code: "peer_offline", [
+                "backend_state": "Running", "online_reported": "false", "active_reported": "false", "last_seen": "2026-11-01T04:37:46Z",
+                "transport_hint": "relay_preference_reported", "health_warning_count": "2",
+            ]))
+            #expect(offline.summary == "Peer reported offline")
+            #expect(offline.reading == "DERP relay · last seen 3 h ago")
+            #expect(F.field(offline, "Active") == "Idle" && F.field(offline, "Last seen") == "3 h ago")
+            #expect(F.field(offline, "Online") == "No" && F.field(offline, "Health warnings") == "2")
+
+            let timedOut = try F.monitor(peer("unknown", code: "diagnostic_ping_timed_out", [
+                "backend_state": "Running", "online_reported": "true", "active_reported": "false", "transport_hint": "unknown",
+                "diagnostic_protocol": "disco", "diagnostic_response": "timed_out",
+            ]))
+            #expect(timedOut.summary == "Peer didn’t answer the ping")
+            #expect(timedOut.reading == "ping timed out · idle")
+            #expect(F.field(timedOut, "Ping") == "Disco · timed out" && F.field(timedOut, "Path") == "Not reported")
+
+            let stopped = try F.monitor(peer("unknown", code: "backend_stopped", ["backend_state": "Stopped"]))
+            #expect(stopped.summary == "Tailscale stopped" && stopped.reading.isEmpty)
+            #expect(F.field(stopped, "Tailscale") == "Stopped")
+            #expect(try F.monitor(peer("unknown", code: "peer_not_found", [:])).summary == "Peer not in this node’s status")
+        }
+    }
+
+    @Test func wireguardReadsTheHandshakeAndCountersWithoutJudgingThem() throws {
+        try L10n.with("en") {
+            func peer(_ outcome: String, code: String = "", _ facts: [String: String], expected: [String: String] = [:]) -> [String: Any] {
+                F.check("wg-\(code.isEmpty ? outcome : code)", kind: "wireguard", health: outcome == "ok" ? "up" : outcome == "policy" ? "degraded" : "unknown",
+                        diagnostic: ["outcome": outcome, "evidence": "reported", "stage": "adapter", "code": code, "facts": facts, "expected": expected])
+            }
+            let ok = try F.monitor(peer("ok", [
+                "sampling_atomicity": "separate_command_reads_not_atomic", "last_handshake": "2026-11-01T07:35:46Z",
+                "rx_bytes": "1234567890", "tx_bytes": "340000000", "allowed_ips_match": "true", "keepalive_match": "true", "keepalive_seconds": "25",
+            ], expected: ["keepalive_seconds": "25"]))
+            #expect(ok.summary == "Peer counters read; tunnel unproven")
+            #expect(ok.reading == "handshake 2 min ago · ↓ 1.2 GB ↑ 340 MB")
+            #expect(F.field(ok, "Last handshake") == "2 min ago" && F.field(ok, "Received") == "1.2 GB" && F.field(ok, "Sent") == "340 MB")
+            #expect(F.field(ok, "Snapshot") == "Two reads, not atomic")
+            #expect(F.field(ok, "Allowed IPs") == "Matches" && F.field(ok, "Keepalive") == "25 s")
+
+            let off = try F.monitor(peer("policy", code: "keepalive_mismatch", [
+                "rx_bytes": "0", "tx_bytes": "0", "keepalive_match": "false", "keepalive_seconds": "0",
+            ], expected: ["keepalive_seconds": "25"]))
+            #expect(off.summary == "Keepalive differs from policy")
+            #expect(off.reading == "no handshake yet · ↓ 0 B ↑ 0 B")
+            #expect(F.field(off, "Keepalive") == "Off · Expected 25 s" && F.field(off, "Last handshake") == "None yet")
+
+            let missing = try F.monitor(peer("unknown", code: "peer_not_found", ["sampling_atomicity": "separate_command_reads_not_atomic"]))
+            #expect(missing.summary == "Peer not on the interface" && missing.reading.isEmpty)
+            #expect(missing.checks.first?.fields.isEmpty == true)
+            #expect(Words.bytes(999) == "999 B" && Words.bytes(999.5) == "1 kB")
+        }
+    }
+
+    @Test func previewTailscaleCheckReadsItsStatus() throws {
+        try L10n.with("en") {
+            let url = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/Monitoring/assessment.ndjson")
+            let line = try Data(contentsOf: url)
+            let f = try #require(FrameDecoder.frame(from: line))
+            let now = try #require(f.generatedAt)
+            var p = ReaderPolicy(); p.receive(f, line: line, at: now)
+            let pin = MonitorPin(kind: .check, id: "w-ts-transit")
+            let card = try #require(SectionBuilder.monitors(p.evaluate(at: now), pins: [pin], expanded: [pin]).first?.monitor)
+            #expect(card.summary == "Peer reported online; service unproven")
+            #expect(card.reading == "direct endpoint")
+            #expect(F.field(card, "Tailscale") == "Running" && F.field(card, "Active") == "Yes")
+        }
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])
