@@ -541,7 +541,8 @@ struct EngineRow: View {
         var parts: [String] = []
         switch model.engineStatus {
         case .running(let r):
-            if r.pid > 0 { parts.append(tr("pid \(r.pid)")) }
+            // An identifier, not a quantity: "pid 4242", never "4,242".
+            if r.pid > 0 { parts.append(tr("pid \(String(r.pid))")) }
         case .restarting(let after, let attempt, let reason):
             parts.append(reason)
             _ = after

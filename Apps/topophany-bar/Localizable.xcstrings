@@ -4609,18 +4609,18 @@
         }
       }
     },
-    "pid %d": {
+    "pid %@": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "pid %d"
+            "value": "pid %@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "pid %d"
+            "value": "pid %@"
           }
         }
       }
