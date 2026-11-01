@@ -149,7 +149,9 @@ public enum MonitorWords {
         var out: [MonitorCardModel.Field] = policyField(d).map { [$0] } ?? []
         switch c.kind {
         case "mihomo": out += mihomoFields(d, now: now)
-        default: break
+        case "cloudflared": out += cloudflaredFields(d)
+        case "cloudflare": out += cloudflareFields(d, now: now)
+        default: out += traceFields(d)
         }
         return out
     }
@@ -254,11 +256,111 @@ public enum MonitorWords {
         }
         if let n = f["ready_connections"] ?? f["tunnel_connections"] {
             let count = d.expected["connections"].map { n + "/" + $0 } ?? n
-            return Words.join([tr("\(count) connections"), f["connection_colos"] ?? f["tunnel_colos"] ?? ""])
+            return Words.join([tr("\(count) connections"), colos(f["connection_colos"] ?? f["tunnel_colos"] ?? "")])
         }
+        // The API reported the tunnel's state without its connections list.
+        if let status = f["tunnel_status"] { return tunnelStatus(status) }
         if let n = f["origins_healthy"], let total = f["origins_total"] { return tr("\(n)/\(total) origins healthy") }
         if let n = f["record_count"] { return tr("\(n) DNS records") }
-        return Words.join([f["edge_pop"] ?? "", f["edge_cache"] ?? ""])
+        // A trace check: the edge's account of this observer, reported, not verified.
+        if f["trace_colo"] != nil || f["trace_warp"] != nil || f["trace_gateway"] != nil {
+            return Words.join([f["trace_colo"] ?? "", f["trace_warp"].map { "WARP " + $0 } ?? "", f["trace_gateway"].map { "Gateway " + $0 } ?? ""])
+        }
+        return Words.join([f["edge_pop"] ?? "", f["edge_cache"] ?? "", edgeRTT(d).map { tr("edge RTT \($0)") } ?? ""])
+    }
+
+    /// Cloudflare's own round trip to the client, from `Server-Timing`'s
+    /// `cfL4`, as the TUI writes it: "<1 ms" for zero.
+    static func edgeRTT(_ d: CheckDiagnostic) -> String? {
+        guard d.facts["edge_provider"] == "cloudflare", let raw = d.facts["edge_rtt_ms"], let ms = Int(raw), ms >= 0 else { return nil }
+        return ms == 0 ? "<1 ms" : Words.ms(Double(ms))
+    }
+
+    /// Colo tokens as colos are written: "HKG, SIN".
+    static func colos(_ list: String) -> String {
+        list.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces).uppercased() }.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+
+    static func tunnelStatus(_ word: String) -> String {
+        switch word {
+        case "healthy": tr("Tunnel healthy")
+        case "degraded": tr("Tunnel degraded")
+        case "down": tr("Tunnel down")
+        case "inactive": tr("Tunnel inactive")
+        default: word
+        }
+    }
+
+    static func yesNo(_ value: String) -> String {
+        switch value {
+        case "true": tr("Yes")
+        case "false": tr("No")
+        default: value
+        }
+    }
+
+    /// cloudflared's own metrics: redundancy, traffic and version.
+    static func cloudflaredFields(_ d: CheckDiagnostic) -> [MonitorCardModel.Field] {
+        let f = d.facts
+        var out: [MonitorCardModel.Field] = []
+        if let ha = f["ha_connections"] { out.append(.init(label: tr("HA connections"), value: ha)) }
+        if let expected = d.expected["colos"], let seen = f["connection_colos"] {
+            out.append(.init(label: tr("Edge locations"), value: Words.join([colos(seen), colos(seen) == colos(expected) ? "" : tr("Expected \(colos(expected))")])))
+        }
+        if let total = f["requests_total"] {
+            out.append(.init(label: tr("Requests"), value: Words.join([total, f["request_errors"].map { tr("\($0) errors") } ?? ""])))
+        }
+        if let streams = f["active_streams"] { out.append(.init(label: tr("Active streams"), value: streams)) }
+        if let version = f["connector_version"] { out.append(.init(label: tr("Version"), value: version)) }
+        return out
+    }
+
+    /// The Cloudflare API's account: a tunnel, a DNS record or a pool.
+    static func cloudflareFields(_ d: CheckDiagnostic, now: Date) -> [MonitorCardModel.Field] {
+        let f = d.facts
+        var out: [MonitorCardModel.Field] = []
+        if let status = f["tunnel_status"] {
+            let word = switch status {
+            case "healthy": tr("Healthy")
+            case "degraded": tr("Degraded")
+            case "down": tr("Down")
+            case "inactive": tr("Inactive")
+            default: status
+            }
+            out.append(.init(label: tr("Tunnel"), value: word))
+        }
+        if let pending = f["tunnel_pending_reconnect"].flatMap(Int.init), pending > 0 {
+            out.append(.init(label: tr("Reconnecting"), value: String(pending)))
+        }
+        if let versions = f["connector_versions"] { out.append(.init(label: tr("Connector versions"), value: versions.replacingOccurrences(of: ",", with: ", "))) }
+        if let oldest = f["oldest_connection_at"].flatMap(Timestamp.parse) {
+            out.append(.init(label: tr("Oldest connection"), value: tr("opened \(Words.ago(oldest, now: now))")))
+        }
+        if let proxied = f["record_proxied"] { out.append(.init(label: tr("Proxied"), value: expecting(d, "record_proxied", yesNo(proxied), shown: yesNo))) }
+        switch f["record_content_matches"] {
+        case "true": out.append(.init(label: tr("Content"), value: tr("Matches")))
+        case "false": out.append(.init(label: tr("Content"), value: tr("Differs")))
+        default: break
+        }
+        if let ttl = f["record_ttl"].flatMap(Int.init) { out.append(.init(label: "TTL", value: ttl == 1 ? tr("Auto") : "\(ttl) s")) }
+        switch f["pool_healthy"] {
+        case "true": out.append(.init(label: tr("Pool"), value: tr("Healthy")))
+        case "false": out.append(.init(label: tr("Pool"), value: tr("Unhealthy")))
+        default: break
+        }
+        for key in f.keys.sorted() where key.hasPrefix("origin.") {
+            let value = f[key] == "healthy" ? tr("Healthy") : f[key] == "unhealthy" ? tr("Unhealthy") : f[key] ?? ""
+            out.append(.init(label: String(key.dropFirst("origin.".count)), value: value, key: key))
+        }
+        if let regions = f["regions_reporting"] { out.append(.init(label: tr("Regions reporting"), value: regions)) }
+        return out
+    }
+
+    /// A trace check's protocol readings, beside its colo, WARP and Gateway.
+    static func traceFields(_ d: CheckDiagnostic) -> [MonitorCardModel.Field] {
+        [("HTTP", "trace_http"), ("TLS", "trace_tls")].compactMap { label, key in
+            d.facts[key].map { .init(label: label, value: $0) }
+        }
     }
 }
 
@@ -280,6 +382,9 @@ extension SectionBuilder {
                 checks = [c]
                 subtitle = Words.join([c.observer.name, c.check.kind == "mihomo" ? tr("Core report") : MonitorWords.evidence(c.check.diagnostic?.evidence ?? "")])
                 if c.check.kind == "cloudflare" || c.check.kind == "cloudflared" { provider = "Cloudflare" }
+                // An HTTP check names the edge that answered it; a trace check is Cloudflare's.
+                else if let edge = c.check.diagnostic?.facts["edge_provider"], !edge.isEmpty { provider = Provider.name(edge) }
+                else if c.check.diagnostic?.facts.keys.contains(where: { $0.hasPrefix("trace_") }) == true { provider = "Cloudflare" }
                 if current { summary = MonitorWords.summary(c.check); reading = MonitorWords.reading(c.check) }
             case .linkCard(let c):
                 name = c.summary.name; health = c.summary.health; affected = c.summary.affected

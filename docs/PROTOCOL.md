@@ -502,6 +502,16 @@ changed order, or that the provider isn't loaded, then the loaded members from
 loaded it. Closed words from credential-bearing controllers say only whether
 it differs. A partial entry cut at the fact budget is dropped.
 
+Cloudflare cards read every allowlisted fact. cloudflared shows HA connections,
+edge locations against expected colos, requests and errors, active streams and
+version. API tunnels show the API's status word (also the reading when it sends
+no connections list), reconnecting connections, connector versions and the
+oldest connection's age. DNS shows proxied against its expectation, content
+comparison and TTL. Pools show pool and per-origin health and regions reporting.
+HTTP checks append Cloudflare's `edge_rtt_ms` ("<1 ms" for zero). Trace checks
+read colo, WARP and Gateway as reported, with HTTP and TLS as fields. A check
+naming `edge_provider`, or carrying trace facts, takes that provider's mark.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report

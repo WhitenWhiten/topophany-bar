@@ -163,6 +163,85 @@ import TopophanyKit
         }
     }
 
+    static func reported(_ id: String, kind: String, outcome: String = "ok", code: String = "", _ facts: [String: String],
+                         expected: [String: String] = [:]) -> [String: Any] {
+        F.check(id, kind: kind, health: outcome == "ok" ? "up" : "degraded", diagnostic: [
+            "outcome": outcome, "evidence": "reported", "stage": "adapter", "code": code, "facts": facts, "expected": expected,
+        ])
+    }
+
+    @Test func cloudflaredSaysItsRedundancyTrafficAndVersion() throws {
+        try L10n.with("en") {
+            let m = try F.monitor(Self.reported("connector", kind: "cloudflared", [
+                "ready_connections": "3", "ha_connections": "3", "connection_colos": "hkg,sin", "requests_total": "1200",
+                "request_errors": "4", "active_streams": "2", "connector_version": "2026.10.0",
+            ], expected: ["connections": "4", "colos": "hkg,nrt"]))
+            #expect(m.reading == "3/4 connections · HKG, SIN")
+            #expect(F.field(m, "HA connections") == "3")
+            #expect(F.field(m, "Edge locations") == "HKG, SIN · Expected HKG, NRT")
+            #expect(F.field(m, "Requests") == "1200 · 4 errors")
+            #expect(F.field(m, "Active streams") == "2")
+            #expect(F.field(m, "Version") == "2026.10.0")
+            // Missing facts are unavailable, never zero.
+            let bare = try F.monitor(Self.reported("bare", kind: "cloudflared", ["ready_connections": "4"]))
+            #expect(bare.checks.first?.fields.isEmpty == true)
+        }
+    }
+
+    @Test func theCloudflareAPISaysWhatItReported() throws {
+        try L10n.with("en") {
+            let tunnel = try F.monitor(Self.reported("api-tunnel", kind: "cloudflare", outcome: "policy", code: "connections_below_expected", [
+                "tunnel_status": "degraded", "tunnel_connections": "2", "tunnel_colos": "HKG", "tunnel_pending_reconnect": "1",
+                "connector_versions": "2026.9.1,2026.10.0", "oldest_connection_at": "2026-10-31T22:37:46Z",
+            ], expected: ["connections": "4"]))
+            #expect(tunnel.reading == "2/4 connections · HKG")
+            #expect(F.field(tunnel, "Tunnel") == "Degraded")
+            #expect(F.field(tunnel, "Reconnecting") == "1")
+            #expect(F.field(tunnel, "Connector versions") == "2026.9.1, 2026.10.0")
+            #expect(F.field(tunnel, "Oldest connection") == "opened 9 h ago")
+            // Healthy with no connections list: the API's word is the reading.
+            let moved = try F.monitor(Self.reported("moved", kind: "cloudflare", ["tunnel_status": "healthy"]))
+            #expect(moved.reading == "Tunnel healthy")
+            #expect(F.field(moved, "Reconnecting") == nil)
+
+            let dns = try F.monitor(Self.reported("dns", kind: "cloudflare", outcome: "policy", code: "record_not_proxied", [
+                "record_count": "1", "record_proxied": "false", "record_ttl": "1", "record_content_matches": "true",
+            ], expected: ["record_proxied": "true"]))
+            #expect(F.field(dns, "Proxied") == "No · Expected Yes")
+            #expect(F.field(dns, "Content") == "Matches")
+            #expect(F.field(dns, "TTL") == "Auto")
+            let undeclared = try F.monitor(Self.reported("dns2", kind: "cloudflare", ["record_count": "2", "record_ttl": "300", "record_content_matches": "not_declared"]))
+            #expect(F.field(undeclared, "Content") == nil && F.field(undeclared, "TTL") == "300 s")
+
+            let pool = try F.monitor(Self.reported("pool", kind: "cloudflare", outcome: "policy", code: "origins_below_expected", [
+                "pool_healthy": "false", "origins_healthy": "1", "origins_total": "2", "regions_reporting": "3",
+                "origin.tokyo": "healthy", "origin.osaka": "unhealthy",
+            ]))
+            #expect(pool.reading == "1/2 origins healthy")
+            #expect(F.field(pool, "Pool") == "Unhealthy")
+            #expect(F.field(pool, "osaka") == "Unhealthy" && F.field(pool, "tokyo") == "Healthy")
+            #expect(F.field(pool, "Regions reporting") == "3")
+        }
+    }
+
+    @Test func edgeAndTraceChecksSayWhatTheEdgeReported() throws {
+        try L10n.with("en") {
+            let edge = try F.card(Self.edge("www", ["edge_pop": "NRT", "edge_cache": "HIT", "edge_rtt_ms": "12"]))
+            #expect(edge.monitor?.reading == "NRT · HIT · edge RTT 12 ms")
+            #expect(edge.host.provider == "Cloudflare")
+            let fast = try F.monitor(Self.edge("fast", ["edge_pop": "SEA", "edge_rtt_ms": "0"]))
+            #expect(fast.reading == "SEA · edge RTT <1 ms")
+            let trace = try F.card(F.check("trace", health: "degraded", diagnostic: [
+                "outcome": "policy", "evidence": "measured", "stage": "trace_assert", "code": "warp_mismatch",
+                "facts": ["trace_colo": "SEA", "trace_warp": "off", "trace_gateway": "off", "trace_http": "http/2", "trace_tls": "TLSv1.3"],
+            ]))
+            #expect(trace.monitor?.summary == "WARP differs from policy")
+            #expect(trace.monitor?.reading == "SEA · WARP off · Gateway off")
+            #expect(trace.monitor?.checks.first?.fields.map(\.value) == ["http/2", "TLSv1.3"])
+            #expect(trace.host.provider == "Cloudflare")
+        }
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])
