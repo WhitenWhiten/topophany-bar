@@ -38,9 +38,28 @@ public struct StatusSection: Sendable, Hashable {
 
     public var synthetic = false
     public var coverage: ServiceCoverage? = nil
+    /// What the checks establish about services, in Topophany 1.5.2's
+    /// words: "Service availability: 3/23 known". The verdict concerns
+    /// active checks; this says how far they reach.
     public var coverageText: String? {
         guard !isBlind, sources == nil, let coverage else { return nil }
-        return tr("\(coverage.known) of \(coverage.services) services have known availability")
+        return tr("Service availability: \(coverage.known)/\(coverage.services) known")
+    }
+
+    /// Whether every service's availability is known: the line then only
+    /// confirms, and stays quiet.
+    public var coverageIsComplete: Bool {
+        coverage.map { $0.known >= $0.services } ?? true
+    }
+
+    /// The coverage line explained, for its tooltip: why some services
+    /// stay unknown is for Topophany's Services tab to say, service by
+    /// service, since the stream carries the counts alone.
+    public var coverageHelp: String? {
+        guard coverageText != nil, let coverage else { return nil }
+        let unknown = coverage.services - coverage.known
+        guard unknown > 0 else { return tr("Current checks establish every service’s availability.") }
+        return tr("Availability is unknown for \(unknown) of \(coverage.services) services. The verdict covers active checks only; Topophany’s Services tab gives each reason.")
     }
 
     public var notice: String? = nil

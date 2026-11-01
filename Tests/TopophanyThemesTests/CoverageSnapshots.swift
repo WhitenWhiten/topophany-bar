@@ -12,6 +12,9 @@ import TopophanySections
                 var model = previewPanel(.clear)
                 model.status.coverage = try JSONDecoder().decode(ServiceCoverage.self, from: Data(#"{"observer":"home","services":23,"known":3}"#.utf8))
                 #expect(model.status.coverageText != nil)
+                #expect(!model.status.coverageIsComplete && model.status.coverageHelp != nil)
+                // Topophany 1.5.2's own line, so the panel and the TUI agree.
+                if language == "en" { #expect(model.status.coverageText == "Service availability: 3/23 known") }
                 for theme in [ThemeStore.native, ThemeStore.terminal] {
                     let ctx = RenderContext(theme: theme, colorScheme: .dark)
                     try snapshot("coverage-\(language)-\(theme.id)", OnDesktop(dark: true) {

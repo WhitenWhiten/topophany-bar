@@ -5724,18 +5724,18 @@
         }
       }
     },
-    "%lld of %lld services have known availability": {
+    "Service availability: %lld/%lld known": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "%2$lld 个服务中 %1$lld 个可用性已知"
+            "value": "服务可用性：%1$lld/%2$lld 已知"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%2$lld サービス中 %1$lld の可用性を確認済み"
+            "value": "サービス可用性：%1$lld/%2$lld 確認済み"
           }
         }
       }
@@ -5912,6 +5912,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "デモデータ"
+          }
+        }
+      }
+    },
+    "Current checks establish every service’s availability.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前检查已确认所有服务的可用性。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のチェックですべてのサービスの可用性を確認できています。"
+          }
+        }
+      }
+    },
+    "Availability is unknown for %lld of %lld services. The verdict covers active checks only; Topophany’s Services tab gives each reason.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$lld 个服务中有 %1$lld 个可用性未知。结论只涵盖活跃检查；Topophany 的“服务”页会说明每项原因。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$lld サービス中 %1$lld の可用性は不明です。判定は有効なチェックのみに基づきます。理由は Topophany の「サービス」タブでサービスごとに確認できます。"
           }
         }
       }
