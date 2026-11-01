@@ -309,3 +309,40 @@ extension RefreshTests {
         #expect(store.load() == settings)
     }
 }
+
+extension RefreshTests {
+    @Test func wakeAfterLongGapExpiresEvidenceAndCoalescesRetries() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "wake-gap-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SettingsStore(url: root.appending(path: "settings.json"))
+        var settings = Settings(); settings.topo.source = "client"; settings.topo.profile = "S2"; settings.sections.mac.mode = .off
+        try store.save(settings)
+        let clock = ManualClock(Timestamp.parse("2026-11-01T10:00:00Z")!)
+        let engine = RecordingEngine()
+        var starts = 0
+        let m = AppModel(store: store, clock: clock, engineFactory: { _ in starts += 1; return engine })
+        m.restartEngine()
+        defer { m.stopNow() }
+        m.handle(.capabilities(try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"sources":["client"],"client_retry":true,"collector_read":true}"#.utf8))))
+        m.handle(.status(.running(.init(pid: 0, path: "fixture", version: "test", startedAt: clock.now()))))
+        var f = try #require(FrameDecoder.frame(from: FixtureEngine.lines(.clear)[0]))
+        f.source = "client"; f.requestID = try #require(engine.all.first?.requestID); f.instance = "wake-test"; f.sequence = 1
+        f.generatedAt = clock.now(); f.publisherExpiresAt = clock.now().addingTimeInterval(30)
+        for i in f.rows.indices { f.rows[i].validUntil = clock.now().addingTimeInterval(20); f.rows[i].sampledAt = clock.now() }
+        m.handle(.frame(f, line: Data()))
+        m.setPanelVisible(false)
+        let hidden = m.panel
+        clock.advance(8 * 60 * 60)
+        m.refresh(at: clock.now())
+        #expect(m.status.isBlind && m.panel == hidden)
+        // Exercise the same handler as the workspace wake notification, without
+        // suspending the test machine or attributing new timestamps to old data.
+        for _ in 0..<20 { m.retryCurrentSource() }
+        for _ in 0..<10 { await Task.yield() }
+        #expect(starts == 1 && engine.all.count == 2)
+        #expect(m.status.isBlind)
+        for _ in 0..<20 { m.setPanelVisible(true); m.setPanelVisible(false) }
+        for _ in 0..<10 { await Task.yield() }
+        #expect(starts == 1 && engine.all.count == 2)
+    }
+}
