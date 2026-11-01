@@ -6617,22 +6617,6 @@
         }
       }
     },
-    "Synthetic preview — your saved connection is unchanged.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "当前为模拟演示，已保存的连接保持不变。"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "合成データのデモです。保存済みの接続は変更されません。"
-          }
-        }
-      }
-    },
     "Demo data": {
       "localizations": {
         "zh-Hans": {
@@ -7173,6 +7157,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "监视内容"
+          }
+        }
+      }
+    },
+    "Demo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デモ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "演示"
+          }
+        }
+      }
+    },
+    "Bundled synthetic data, labeled Demo data; no collector or topo needed": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱の合成データで、「デモデータ」と表示されます。コレクターも topo も不要です"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置模拟数据，并标注为“演示数据”；无需采集器或 topo"
+          }
+        }
+      }
+    },
+    "Showing synthetic data; your saved connection is unchanged": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合成データを表示中。保存済みの接続は変更されません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在显示模拟数据；已保存的连接保持不变"
           }
         }
       }

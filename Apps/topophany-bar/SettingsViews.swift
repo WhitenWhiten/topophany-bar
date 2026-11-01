@@ -148,8 +148,6 @@ struct GeneralSettings: View {
         SettingsForm {
             Section("Topophany") {
                 TopoRow()
-                Button(model.inAppDemo ? "Return to my connection" : "Try a demo") { model.setDemo(!model.inAppDemo) }
-                if model.inAppDemo { Text("Synthetic preview — your saved connection is unchanged.").font(.callout).foregroundStyle(.secondary) }
                 if model.settings.topo.source != "direct" {
                     ProfileRow()
                     Picker(selection: model.binding(\.topo.observer)) {
@@ -165,6 +163,17 @@ struct GeneralSettings: View {
                 } else {
                     // Direct reads every selected system, so there is no view to choose.
                     RowLabel("Beszel or Komari direct", "Manage profiles and sources in Data sources")
+                }
+                // A row like its neighbours, saying what the demo is before
+                // it's tried, and while it runs that nothing saved changed.
+                LabeledContent {
+                    Button(model.inAppDemo ? "Return to my connection" : "Try a demo") { model.setDemo(!model.inAppDemo) }
+                } label: {
+                    if model.inAppDemo {
+                        RowLabel("Demo", "Showing synthetic data; your saved connection is unchanged")
+                    } else {
+                        RowLabel("Demo", "Bundled synthetic data, labeled Demo data; no collector or topo needed")
+                    }
                 }
             }
             Section {
