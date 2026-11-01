@@ -490,3 +490,13 @@ not a failed connection. It uses neutral waiting text and connecting activity.
 A stopped stream ends an in-progress refresh indication immediately; an
 outstanding retry identity remains recognizable if the supervisor restarts with
 that request. Historical row values are bounded to the active template's keys.
+
+### Availability coverage
+
+`summary.verdict.coverage` optionally contains `observer`, `services` and
+`known`. Counts describe service availability established by evidence in the
+selected view, independently of the check verdict. Known includes healthy,
+degraded and failed availability. Invalid counts are withheld; older frames
+omit the caption. The caption disappears when the verdict is cached or expired.
+It updates with the status model, adding no timer or background task; only the
+status drawing region gains a line and existing layout measures its size.

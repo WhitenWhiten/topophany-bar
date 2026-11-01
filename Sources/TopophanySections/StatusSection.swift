@@ -36,6 +36,12 @@ public struct StatusSection: Sendable, Hashable {
         case blind(Blind)
     }
 
+    public var coverage: ServiceCoverage? = nil
+    public var coverageText: String? {
+        guard !isBlind, sources == nil, let coverage else { return nil }
+        return tr("\(coverage.known) of \(coverage.services) services have known availability")
+    }
+
     public var notice: String? = nil
     public var collector: CollectorStatus? = nil
     public var sources: SourceStatusSection? = nil

@@ -5723,6 +5723,22 @@
           }
         }
       }
+    },
+    "%lld of %lld services have known availability": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$lld 个服务中 %1$lld 个可用性已知"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$lld サービス中 %1$lld の可用性を確認済み"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

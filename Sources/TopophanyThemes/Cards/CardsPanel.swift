@@ -421,6 +421,7 @@ struct CardsStatusCard: View {
                         }
                     }
                     Text(download?.line ?? status.subtitle).font(t.font(12)).foregroundStyle(p.l2).lineLimit(2)
+                    if let coverage = status.coverageText { Text(coverage).font(t.font(11)).foregroundStyle(p.l2).fixedSize(horizontal: false, vertical: true) }
                 }
             }
             .padding(.bottom, 12)

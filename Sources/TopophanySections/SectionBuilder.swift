@@ -191,10 +191,12 @@ public enum SectionBuilder {
             case .incidents, .down: mark = .down
             default: mark = .unknown
             }
-            return StatusSection(kind: .verdict(v.state), mark: mark, topoText: v.text, counts: v.counts?.health,
+            var status = StatusSection(kind: .verdict(v.state), mark: mark, topoText: v.text, counts: v.counts?.health,
                                  paused: v.counts?.paused, maintenance: v.counts?.maintenance, configured: v.configured,
                                  incidents: v.incidents, observersLive: v.observers?.live, observersAll: v.observers?.all,
                                  updatedAt: r.frame?.generatedAt, lastKnown: r.lastKnown, now: now)
+            status.coverage = v.coverage
+            return status
         case .withheld(.noValue):
             switch row.row.reason {
             case "source_unavailable": return blind(.collectorUnreachable)

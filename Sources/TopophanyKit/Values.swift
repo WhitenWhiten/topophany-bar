@@ -64,6 +64,23 @@ public struct ObserversLive: Sendable, Hashable, Decodable {
     }
 }
 
+/// Availability coverage is scoped to the same observer as the verdict.
+public struct ServiceCoverage: Sendable, Hashable, Decodable {
+    public var observer: String
+    public var services: Int
+    public var known: Int
+    enum CodingKeys: String, CodingKey { case observer, services, known }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        observer = try c.decode(String.self, forKey: .observer)
+        services = try c.decode(Int.self, forKey: .services)
+        known = try c.decode(Int.self, forKey: .known)
+        guard (0...4096).contains(services), (0...services).contains(known), observer.utf8.count <= 96 else {
+            throw DecodingError.dataCorruptedError(forKey: .known, in: c, debugDescription: "Invalid coverage")
+        }
+    }
+}
+
 /// `summary.verdict`.
 public struct Verdict: Sendable, Hashable, Decodable {
     public var state: VerdictState
@@ -73,8 +90,9 @@ public struct Verdict: Sendable, Hashable, Decodable {
     public var configured: Int?
     public var incidents: Int?
     public var observers: ObserversLive?
+    public var coverage: ServiceCoverage? = nil
 
-    enum CodingKeys: String, CodingKey { case state, glyph, text, counts, configured, incidents, observers }
+    enum CodingKeys: String, CodingKey { case state, glyph, text, counts, configured, incidents, observers, coverage }
     enum CountKeys: String, CodingKey { case up, warning, down, unknown, paused, maintenance }
 
     public init(state: VerdictState, glyph: String, text: String, counts: VerdictCounts?, configured: Int?,
@@ -101,6 +119,7 @@ public struct Verdict: Sendable, Hashable, Decodable {
         configured = c.count(.configured)
         incidents = c.count(.incidents)
         observers = try? c.decodeIfPresent(ObserversLive.self, forKey: .observers)
+        coverage = try? c.decodeIfPresent(ServiceCoverage.self, forKey: .coverage)
     }
 }
 

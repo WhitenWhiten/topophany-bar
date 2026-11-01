@@ -58,6 +58,7 @@ struct CellsBodies {
             }
         }
         if !short {
+            if let coverage = s.coverageText { w.line([.t(CellText.truncate(coverage, n), p.muted)]) }
             if let collector = s.collector {
                 w.line([.t(CellText.truncate(collector.line, n), p.muted)])
                 return
