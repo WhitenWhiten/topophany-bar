@@ -74,6 +74,54 @@ import TopophanyKit
         }
     }
 
+    /// Every code topo's probes and adapters set, as (kind, outcome, code, words).
+    static let named: [(String, String, String, String)] = [
+        ("http", "policy", "certificate_expiring", "Certificate expires soon"),
+        ("http", "policy", "latency_exceeded", "Slower than its latency budget"),
+        ("http", "policy", "json_assertion_mismatch", "JSON response differs from its assertion"),
+        ("http", "policy", "pop_mismatch", "Unexpected edge location"),
+        ("http", "policy", "colo_mismatch", "Unexpected edge location"),
+        ("http", "policy", "warp_mismatch", "WARP differs from policy"),
+        ("http", "policy", "gateway_mismatch", "Gateway differs from policy"),
+        ("http", "policy", "exit_mismatch", "Exit address differs from policy"),
+        ("wireguard", "policy", "allowed_ips_mismatch", "Allowed IPs differ from policy"),
+        ("wireguard", "policy", "keepalive_mismatch", "Keepalive differs from policy"),
+        ("http", "fail", "body_mismatch", "Response didn’t match its assertion"),
+        ("http", "fail", "header_mismatch", "Response didn’t match its assertion"),
+        ("udp", "fail", "payload_mismatch", "Echo didn’t match what was sent"),
+        ("mihomo", "error", "authentication_failed", "Controller rejected the token"),
+        ("cloudflare", "error", "authentication_failed", "Cloudflare API rejected the token"),
+        ("tailscale", "error", "authentication_failed", "Credentials rejected"),
+        ("cloudflare", "error", "cloudflare_token_missing", "Token not set on the worker"),
+        ("mihomo", "error", "adapter_secret_missing", "Token not set on the worker"),
+        ("mihomo", "error", "reference_not_fresh", "Provider reference out of date"),
+        ("mihomo", "error", "reference_unavailable", "Provider reference unavailable"),
+        ("mihomo", "error", "invalid_reference_document", "Provider reference unusable"),
+        ("mihomo", "unknown", "provider_reference_changed", "Provider reference changed while reading"),
+        ("mihomo", "error", "proxy_inventory_capacity_exceeded", "Response too large to read"),
+        ("cloudflare", "error", "unsupported_response_shape", "Response not recognized"),
+        ("cloudflared", "error", "metrics_unavailable", "Connector metrics unavailable"),
+        ("cloudflare", "error", "api_unavailable", "Cloudflare API unavailable"),
+        ("mihomo", "unknown", "tun_state_unavailable", "TUN state not reported"),
+    ]
+
+    static func coded(_ kind: String, _ outcome: String, _ code: String) -> [String: Any] {
+        F.check(code, kind: kind, health: outcome == "ok" ? "up" : outcome == "fail" ? "down" : outcome == "policy" ? "degraded" : "unknown",
+                diagnostic: ["outcome": outcome, "evidence": "measured", "stage": "probe", "code": code, "facts": [:] as [String: String]])
+    }
+
+    @Test func probePoliciesAndMonitorErrorsAreNamed() throws {
+        for (kind, outcome, code, words) in Self.named {
+            let said = try L10n.with("en") { try F.monitor(Self.coded(kind, outcome, code)).summary }
+            #expect(said == words, "\(kind) \(code)")
+            // Translated, not left in English.
+            for l in ["ja", "zh-Hans"] {
+                let other = try L10n.with(l) { try F.monitor(Self.coded(kind, outcome, code)).summary }
+                #expect(other != words, "\(l) \(code)")
+            }
+        }
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])

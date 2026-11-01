@@ -67,6 +67,38 @@ public enum MonitorWords {
         case "record_missing": return tr("DNS record missing")
         case "record_content_mismatch", "record_not_proxied", "record_proxied_unexpectedly": return tr("DNS differs from policy")
         case "origins_below_expected": return tr("Fewer healthy origins than expected")
+        // Probe policies: the request succeeded, against a declared policy.
+        case "certificate_expiring": return tr("Certificate expires soon")
+        case "latency_exceeded": return tr("Slower than its latency budget")
+        case "json_assertion_mismatch": return tr("JSON response differs from its assertion")
+        case "pop_mismatch", "colo_mismatch": return tr("Unexpected edge location")
+        case "warp_mismatch": return tr("WARP differs from policy")
+        case "gateway_mismatch": return tr("Gateway differs from policy")
+        case "exit_mismatch": return tr("Exit address differs from policy")
+        case "allowed_ips_mismatch": return tr("Allowed IPs differ from policy")
+        case "keepalive_mismatch": return tr("Keepalive differs from policy")
+        // Failed assertions on what answered.
+        case "body_mismatch", "regex_mismatch", "header_mismatch": return tr("Response didn’t match its assertion")
+        case "payload_mismatch": return tr("Echo didn’t match what was sent")
+        // The monitor's own reads: never the service's state.
+        case "authentication_failed":
+            switch c.kind {
+            case "mihomo": return tr("Controller rejected the token")
+            case "cloudflare": return tr("Cloudflare API rejected the token")
+            default: return tr("Credentials rejected")
+            }
+        case "adapter_secret_missing", "cloudflare_token_missing", "reference_secret_missing": return tr("Token not set on the worker")
+        case "reference_unavailable", "reference_transport_unavailable": return tr("Provider reference unavailable")
+        case "reference_not_fresh": return tr("Provider reference out of date")
+        case "invalid_reference_document", "invalid_reference_members", "reference_provider_missing",
+             "reference_complexity_exceeded", "reference_response_limit_exceeded": return tr("Provider reference unusable")
+        case "provider_reference_changed": return tr("Provider reference changed while reading")
+        case "proxy_inventory_capacity_exceeded", "proxy_members_capacity_exceeded", "provider_evidence_budget_exceeded",
+             "response_limit_exceeded", "response_complexity_exceeded", "response_too_large": return tr("Response too large to read")
+        case "unsupported_response_shape": return tr("Response not recognized")
+        case "metrics_unavailable": return tr("Connector metrics unavailable")
+        case "api_unavailable": return tr("Cloudflare API unavailable")
+        case "tun_state_unavailable": return tr("TUN state not reported")
         default: break
         }
         if d.facts["provider_reference_settling"] == "true" { return tr("Provider update loading") }

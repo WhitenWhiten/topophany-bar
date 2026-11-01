@@ -6075,6 +6075,374 @@
           }
         }
       }
+    },
+    "Certificate expires soon": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "証明書の期限が近い"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "证书即将过期"
+          }
+        }
+      }
+    },
+    "Slower than its latency budget": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遅延予算を超過"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超出延迟预算"
+          }
+        }
+      }
+    },
+    "JSON response differs from its assertion": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 応答がアサーションと異なる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 响应与断言不符"
+          }
+        }
+      }
+    },
+    "WARP differs from policy": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WARP がポリシーと異なる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WARP 状态不符合预期"
+          }
+        }
+      }
+    },
+    "Gateway differs from policy": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gateway がポリシーと異なる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gateway 状态不符合预期"
+          }
+        }
+      }
+    },
+    "Exit address differs from policy": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "出口アドレスがポリシーと異なる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "出口地址不符合预期"
+          }
+        }
+      }
+    },
+    "Allowed IPs differ from policy": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed IPs がポリシーと異なる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed IPs 不符合预期"
+          }
+        }
+      }
+    },
+    "Keepalive differs from policy": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keepalive がポリシーと異なる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keepalive 不符合预期"
+          }
+        }
+      }
+    },
+    "Response didn’t match its assertion": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "応答がアサーションに一致しない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "响应与断言不符"
+          }
+        }
+      }
+    },
+    "Echo didn’t match what was sent": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エコーが送信内容と一致しない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回显与发送内容不符"
+          }
+        }
+      }
+    },
+    "Controller rejected the token": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コントローラーがトークンを拒否"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制器拒绝了令牌"
+          }
+        }
+      }
+    },
+    "Cloudflare API rejected the token": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloudflare API がトークンを拒否"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloudflare API 拒绝了令牌"
+          }
+        }
+      }
+    },
+    "Credentials rejected": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "認証情報が拒否された"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凭据被拒绝"
+          }
+        }
+      }
+    },
+    "Token not set on the worker": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ワーカーにトークンが未設定"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作节点未设置令牌"
+          }
+        }
+      }
+    },
+    "Provider reference unavailable": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロバイダー参照を取得できない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法获取订阅参照"
+          }
+        }
+      }
+    },
+    "Provider reference out of date": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロバイダー参照が古い"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "订阅参照已过期"
+          }
+        }
+      }
+    },
+    "Provider reference unusable": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロバイダー参照を使用できない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "订阅参照不可用"
+          }
+        }
+      }
+    },
+    "Provider reference changed while reading": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り中にプロバイダー参照が変更された"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读取期间订阅参照发生变化"
+          }
+        }
+      }
+    },
+    "Response too large to read": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "応答が大きすぎて読み取れない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "响应过大，无法读取"
+          }
+        }
+      }
+    },
+    "Response not recognized": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "応答形式を認識できない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法识别响应格式"
+          }
+        }
+      }
+    },
+    "Connector metrics unavailable": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コネクターのメトリクスを取得できない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法获取连接器指标"
+          }
+        }
+      }
+    },
+    "Cloudflare API unavailable": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloudflare API を利用できない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloudflare API 不可用"
+          }
+        }
+      }
+    },
+    "TUN state not reported": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TUN 状態が報告されていない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未报告 TUN 状态"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

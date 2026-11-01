@@ -485,6 +485,13 @@ or `fail` card says so instead of passing or failing: the origin was not asked,
 as Topophany's engine words it. A service card with no failing, policy or error
 check says the same instead of "all passing". Health and pills remain `topo`'s.
 
+Codes are named, not interpreted: 1.5.2's probe policies (`certificate_expiring`,
+`latency_exceeded`, `json_assertion_mismatch`), edge, trace, exit and WireGuard
+policies, failed response assertions, and the monitor's own read errors
+(credentials, provider references, response budgets, unavailable APIs or
+metrics). A monitor error stays the monitor's, never the service's. Unknown codes
+fall back to the outcome's words, and the expanded card keeps the stage and code.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report
