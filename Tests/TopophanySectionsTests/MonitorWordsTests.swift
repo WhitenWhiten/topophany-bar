@@ -303,6 +303,20 @@ import TopophanyKit
         }
     }
 
+    @Test func onlyAWebRunbookOpens() throws {
+        for good in ["https://wiki.example.invalid/runbooks/site", " http://runbooks.example.com/a?b=c "] {
+            #expect(SectionBuilder.runbookURL(good) != nil, "\(good)")
+        }
+        for bad in ["", "wiki/runbooks/site", "file:///etc/hosts", "javascript:alert(1)", "ssh://host", "https://", "mailto:ops@example.com"] {
+            #expect(SectionBuilder.runbookURL(bad) == nil, "\(bad)")
+        }
+        let card = try F.serviceCard(F.service("site", seenFrom: [("MacBook", [F.check("p", diagnostic: nil)])],
+                                                extra: ["runbook": "https://wiki.example.invalid/runbooks/site"]))
+        #expect(card.runbook?.host() == "wiki.example.invalid")
+        // The runbook is the topology's, not a reading: history keeps it.
+        #expect(card.withheld(at: F.now).runbook == card.runbook)
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])

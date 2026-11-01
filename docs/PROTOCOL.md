@@ -524,6 +524,12 @@ Panel service cards also show the topology's `memo`, the edge's 24 h
 tooltip and to VoiceOver. A withheld card keeps its memo and drops the rest.
 Widgets keep their layout.
 
+A service card's `runbook` opens from the panel only when it is an absolute
+http(s) URL with a host: a Runbook button in Native's foot, and a last
+"↗ runbook host" line in Terminal with a button laid over its region. That
+region is cached with the section's raster like the monitoring regions. Other
+schemes stay unopened.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report

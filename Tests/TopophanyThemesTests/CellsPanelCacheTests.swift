@@ -25,6 +25,24 @@ import TopophanySections
         #expect(CellsPanel.scene(model, ctx: ctx, cache: cache) == CellsPanel.scene(model, ctx: ctx))
     }
 
+    @Test func runbookRegionsSurviveReuseAndMoving() throws {
+        var service = ServiceStates.down
+        service.runbook = "https://wiki.example.invalid/runbooks/memos"
+        var model = previewPanel(.clear)
+        model.sections.append(.services([ServiceStates.card(service)]))
+        let cache = CellsPanelCache(), ctx = RenderContext(theme: ThemeStore.terminal)
+        for _ in 0..<2 {
+            let cached = CellsPanel.scene(model, ctx: ctx, cache: cache)
+            #expect(cached == CellsPanel.scene(model, ctx: ctx))
+            let r = try #require(cached.regions["runbook:memos"])
+            #expect(r.height == cached.metrics.line && r.minY > (cached.marks["section:services"] ?? 0) && r.maxY < cached.size.height)
+        }
+        model.sections.reverse()
+        let moved = CellsPanel.scene(model, ctx: ctx, cache: cache)
+        #expect(moved == CellsPanel.scene(model, ctx: ctx))
+        #expect(moved.regions["runbook:memos"] != nil)
+    }
+
     @Test func reusedSectionsPreserveDrawingAndInteractionRegions() {
         let cache = CellsPanelCache()
         var model = MapSnapshots().panel(.incidents)

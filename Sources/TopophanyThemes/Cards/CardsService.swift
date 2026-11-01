@@ -140,6 +140,7 @@ struct CardsService: View {
     var p: CardsPalette
     var t: CardsType
     var focused = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -180,10 +181,18 @@ struct CardsService: View {
             // Where nothing measures it, the rows say so already; what its
             // checks say beyond their marks is listed above.
             let said = card.isUnmonitored ? "" : card.checksText
-            if !said.isEmpty || card.edge != nil || !card.age.isEmpty {
+            if !said.isEmpty || card.edge != nil || card.runbook != nil || !card.age.isEmpty {
                 HStack(spacing: 10) {
                     Text(said).lineLimit(1)
                     Spacer(minLength: 8)
+                    if let url = card.runbook {
+                        Button { openURL(url) } label: {
+                            Label(tr("Runbook"), systemImage: "book").labelStyle(.titleAndIcon).foregroundStyle(p.l2)
+                        }
+                        .buttonStyle(.plain).fixedSize()
+                        .help(url.absoluteString)
+                        .accessibilityLabel(Text(tr("Open runbook for \(card.name)")))
+                    }
                     if let edge = card.edge { ServiceVia(edge: edge, colos: card.colos, p: p, t: t) }
                     Text(card.age).lineLimit(1)
                 }

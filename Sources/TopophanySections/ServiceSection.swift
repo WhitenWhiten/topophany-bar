@@ -136,6 +136,8 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
     public var firstByte = ""
     /// The topology's own note on it.
     public var memo = ""
+    /// Its runbook, where the topology names an absolute http(s) one.
+    public var runbook: URL? = nil
     public var focusID: String { monitor?.pin.id ?? "service:" + id }
     public var id: String
     public var name: String
@@ -362,7 +364,16 @@ extension SectionBuilder {
         card.cacheShares = c.answeredFrom?.cache ?? []
         card.firstByte = checks.first { $0.freshness == "fresh" && !$0.firstByte.isEmpty }?.firstByte ?? ""
         card.memo = c.memo
+        card.runbook = runbookURL(c.runbook)
         return card
+    }
+
+    /// Only a web page opens from the panel: an absolute http(s) URL with a
+    /// host. Anything else the topology wrote stays unopened.
+    public static func runbookURL(_ text: String) -> URL? {
+        guard let url = URL(string: text.trimmingCharacters(in: .whitespaces)), let scheme = url.scheme?.lowercased(),
+              scheme == "https" || scheme == "http", url.host?.isEmpty == false else { return nil }
+        return url
     }
 
     /// Each observer's checks that say more than their mark, in the card's

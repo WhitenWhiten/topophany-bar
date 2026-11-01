@@ -3462,6 +3462,54 @@
           }
         }
       }
+    },
+    "Runbook": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ランブック"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行手册"
+          }
+        }
+      }
+    },
+    "runbook": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ランブック"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行手册"
+          }
+        }
+      }
+    },
+    "Open runbook for %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ のランブックを開く"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 %@ 的运行手册"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

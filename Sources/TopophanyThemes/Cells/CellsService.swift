@@ -30,7 +30,8 @@ extension CellsBodies {
         let memo = details && !c.memo.isEmpty && !c.isBlank
         let day: [(String, String)] = details ? [(tr("24h"), c.answeredFrom.joined(separator: ", ")), (tr("cache"), c.cacheShares.joined(separator: ", ")),
                                                  (tr("first byte"), c.firstByte)].filter { !$0.1.isEmpty } : []
-        let extra = (memo ? 1 : 0) + day.count
+        let runbook = details && foot && !c.isBlank ? c.runbook : nil
+        let extra = (memo ? 1 : 0) + day.count + (runbook == nil ? 0 : 1)
         focusRow(&w, c.focusID, lines: 1 + max(1, rows.count) + diagnoses.count + more + extra + (foot ? 1 : 0))
         if c.isMissing {
             w.line([.t(CellText.truncate(c.subtitle, n), p.muted)])
@@ -72,6 +73,11 @@ extension CellsBodies {
             w.line([.t(label + " ", p.faint), .t(CellText.truncate(value, max(4, n - CellText.width(label) - 1)), p.muted)])
         }
         if foot, !c.isBlank { w.line(dependsLine(c, n, summary: !details), viaLine(c)) }
+        // Last, so the panel can lay a button over it: "↗ runbook  wiki.example.com".
+        if let runbook {
+            let label = "↗ " + tr("runbook") + "  "
+            w.line([.t(label, p.accent), .t(CellText.truncate(runbook.host() ?? runbook.absoluteString, max(4, n - CellText.width(label))), p.faint)])
+        }
     }
 
     /// "→ ● PostgreSQL", "used by 3" or "depends on nothing"; with

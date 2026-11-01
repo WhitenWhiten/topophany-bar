@@ -625,6 +625,7 @@ private struct CellsPanelContent: View, Equatable {
     var ctx: RenderContext
     var focusFirstAttention = false
     @Environment(\.panelActions) private var actions
+    @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hover: String?
     @State private var sectionCache = CellsPanelCache()
@@ -763,6 +764,15 @@ private struct CellsPanelContent: View, Equatable {
                     .offset(x: r.minX, y: r.minY)
                     .accessibilityLabel(Text(card.name + ", " + card.pill.text))
                     .accessibilityValue(Text(m.expanded ? tr("Expanded") : tr("Collapsed")))
+            }
+        }
+        ForEach(model.services.filter { $0.monitor == nil && $0.runbook != nil }, id: \.focusID) { card in
+            if let url = card.runbook, let r = scene.regions["runbook:" + card.id], r.minY >= top, r.maxY <= bottom {
+                Button { openURL(url) } label: { Color.clear.contentShape(Rectangle()) }
+                    .buttonStyle(.plain).frame(width: r.width, height: r.height)
+                    .offset(x: r.minX, y: r.minY)
+                    .help(url.absoluteString)
+                    .accessibilityLabel(Text(tr("Open runbook for \(card.name)")))
             }
         }
         if let m = model.map, let r = scene.regions["map"], r.maxY > top, r.minY < bottom {
@@ -910,7 +920,13 @@ private struct CellsPanelContent: View, Equatable {
                         w.box(title, b.servicePill(c), x0: x0, x1: x1, style: .panel) { b.monitor(&$0, c, m) }
                         regions[c.focusID] = CGRect(x: x0, y: startY, width: x1 - x0, height: min(2 * w.lineHeight, w.y - startY))
                     } else {
-                        w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: .panel) { b.service(&$0, c) }
+                        w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: .panel) { w in
+                            b.service(&w, c)
+                            // Its runbook is the card's last line.
+                            if c.runbook != nil, !c.isBlank {
+                                regions["runbook:" + c.id] = CGRect(x: x0, y: w.y - w.lineHeight, width: x1 - x0, height: w.lineHeight)
+                            }
+                        }
                     }
                 }
             case .map(let m):
@@ -946,7 +962,7 @@ private struct CellsPanelContent: View, Equatable {
                                focus: w.focused != oldFocus ? w.focused : nil,
                                map: s.id == .map ? regions["map"] : nil,
                                mapMeta: s.id == .map ? regions["mapMeta"] : nil,
-                               monitorRegions: s.id == .services ? regions.filter { $0.key.hasPrefix("check:") || $0.key.hasPrefix("link:") } : [:]))
+                               monitorRegions: s.id == .services ? regions.filter { $0.key.hasPrefix("check:") || $0.key.hasPrefix("link:") || $0.key.hasPrefix("runbook:") } : [:]))
         }
 
         // Footer: keycaps and the connection. Live, the project is cut to
