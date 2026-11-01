@@ -45,4 +45,15 @@ import Testing
         #expect(supported.template.rows[0].history == nil)
         #expect(!String(decoding: try supported.line(), as: UTF8.self).contains("retry_nonce"))
     }
+
+    @Test func unpinnedIdentityIsReleasedWithoutDroppingUnavailableHistory() throws {
+        var frame = try JSONDecoder().decode(Frame.self, from: Data(raw.utf8))
+        var policy = ReaderPolicy(); policy.receive(frame, at: at)
+        frame.sequence = 2; frame.rows[0].value = .none
+        policy.receive(frame, at: at)
+        #expect(policy.lastValues.count == 1)
+        frame.sequence = 3; frame.rows[0].select?.link = "another-link"
+        policy.receive(frame, at: at)
+        #expect(policy.lastValues.isEmpty)
+    }
 }

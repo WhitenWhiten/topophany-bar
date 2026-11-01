@@ -123,6 +123,9 @@ func config(_ path: String, backoff: TimeInterval = 0.2) -> ProcessEngine.Config
                                                         with: "exec 1>&-\ntrap '' TERM\nexec /bin/sleep 30")
         let engine = ProcessEngine(configuration: config(try FakeTopo.install(body), backoff: 10))
         let rec = Recorder(engine.start(request()))
+        // Capability probing and process launch are not the stdout-close
+        // latency under test, especially while snapshot suites saturate CPU.
+        try #require(await rec.wait { events in events.contains { if case .status(.running) = $0 { true } else { false } } })
         #expect(await rec.wait(timeout: 1) { events in events.contains { if case .sourceEnded = $0 { true } else { false } } })
         // The source-ended notification doesn't depend on stderr EOF or
         // SIGTERM. Stopping also reaps a process that ignores SIGTERM.

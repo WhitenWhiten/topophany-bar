@@ -484,3 +484,9 @@ current pins and retained across collapse/reopening, so those gestures do not
 repeatedly replace the source or its history book. Unpinning and profile changes
 release the demand. Existing service cards and Service widgets retain their
 history. A history-only template update does not display a configuration notice.
+
+A live `collector_read.state == "waiting"` is awaiting the first acquisition,
+not a failed connection. It uses neutral waiting text and connecting activity.
+A stopped stream ends an in-progress refresh indication immediately; an
+outstanding retry identity remains recognizable if the supervisor restarts with
+that request. Historical row values are bounded to the active template's keys.

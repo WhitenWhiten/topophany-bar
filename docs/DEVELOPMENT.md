@@ -219,3 +219,38 @@ The new drawing adds no frame callback or timer. Unpinning or changing profiles
 releases expansion state. Test `MonitoringSnapshots` renders compact/expanded
 cards in both renderers and three languages from a synthetic topo frame;
 `CellsPanelCacheTests` checks cached/fresh drawing and disclosure hit regions.
+
+The existing performance probe can include synthetic monitoring cards:
+
+```sh
+python3 scripts/check-panel-performance.py \
+  build/DerivedData/Build/Products/Debug/topophany-bar.app \
+  --input wheel --topo /ABS/PATH/topo --monitoring \
+  --out build/panel-performance/monitoring
+```
+
+`--monitoring` checks capabilities and pins preview check `m-clash` and link
+`home-cf`. It uses temporary settings and never changes the installed app.
+
+Validation on 2026-11-01 used the same machine, Debug build configuration,
+Chinese locale and ten wheel traces per renderer. The control scenario was the
+existing `incidents` fixture, before/after monitoring integration:
+
+| Renderer | Mean of each trace's maximum main-thread gap, before → after | Largest gap, before → after |
+| --- | --- | --- |
+| Native | 20.3 → 19.4 ms | 24.7 → 26.4 ms |
+| Terminal | 33.2 → 28.3 ms | 38.0 → 37.3 ms |
+
+Terminal control section preparation/reuse counts stayed at 82/89. This run
+showed no material regression; these are main-thread sampling gaps, not GPU
+frame rates. A separate real-preview monitoring workload passed the same scroll
+and hosting/window-bounds checks (largest gaps: Native 21.2 ms, Terminal 26.7 ms).
+
+Validation also covered all SwiftPM test packages, application tests, six built-in
+themes at large text, both renderers in English/Chinese/Japanese, cached hit
+regions, mouse/keyboard disclosure, collapse and reopening. A read-only check using the current
+collector profile completed four reads in 1.04–1.80 s: retry acknowledgment kept
+its old acquisition timestamp and configuration revision before new reads
+arrived. This establishes the observed read/retry behavior, not the cause of
+past Tailscale interruptions. No installed binaries or connection settings were
+replaced by these checks.

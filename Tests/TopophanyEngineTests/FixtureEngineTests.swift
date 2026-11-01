@@ -137,7 +137,7 @@ func frames(_ events: [EngineEvent]) -> [Frame] {
         let e = FixtureEngine(scenario: .clear, clock: ManualClock(t), tick: nil)
         var it = e.start(TemplateCompiler().request(for: s, revision: 1, serviceCards: true, listServices: true)).makeAsyncIterator()
         let f = frames(await take(4, from: &it)).last!
-        #expect(f.rows.map(\.id) == ["status", "seen", "attention", "apps", "service-1", "service-2", "services"])
+        #expect(f.rows.map(\.id) == ["status", "seen", "attention", "apps", "service-1", "service-2", "services", "checks", "links"])
         guard case .serviceCard(let c) = f.row("service-1")?.value else { Issue.record("no card"); return }
         #expect(c.id == "main-site")
         #expect(f.row("service-1")?.select?.service == "main-site")

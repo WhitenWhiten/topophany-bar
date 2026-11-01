@@ -6,6 +6,24 @@ import TopophanySections
 
 @MainActor
 @Suite(.serialized) struct MonitoringSnapshots {
+    @Test func monitoringAdaptsToLargeTextAndEveryTheme() throws {
+        L10n.force("zh-Hans")
+        defer { L10n.force(nil) }
+        let url = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/Monitoring/preview.ndjson")
+        let f = try #require(FrameDecoder.frame(from: Data(contentsOf: url)))
+        let now = try #require(f.generatedAt)
+        var policy = ReaderPolicy(); policy.receive(f, at: now)
+        let pin = MonitorPin(kind: .check, id: "m-clash")
+        var model = previewPanel(.clear)
+        model.sections = [.services(SectionBuilder.monitors(policy.evaluate(at: now), pins: [pin], expanded: [pin]))]
+        for theme in ThemeStore.builtIn {
+            let ctx = RenderContext(theme: theme, colorScheme: .light, textSize: .large)
+            try snapshot("monitor-large-\(theme.id)", OnDesktop(dark: false) {
+                Renderers.renderer(for: theme).panel(model, context: ctx).transaction { $0.disablesAnimations = true }
+            })
+        }
+    }
+
     @Test func monitoringCardsUseBothExistingRenderers() throws {
         let url = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/Monitoring/preview.ndjson")
         let f = try #require(FrameDecoder.frame(from: Data(contentsOf: url)))

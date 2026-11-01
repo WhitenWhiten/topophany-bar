@@ -76,6 +76,10 @@ public struct ReaderPolicy: Sendable {
             frame = incoming
             self.line = line
             receivedAt = now
+            // Retain history only for the active template's identities. Pin
+            // changes must not grow a cache of every entity ever inspected.
+            let identities = Set(incoming.rows.map(Self.key))
+            lastValues = lastValues.filter { identities.contains($0.key) }
             for row in incoming.rows where row.value.isKnown {
                 lastValues[Self.key(row)] = row
             }

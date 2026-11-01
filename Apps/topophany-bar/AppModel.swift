@@ -508,7 +508,8 @@ final class AppModel {
 
     var canRefreshCollector: Bool {
         effectiveSettings.topo.source == "client" && capabilities?.clientRetry == true &&
-        engineStatus.isRunning && applyingRequestID == nil && !refreshingCollector && activeRequest != nil
+        engineStatus.isRunning && applyingRequestID == nil && !refreshingCollector && activeRequest != nil &&
+        activeRequest?.profile == effectiveSettings.topo.profile && activeRequest?.observer == effectiveSettings.topo.observer
     }
 
     func retryCurrentSource() {
@@ -619,9 +620,11 @@ final class AppModel {
                 restartAt = nil
                 if case .running(let r) = s, fixture == nil, capabilities?.profiles == true { loadProfiles(path: r.path) }
             case .restarting(let after, _, _):
+                finishCollectorRetry()
                 policy.sourceEnded(at: now)
                 restartAt = now.addingTimeInterval(after)
             case .unavailable, .stopped:
+                finishCollectorRetry()
                 policy.sourceEnded(at: now)
                 restartAt = nil
             case .starting:
@@ -634,6 +637,7 @@ final class AppModel {
             appendDiagnostics(pending.drain())
             return
         case .sourceEnded:
+            finishCollectorRetry()
             policy.sourceEnded(at: now)
         case .capabilities(let caps):
             capabilities = caps

@@ -20,6 +20,13 @@ import TopophanyKit
             let stopped = StatusSection(kind: .blind(.engineStopped(restartAt: nil)), mark: .offline, now: now)
             #expect(Set([unavailable.title, expired.title, stopped.title]).count == 3)
             #expect(unavailable.mark == .offline && unavailable.count == nil)
+            var waiting = unavailable
+            source.isCurrent = true; source.read.state = "waiting"
+            waiting.collector = source
+            #expect(waiting.title == "Waiting for data")
+            #expect(waiting.subtitle == "Reading collector…")
+            #expect(waiting.shortSubtitle == waiting.subtitle)
+            #expect(StatusItemModel(status: waiting, appearance: .init()).activity == .connecting)
         }
     }
 }

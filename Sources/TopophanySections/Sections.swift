@@ -316,6 +316,7 @@ public struct PanelChrome: Sendable, Hashable {
     public enum Connection: Sendable, Hashable {
         case connected
         case unreachable
+        case reading
         case starting
         case restarting(at: Date?)
         case notRunning(String)
@@ -345,6 +346,7 @@ public struct PanelChrome: Sendable, Hashable {
         switch connection {
         case .connected: return tr("Connected · \(p)")
         case .unreachable: return tr("Unreachable · \(p)")
+        case .reading: return tr("Reading collector…")
         case .starting: return tr("Starting topo…")
         case .restarting(let at?):
             let s = max(1, Int(at.timeIntervalSince(now).rounded(.up)))

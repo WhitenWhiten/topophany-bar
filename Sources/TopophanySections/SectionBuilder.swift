@@ -516,7 +516,7 @@ public enum SectionBuilder {
     // MARK: chrome
 
     static func chrome(_ r: Reading, status: StatusSection, observer: String) -> PanelChrome {
-        let connection: PanelChrome.Connection
+        var connection: PanelChrome.Connection
         switch status.kind {
         case .sources: connection = status.isBlind ? .notRunning(tr("Not current")) : .connected
         case .verdict: connection = .connected
@@ -531,6 +531,7 @@ public enum SectionBuilder {
         case .blind(.leaseLapsed): connection = .notRunning(tr("topo stopped answering"))
         case .blind: connection = .unreachable
         }
+        if status.isAwaitingCollector { connection = .reading }
         var view = status.sources?.adapter ?? tr("all observers")
         if !observer.isEmpty {
             view = observer

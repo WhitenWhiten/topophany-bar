@@ -52,4 +52,18 @@ import TopophanyKit
         #expect(request.template.rows.first { $0.metric == "service.card" }?.history == nil)
         #expect(request.template.rows.first { $0.metric == "check.card" }?.history == false)
     }
+
+    @Test func affectedLinkKeepsItsHealthButShowsImpact() throws {
+        var frame = try fixture()
+        let now = try #require(frame.generatedAt)
+        let index = try #require(frame.rows.firstIndex { $0.metric == "link.card" })
+        guard case .linkCard(var link) = frame.rows[index].value else { Issue.record("missing link"); return }
+        link.summary.affected = true
+        frame.rows[index].value = .linkCard(link)
+        var policy = ReaderPolicy(); policy.receive(frame, at: now)
+        let card = try #require(SectionBuilder.monitors(policy.evaluate(at: now), pins: [.init(kind: .link, id: "home-cf")]).first)
+        #expect(link.summary.health == .up)
+        #expect(card.mark == .degraded && card.pill.mark == .degraded)
+        #expect(card.pill.text == Pill.state("affected", health: .up).text)
+    }
 }

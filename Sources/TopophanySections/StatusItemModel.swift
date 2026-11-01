@@ -83,6 +83,7 @@ public struct StatusItemModel: Sendable, Hashable {
         case .blind(.engineStopped(let at)): activity = at == nil ? .resting : .connecting
         case .blind: activity = .resting
         }
+        if status.isAwaitingCollector { activity = .connecting }
         motion = appearance.motion
         readings = appearance.readings.map { MenuBarReading($0, local) }
         let updated = status.updatedAt.map { tr("updated \(Words.agoSpoken($0, now: status.now))") }

@@ -163,8 +163,10 @@ extension SectionBuilder {
                              p50: k.latency?.p50, p50Label: k.diagnostic?.evidence == "reported" ? tr("Read p50") : "p50", fields: MonitorWords.fields(k), up24h: k.up24h)
             }
             let mark: Mark = missing ? .unknown : !current ? .offline : affected && health == .up ? .degraded : Mark(health)
+            let pill: Pill = missing ? .health(.unknown) : !current ? .cached
+                : affected ? Pill(text: Pill.state("affected", health: health).text, mark: mark) : .health(health)
             var card = ServiceCardModel(id: pin.entity, name: name, application: "", host: .init(name: "", kind: pin.kind == .link ? "edge" : "", provider: provider),
-                                       hostMark: .unknown, mark: mark, pill: missing ? Pill.health(.unknown) : !current ? .cached : Pill.health(health), isWithheld: !current,
+                                       hostMark: .unknown, mark: mark, pill: pill, isWithheld: !current,
                                        isMissing: missing, observers: [], checks: [], sampledAt: sampledAt, now: r.now)
             card.monitor = .init(pin: pin, subtitle: subtitle, summary: summary, reading: reading, checks: details, expanded: expanded.contains(pin))
             return card

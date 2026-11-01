@@ -33,7 +33,7 @@ def wait_for_write(path, previous, process, timeout=10):
     raise RuntimeError(f"no new {path.name}; use a Debug build and keep a display awake")
 
 
-def capture(app, notifier, temporary, output, theme, language, iterations, topo, input_mode):
+def capture(app, notifier, temporary, output, theme, language, iterations, topo, input_mode, monitoring=False):
     settings = temporary / f"{theme}.json"
     settings.write_text(json.dumps({
         "schema": 1, "openAtLogin": False, "language": language,
@@ -47,6 +47,13 @@ def capture(app, notifier, temporary, output, theme, language, iterations, topo,
             {"id": "zones"}, {"id": "mac", "mode": "local", "every": "2s"},
         ],
     }))
+    if monitoring:
+        configuration = json.loads(settings.read_text())
+        for section in configuration["sections"]:
+            if section["id"] == "services":
+                section["ids"] = []
+                section["monitors"] = [{"kind": "check", "id": "m-clash"}, {"kind": "link", "id": "home-cf"}]
+        settings.write_text(json.dumps(configuration))
     command = [str(app), "-settings", str(settings), "-direct-root", str(temporary / "direct")]
     command += ["-topo", str(topo), "-preview", "1"] if topo else ["-fixture", "incidents"]
     target = output / f"{theme}-{language}-{input_mode}"
@@ -128,12 +135,20 @@ def main():
     parser.add_argument("--iterations", type=int, default=10)
     parser.add_argument("--input", choices=["leap", "wheel", "map"], default="leap")
     parser.add_argument("--topo", type=pathlib.Path, help="optional topo binary for its synthetic preview network")
+    parser.add_argument("--monitoring", action="store_true", help="include synthetic check/link cards; requires --topo")
     parser.add_argument("--out", type=pathlib.Path, default=pathlib.Path("build/panel-performance"))
     parser.add_argument("--max-gap-ms", type=float, help="optional main-thread stall budget; exits nonzero if exceeded")
     args = parser.parse_args()
     app = args.app.resolve() / "Contents/MacOS/topophany-bar"
     if not app.is_file() or args.iterations < 2:
         parser.error("provide a built Debug app and at least two iterations")
+    if args.monitoring:
+        if not args.topo:
+            parser.error("--monitoring requires --topo with check/link cards")
+        capabilities = json.loads(subprocess.check_output([str(args.topo.resolve()), "monitor", "stream", "--capabilities"]))
+        metrics = {m["name"] for m in capabilities.get("metrics", [])}
+        if not {"check.card", "link.card"} <= metrics:
+            parser.error("--monitoring requires a topo that serves check.card and link.card")
     output = args.out.resolve()
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="topophany-panel-perf-") as directory:
@@ -142,7 +157,7 @@ def main():
         source.write_text(NOTIFIER)
         subprocess.run(["xcrun", "swiftc", str(source), "-o", str(notifier)], check=True)
         results = [capture(app, notifier, temporary, output, theme, args.language, args.iterations,
-                           args.topo.resolve() if args.topo else None, args.input) for theme in args.theme or ["native", "terminal"]]
+                           args.topo.resolve() if args.topo else None, args.input, args.monitoring) for theme in args.theme or ["native", "terminal"]]
     (output / "summary.json").write_text(json.dumps(results, indent=2) + "\n")
     if args.max_gap_ms is not None and any(t["maximumGapMilliseconds"] > args.max_gap_ms for r in results for t in r["traces"]):
         raise SystemExit(f"main-thread stall budget exceeded; see {output / 'summary.json'}")

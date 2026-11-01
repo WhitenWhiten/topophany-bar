@@ -151,6 +151,22 @@ extension RefreshTests {
         for i in f.rows.indices { f.rows[i].value = .none; f.rows[i].reason = "source_unavailable" }
         m.handle(.frame(f, line: Data()))
         #expect(m.reading.lastKnown == nil && m.reading.lastValues.isEmpty)
+        clock.advance(5); m.retryCollector()
+        for _ in 0..<10 { await Task.yield() }
+        let recovery = try #require(engine.all.last)
+        m.handle(.sourceEnded)
+        #expect(!m.refreshingCollector)
+        // A supervisor may restart with the retry that was written before
+        // stdout closed. Its request ID must still be accepted.
+        f.requestID = recovery.requestID; f.sequence = 7
+        m.handle(.frame(f, line: Data()))
+        #expect(m.activeRequestID == recovery.requestID)
+        m.update { $0.topo.profile = "Missing" }
+        for _ in 0..<10 { await Task.yield() }
+        let rejected = try #require(engine.all.last)
+        m.handle(.frame(Frame(requestID: rejected.requestID, lifecycle: .error, generatedAt: nil, publisherExpiresAt: nil,
+                              rows: [], error: .init(code: "profile_not_found", message: "Profile unavailable")), line: Data()))
+        #expect(!m.canRefreshCollector, "a rejected scope must not refresh the previous profile")
     }
 
     @Test func directRequestsAndRapidSwitchingStayInOneProcess() async throws {

@@ -82,6 +82,10 @@ public struct StatusSection: Sendable, Hashable {
         return false
     }
 
+    public var isAwaitingCollector: Bool {
+        isBlind && collector?.isCurrent == true && collector?.read.state == "waiting"
+    }
+
     public var verdictState: VerdictState? {
         if case .verdict(let s) = kind { return s }
         return nil
@@ -106,6 +110,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The headline: "All clear", "5 incidents", "Offline".
     public var title: String {
+        if isAwaitingCollector { return tr("Waiting for data") }
         if let sources { return sources.title }
         switch kind {
         case .sources: return ""
@@ -142,6 +147,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The line under the headline.
     public var subtitle: String {
+        if isAwaitingCollector { return tr("Reading collector…") }
         if let sources { return sources.subtitle }
         switch kind {
         case .sources: return ""
@@ -173,6 +179,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The line under a small widget's headline: "5 down · 63 of 68 up".
     public var shortSubtitle: String {
+        if isAwaitingCollector { return subtitle }
         if let sources { return sources.subtitle }
         switch kind {
         case .sources: return ""
@@ -269,6 +276,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The TUI's big number and the two lines beside it.
     public var big: (digits: String, top: String, bottom: String) {
+        if isAwaitingCollector { return ("--", tr("Reading collector…"), "") }
         if let sources { return sources.big }
         let of = configured.map { tr("of \($0) configured") } ?? ""
         guard let s = verdictState, let c = counts else {

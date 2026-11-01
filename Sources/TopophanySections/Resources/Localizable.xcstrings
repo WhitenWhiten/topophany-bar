@@ -5557,6 +5557,28 @@
           }
         }
       }
+    },
+    "Reading collector…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading collector…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取采集器…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクターを読み取り中…"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
