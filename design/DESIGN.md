@@ -659,7 +659,11 @@ counts as the collector card words its checks, "3 of 3 servers current", naming
 stale and missing servers only when there are some. Connected draws a signal in its
 tile, never All clear's check. Each source follows with its mark and what its row
 ends in: its servers while connected ("2 of 2 current"), else the state that asks
-for a look, in weight. A row opens Data sources. The foot counts sources and labels the frame time as a status update, separate
+for a look, in weight. A row opens Data sources; its help exposes the safe error and contact/retry
+times. Sources needing attention lead in stable order, including those with
+stale or missing readings. Settings uses the same order and existing disclosure
+rows for diagnostics, with its existing Sign In, Edit and Retry actions. Retry
+times are absolute, only for retrying sources; no extra timer is introduced. The foot counts sources and labels the frame time as a status update, separate
 from each resource’s sample age. The panel footer names the local process as
 “topo running”, not a successful remote connection. An explicit samples_stale
 reason titles the status “Readings expired” while preserving source contact. Count uses Go's attention count. No incident count or All

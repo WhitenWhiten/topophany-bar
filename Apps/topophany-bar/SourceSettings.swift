@@ -132,7 +132,9 @@ struct SourceSettings: View {
                     RowLabel("New profile", "Saved when you add its first source")
                 }
             }
-            if let entries = profile?.sources, !entries.isEmpty {
+            if let saved = profile?.sources, !saved.isEmpty {
+                let priorities = Dictionary(uniqueKeysWithValues: saved.map { ($0.id, status($0).map(SourceStatusSection.priority) ?? 2) })
+                let entries = (0...2).flatMap { priority in saved.filter { priorities[$0.id] == priority } }
                 let mixed = Set(entries.map(\.source.adapter)).count > 1
                 ForEach(entries) { entry in
                     SourceRow(entry: entry, status: status(entry), showsAdapter: mixed, disabled: busy || !listLoaded,
@@ -152,7 +154,7 @@ struct SourceSettings: View {
                 Spacer()
                 if model.capabilities?.direct?.retry == true {
                     Button("Retry Now") { model.retryDirect() }
-                        .disabled(profile?.sources.isEmpty ?? true)
+                        .disabled((profile?.sources.isEmpty ?? true) || model.settings.topo.profile != selectedProfile)
                 }
             }
         } header: {
@@ -279,9 +281,27 @@ struct SourceRow: View {
     var remove: () -> Void
 
     var signInFirst: Bool { status?.state == "auth_required" }
-    var needsLook: Bool { status.map { $0.state != "connected" && $0.state != "loading" } ?? false }
+    var needsLook: Bool { status.map(SourceStatusSection.needsAttention) ?? false }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            header
+            if let status, needsLook {
+                DisclosureGroup {
+                    Text(verbatim: SourceMessages.diagnostic(status))
+                        .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } label: {
+                    Text(verbatim: SourceMessages.acquisition(status)).foregroundStyle(.orange)
+                }
+                .font(.callout)
+                .padding(.leading, 13)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    var header: some View {
         LabeledContent {
             HStack(spacing: 8) {
                 Button(signInFirst ? "Sign In…" as LocalizedStringKey : "Edit…", action: signInFirst ? signIn : edit)
@@ -306,7 +326,7 @@ struct SourceRow: View {
                 HStack(spacing: 0) {
                     Text(verbatim: Words.join((showsAdapter ? [Origin.name(adapter: entry.source.adapter) ?? entry.source.adapter] : [])
                                               + [Self.host(entry.source.url), tr("\(entry.nodes.count) servers")]))
-                    if let status {
+                    if let status, !needsLook {
                         Text(verbatim: " · ")
                         Text(verbatim: SourceMessages.state(status.state)).foregroundStyle(needsLook ? .orange : .secondary)
                     }

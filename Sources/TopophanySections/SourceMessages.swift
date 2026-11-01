@@ -1,4 +1,5 @@
 import Foundation
+import TopophanyKit
 
 public enum SourceMessages {
     public static var templateLimit: String { tr("Too many pinned servers for one template. Choose fewer servers in Sections.") }
@@ -42,6 +43,44 @@ public enum SourceMessages {
         case "discovery_limit": tr("This Komari server lists more than the 1,000 servers topo reads.")
         default: nil
         }
+    }
+    /// A short acquisition diagnosis for the existing source row.
+    public static func acquisition(_ source: SourcesStatus.Source) -> String {
+        if source.state == "connected", let current = source.counts?.current {
+            return source.counts?.selected.map { tr("\(current) of \($0) current") } ?? tr("\(current) current")
+        }
+        if source.state == "retrying" || source.state == "error" {
+            switch source.code {
+            case "tls_error": return tr("Certificate error")
+            case "rate_limited": return tr("Rate limited")
+            case "connection_failed", "contact_expired": return tr("Connection failed")
+            default: break
+            }
+        }
+        return state(source.state)
+    }
+    /// Only public, localized diagnostics. Absolute times avoid a new ticking
+    /// state dependency in source rows; next_retry_at also holds normal polls,
+    /// so it is described as a retry only while the source is retrying.
+    public static func diagnostic(_ source: SourcesStatus.Source) -> String {
+        var lines: [String] = []
+        if source.state != "connected" && source.state != "loading", let code = source.code {
+            switch code {
+            case "contact_expired": lines.append(tr("The last successful source contact has expired."))
+            case "credential_renewed": lines.append(tr("Sign-in renewed. Retrying the read."))
+            case "auth_required", "forbidden", "connection_failed", "tls_error", "rate_limited", "upstream_incompatible", "selection_invalid", "state_budget", "profile_unavailable", "storage_error", "credential_storage_error":
+                lines.append(problem(code, adapter: source.adapter))
+            default: lines.append(state(source.state))
+            }
+        }
+        if let n = source.counts?.stale, n > 0 { lines.append(tr("\(n) stale")) }
+        if let n = source.counts?.missing, n > 0 { lines.append(tr("\(n) without samples")) }
+        func time(_ date: Date) -> String {
+            date.formatted(Date.FormatStyle(date: .abbreviated, time: .standard, locale: L10n.locale))
+        }
+        if let at = source.lastContactAt { lines.append(tr("Last contact: \(time(at))")) }
+        if source.state == "retrying", let at = source.nextRetryAt { lines.append(tr("Next retry: \(time(at))")) }
+        return lines.joined(separator: "\n")
     }
     /// The status card's headline: the state, short enough for one line.
     public static func headline(_ state: String) -> String {

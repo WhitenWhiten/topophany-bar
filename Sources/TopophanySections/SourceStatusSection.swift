@@ -6,9 +6,27 @@ public struct SourceStatusSection: Sendable, Hashable {
     public var value: SourcesStatus
     public var isCurrent: Bool
     public var snapshotAt: Date?
+    public init(value: SourcesStatus, isCurrent: Bool, snapshotAt: Date? = nil) {
+        self.value = value
+        self.isCurrent = isCurrent
+        self.snapshotAt = snapshotAt
+        // Stable partition in presentation preparation, never in a draw callback.
+        // Keep the source IDs and the backend's counts/states unchanged.
+        if isCurrent {
+            self.value.sources = (0...2).flatMap { priority in value.sources.filter { Self.priority($0) == priority } }
+        }
+    }
+    public static func needsAttention(_ source: SourcesStatus.Source) -> Bool {
+        priority(source) < 2
+    }
+    public static func priority(_ source: SourcesStatus.Source) -> Int {
+        if source.state != "connected" && source.state != "loading" { return 0 }
+        if source.state == "connected", (source.counts?.stale ?? 0) > 0 || (source.counts?.missing ?? 0) > 0 { return 1 }
+        return 2
+    }
     public var mark: Mark {
         guard isCurrent else { return .offline }
-        switch value.state { case "ready": return .up; case "partial": return .degraded; default: return .unknown }
+        switch value.state { case "ready": return .up; case "partial", "unavailable": return .degraded; default: return .unknown }
     }
     /// The headline, the state alone: "Connected", "Needs attention".
     public var title: String {
@@ -56,17 +74,15 @@ public struct SourceStatusSection: Sendable, Hashable {
     /// "2 of 2 current"; otherwise its state. Nothing once not current.
     public func detail(_ source: SourcesStatus.Source) -> String {
         guard isCurrent else { return "" }
-        guard source.state == "connected", let c = source.counts, let current = c.current else { return state(source) }
-        guard let selected = c.selected else { return tr("\(current) current") }
-        return tr("\(current) of \(selected) current")
+        return SourceMessages.acquisition(source)
     }
     /// A source in a state that asks for something: signing in, access, a Hub that can't be reached.
     public func needsLook(_ source: SourcesStatus.Source) -> Bool {
-        isCurrent && source.state != "connected" && source.state != "loading"
+        isCurrent && Self.needsAttention(source)
     }
     public func mark(_ source: SourcesStatus.Source) -> Mark {
         guard isCurrent else { return .offline }
-        return source.state == "connected" ? .up : .unknown
+        return source.state == "connected" ? .up : Self.needsAttention(source) ? .degraded : .unknown
     }
 }
 

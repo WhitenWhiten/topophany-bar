@@ -519,6 +519,8 @@ struct CardsSourceRows: View {
         VStack(spacing: 1) {
             ForEach(list.prefix(limit)) { s in
                 Button(action: actions.openSources) { row(s) }
+                    .help(SourceMessages.diagnostic(s))
+                    .accessibilityHint(SourceMessages.diagnostic(s))
                     .buttonStyle(PressStyle())
                     .modifier(HoverRow(p: p))
                     .accessibilityElement(children: .combine)

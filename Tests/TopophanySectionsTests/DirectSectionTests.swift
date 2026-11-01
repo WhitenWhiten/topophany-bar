@@ -4,6 +4,23 @@ import TopophanyKit
 @testable import TopophanySections
 
 struct DirectSectionTests {
+    @Test func failingSourcesLeadWithoutReorderingTheirPeers() throws {
+        let data = Data(#"{"state":"partial","sources":[{"id":"a","state":"connected","counts":{"selected":1,"current":1}},{"id":"b","state":"loading"},{"id":"c","state":"retrying","code":"rate_limited","next_retry_at":"2026-10-21T12:01:00Z"},{"id":"d","state":"connected","counts":{"stale":1}},{"id":"e","state":"auth_required"}]}"#.utf8)
+        let value = try JSONDecoder().decode(SourcesStatus.self, from: data)
+        let section = SourceStatusSection(value: value, isCurrent: true)
+        #expect(section.value.sources.map(\.id) == ["c", "e", "d", "a", "b"])
+        #expect(SourceStatusSection(value: value, isCurrent: false).value.sources.map(\.id) == ["a", "b", "c", "d", "e"])
+        let limited = section.value.sources[0]
+        L10n.with("en") {
+            #expect(section.detail(limited) == "Rate limited")
+            #expect(SourceMessages.diagnostic(limited).contains("Next retry:"))
+            var connected = limited; connected.state = "connected"; connected.code = nil
+            #expect(!SourceMessages.diagnostic(connected).contains("Next retry:"))
+        }
+        #expect(section.mark(limited) == .degraded)
+        #expect(section.mark(section.value.sources[2]) == .up, "expired samples do not imply lost contact")
+    }
+
     @Test func expiredSamplesKeepSourceContactAndExplainTheirReason() throws {
         let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appending(path: "docs/contracts/direct-v1/fixtures")
         let frame = try #require(FrameDecoder.frame(from: Data(contentsOf: root.appending(path: "stream-expired.json"))))
