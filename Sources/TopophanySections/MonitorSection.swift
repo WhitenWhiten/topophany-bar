@@ -64,15 +64,37 @@ public enum MonitorWords {
         case "policy": return tr("Policy differs")
         case "ok":
             if c.kind == "cloudflared" { return tr("Tunnel established; service unproven") }
-            if c.kind == "mihomo" { return tr("Runtime matches policy") }
+            if c.kind == "mihomo" { return declaresPolicy(d) ? tr("Runtime matches policy") : tr("Runtime reported; no policy declared") }
             return d.evidence == "reported" ? tr("Reported check passing") : tr("Check passing")
         default: return tr("Evidence incomplete")
         }
     }
 
+    /// Whether the check declares a policy at all: `topo`'s own word when it
+    /// sends one, else what its expectations show. A runtime read with none
+    /// matches nothing.
+    public static func declaresPolicy(_ d: CheckDiagnostic) -> Bool {
+        if !d.policy.isEmpty { return d.policy != "not_configured" }
+        return !d.expected.isEmpty || d.facts.keys.contains { $0 == "provider_comparison" || $0.hasPrefix("provider_reference_") }
+    }
+
+    /// `topo`'s judgment of an adapter check's declared policy, as a field.
+    static func policyField(_ d: CheckDiagnostic) -> MonitorCardModel.Field? {
+        let value: String
+        switch d.policy {
+        case "matched": value = tr("Matches")
+        case "violated": value = tr("Differs")
+        case "unverified": value = tr("Not verified")
+        case "not_configured": value = tr("None declared")
+        default: return nil
+        }
+        return .init(label: tr("Policy"), value: value)
+    }
+
     public static func fields(_ c: ServiceCard.Check) -> [MonitorCardModel.Field] {
-        guard let d = c.diagnostic, c.kind == "mihomo" else { return [] }
-        var out: [MonitorCardModel.Field] = []
+        guard let d = c.diagnostic else { return [] }
+        var out: [MonitorCardModel.Field] = policyField(d).map { [$0] } ?? []
+        guard c.kind == "mihomo" else { return out }
         for (key, label) in [("mode", tr("Mode")), ("tun_enabled", "TUN"), ("provider_comparison", tr("Providers")), ("core_delay_ms", tr("Core last delay"))] {
             guard let value = d.facts[key], !value.isEmpty else { continue }
             var text = key == "core_delay_ms" ? value + " ms" : value

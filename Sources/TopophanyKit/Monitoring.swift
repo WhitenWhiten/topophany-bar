@@ -43,13 +43,18 @@ public struct CheckDiagnostic: Sendable, Hashable, Decodable {
     public var policyConfirmed: Bool
     public var facts: [String: String]
     public var expected: [String: String]
+    /// An adapter check's declared policy, as `topo` judges it:
+    /// `not_configured`, `unverified`, `matched` or `violated`; `""` from an
+    /// older `topo` or for other kinds.
+    public var policy: String
     enum CodingKeys: String, CodingKey {
-        case outcome, evidence, pathEvidence = "path_evidence", stage, code, policyConfirmed = "policy_confirmed", facts, expected
+        case outcome, evidence, pathEvidence = "path_evidence", stage, code, policyConfirmed = "policy_confirmed", facts, expected, policy
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         outcome = c.text(.outcome) ?? "unknown"; evidence = c.text(.evidence) ?? "unknown"
         pathEvidence = c.text(.pathEvidence) ?? ""; stage = c.text(.stage) ?? ""; code = c.text(.code) ?? ""
+        policy = c.text(.policy) ?? ""
         policyConfirmed = (try? c.decodeIfPresent(Bool.self, forKey: .policyConfirmed)) ?? false
         facts = (try? c.decodeIfPresent([String: String].self, forKey: .facts)) ?? [:]
         expected = (try? c.decodeIfPresent([String: String].self, forKey: .expected)) ?? [:]

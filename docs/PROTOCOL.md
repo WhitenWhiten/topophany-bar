@@ -472,6 +472,13 @@ preferences. Direct mode requests neither metric. The chooser only offers
 supported categories. Missing rows are described as absent from this view,
 without asserting that a check absent from an observer view was deleted.
 
+An adapter check's diagnostic may carry `policy`: `not_configured`, `unverified`,
+`matched` or `violated`, `topo`'s judgment of its declared policy (the TUI's
+"Policy check"). Expanded cards show it as a Policy field; absent, none is shown.
+A mihomo runtime read is said to match its policy only when one is declared:
+`policy` other than `not_configured`, or, from a `topo` without the field, an
+expectation or a provider comparison. Otherwise it says no policy is declared.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report
