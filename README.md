@@ -177,3 +177,9 @@ If you find this useful, consider starring [Topophany](https://github.com/Whiten
 topophany-bar is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). Noncommercial use is permitted under that license; commercial use requires a separate license. See [LICENSE](LICENSE) for the full terms and [open an issue](https://github.com/WhitenWhiten/topophany-bar/issues) for licensing inquiries.
 
 [Topophany](https://github.com/WhitenWhiten/topophany) itself is MIT-licensed. Provider logos and other third-party assets retain their own terms; see [Third-party notices](THIRD-PARTY-NOTICES.md).
+
+With a companion that advertises investigation support, the menu bar's
+right-click menu offers **Related incidents**, **Diagnose connection** and
+**Compare service history**. Choose a service by name to compare its recent
+checks in the terminal. These actions use the same profile as the app; direct
+resource mode exposes connection diagnosis without implying incident history.

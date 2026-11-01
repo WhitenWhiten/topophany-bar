@@ -6392,6 +6392,54 @@
           }
         }
       }
+    },
+    "Related incidents": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关联事件"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "関連するインシデント"
+          }
+        }
+      }
+    },
+    "Diagnose connection": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "诊断连接"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続を診断"
+          }
+        }
+      }
+    },
+    "Compare service history": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对比服务历史"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サービス履歴を比較"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

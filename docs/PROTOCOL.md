@@ -500,3 +500,10 @@ degraded and failed availability. Invalid counts are withheld; older frames
 omit the caption. The caption disappears when the verdict is cached or expired.
 It updates with the status model, adding no timer or background task; only the
 status drawing region gains a line and existing layout measures its size.
+
+`investigation: true` advertises the CLI's `doctor`, `compare` and
+`--related-incidents` entry points. Missing/invalid values are false. The menu
+bar offers corresponding terminal shortcuts only when this flag is present.
+Direct mode omits incident/history shortcuts; synthetic preview omits live
+connection diagnosis. History comparison retains the selected profile but
+intentionally compares all observers for the chosen service.

@@ -112,6 +112,26 @@ enum TerminalLauncher {
         return args
     }
 
+    static func relatedArguments(_ s: TopophanyKit.Settings) -> [String]? {
+        guard s.topo.source != "direct" else { return nil }
+        return arguments(s, focus: nil) + ["--page", "incidents", "--related-incidents"]
+    }
+
+    static func diagnosticArguments(_ s: TopophanyKit.Settings) -> [String]? {
+        guard s.topo.source != "preview" else { return nil }
+        var args = ["doctor"]
+        if s.topo.source == "direct" { args += ["--source", "direct"] }
+        if !s.topo.profile.isEmpty { args += ["--profile", s.topo.profile] }
+        return args
+    }
+
+    static func comparisonArguments(_ s: TopophanyKit.Settings, service: String) -> [String]? {
+        guard s.topo.source == "client" else { return nil }
+        var args = ["compare", "--service", service, "--step", "5m", "--span", "1h"]
+        if !s.topo.profile.isEmpty { args += ["--profile", s.topo.profile] }
+        return args
+    }
+
     static func open(model: AppModel, focus: AttentionSection.Item?) {
         run(model: model, arguments(model.effectiveSettings, focus: focus))
     }

@@ -147,6 +147,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
     public var collectorRead: Bool
     public var clientRetry: Bool
     public var cardHistory: Bool
+    public var investigation: Bool
     public var direct: Direct?
     public struct Direct: Sendable, Hashable, Decodable {
         public var schema: Int
@@ -171,7 +172,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
     }
 
     enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles, direct
-        case collectorRead = "collector_read", clientRetry = "client_retry", cardHistory = "card_history"
+        case collectorRead = "collector_read", clientRetry = "client_retry", cardHistory = "card_history", investigation
     }
 
     public init(from decoder: Decoder) throws {
@@ -187,6 +188,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
         collectorRead = (try? c.decodeIfPresent(Bool.self, forKey: .collectorRead)) ?? false
         clientRetry = (try? c.decodeIfPresent(Bool.self, forKey: .clientRetry)) ?? false
         cardHistory = (try? c.decodeIfPresent(Bool.self, forKey: .cardHistory)) ?? false
+        investigation = (try? c.decodeIfPresent(Bool.self, forKey: .investigation)) ?? false
     }
 
     /// Whether `servers.list` is offered, for choosing nodes.

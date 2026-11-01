@@ -110,6 +110,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let open = NSMenuItem(title: tr("Open in Terminal"), action: #selector(openTUIFromMenu), keyEquivalent: "")
         open.target = self
         menu.addItem(open)
+        if model.capabilities?.investigation == true {
+            let related = NSMenuItem(title: tr("Related incidents"), action: #selector(openRelatedIncidents), keyEquivalent: "")
+            related.target = self
+            related.isEnabled = model.effectiveSettings.topo.source != "direct"
+            menu.addItem(related)
+            let diagnose = NSMenuItem(title: tr("Diagnose connection"), action: #selector(diagnoseConnection), keyEquivalent: "")
+            diagnose.target = self
+            diagnose.isEnabled = model.effectiveSettings.topo.source != "preview"
+            menu.addItem(diagnose)
+            if model.effectiveSettings.topo.source == "client" {
+                let compare = NSMenuItem(title: tr("Compare service history"), action: nil, keyEquivalent: "")
+                let services = NSMenu()
+                for service in model.knownServices.prefix(128) {
+                    let item = NSMenuItem(title: service.name, action: #selector(compareServiceHistory(_:)), keyEquivalent: "")
+                    item.target = self; item.representedObject = service.id
+                    services.addItem(item)
+                }
+                compare.submenu = services; compare.isEnabled = !services.items.isEmpty
+                menu.addItem(compare)
+            }
+        }
         let settings = NSMenuItem(title: tr("Settings…"), action: #selector(showSettingsFromMenu), keyEquivalent: "")
         settings.target = self
         menu.addItem(settings)
@@ -118,6 +139,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The menu checks items by their target; quitting needs none.
         menu.autoenablesItems = false
         return menu
+    }
+
+    @objc private func openRelatedIncidents() {
+        guard model.capabilities?.investigation == true,
+              let args = TerminalLauncher.relatedArguments(model.effectiveSettings) else { return }
+        TerminalLauncher.run(model: model, args)
+    }
+    @objc private func diagnoseConnection() {
+        guard model.capabilities?.investigation == true,
+              let args = TerminalLauncher.diagnosticArguments(model.effectiveSettings) else { return }
+        TerminalLauncher.run(model: model, args)
+    }
+    @objc private func compareServiceHistory(_ sender: NSMenuItem) {
+        guard model.capabilities?.investigation == true, let id = sender.representedObject as? String,
+              let args = TerminalLauncher.comparisonArguments(model.effectiveSettings, service: id) else { return }
+        TerminalLauncher.run(model: model, args)
     }
 
     @objc private func toggleQuiet() { model.toggleQuiet() }
