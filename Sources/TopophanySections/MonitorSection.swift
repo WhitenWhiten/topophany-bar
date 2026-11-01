@@ -75,8 +75,12 @@ public enum MonitorWords {
         case "record_content_mismatch", "record_not_proxied", "record_proxied_unexpectedly": return tr("DNS differs from policy")
         case "origins_below_expected": return tr("Fewer healthy origins than expected")
         // Probe policies: the request succeeded, against a declared policy.
-        case "certificate_expiring": return tr("Certificate expires soon")
-        case "latency_exceeded": return tr("Slower than its latency budget")
+        case "certificate_expiring":
+            guard let days = d.facts["tls_days_remaining"].flatMap(Int.init) else { return tr("Certificate expires soon") }
+            return days <= 0 ? tr("Certificate expires today") : days == 1 ? tr("Certificate expires tomorrow") : tr("Certificate expires in \(days) days")
+        case "latency_exceeded":
+            guard let budget = d.expected["max_duration_ms"].flatMap(Double.init) else { return tr("Slower than its latency budget") }
+            return tr("Slower than its \(Words.latency(budget)) budget")
         case "json_assertion_mismatch": return tr("JSON response differs from its assertion")
         case "pop_mismatch", "colo_mismatch": return tr("Unexpected edge location")
         case "warp_mismatch": return tr("WARP differs from policy")
@@ -181,7 +185,27 @@ public enum MonitorWords {
         case "mihomo": out += mihomoFields(d, now: now)
         case "cloudflared": out += cloudflaredFields(d)
         case "cloudflare": out += cloudflareFields(d, now: now)
-        default: out += traceFields(d)
+        default: out += traceFields(d) + probePolicyFields(d)
+        }
+        return out
+    }
+
+    static func days(_ n: Int) -> String { n == 1 ? tr("1 day") : tr("\(n) days") }
+
+    /// 1.5.2's probe policies, against what the check measured: the
+    /// certificate's expiry and warning window, the latency budget and the
+    /// newest request's duration.
+    static func probePolicyFields(_ d: CheckDiagnostic) -> [MonitorCardModel.Field] {
+        var out: [MonitorCardModel.Field] = []
+        if let notAfter = d.facts["tls_not_after"].flatMap(Timestamp.parse) {
+            let left = d.facts["tls_days_remaining"].flatMap(Int.init).map { $0 <= 0 ? tr("today") : tr("in \(days($0))") } ?? ""
+            out.append(.init(label: tr("Certificate expires"),
+                             value: Words.join([notAfter.formatted(.dateTime.year().month(.abbreviated).day().locale(L10n.locale)), left])))
+        }
+        if let window = d.expected["tls_min_days"].flatMap(Int.init) { out.append(.init(label: tr("Warns within"), value: days(window))) }
+        if let budget = d.expected["max_duration_ms"].flatMap(Double.init) {
+            out.append(.init(label: tr("Latency budget"), value: Words.latency(budget)))
+            if let took = d.durationMS { out.append(.init(label: tr("Last request"), value: Words.latency(Double(took)))) }
         }
         return out
     }
@@ -296,7 +320,9 @@ public enum MonitorWords {
         if f["trace_colo"] != nil || f["trace_warp"] != nil || f["trace_gateway"] != nil {
             return Words.join([f["trace_colo"] ?? "", f["trace_warp"].map { "WARP " + $0 } ?? "", f["trace_gateway"].map { "Gateway " + $0 } ?? ""])
         }
-        return Words.join([f["edge_pop"] ?? "", f["edge_cache"] ?? "", edgeRTT(d).map { tr("edge RTT \($0)") } ?? ""])
+        // A request over its budget: how long it took, first.
+        let took = d.code == "latency_exceeded" ? d.durationMS.map { tr("took \(Words.latency(Double($0)))") } ?? "" : ""
+        return Words.join([took, f["edge_pop"] ?? "", f["edge_cache"] ?? "", edgeRTT(d).map { tr("edge RTT \($0)") } ?? ""])
     }
 
     /// Cloudflare's own round trip to the client, from `Server-Timing`'s

@@ -492,6 +492,15 @@ policies, failed response assertions, and the monitor's own read errors
 metrics). A monitor error stays the monitor's, never the service's. Unknown codes
 fall back to the outcome's words, and the expanded card keeps the stage and code.
 
+A probe policy says how far off it is when `topo` reports the measurement:
+`facts.tls_days_remaining` makes `certificate_expiring` "Certificate expires in
+9 days" (today, tomorrow), and `expected.max_duration_ms` makes
+`latency_exceeded` "Slower than its 800 ms budget", with the reading starting
+"took 1.43 s" from the diagnostic's `duration_ms`. Expanded, the card adds the
+certificate's `tls_not_after` date (in the Mac's time zone), the `tls_min_days`
+warning window, the budget and the last request's duration. Without these fields
+the code alone is named as before.
+
 A mihomo card's expanded rows read its facts in plain words: mode and TUN against
 their expectations, the core's last delay with the age `core_last_checked` gives
 it, the reference's publication age, and one row per provider in

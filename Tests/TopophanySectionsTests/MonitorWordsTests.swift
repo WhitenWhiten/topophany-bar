@@ -332,6 +332,40 @@ import TopophanyKit
         }
     }
 
+    @Test func certificateAndLatencyPoliciesSayHowFarOff() throws {
+        try L10n.with("en") {
+            func cert(_ days: String) -> [String: Any] {
+                F.check("tls-\(days)", health: "degraded", diagnostic: [
+                    "outcome": "policy", "evidence": "measured", "stage": "tls_policy", "code": "certificate_expiring", "duration_ms": 92,
+                    "facts": ["response_proof": "verified_https", "tls_days_remaining": days, "tls_not_after": "2026-11-10T07:00:00Z"],
+                    "expected": ["tls_min_days": "14"],
+                ])
+            }
+            let nine = try F.monitor(cert("9"))
+            #expect(nine.summary == "Certificate expires in 9 days")
+            // The day it expires where the Mac is, so not fixed here.
+            let expires = try #require(F.field(nine, "Certificate expires"))
+            #expect(expires.hasPrefix("Nov ") && expires.hasSuffix(", 2026 · in 9 days"), "\(expires)")
+            #expect(F.field(nine, "Warns within") == "14 days")
+            #expect(F.field(nine, "Latency budget") == nil)
+            #expect(try F.monitor(cert("1")).summary == "Certificate expires tomorrow")
+            #expect(try F.monitor(cert("0")).summary == "Certificate expires today")
+
+            let slow = try F.monitor(F.check("api", health: "degraded", diagnostic: [
+                "outcome": "policy", "evidence": "measured", "stage": "latency_policy", "code": "latency_exceeded", "duration_ms": 1430,
+                "facts": ["response_proof": "verified_https", "edge_provider": "cloudflare", "edge_pop": "NRT"], "expected": ["max_duration_ms": "800"],
+            ]))
+            #expect(slow.summary == "Slower than its 800 ms budget")
+            #expect(slow.reading == "took 1.43 s · NRT")
+            #expect(F.field(slow, "Latency budget") == "800 ms" && F.field(slow, "Last request") == "1.43 s")
+            // From an older topo: the code alone, no budget, no duration.
+            let old = try F.monitor(F.check("old", health: "degraded", diagnostic: [
+                "outcome": "policy", "evidence": "measured", "stage": "latency_policy", "code": "latency_exceeded", "facts": [:] as [String: String],
+            ]))
+            #expect(old.summary == "Slower than its latency budget" && old.reading.isEmpty)
+        }
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])
