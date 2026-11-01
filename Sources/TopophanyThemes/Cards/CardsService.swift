@@ -162,6 +162,7 @@ struct CardsService: View {
             if !card.memo.isEmpty {
                 Text(card.memo).font(t.font(11)).foregroundStyle(p.l3).lineLimit(2).padding(.top, 6)
             }
+            if let scope = card.scope { ServiceScope(scope: scope, p: p, t: t).padding(.top, 8) }
             if !card.observers.isEmpty {
                 HStack(spacing: 0) {
                     Text(tr("Seen from"))
@@ -229,6 +230,31 @@ struct ServiceDiagnoses: View {
             .font(t.font(11))
             .padding(.bottom, 8)
         }
+    }
+}
+
+/// What topo's assessment adds to the pill: whether the application fails,
+/// or only access to it, with its three readings and any hint.
+struct ServiceScope: View {
+    var scope: ServiceCardModel.Scope
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if !scope.conclusion.isEmpty {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    CardMark(mark: scope.mark, size: 8, color: p.listColor(scope.mark))
+                    Text(scope.conclusion).foregroundStyle(p.l1).lineLimit(2)
+                }
+                .font(t.font(11.5))
+                Text(scope.detail).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).padding(.leading, 14)
+            }
+            ForEach(scope.hints, id: \.self) { hint in
+                Label(hint, systemImage: "lightbulb").font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(2)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 

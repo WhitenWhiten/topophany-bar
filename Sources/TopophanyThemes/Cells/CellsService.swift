@@ -31,7 +31,11 @@ extension CellsBodies {
         let day: [(String, String)] = details ? [(tr("24h"), c.answeredFrom.joined(separator: ", ")), (tr("cache"), c.cacheShares.joined(separator: ", ")),
                                                  (tr("first byte"), c.firstByte)].filter { !$0.1.isEmpty } : []
         let runbook = details && foot && !c.isBlank ? c.runbook : nil
-        let extra = (memo ? 1 : 0) + day.count + (runbook == nil ? 0 : 1)
+        let scope = details && !c.isBlank ? c.scope : nil
+        let conclusion = scope.map { CellText.wrap($0.conclusion, n - 2, lines: 2) } ?? []
+        let hints = (scope?.hints ?? []).map { CellText.wrap($0, n - 2, lines: 2) }
+        let scopeLines = conclusion.count + (conclusion.isEmpty ? 0 : 1) + hints.reduce(0) { $0 + $1.count }
+        let extra = (memo ? 1 : 0) + day.count + (runbook == nil ? 0 : 1) + scopeLines
         focusRow(&w, c.focusID, lines: 1 + max(1, rows.count) + diagnoses.count + more + extra + (foot ? 1 : 0))
         if c.isMissing {
             w.line([.t(CellText.truncate(c.subtitle, n), p.muted)])
@@ -47,6 +51,15 @@ extension CellsBodies {
             w.line(segs, [.t(age, p.faint)])
         }
         if memo { w.line([.t(CellText.truncate(c.memo, n), p.faint)]) }
+        if let scope {
+            for (i, line) in conclusion.enumerated() {
+                w.line((i == 0 ? [.mark(scope.mark, p), .t(" ", p.text)] : [.t("  ", p.text)]) + [.t(line, p.text)])
+            }
+            if !conclusion.isEmpty { w.line([.t("  " + CellText.truncate(scope.detail, n - 2), p.faint)]) }
+            for lines in hints {
+                for (i, line) in lines.enumerated() { w.line([.t((i == 0 ? "› " : "  ") + line, p.faint)]) }
+            }
+        }
         if rows.isEmpty, !c.isMissing {
             let (title, why) = c.quiet
             w.line([.glyph(.mark(.offline), p.faint), .t(" " + title.lowercased(with: Locale.current), p.muted)]

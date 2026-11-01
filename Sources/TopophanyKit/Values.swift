@@ -865,6 +865,73 @@ public struct ServiceCard: Sendable, Hashable, Decodable, Identifiable {
         }
     }
 
+    /// How `topo` scopes the service's availability, as the Services tab
+    /// assesses it: application availability, path reachability and worker
+    /// state apart, with the scoped evidence behind them.
+    public struct Assessment: Sendable, Hashable, Decodable {
+        public struct Evidence: Sendable, Hashable, Decodable {
+            public var check: String
+            public var observer: Ref
+            /// `local`, `remote`, `user_entry` or `reported`.
+            public var scope: String
+            public var health: Health
+            public var freshness: String
+            public var worker: String
+
+            enum CodingKeys: String, CodingKey { case check, observer, scope, health, freshness, worker }
+
+            public init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                check = c.text(.check) ?? ""
+                observer = (try? c.decode(Ref.self, forKey: .observer)) ?? .init(id: "", name: "")
+                scope = c.text(.scope) ?? ""
+                health = (try? c.decode(Health.self, forKey: .health)) ?? .unknown
+                freshness = c.text(.freshness) ?? ""
+                worker = c.text(.worker) ?? "unknown"
+            }
+        }
+
+        /// `up`, `health_warn`, `local_fail`, `path_warn`, `access_fail` or `unknown`.
+        public var state: String
+        /// `up`, `degraded`, `down` or `unknown`.
+        public var availability: String
+        public var pathReachability: String
+        /// `up`, `partial` or `unknown`.
+        public var workerOnline: String
+        public var evidence: [Evidence]
+        /// Closed configuration hint codes, such as `single_remote_check`.
+        public var hints: [String]
+        public var validUntil: Date?
+
+        enum CodingKeys: String, CodingKey {
+            case state, availability, pathReachability = "path_reachability", workerOnline = "worker_online", evidence, hints
+            case validUntil = "valid_until"
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            state = c.text(.state) ?? "unknown"
+            availability = c.text(.availability) ?? "unknown"
+            pathReachability = c.text(.pathReachability) ?? "unknown"
+            workerOnline = c.text(.workerOnline) ?? "unknown"
+            evidence = (try? c.decodeIfPresent([Evidence].self, forKey: .evidence)) ?? []
+            hints = (try? c.decodeIfPresent([String].self, forKey: .hints)) ?? []
+            validUntil = c.timestamp(.validUntil)
+        }
+
+        /// Past its deadline: every word unknown, identities kept.
+        public func withheld() -> Assessment {
+            var a = self
+            a.state = "unknown"; a.availability = "unknown"; a.pathReachability = "unknown"; a.workerOnline = "unknown"
+            a.evidence = evidence.map { e in
+                var e = e
+                e.health = .unknown; e.freshness = "stale"; e.worker = "unknown"
+                return e
+            }
+            return a
+        }
+    }
+
     /// A service this one depends on, or one that depends on it.
     public struct Related: Sendable, Hashable, Decodable {
         public var id: String
@@ -920,11 +987,13 @@ public struct ServiceCard: Sendable, Hashable, Decodable, Identifiable {
     public var usedBy: [Related]
     public var runbook: String
     public var memo: String
+    /// `nil` from a `topo` that doesn't send it.
+    public var assessment: Assessment? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, name, application, environment, runtime, health, note, evidence, reason, monitored, elsewhere, host
         case seenFrom = "seen_from", endpoints, answeredFrom = "answered_from", dependsOn = "depends_on", usedBy = "used_by"
-        case runbook, memo
+        case runbook, memo, assessment
     }
 
     public init(id: String, name: String, application: Ref? = nil, environment: String = "", runtime: String = "",
@@ -973,6 +1042,7 @@ public struct ServiceCard: Sendable, Hashable, Decodable, Identifiable {
         usedBy = (try? c.decodeIfPresent([Related].self, forKey: .usedBy)) ?? []
         runbook = c.text(.runbook) ?? ""
         memo = c.text(.memo) ?? ""
+        assessment = (try? c.decodeIfPresent(Assessment.self, forKey: .assessment)) ?? nil
     }
 }
 
@@ -987,6 +1057,12 @@ extension ServiceCard {
             var o = o
             o.checks = o.checks.map { $0.applyingDeadlines(at: now, tolerance: tolerance) }
             return o
+        }
+        // The assessment's own deadline: the earliest of the checks behind
+        // it. Without one, it follows the row. An implausibly late one is
+        // treated as passed, as checks' are.
+        if let a = assessment, let until = a.validUntil, now >= until || until > now.addingTimeInterval(tolerance) {
+            c.assessment = a.withheld()
         }
         return c
     }

@@ -122,7 +122,29 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         }
     }
 
+    /// What `topo`'s assessment adds to the pill: whether the application
+    /// itself fails, or only access to it, and from which evidence.
+    public struct Scope: Sendable, Hashable {
+        public var mark: Mark
+        /// "Its local health check fails"; empty where the pill says it all.
+        public var conclusion: String
+        /// "app down · path up · workers up".
+        public var detail: String
+        /// What would let topo say more.
+        public var hints: [String]
+
+        public init(mark: Mark, conclusion: String, detail: String, hints: [String]) {
+            self.mark = mark
+            self.conclusion = conclusion
+            self.detail = detail
+            self.hints = hints
+        }
+
+    }
+
     public var monitor: MonitorCardModel? = nil
+    /// `topo`'s assessment, where it adds to the pill.
+    public var scope: Scope? = nil
     /// The first diagnosis, where one line has room for it.
     public var diagnosticSummary = ""
     /// Every distinct diagnosis, by observer, worst first.
@@ -267,6 +289,7 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         c.now = date
         guard !isMissing else { return c }
         c.isWithheld = true
+        c.scope = nil
         c.diagnosticSummary = ""
         c.diagnoses = []
         c.answeredFrom = []
@@ -365,7 +388,41 @@ extension SectionBuilder {
         card.firstByte = checks.first { $0.freshness == "fresh" && !$0.firstByte.isEmpty }?.firstByte ?? ""
         card.memo = c.memo
         card.runbook = runbookURL(c.runbook)
+        card.scope = scope(c.assessment)
         return card
+    }
+
+    /// The assessment's conclusion where it says more than the pill: a
+    /// failing or warning local health check, or a path failure that is
+    /// not by itself an outage. Up or unknown with nothing to suggest, none.
+    public static func scope(_ a: ServiceCard.Assessment?) -> ServiceCardModel.Scope? {
+        guard let a else { return nil }
+        let conclusion: String, mark: Mark
+        switch a.state {
+        case "local_fail": (conclusion, mark) = (tr("Its local health check fails"), .down)
+        case "health_warn": (conclusion, mark) = (tr("Its local health check warns"), .degraded)
+        case "access_fail": (conclusion, mark) = (tr("Unreachable from where it’s checked; not an outage by itself"), .down)
+        case "path_warn": (conclusion, mark) = (tr("Some paths to it fail; not an outage by itself"), .degraded)
+        default: (conclusion, mark) = ("", .unknown)
+        }
+        let hints = a.hints.compactMap { code -> String? in
+            switch code {
+            case "single_remote_check": tr("Checked from one place only: add a local health check")
+            default: nil
+            }
+        }
+        guard !conclusion.isEmpty || !hints.isEmpty else { return nil }
+        func word(_ w: String) -> String {
+            switch w {
+            case "up": tr("up")
+            case "degraded": tr("degraded")
+            case "down": tr("down")
+            case "partial": tr("partial")
+            default: tr("unknown")
+            }
+        }
+        let detail = tr("app \(word(a.availability)) · path \(word(a.pathReachability)) · workers \(word(a.workerOnline))")
+        return .init(mark: mark, conclusion: conclusion, detail: conclusion.isEmpty ? "" : detail, hints: hints)
     }
 
     /// Only a web page opens from the panel: an absolute http(s) URL with a

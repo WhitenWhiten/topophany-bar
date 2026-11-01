@@ -537,6 +537,17 @@ pinned row gains history while a widget draws it. Direct mode requests neither.
 The widget card follows the pinned card's deadlines, and its mark joins the
 reload signature.
 
+`service.card.assessment`, from a `topo` that sends it, is the Services tab's
+assessment: `state` (`up`, `health_warn`, `local_fail`, `path_warn`,
+`access_fail` or `unknown`), `availability`, `path_reachability`,
+`worker_online`, up to 16 scoped `evidence` entries, closed `hints` codes and its
+own `valid_until`. Panel service cards state a failing or warning local health
+check, or a path failure that is not by itself an outage, with "app · path ·
+workers" beneath. `single_remote_check` suggests adding a local health check;
+unknown hint codes are never shown. At the assessment's deadline, or one more
+than five minutes ahead, every word becomes unknown and the conclusion goes.
+The bar never derives the state.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report

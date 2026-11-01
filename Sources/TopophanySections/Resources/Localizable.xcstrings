@@ -7179,6 +7179,118 @@
           }
         }
       }
+    },
+    "partial": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一部"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分"
+          }
+        }
+      }
+    },
+    "Its local health check fails": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ローカルのヘルスチェックが失敗"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地健康检查失败"
+          }
+        }
+      }
+    },
+    "Its local health check warns": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ローカルのヘルスチェックが警告"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地健康检查告警"
+          }
+        }
+      }
+    },
+    "Unreachable from where it’s checked; not an outage by itself": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チェック元から到達できない（それだけでは障害ではない）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查位置无法访问；这本身不代表故障"
+          }
+        }
+      }
+    },
+    "Some paths to it fail; not an outage by itself": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一部の経路が失敗（それだけでは障害ではない）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分路径失败；这本身不代表故障"
+          }
+        }
+      }
+    },
+    "Checked from one place only: add a local health check": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 か所からのみチェック：ローカルのヘルスチェックを追加してください"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅从一处检查：请添加本地健康检查"
+          }
+        }
+      }
+    },
+    "app %@ · path %@ · workers %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリ %@ · 経路 %@ · ワーカー %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用 %@ · 路径 %@ · 工作节点 %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
