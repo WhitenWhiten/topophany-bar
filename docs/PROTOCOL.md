@@ -477,3 +477,10 @@ Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report
 acquisition latency is labeled “Read p50”. Adapter facts never decide health in
 bar. Unknown and expired evidence retains names but loses readings and diagnoses.
+
+Monitoring cards start with `history: false`. When `card_history` is supported,
+first disclosure requests history for that pin. The demand set is bounded by
+current pins and retained across collapse/reopening, so those gestures do not
+repeatedly replace the source or its history book. Unpinning and profile changes
+release the demand. Existing service cards and Service widgets retain their
+history. A history-only template update does not display a configuration notice.

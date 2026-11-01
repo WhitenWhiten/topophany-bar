@@ -55,7 +55,7 @@ public struct TemplateCompiler: Sendable {
     /// it; without it, the map places what `servers.list` names.
     public func request(for settings: Settings, revision: Int, widgets: WidgetNeeds = .none, lang: String? = nil,
                         listServers: Bool = false, serviceCards: Bool = false, listServices: Bool = false,
-                        mapGraph: Bool = false) -> Request {
+                        mapGraph: Bool = false, monitorHistory: Set<MonitorPin> = []) -> Request {
         if settings.topo.source == "direct" {
             var rows = [TemplateRow(id: RowID.status, metric: "sources.status", visual: "status"),
                         TemplateRow(id: RowID.servers, metric: "servers.list", visual: "list")]
@@ -91,7 +91,8 @@ public struct TemplateCompiler: Sendable {
                 var seen = Set<MonitorPin>()
                 for pin in s.monitors.prefix(16) where Self.validNode(pin.entity) && seen.insert(pin).inserted {
                     rows.append(TemplateRow(id: "monitor-\(seen.count)", metric: pin.metric, visual: "card",
-                                            select: pin.kind == .check ? .init(check: pin.entity) : .init(link: pin.entity)))
+                                            select: pin.kind == .check ? .init(check: pin.entity) : .init(link: pin.entity),
+                                            history: monitorHistory.contains(pin)))
                 }
             case .servers where s.servers || widgets.lists:
                 for (i, node) in Self.unique(s.serverNodes).enumerated() {

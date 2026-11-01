@@ -73,6 +73,10 @@ final class AppModel {
     }
     @ObservationIgnored private var widgetNeeds = TemplateCompiler.WidgetNeeds.none
     @ObservationIgnored private var expandedMonitors = Set<MonitorPin>()
+    // Bounded by pinned entities. Keep acquired history across disclosure and
+    // panel reopening; a click must not rebuild the source repeatedly.
+    @ObservationIgnored private var retainedMonitorHistory = Set<MonitorPin>()
+    @ObservationIgnored private var showApplyingNotice = true
     @ObservationIgnored private var panelVisible = false
     @ObservationIgnored private var settingsVisible = false
     @ObservationIgnored private var locateTask: Task<Void, Never>?
@@ -215,6 +219,7 @@ final class AppModel {
     func toggleMonitor(_ pin: MonitorPin) {
         guard settings.sections.monitors.contains(pin) else { return }
         if !expandedMonitors.insert(pin).inserted { expandedMonitors.remove(pin) }
+        else if capabilities?.cardHistory == true, retainedMonitorHistory.insert(pin).inserted { send(showNotice: false) }
         refresh()
     }
 
@@ -373,7 +378,7 @@ final class AppModel {
             s.topo.scopedPins[oldScope] = old.sections.serverNodes
             s.topo.scopedMonitors[oldScope] = old.sections.monitors
             s.sections.monitors = s.topo.scopedMonitors[newScope] ?? []
-            expandedMonitors.removeAll()
+            expandedMonitors.removeAll(); retainedMonitorHistory.removeAll()
             s.sections.serverNodes = s.topo.scopedPins[newScope] ?? []
             policy = ReaderPolicy()
             activeRequestID = nil
@@ -382,6 +387,7 @@ final class AppModel {
         L10n.prefer(s.language.localization)
         settings = s
         expandedMonitors.formIntersection(Set(s.sections.monitors))
+        retainedMonitorHistory.formIntersection(Set(s.sections.monitors))
         if old.appearance.menuBar.customIconID != s.appearance.menuBar.customIconID || old.appearance.menuBar.icon != s.appearance.menuBar.icon {
             reloadIcons()
         }
@@ -447,7 +453,7 @@ final class AppModel {
         revision += 1
         var r = TemplateCompiler().request(for: effectiveSettings, revision: revision, widgets: scopedWidgetNeeds,
                                           lang: L10n.previewLanguage, listServers: true, serviceCards: true,
-                                          listServices: true, mapGraph: true)
+                                          listServices: true, mapGraph: true, monitorHistory: retainedMonitorHistory)
         r.retryNonce = effectiveSettings.topo.source == "direct" ? retryNonce : nil
         if let root = directRoot, effectiveSettings.topo.source == "client" {
             r.credentials = URL(filePath: root).appending(path: "client-credentials.json").path
@@ -465,9 +471,10 @@ final class AppModel {
         return needs
     }
 
-    private func send() {
+    private func send(showNotice: Bool = true) {
         guard engine != nil else { return }
         let r = currentRequest()
+        showApplyingNotice = showNotice
         finishCollectorRetry(); collectorRetryRequest = nil
         applyingRequest = r
         applyingRequestID = r.requestID; configurationProblem = nil
@@ -554,6 +561,7 @@ final class AppModel {
 
     private func startEngine() {
         engineStatus = .starting
+        showApplyingNotice = true
         capabilities = nil
         profilesRevision += 1
         profilesTask?.cancel()
@@ -783,7 +791,7 @@ final class AppModel {
         if let profile = activeRequest?.profile, !profile.isEmpty { status.collector?.name = profile }
         status.collector?.refreshing = refreshingCollector
         if configurationProblem != nil { status.notice = configurationProblem == "template_limit" ? SourceMessages.templateLimit : SourceMessages.configurationRejected }
-        else if applyingRequestID != nil { status.notice = SourceMessages.configurationApplying }
+        else if applyingRequestID != nil && showApplyingNotice { status.notice = SourceMessages.configurationApplying }
         self.status = status
         quiet = quiet?.after(status)
         let visible = panelVisible || settingsVisible

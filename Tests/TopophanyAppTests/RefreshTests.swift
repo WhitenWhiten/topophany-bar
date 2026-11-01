@@ -65,6 +65,36 @@ private final class RecordingEngine: Engine, Sendable {
 }
 
 extension RefreshTests {
+    @Test func historyDemandSurvivesDisclosureAndPinsStayScoped() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "history-demand-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SettingsStore(url: root.appending(path: "settings.json"))
+        let pin = MonitorPin(kind: .check, id: "runtime")
+        var settings = Settings(); settings.topo.source = "client"; settings.topo.profile = "S2"
+        settings.sections.monitors = [pin]; settings.sections.services = true; settings.sections.mac.mode = .off
+        try store.save(settings)
+        let engine = RecordingEngine()
+        let m = AppModel(store: store, engineFactory: { _ in engine })
+        m.restartEngine()
+        defer { m.stopNow() }
+        #expect(engine.all[0].template.rows.first { $0.metric == pin.metric }?.history == false)
+        m.handle(.capabilities(try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"card_history":true}"#.utf8))))
+        m.toggleMonitor(pin)
+        for _ in 0..<10 { await Task.yield() }
+        #expect(engine.all.count == 2)
+        #expect(engine.all[1].template.rows.first { $0.metric == pin.metric }?.history == true)
+        m.toggleMonitor(pin); m.toggleMonitor(pin)
+        m.setPanelVisible(false); m.setPanelVisible(true)
+        for _ in 0..<10 { await Task.yield() }
+        #expect(engine.all.count == 2, "disclosure/reopening replaced the source")
+        m.update { $0.topo.profile = "Other" }
+        #expect(m.settings.sections.monitors.isEmpty)
+        m.update { $0.topo.profile = "S2" }
+        #expect(m.settings.sections.monitors == [pin])
+        for _ in 0..<10 { await Task.yield() }
+        #expect(engine.all.last?.template.rows.first { $0.metric == pin.metric }?.history == false)
+    }
+
     @Test func clientRetryWaitsForAcquisitionAndKeepsOneEngine() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "client-retry-" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

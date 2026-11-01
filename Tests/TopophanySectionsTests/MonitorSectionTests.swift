@@ -35,7 +35,21 @@ import TopophanyKit
         let r = compiler.request(for: settings, revision: 1)
         #expect(r.template.rows.contains { $0.metric == "check.card" && $0.select?.check == "runtime" })
         #expect(r.template.rows.contains { $0.metric == "link.card" && $0.select?.link == "tunnel" })
+        #expect(r.template.rows.filter { $0.metric == "check.card" || $0.metric == "link.card" }.allSatisfy { $0.history == false })
+        let detailed = compiler.request(for: settings, revision: 2, serviceCards: true,
+                                       monitorHistory: [settings.sections.monitors[0]])
+        #expect(detailed.template.rows.first { $0.metric == "check.card" }?.history == true)
+        #expect(detailed.template.rows.first { $0.metric == "link.card" }?.history == false)
         settings.topo.source = "direct"; settings.topo.profile = "test"
         #expect(!compiler.request(for: settings, revision: 2).template.rows.contains { $0.metric == "check.card" || $0.metric == "link.card" })
+    }
+
+    @Test func serviceWidgetHistoryIsNotSuppressedByCompactMonitoring() {
+        var settings = Settings()
+        settings.sections.services = true
+        settings.sections.monitors = [.init(kind: .check, id: "runtime")]
+        let request = TemplateCompiler().request(for: settings, revision: 1, widgets: .init(services: ["site"]), serviceCards: true)
+        #expect(request.template.rows.first { $0.metric == "service.card" }?.history == nil)
+        #expect(request.template.rows.first { $0.metric == "check.card" }?.history == false)
     }
 }
