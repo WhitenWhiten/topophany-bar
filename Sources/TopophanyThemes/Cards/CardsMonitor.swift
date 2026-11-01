@@ -22,7 +22,11 @@ struct CardsMonitor: View {
                             Text(card.name).font(t.font(12.5, .semibold)).foregroundStyle(p.l1).lineLimit(1).truncationMode(.middle)
                             Spacer(minLength: 0)
                             PillView(pill: card.pill, palette: p, type: t)
-                            Image(systemName: monitor.expanded ? "chevron.down" : "chevron.right").font(t.font(9)).foregroundStyle(p.l3)
+                            // One chevron, turned when open, as a disclosure
+                            // triangle turns: chevron.down is wider and
+                            // would nudge the pill.
+                            Image(systemName: "chevron.right").font(t.font(9)).foregroundStyle(p.l3)
+                                .rotationEffect(.degrees(monitor.expanded ? 90 : 0))
                         }
                         HStack(spacing: 8) {
                             Text(monitor.subtitle).foregroundStyle(p.l2).lineLimit(1).truncationMode(.middle)
