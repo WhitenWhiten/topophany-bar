@@ -7224,6 +7224,22 @@
           }
         }
       }
+    },
+    "Used and total space": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用済み容量と総容量"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用空间和总空间"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

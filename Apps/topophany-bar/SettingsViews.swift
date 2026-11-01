@@ -1905,7 +1905,7 @@ struct LocalReadingsSettings: View {
         Section {
             reading(.cpu, "CPU", "Total, system and user, with the last \(historyMinutes) min")
             reading(.memory, "Memory", "Pressure, app, wired and compressed, as Activity Monitor counts them") {}
-            reading(.storage, "Storage", nil) {
+            reading(.storage, "Storage", "Used and total space") {
                 Picker("", selection: model.binding(\.sections.mac.volume)) {
                     Text("Startup disk").tag("")
                     ForEach(LocalReadingsMonitor.volumes(), id: \.path) { v in
