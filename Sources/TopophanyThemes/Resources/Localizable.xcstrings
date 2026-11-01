@@ -3086,6 +3086,28 @@
           }
         }
       }
+    },
+    "NO DATA": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NO DATA"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无数据"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "データなし"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

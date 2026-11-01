@@ -279,7 +279,7 @@ struct CardsFooter: View {
     var body: some View {
         let leapUp = scrollState.map { $0.atEnd } ?? leapUp
         HStack {
-            let color: Color = chrome.isLive ? p.up : (chrome.connection == .starting ? p.unknown : p.down)
+            let color: Color = chrome.isLive ? p.up : p.l3
             HStack(spacing: 7) {
                 Circle().fill(color).frame(width: 6, height: 6)
                     .background(Circle().fill(color.opacity(0.22)).frame(width: 12, height: 12))
@@ -477,7 +477,9 @@ struct CardsStatusCard: View {
             Rectangle().fill(p.sep).frame(height: 0.5).padding(.top, 9)
             HStack {
                 HStack(spacing: 5) {
-                    if let sources = status.sources {
+                    if let collector = status.collector {
+                        Text(collector.line).lineLimit(1).truncationMode(.middle).help(collector.detail)
+                    } else if let sources = status.sources {
                         Image(systemName: "externaldrive.connected.to.line.below").font(.system(size: 10 * t.scale))
                         Text(sources.sourceCount)
                     } else {
@@ -491,7 +493,7 @@ struct CardsStatusCard: View {
                 }
                 Spacer()
                 // A snapshot keeps the time it was read, current or not.
-                if let at = status.isBlind && status.sources == nil ? status.lastKnown?.at : status.updatedAt {
+                if status.collector == nil, let at = status.isBlind && status.sources == nil ? status.lastKnown?.at : status.updatedAt {
                     Text(tr("Updated \(Words.ago(at, now: status.now))"))
                 }
             }

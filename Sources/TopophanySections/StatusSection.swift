@@ -37,6 +37,7 @@ public struct StatusSection: Sendable, Hashable {
     }
 
     public var notice: String? = nil
+    public var collector: CollectorStatus? = nil
     public var sources: SourceStatusSection? = nil
     public var kind: Kind
     /// ● ▲ ✖ ○ ◌
@@ -123,7 +124,10 @@ public struct StatusSection: Sendable, Hashable {
         case .blind(.starting): return tr("Starting")
         case .blind(.cached): return tr("Cached")
         case .blind(.notCurrent): return tr("Not current")
-        case .blind: return tr("Offline")
+        case .blind(.collectorUnreachable): return tr("Read unavailable")
+        case .blind(.snapshotExpired), .blind(.verdictExpired), .blind(.leaseLapsed): return tr("Data expired")
+        case .blind(.engineStopped): return tr("Topo stopped")
+        case .blind: return tr("Not known now")
         }
     }
 
@@ -248,7 +252,7 @@ public struct StatusSection: Sendable, Hashable {
         case .blind(.starting): return tr("STARTING")
         case .blind(.cached): return tr("CACHED")
         case .blind(.notCurrent): return tr("NOT CURRENT")
-        case .blind: return tr("OFFLINE")
+        case .blind: return title.uppercased(with: L10n.locale)
         }
     }
 

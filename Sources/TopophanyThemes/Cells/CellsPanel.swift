@@ -58,6 +58,10 @@ struct CellsBodies {
             }
         }
         if !short {
+            if let collector = s.collector {
+                w.line([.t(CellText.truncate(collector.line, n), p.muted)])
+                return
+            }
             let inc = s.incidents ?? 0
             let left: [Seg] = s.isBlind
                 ? [.glyph(.flag, p.faint), .t(" ", p.text), .t(tr("incidents not known"), p.faint)]
@@ -807,7 +811,7 @@ private struct CellsPanelContent: View, Equatable {
         }
         w.y = 5
         let live: [Seg] = ch.isLive ? [.mark(.up, p), .t(" " + tr("LIVE"), p.up, bold: true)]
-            : [.mark(.offline, p), .t(" " + tr("OFFLINE"), p.down, bold: true)]
+            : [.mark(.offline, p), .t(" " + tr("NO DATA"), p.muted, bold: true)]
         let head = CellText.truncate(ch.view, columns - 26 - CellText.width(ch.project))
         w.line([.glyph(.logo, p.accent), .t(" TOPOPHANY", p.accent, bold: true), .t(" ╱ ", p.faint), .t(ch.project, p.text, bold: true),
                 .t(" · " + head, p.faint)], live)
@@ -942,7 +946,7 @@ private struct CellsPanelContent: View, Equatable {
         } else {
             let text = ch.connection == .unreachable ? tr("unreachable") : ch.connectionText.lowercased()
             ownLine = CellText.width(text) > room
-            conn = .t(CellText.truncate(text, ownLine ? columns : room), p.down)
+            conn = .t(CellText.truncate(text, ownLine ? columns : room), p.muted)
         }
         let footHeight = ownLine ? 48.0 : 28
         if p.box == .rules {

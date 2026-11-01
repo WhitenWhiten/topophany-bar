@@ -120,7 +120,7 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
         #expect(p.status.isBlind)
         #expect(p.status.kind == .blind(.collectorUnreachable))
         #expect(p.status.mark == .offline)
-        #expect(p.status.title == "Offline")
+        #expect(p.status.title == "Read unavailable")
         #expect(p.status.counts == nil, "unknown, not zero")
         #expect(p.status.count == nil)
         #expect(p.status.history == "Last snapshot 3 min ago said **all clear**. Nothing current is known.")
@@ -416,7 +416,7 @@ func panel(_ scenario: FixtureEngine.Scenario, after: TimeInterval = 4, settings
         #expect(StatusItemModel(status: panel(.clear).status, appearance: menu).text == "")
         #expect(StatusItemModel(status: panel(.incomplete).status, appearance: words).text == "Incomplete")
         #expect(StatusItemModel(status: panel(.incomplete).status, appearance: words).tuiText == "INCOMPLETE")
-        #expect(StatusItemModel(status: panel(.offline).status, appearance: words).text == "Offline")
+        #expect(StatusItemModel(status: panel(.offline).status, appearance: words).text == "Read unavailable")
         #expect(StatusItemModel(status: panel(.offline).status, appearance: menu).text == "")
         #expect(StatusItemModel(status: panel(.degraded).status, appearance: symbol).text == "")
     }

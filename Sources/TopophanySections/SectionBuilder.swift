@@ -123,6 +123,14 @@ public enum SectionBuilder {
     // MARK: status
 
     public static func status(_ r: Reading, engine: EngineCondition) -> StatusSection {
+        var result = statusContent(r, engine: engine)
+        if let frame = r.frame, frame.source == "client", let read = frame.collectorRead {
+            result.collector = CollectorStatus(name: frame.project, read: read, isCurrent: r.isLive, now: r.now)
+        }
+        return result
+    }
+
+    private static func statusContent(_ r: Reading, engine: EngineCondition) -> StatusSection {
         let now = r.now
         if r.frame?.source == "direct", let row = r.row(RowID.status),
            case .sources(let value) = r.lastValue(of: row) {
