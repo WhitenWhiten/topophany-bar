@@ -512,6 +512,12 @@ HTTP checks append Cloudflare's `edge_rtt_ms` ("<1 ms" for zero). Trace checks
 read colo, WARP and Gateway as reported, with HTTP and TLS as fields. A check
 naming `edge_provider`, or carrying trace facts, takes that provider's mark.
 
+A service card lists what its checks say beyond their marks, by observer:
+failures, then monitor errors, then policies and edge stand-ins, each distinct
+diagnosis once and three at most in the panel, then how many more Topophany
+shows. Widgets keep the first in their one line. Diagnoses go with each check's
+diagnostic at its own deadline, and with the card at its row's.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report

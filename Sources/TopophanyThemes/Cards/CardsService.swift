@@ -170,8 +170,10 @@ struct CardsService: View {
             ServiceRows(card: card, p: p, t: t)
                 .padding(.top, card.observers.isEmpty ? 10 : 0)
                 .padding(.bottom, 8)
-            // Where nothing measures it, the rows say so already.
-            let said = card.isUnmonitored ? "" : card.diagnosticSummary.isEmpty ? card.checksText : card.diagnosticSummary
+            ServiceDiagnoses(card: card, p: p, t: t)
+            // Where nothing measures it, the rows say so already; what its
+            // checks say beyond their marks is listed above.
+            let said = card.isUnmonitored ? "" : card.checksText
             if !said.isEmpty || card.edge != nil || !card.age.isEmpty {
                 HStack(spacing: 10) {
                     Text(said).lineLimit(1)
@@ -184,6 +186,34 @@ struct CardsService: View {
         }
         .modifier(FocusRing(on: focused, p: p))
         .id("service:" + card.id)
+    }
+}
+
+/// What its checks say beyond their marks, by observer: up to three, then
+/// how many more Topophany shows.
+struct ServiceDiagnoses: View {
+    var card: ServiceCardModel
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        if !card.diagnoses.isEmpty {
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(card.diagnoses.prefix(3)) { d in
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        CardMark(mark: d.mark, size: 8, color: p.listColor(d.mark))
+                        Text(d.label).foregroundStyle(p.l1).lineLimit(1).fixedSize()
+                        Text(d.text).foregroundStyle(p.l2).lineLimit(1).truncationMode(.tail)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+                if card.diagnoses.count > 3 {
+                    Text(tr("\(card.diagnoses.count - 3) more in Topophany")).foregroundStyle(p.l3)
+                }
+            }
+            .font(t.font(11))
+            .padding(.bottom, 8)
+        }
     }
 }
 

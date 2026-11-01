@@ -242,6 +242,35 @@ import TopophanyKit
         }
     }
 
+    static func policy(_ id: String, _ code: String, observer: (id: String, name: String), outcome: String = "policy") -> [String: Any] {
+        F.check(id, health: outcome == "fail" ? "down" : outcome == "error" ? "unknown" : "degraded", diagnostic: [
+            "outcome": outcome, "evidence": "measured", "stage": "probe", "code": code, "facts": [:] as [String: String],
+        ], observer: observer)
+    }
+
+    @Test func aServiceCardListsEveryDiagnosisOnce() throws {
+        try L10n.with("en") {
+            let mac = ("obs-mac", "Seattle MacBook"), tokyo = ("obs-tokyo", "Tokyo VPS"), win = ("obs-win", "Seattle Windows")
+            let card = try F.serviceCard(F.service("site", health: "down", seenFrom: [
+                ("MacBook", [Self.policy("w-tls", "certificate_expiring", observer: mac), Self.policy("w-tls-2", "certificate_expiring", observer: mac)]),
+                ("Tokyo", [Self.policy("t-api", "latency_exceeded", observer: tokyo), Self.policy("t-down", "body_mismatch", observer: tokyo, outcome: "fail")]),
+                ("Windows", [Self.policy("w-json", "json_assertion_mismatch", observer: win), Self.policy("w-auth", "authentication_failed", observer: win, outcome: "error")]),
+            ]))
+            // Failures first, then monitor errors, then policies; a repeat once.
+            #expect(card.diagnoses.map { "\($0.label): \($0.text)" } == [
+                "Tokyo: Response didn’t match its assertion",
+                "Windows: Credentials rejected",
+                "MacBook: Certificate expires soon",
+                "Tokyo: Slower than its latency budget",
+                "Windows: JSON response differs from its assertion",
+            ])
+            #expect(card.diagnosticSummary == "Response didn’t match its assertion")
+            #expect(card.diagnoses.first?.mark == .down)
+            // Past the card's deadline, nothing is said.
+            #expect(card.withheld(at: F.now).diagnoses.isEmpty)
+        }
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])

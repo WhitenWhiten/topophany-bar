@@ -41,7 +41,6 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         public var p50: Double?
         /// The worst check's share of the day up; `nil` when unknown.
         public var up24h: Double?
-
         public init(id: String, label: String, marks: [Mark], history: History, p50: Double?, up24h: Double?) {
             self.id = id
             self.label = label
@@ -49,6 +48,22 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
             self.history = history
             self.p50 = p50
             self.up24h = up24h
+        }
+    }
+
+    /// What one observer's check says beyond its mark: its policy, failure
+    /// or monitor error, or the edge answering in the app's place.
+    public struct Diagnosis: Sendable, Hashable, Identifiable {
+        /// The observer's label, as its row has it.
+        public var label: String
+        public var text: String
+        public var mark: Mark
+        public var id: String { label + "\u{1F}" + text }
+
+        public init(label: String, text: String, mark: Mark) {
+            self.label = label
+            self.text = text
+            self.mark = mark
         }
     }
 
@@ -104,7 +119,10 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
     }
 
     public var monitor: MonitorCardModel? = nil
+    /// The first diagnosis, where one line has room for it.
     public var diagnosticSummary = ""
+    /// Every distinct diagnosis, by observer, worst first.
+    public var diagnoses: [Diagnosis] = []
     public var focusID: String { monitor?.pin.id ?? "service:" + id }
     public var id: String
     public var name: String
@@ -235,6 +253,7 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         guard !isMissing else { return c }
         c.isWithheld = true
         c.diagnosticSummary = ""
+        c.diagnoses = []
         c.mark = .offline
         c.pill = .cached
         c.hostMark = .offline
@@ -320,12 +339,30 @@ extension SectionBuilder {
                 .init(id: d.id, name: d.name, mark: d.affected == true && d.health == .up ? .degraded : Mark(d.health))
             },
             usedBy: c.usedBy.count, reason: c.reason, sampledAt: checks.compactMap(\.sampledAt).max(), now: now)
-        // A check the edge answered in the app's place passes without
-        // reaching it: say so rather than "all passing".
-        if !withheld, let check = checks.first(where: { $0.diagnostic?.outcome == "fail" || $0.diagnostic?.outcome == "policy" || $0.diagnostic?.outcome == "error" })
-            ?? checks.first(where: { $0.diagnostic.flatMap(MonitorWords.edgeStandIn) != nil }) {
-            card.diagnosticSummary = MonitorWords.summary(check)
+        guard !withheld else { return card.withheld(at: now) }
+        card.diagnoses = diagnoses(c)
+        card.diagnosticSummary = card.diagnoses.first?.text ?? ""
+        return card
+    }
+
+    /// Each observer's checks that say more than their mark, in the card's
+    /// order (worst observer, worst check first), once each.
+    static func diagnoses(_ c: ServiceCard) -> [ServiceCardModel.Diagnosis] {
+        var out: [ServiceCardModel.Diagnosis] = []
+        for o in c.seenFrom {
+            let label = o.label.isEmpty ? o.observer.name : o.label
+            for k in o.checks {
+                guard let d = k.diagnostic else { continue }
+                // A check the edge answered in the app's place passes
+                // without reaching it: say so rather than "all passing".
+                let said = ["fail", "policy", "error"].contains(d.outcome) || MonitorWords.edgeStandIn(d) != nil
+                guard said else { continue }
+                let x = ServiceCardModel.Diagnosis(label: label, text: MonitorWords.summary(k), mark: Mark(k.health))
+                if !out.contains(x) { out.append(x) }
+            }
         }
-        return withheld ? card.withheld(at: now) : card
+        // Failures, then monitor errors, then policies and stand-ins.
+        func rank(_ m: Mark) -> Int { m == .down ? 0 : m == .unknown || m == .offline ? 1 : 2 }
+        return out.enumerated().sorted { (rank($0.element.mark), $0.offset) < (rank($1.element.mark), $1.offset) }.map(\.element)
     }
 }

@@ -20,11 +20,14 @@ extension CellsBodies {
     /// Where it runs, then a line per observer: a mark per check, its
     /// place, the worst check's samples, its median and the day's share up;
     /// then what it depends on and where the edge in front answered from.
-    /// `foot` adds that last line.
-    func service(_ w: inout CellWriter, _ c: ServiceCardModel, foot: Bool = true) {
+    /// `foot` adds that last line. `details`, the panel's, lists what its
+    /// checks say beyond their marks; a widget's foot says the first.
+    func service(_ w: inout CellWriter, _ c: ServiceCardModel, foot: Bool = true, details: Bool = true) {
         let n = w.frame.columns
         let rows = Array(c.observers.prefix(3))
-        focusRow(&w, c.focusID, lines: 1 + max(1, rows.count) + (foot ? 1 : 0))
+        let diagnoses = details ? Array(c.diagnoses.prefix(3)) : []
+        let more = details && c.diagnoses.count > 3 ? 1 : 0
+        focusRow(&w, c.focusID, lines: 1 + max(1, rows.count) + diagnoses.count + more + (foot ? 1 : 0))
         if c.isMissing {
             w.line([.t(CellText.truncate(c.subtitle, n), p.muted)])
         } else if !c.isBlank {
@@ -55,12 +58,18 @@ extension CellsBodies {
                      .t("  ", p.text), .t(CellText.padLeft(o.up24h.map(Words.share) ?? "—", share), p.muted)]
             w.line(segs)
         }
-        if foot, !c.isBlank { w.line(dependsLine(c, n), viaLine(c)) }
+        for d in diagnoses {
+            let label = CellText.truncate(d.label, place)
+            w.line([.mark(d.mark, p), .t(" " + label + " ", p.text), .t(CellText.truncate(d.text, max(4, n - 3 - CellText.width(label))), p.muted)])
+        }
+        if more > 0 { w.line([.t(CellText.truncate(tr("\(c.diagnoses.count - 3) more in Topophany"), n), p.faint)]) }
+        if foot, !c.isBlank { w.line(dependsLine(c, n, summary: !details), viaLine(c)) }
     }
 
-    /// "→ ● PostgreSQL", "used by 3" or "depends on nothing".
-    func dependsLine(_ c: ServiceCardModel, _ n: Int) -> [Seg] {
-        if !c.diagnosticSummary.isEmpty { return [.t(CellText.truncate(c.diagnosticSummary, max(4, n - 10)), p.muted)] }
+    /// "→ ● PostgreSQL", "used by 3" or "depends on nothing"; with
+    /// `summary`, the first diagnosis in its place.
+    func dependsLine(_ c: ServiceCardModel, _ n: Int, summary: Bool = true) -> [Seg] {
+        if summary, !c.diagnosticSummary.isEmpty { return [.t(CellText.truncate(c.diagnosticSummary, max(4, n - 10)), p.muted)] }
         guard !c.dependsOn.isEmpty else {
             return [.t(c.usedBy > 0 ? tr("used by \(c.usedBy)") : tr("depends on nothing"), p.faint)]
         }
@@ -116,7 +125,7 @@ extension CellsWidget.Layout {
         guard size == .small else {
             head(cols)
             w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: style) { w in
-                b.service(&w, c)
+                b.service(&w, c, details: false)
                 if !c.isBlank {
                     let (left, right) = b.knownAt(c, w.frame.columns)
                     w.line(left, right)
