@@ -105,6 +105,9 @@ func zonesPanel(_ scenario: FixtureEngine.Scenario, here: String = "America/Los_
         #expect(z.zones.map(\.day) == ["yesterday", "", "", "", ""])
         #expect(z.zones.map(\.zoneName) == ["HST", "PST", "EST", "GMT+1", "GMT+9"])
         #expect(pacific.hour == 1)
+        // Short of room, whole places and a count, never a name cut short.
+        #expect(pacific.titles == ["Seattle · San Jose · Los Angeles", "Seattle · San Jose +1", "Seattle +2"])
+        #expect(z.zones[0].titles == ["Honolulu"])
     }
 
     /// This Mac's zone by another name is still here.

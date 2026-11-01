@@ -1010,7 +1010,7 @@ struct CardsZones: View {
                 if z.isHere {
                     Image(systemName: "location.fill").font(.system(size: 9 * t.scale)).foregroundStyle(p.accent)
                 }
-                Text(z.title).font(t.font(12)).foregroundStyle(p.l1).lineLimit(1).truncationMode(.tail)
+                ZoneTitle(zone: z).font(t.font(12)).foregroundStyle(p.l1)
                 Spacer(minLength: 4)
                 // Cut short, trouble first, so trouble left out still shows.
                 let servers = z.servers.count > 8 ? Mark.troubleFirst(z.servers, by: \.mark) : z.servers
@@ -1039,6 +1039,22 @@ struct CardsZones: View {
         .fixedSize()
         .frame(minWidth: 28, alignment: .trailing)
         .accessibilityHidden(true)
+    }
+}
+
+/// A zone's places on one line: every place, else as many as fit whole and
+/// how many more ("Seattle · San Jose +1", "Seattle +2"), so a name is cut
+/// only when even the first won't fit.
+struct ZoneTitle: View {
+    var zone: ZonesSection.Zone
+
+    var body: some View {
+        let titles = zone.titles
+        ViewThatFits(in: .horizontal) {
+            ForEach(titles.dropLast(), id: \.self) { Text(verbatim: $0).fixedSize() }
+            Text(verbatim: titles.last ?? "").truncationMode(.tail)
+        }
+        .lineLimit(1)
     }
 }
 

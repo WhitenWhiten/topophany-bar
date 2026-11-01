@@ -437,6 +437,12 @@ public enum CellText {
         return out + "…"
     }
 
+    /// The first of `choices`, longest first, that fits in `n` cells; else
+    /// the last, cut: "Seattle · San Jose +1" before "Seattle · San Jo…".
+    public static func fit(_ choices: [String], _ n: Int) -> String {
+        choices.first { width($0) <= n } ?? truncate(choices.last ?? "", n)
+    }
+
     /// A route in at most `n` cells, cut as the Native renderer cuts it so
     /// both ends stay readable: a part that fits an equal share keeps its
     /// width, and longer ones split the rest.

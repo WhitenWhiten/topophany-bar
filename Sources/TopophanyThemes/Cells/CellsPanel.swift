@@ -463,7 +463,7 @@ struct CellsBodies {
             for zone in shown {
                 let m = marks(zone.servers, room: 10)
                 let room = n - tw - 2 - m.reduce(0) { $0 + $1.width } - 1 - rw - 1
-                w.line([clock(zone), .t("  ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)],
+                w.line([clock(zone), .t("  ", p.text), .t(CellText.fit(zone.titles, max(1, room)), p.text)],
                        m + [.t(" ", p.text), relative(zone)])
                 // Long past a reload, its now would be an hour gone by.
                 w.line([.t(CellText.pad(CellText.truncate(zone.zoneName, tw), tw), p.faint), .t("  ", p.text)]
@@ -483,12 +483,12 @@ struct CellsBodies {
                 if ribbonCells >= 6 { right += [.t(" ", p.text), ribbon(zone, ribbonCells)] }
                 if withRibbon { right += [.t(" ", p.text), relative(zone)] }
                 let room = n - tw - 1 - right.reduce(0) { $0 + $1.width } - 1
-                w.line([clock(zone), .t(" ", p.text), .t(CellText.truncate(zone.title, max(1, room)), p.text)], right)
+                w.line([clock(zone), .t(" ", p.text), .t(CellText.fit(zone.titles, max(1, room)), p.text)], right)
             }
         case .stacked:
             for zone in shown {
                 w.line([clock(zone)], marks(zone.servers, room: max(1, n - tw - 1)))
-                w.line([.t("  " + CellText.truncate(zone.title, max(1, n - 2 - 1 - rw)), p.text)], [relative(zone)])
+                w.line([.t("  " + CellText.fit(zone.titles, max(1, n - 2 - 1 - rw)), p.text)], [relative(zone)])
             }
         }
         guard foot else { return }

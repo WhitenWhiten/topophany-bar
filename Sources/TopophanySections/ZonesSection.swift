@@ -57,6 +57,16 @@ public struct ZonesSection: Sendable, Hashable {
         /// "Seattle · San Jose · Los Angeles".
         public var title: String { Words.join(places) }
 
+        /// Its title as room allows, longest first: every place, then as
+        /// many as fit whole and how many more, as the map counts them:
+        /// "Seattle · San Jose +1", "Seattle +2". A name is never cut while
+        /// a shorter title is left.
+        public var titles: [String] {
+            let named = places.filter { !$0.isEmpty }
+            guard named.count > 1 else { return [title] }
+            return [title] + (1..<named.count).reversed().map { Words.join(Array(named.prefix($0))) + " +\(named.count - $0)" }
+        }
+
         /// "6:30 AM", "午後6:30".
         public var clock: String { Words.clock(time, period) }
     }

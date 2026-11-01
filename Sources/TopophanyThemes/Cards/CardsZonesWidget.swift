@@ -114,7 +114,7 @@ struct WidgetZones: View {
     func title(_ z: ZonesSection.Zone, _ size: Double) -> some View {
         HStack(spacing: 4) {
             if z.isHere { Image(systemName: "location.fill").font(.system(size: size - 3)).foregroundStyle(p.accent) }
-            Text(z.title).font(t.font(size)).foregroundStyle(p.l1).lineLimit(1).truncationMode(.tail)
+            ZoneTitle(zone: z).font(t.font(size)).foregroundStyle(p.l1)
         }
     }
 
