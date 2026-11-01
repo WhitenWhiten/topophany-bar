@@ -16,6 +16,8 @@ public final class ProcessEngine: Engine {
         public var topoPath: String
         /// Test/advanced injection only; never set by normal Settings.
         public var directRoot: String? = nil
+        /// Test injection only, for a local stream's private root.
+        public var localRoot: String? = nil
         public var minimumBackoff: TimeInterval = 1
         public var maximumBackoff: TimeInterval = 30
         /// How long a process must run before the backoff starts over.
@@ -234,6 +236,7 @@ public final class ProcessEngine: Engine {
         p.executableURL = URL(filePath: path)
         p.arguments = ["monitor", "stream"]
         if let root = configuration.directRoot { p.arguments! += ["--direct-root", root] }
+        if let root = configuration.localRoot { p.arguments! += ["--local-root", root] }
         var env = ProcessInfo.processInfo.environment
         env["NO_COLOR"] = "1"
         p.environment = env

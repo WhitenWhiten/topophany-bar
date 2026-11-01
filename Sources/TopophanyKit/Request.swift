@@ -4,7 +4,7 @@ import Foundation
 public struct Request: Sendable, Hashable, Codable {
     public var schema: Int = 1
     public var requestID: String
-    /// `client`, `preview` or `direct`.
+    /// `client`, `preview`, `direct`, or `local` for this Mac's own checks.
     public var source: String
     public var credentials: String
     public var profile: String
@@ -68,7 +68,7 @@ public struct Request: Sendable, Hashable, Codable {
         guard template.rows.count <= min(128, capabilities.direct?.limits.templateRows ?? 128) else { throw SourceProblem(code: "template_limit") }
         guard !template.rows.isEmpty, template.rows.contains(where: { $0.id == template.bar.row }),
               Set(template.rows.map(\.id)).count == template.rows.count else { throw SourceProblem(code: "template_invalid") }
-        let required = source == "direct" ? ["sources.status", "servers.list", "server.card"] : Capabilities.required
+        let required = source == "direct" ? ["sources.status", "servers.list", "server.card"] : source == "local" ? ["check.card"] : Capabilities.required
         guard required.allSatisfy({ capabilities.supports(metric: $0, source: source) }) else { throw SourceProblem(code: "metrics_unsupported") }
         guard try line().count <= 256 * 1024 else { throw SourceProblem(code: "state_budget") }
     }
@@ -170,8 +170,27 @@ public struct Capabilities: Sendable, Hashable, Decodable {
         /// The adapters this app sets up that `topo` offers, in the app's order.
         public var known: [String] { DirectSource.adapters.filter(adapters.contains) }
     }
+    /// This Mac's own checks, read beside any other source.
+    public var local: Local?
+    public struct Local: Sendable, Hashable, Decodable {
+        public var schema: Int
+        public var configAPI: Int
+        public var adapters: [String]
+        public var checks: Int
+        enum CodingKeys: String, CodingKey { case schema, configAPI = "config_api", adapters, limits }
+        enum LimitKeys: String, CodingKey { case checks }
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            schema = try c.decode(Int.self, forKey: .schema)
+            configAPI = try c.decode(Int.self, forKey: .configAPI)
+            adapters = (try? c.decodeIfPresent([String].self, forKey: .adapters)) ?? []
+            checks = (try? c.nestedContainer(keyedBy: LimitKeys.self, forKey: .limits).decodeIfPresent(Int.self, forKey: .checks)) ?? 4
+        }
+        /// Whether this app can set up a mihomo engine with this `topo`.
+        public var readsMihomo: Bool { schema == 1 && configAPI == 1 && adapters.contains("mihomo") }
+    }
 
-    enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles, direct
+    enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles, direct, local
         case collectorRead = "collector_read", clientRetry = "client_retry", cardHistory = "card_history", investigation
     }
 
@@ -184,6 +203,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
         visuals = (try? c.decodeIfPresent([String].self, forKey: .visuals)) ?? []
         metrics = (try? c.decodeIfPresent([Metric].self, forKey: .metrics)) ?? []
         direct = try? c.decodeIfPresent(Direct.self, forKey: .direct)
+        local = try? c.decodeIfPresent(Local.self, forKey: .local)
         profiles = (try? c.decodeIfPresent(Bool.self, forKey: .profiles)) ?? false
         collectorRead = (try? c.decodeIfPresent(Bool.self, forKey: .collectorRead)) ?? false
         clientRetry = (try? c.decodeIfPresent(Bool.self, forKey: .clientRetry)) ?? false
@@ -220,6 +240,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
     public func supports(source: String) -> Bool {
         guard isUsable, sources.contains(source) else { return false }
         if source == "direct" { return direct?.schema == 1 && direct?.configAPI == 1 && direct?.known.isEmpty == false }
+        if source == "local" { return local?.readsMihomo == true }
         return source == "client" || source == "preview"
     }
     public func supports(metric: String, source: String) -> Bool {

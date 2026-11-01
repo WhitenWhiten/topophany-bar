@@ -444,6 +444,52 @@ write time remain distinct. Direct snapshot writes may happen every 15 seconds;
 resource-only reload requests are limited to once per minute. WidgetKit controls
 execution. Collector Widget schedules retain their existing heartbeat policy.
 
+## 8. Local checks (this Mac)
+
+`topo` can read this Mac's own runtime checks with no collector: for now the
+mihomo proxy engine's status API (its "external controller") on literal loopback
+(`127.0.0.0/8`, `::1` or `localhost`). Unlike `direct`, `local` is not a mode the
+panel reads *instead of* another: the bar runs it as a second
+`topo monitor stream` beside the panel's own source, whatever that is.
+
+Capabilities list `local` in `sources` and add
+`"local": {"schema": 1, "config_api": 1, "adapters": ["mihomo"], "limits": {"checks": 4}}`;
+`check.card` and `checks.list` list `local` among their sources. The bar sets up
+mihomo only when `local.adapters` contains it, and starts the local stream only
+with the `topo` the panel already runs, never in a demo, preview or fixture.
+
+`topo local list --json` and `topo local inspect|save|remove --json-stdin` use
+the `topo sources` envelope, bounds and exit codes (2 for a request that fails
+validation). A check is `{id, name, adapter: "mihomo", url, interval_seconds,
+timeout_seconds, stale_seconds, root_proxy, expected_mode, expected_tun}`; the
+bar generates `lc-` and 16 hex digits as its ID, sends `expected_tun` as an
+explicit `null` for no expectation, and checks the address is local before
+asking. The secret travels only in one command's stdin as
+`{"mode":"token","token":…}` (trimmed of the whitespace a paste brings),
+`{"mode":"none"}` or `{"mode":"saved"}`; `topo` keeps it in its own 0600 file
+and never prints it. The bar never stores it: the editor clears it on save or
+close. Inspect returns the engine's version, mode and TUN and its proxy groups,
+to choose the one to follow; save reads the engine again with the same secret
+before writing and fences on `base_revision`. A conflict or unknown outcome
+lists again and asks for review before retrying.
+
+The stream request is `source: "local"` with no profile, project, observer,
+credentials, scenario, `lang` or `retry_nonce`, the store's `profile_revision`,
+and one `check.card` row per check (`local-1`…), all with history: there are at
+most four, read on this Mac. A new request line after a save or removal makes
+the same process reload; `profile_conflict` makes the bar list again. Frames
+carry `source` and `project` `local`; card observers are `This machine`, which
+the bar names This Mac. `latency` and `up_24h` are null. Health, policy and
+wording are a worker's mihomo check's: an engine that doesn't answer is a
+`fail` (`network_error` or `timeout` at `adapter_api`), degraded on the first
+read and down on the second; a rejected secret is a monitor `error`.
+
+The local reader has its own lifetime: it lists and streams only while a check
+is set up and the running `topo` reads them, restarts with the panel's `topo`
+path, ignores frames of an earlier request, and closes its stdin at quit.
+Expanding a local card changes no request. Its cards come first in Pinned,
+including while the panel reads Beszel or Komari directly.
+
 ## Collector diagnostics and monitoring cards
 
 Protocol 1 additionally negotiates `collector_read`, `client_retry` and
