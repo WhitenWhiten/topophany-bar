@@ -6296,6 +6296,54 @@
           }
         }
       }
+    },
+    "Allow HTTP": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP を許可"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许 HTTP"
+          }
+        }
+      }
+    },
+    "Allowing HTTP needs a newer topo. Update it in General.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP の許可には新しい topo が必要です。「一般」で更新してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许 HTTP 需要更新版本的 topo。请在“通用”中更新。"
+          }
+        }
+      }
+    },
+    "Passwords and tokens are sent without TLS. Use only on a trusted network.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワードとトークンは TLS なしで送信されます。信頼できるネットワークでのみ使用してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "密码和令牌将不经 TLS 加密发送。仅在可信网络中使用。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

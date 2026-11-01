@@ -153,6 +153,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
         public var configAPI: Int
         public var adapters: [String]
         public var retry: Bool
+        public var allowInsecure: Bool?
         public var limits: Limits
         public struct Limits: Sendable, Hashable, Decodable {
             public var sourcesPerProfile: Int
@@ -164,7 +165,7 @@ public struct Capabilities: Sendable, Hashable, Decodable {
                 case objectsPerProfile = "objects_per_profile", templateRows = "template_rows"
             }
         }
-        enum CodingKeys: String, CodingKey { case schema, configAPI = "config_api", adapters, retry, limits }
+        enum CodingKeys: String, CodingKey { case schema, configAPI = "config_api", adapters, retry, allowInsecure = "allow_insecure", limits }
         /// The adapters this app sets up that `topo` offers, in the app's order.
         public var known: [String] { DirectSource.adapters.filter(adapters.contains) }
     }

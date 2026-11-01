@@ -3,6 +3,18 @@ import Testing
 @testable import TopophanyKit
 
 struct DirectTests {
+    @Test func httpConsentSurvivesConfigurationRoundTrip() throws {
+        let original = Data(#"{"id":"km-home","name":"Home","adapter":"komari","url":"http://100.64.0.1:25774","allow_insecure":true}"#.utf8)
+        let source = try JSONDecoder().decode(DirectSource.self, from: original)
+        #expect(source.allowInsecure)
+        let saved = try JSONDecoder().decode(DirectSource.self, from: JSONEncoder().encode(source))
+        #expect(saved.allowInsecure && saved.url == source.url)
+        let legacy = Data(#"{"id":"bs-home","name":"Home","adapter":"beszel","url":"https://example.test"}"#.utf8)
+        #expect(try !JSONDecoder().decode(DirectSource.self, from: legacy).allowInsecure)
+        let caps = try JSONDecoder().decode(Capabilities.self, from: Data(contentsOf: DirectContractTests.root.appending(path: "fixtures/capabilities.json")))
+        #expect(caps.direct?.allowInsecure == true)
+    }
+
     @Test func settingsAndTemplates() throws {
         for source in ["client", "preview", "direct", "future"] {
             let data = Data("{\"topo\":{\"source\":\"\(source)\",\"path\":\"/synthetic/topo\",\"profileRevision\":23}}".utf8)

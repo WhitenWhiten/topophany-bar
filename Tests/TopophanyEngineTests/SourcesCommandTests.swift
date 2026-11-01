@@ -4,6 +4,29 @@ import TopophanyKit
 @testable import TopophanyEngine
 
 struct SourcesCommandTests {
+    @MainActor @Test func editorRetainsHTTPConsentInInspectAndSave() async throws {
+        let entry = try JSONDecoder().decode(DirectProfile.Entry.self, from: Data(#"{"source":{"id":"km-home","name":"Home","adapter":"komari","url":"http://100.64.0.1:25774","allow_insecure":true},"auth_mode":"anonymous","selected_objects":["one"],"nodes":[{"id":"km-home.one","object_id":"one","name":"One"}]}"#.utf8))
+        let client = SourcesClient { command, data in
+            let input = try JSONSerialization.jsonObject(with: data!) as! [String: Any]
+            let source = input["source"] as! [String: Any]
+            #expect(source["allow_insecure"] as? Bool == true)
+            let payload: [String: Any] = command == .inspect
+                ? ["source": source, "systems": [["id": "one", "name": "One"]], "truncated": false, "limits": ["max_selected": 20], "warnings": []]
+                : ["profile": "desktop", "profile_revision": "saved", "dataset_id": "same", "source_id": "km-home", "nodes": []]
+            return .init(status: 0, stdout: try JSONSerialization.data(withJSONObject: ["schema": 1, "request_id": input["request_id"]!, "ok": true, "data": payload]))
+        }
+        let editor = SourceEditor(client: client, profile: "desktop", revision: "old", entry: entry, allowsHTTP: true)
+        editor.inspect()
+        for _ in 0..<100 where editor.busy { try await Task.sleep(for: .milliseconds(5)) }
+        #expect(editor.canSave)
+        var saved = false
+        editor.onSaved = { _ in saved = true }
+        editor.save()
+        for _ in 0..<100 where editor.busy { try await Task.sleep(for: .milliseconds(5)) }
+        #expect(saved)
+        editor.close()
+    }
+
     @Test func envelopeValidation() async throws {
         let client = SourcesClient { _, _ in .init(status: 0, stdout: Data(#"{"schema":1,"request_id":"","ok":true,"data":{"profiles":[]}}"#.utf8)) }
         #expect(try await client.call(.list, as: DirectProfiles.self).profiles.isEmpty)

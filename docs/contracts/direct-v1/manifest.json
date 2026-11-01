@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "fixtures/capabilities.json",
-      "sha256": "b04ba49448a0b860031c21ab0625a10c4879da15eee2d1261b46b2ae4f886a2e"
+      "sha256": "bd732a1ab08f0762ae4974dae01f9937f3253e6c370fa87fdab8862a71ccd314"
     },
     {
       "path": "fixtures/request-direct.json",
@@ -68,7 +68,7 @@
     },
     {
       "path": "fixtures/stream-expired.json",
-      "sha256": "fde4ab020b87ba8560bee6cf1554dd409dedc955d9567b283537f114f8c272ef"
+      "sha256": "0aa1669da1f4f06fcc6a5244d0b2606f46867a385687e02cbf958796167f9ef9"
     },
     {
       "path": "fixtures/stream-forbidden.json",

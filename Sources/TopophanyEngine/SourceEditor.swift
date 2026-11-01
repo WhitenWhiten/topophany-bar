@@ -23,6 +23,7 @@ public final class SourceEditor: Identifiable {
     public let profile: String
     /// The adapters a new source can read; an existing source keeps its own.
     public let adapters: [String]
+    public let allowsHTTP: Bool
     @ObservationIgnored private let savedURL: String?
     @ObservationIgnored private let client: SourcesClient
     @ObservationIgnored private var generation = 0
@@ -30,7 +31,8 @@ public final class SourceEditor: Identifiable {
     @ObservationIgnored private var closed = false
     @ObservationIgnored public var onSaved: ((DirectSaved) -> Void)?
     public init(client: SourcesClient, profile: String, revision: String, entry: DirectProfile.Entry? = nil,
-                adapters: [String] = ["beszel"]) {
+                adapters: [String] = ["beszel"], allowsHTTP: Bool = false) {
+        self.allowsHTTP = allowsHTTP
         self.savedURL = entry?.source.url
         self.allowsSaved = entry != nil
         self.client = client; self.profile = profile; self.revision = revision

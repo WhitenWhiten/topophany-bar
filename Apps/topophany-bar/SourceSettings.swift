@@ -20,6 +20,7 @@ struct SourceSettings: View {
     @State private var supported = false
     /// The adapters this topo reads directly, as the app offers them.
     @State private var adapters: [String] = []
+    @State private var allowsHTTP = false
     @State private var checked = false
     @State private var listLoaded = false
     @State private var operation: Task<Void, Never>?
@@ -73,7 +74,7 @@ struct SourceSettings: View {
         }
         .onChange(of: model.effectiveSettings.topo.path) { reload() }
         .sheet(item: $editor, onDismiss: { reload() }) { session in
-            SourceEditorForm(editor: session, finish: { session.close(); editor = nil }, onHeight: { sheetHeight = $0 })
+            Localized(content: SourceEditorForm(editor: session, finish: { session.close(); editor = nil }, onHeight: { sheetHeight = $0 })).environment(model)
         }
         .confirmationDialog("Remove this source?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
             Button("Remove source", role: .destructive) { remove() }
@@ -227,7 +228,7 @@ struct SourceSettings: View {
             guard !Task.isCancelled else { return }
             checked = true
             guard case .success(let c) = caps, c.supports(source: "direct") else { supported = false; busy = false; return }
-            supported = true; adapters = c.direct?.known ?? []
+            supported = true; adapters = c.direct?.known ?? []; allowsHTTP = c.direct?.allowInsecure == true
             let client = model.sourcesClient(path: path)
             self.client = client
             do {
@@ -241,7 +242,7 @@ struct SourceSettings: View {
     func edit(_ entry: DirectProfile.Entry?, login: Bool = false) {
         guard let client else { return }
         let editor = SourceEditor(client: client, profile: selectedProfile, revision: profile?.profileRevision ?? "", entry: entry,
-                                  adapters: adapters)
+                                  adapters: adapters, allowsHTTP: allowsHTTP)
         if login { editor.authentication = editor.signIn }
         editor.onSaved = { saved in
             model.useDirect(profile: saved.profile, revision: saved.profileRevision, nodes: saved.nodes.map(\.id), sourceID: saved.sourceID, retry: login)
@@ -390,6 +391,15 @@ struct SourceEditorForm: View {
                 TextField("Name", text: $editor.source.name, prompt: Text("Home"))
                 TextField(komari ? "Server URL" as LocalizedStringKey : "Hub URL", text: $editor.source.url,
                           prompt: Text(verbatim: komari ? "https://komari.example.com" : "https://beszel.example.com"))
+                if URL(string: editor.source.url)?.scheme?.lowercased() == "http" {
+                    Toggle(isOn: $editor.source.allowInsecure) {
+                        RowLabel("Allow HTTP", "Passwords and tokens are sent without TLS. Use only on a trusted network.")
+                    }
+                    .disabled(!editor.allowsHTTP)
+                    if !editor.allowsHTTP {
+                        Text("Allowing HTTP needs a newer topo. Update it in General.").font(.callout).foregroundStyle(.secondary)
+                    }
+                }
                 Picker("Sign in with", selection: $editor.authentication) {
                     ForEach(editor.methods, id: \.self) { m in Text(method(m)).tag(m) }
                 }

@@ -33,6 +33,7 @@ Old `--profiles` remains exclusively collector client profiles.
 | source.id | config.ID, at most 64 bytes | required; clients generate bs- + lowercase UUID hex |
 | source.name / adapter / url | strings | required; adapter is beszel or komari; detect support through capabilities |
 | source.ca_file | string | omitted = empty |
+| source.allow_insecure | boolean | omitted = false; true explicitly permits non-loopback HTTP for this source; null or a non-boolean is invalid |
 | source.interval_seconds / timeout_seconds | integers | omitted = 60 / 8; zero is invalid |
 | source.stale_seconds / max_age_seconds | integers | omitted = 180 / 180; zero is invalid |
 | object_id | adapter-specific string | Beszel: 15 lowercase ASCII alphanumeric systems.id; Komari: canonical lowercase client UUID; never a name |
@@ -87,7 +88,7 @@ history_unsupported_in_direct_mode. Unknown codes require generic presentation.
 ## Stream and status
 
 Capabilities retain protocol:1 and add sources=[client,preview,direct] and
-`direct:{schema:1,config_api:1,adapters:[beszel,komari],retry:true,limits:{sources_per_profile:64,objects_per_source:20,objects_per_profile:256,template_rows:128}}`.
+`direct:{schema:1,config_api:1,adapters:[beszel,komari],allow_insecure:true,retry:true,limits:{sources_per_profile:64,objects_per_source:20,objects_per_profile:256,template_rows:128}}`.
 Discovery does no I/O to config, credentials or network. Metrics advertise exact
 supported sources. Direct supports sources.status, servers.list, server.card,
 resource.cpu.used_percent, resource.memory.used_percent, resource.disk.used_percent.
@@ -107,6 +108,7 @@ and one bounded candidate maximum; invalid candidates leave the old one alive.
 | Field | Type / semantics |
 |---|---|
 | state | loading, ready, partial, no_data, unavailable |
+| reason | optional refinement; `samples_stale` means all sources connected, no current samples, and at least one expired sample; omitted otherwise |
 | counts | sources, selected, current, stale, missing, attention integers |
 | sources | array of id,name,adapter,state,code,last_attempt_at,last_contact_at,contact_valid_until,next_retry_at,counts |
 | source.state | loading,connected,retrying,auth_required,forbidden,error |
@@ -121,6 +123,8 @@ current/stale/missing partition selected; attention=stale+missing. Stale means a
 previous usable sample has expired. Missing means none has been usable. Source
 errors never imply a machine is down. Ready health=up, partial=degraded, others
 unknown. These describe data acquisition, not network availability.
+`reason` is additive: older readers retain the same state and counts. A
+`samples_stale` reason does not change sample deadlines or imply failed contact.
 
 ## Four clocks and expiry
 
@@ -156,6 +160,15 @@ row/resource deadline, without the old 30m heartbeat + 15m grace extension.
 Generated config uses a stable local executor observer without a remote node,
 resource bindings only, primary_disk=root for Beszel or aggregate for Komari,
 no active probes or default alarms.
+Non-loopback HTTP requires source.allow_insecure=true on inspect/save. This
+per-source consent is persisted and returned by inspect/list, and covers
+authentication, discovery and resource collection. It applies to IPs (including
+LAN and Tailscale addresses) and hostnames. HTTPS certificate verification is
+unchanged. Loopback HTTP remains allowed without the option. Consumers should
+check direct.allow_insecure in capabilities before offering this opt-in. The
+runtime permission is excluded from topology JSON; collector sources retain
+their existing transport policy.
+
 Root means adapter primary filesystem, not mount point /. Existing normalized
 status handling remains valid. Private directories 0700, files 0600; public
 configuration contains references only. Credential renewals use locking/version

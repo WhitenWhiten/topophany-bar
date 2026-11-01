@@ -647,7 +647,9 @@ with account and password or an API token for Beszel; a server URL with an API k
 or public servers only, for Komari, read every 30 seconds unless the interval was
 changed. Switching kinds drops what was typed for the other. Source ID and system
 ID carry identity; names are presentation only. Advanced fields expose the Go
-ranges without a TLS bypass. Passwords, tokens and API keys never become Settings
+ranges. An HTTP URL shows the existing form’s Allow HTTP switch when topo
+advertises support, with a short explanation of unencrypted credentials; HTTPS
+certificate validation stays enabled. Saved consent survives editing. Passwords, tokens and API keys never become Settings
 or App Group properties.
 
 The status card receives `SourceStatusSection`, which describes acquisition rather

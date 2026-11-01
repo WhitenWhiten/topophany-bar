@@ -7,12 +7,13 @@ public struct DirectSource: Sendable, Hashable, Codable, Identifiable {
     public var adapter = "beszel"
     public var url: String
     public var caFile = ""
+    public var allowInsecure = false
     public var intervalSeconds = 60
     public var timeoutSeconds = 8
     public var staleSeconds = 180
     public var maxAgeSeconds = 180
     enum CodingKeys: String, CodingKey {
-        case id, name, adapter, url, caFile = "ca_file", intervalSeconds = "interval_seconds"
+        case id, name, adapter, url, caFile = "ca_file", allowInsecure = "allow_insecure", intervalSeconds = "interval_seconds"
         case timeoutSeconds = "timeout_seconds", staleSeconds = "stale_seconds", maxAgeSeconds = "max_age_seconds"
     }
     public init(id: String = "bs-" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased(), name: String = "", url: String = "") {
@@ -30,6 +31,7 @@ public struct DirectSource: Sendable, Hashable, Codable, Identifiable {
         adapter = try c.decode(String.self, forKey: .adapter)
         url = try c.decode(String.self, forKey: .url)
         caFile = try c.decodeIfPresent(String.self, forKey: .caFile) ?? ""
+        allowInsecure = try c.decodeIfPresent(Bool.self, forKey: .allowInsecure) ?? false
         intervalSeconds = try c.decodeIfPresent(Int.self, forKey: .intervalSeconds) ?? 60
         timeoutSeconds = try c.decodeIfPresent(Int.self, forKey: .timeoutSeconds) ?? 8
         staleSeconds = try c.decodeIfPresent(Int.self, forKey: .staleSeconds) ?? 180
