@@ -3793,18 +3793,18 @@
         }
       }
     },
-    "The theme applies to the panel, the menu bar item and every widget. A later release can add themes as files: a renderer's name and its tokens.": {
+    "The theme applies to the panel, the menu bar item and each widget whose Theme is Same as the Menu Bar.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "テーマはパネル、メニューバー項目、すべてのウィジェットに適用されます。今後のリリースでは、テーマをファイル（レンダラー名とそのトークン）として追加できるようになるかもしれません。"
+            "value": "テーマは、パネル、メニューバー項目、そしてテーマが「メニューバーと同じ」のウィジェットに適用されます。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "主题会应用于面板、菜单栏项目和所有小组件。之后的版本可以用文件添加主题：一个渲染器名称及其 token。"
+            "value": "主题会应用于面板、菜单栏项目，以及主题设为“与菜单栏相同”的每个小组件。"
           }
         }
       }

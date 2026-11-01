@@ -602,7 +602,7 @@ struct AppearanceSettings: View {
                         Text(verbatim: blurb).font(.callout).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Foot("The theme applies to the panel, the menu bar item and every widget. A later release can add themes as files: a renderer's name and its tokens.")
+                    Foot("The theme applies to the panel, the menu bar item and each widget whose Theme is Same as the Menu Bar.")
                 }
             }
             Section("Panel") {
