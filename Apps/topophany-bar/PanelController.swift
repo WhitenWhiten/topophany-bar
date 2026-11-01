@@ -172,7 +172,8 @@ final class PanelController: NSObject {
                      openAttention: { [weak self] item in self?.actions?.openAttention(item) },
                      focus: { [weak self] id in self?.model.focus = id },
                      toggleQuiet: { [weak self] in self?.actions?.toggleQuiet() },
-                     download: { [weak self] build in self?.model.download(build) })
+                     download: { [weak self] build in self?.model.download(build) },
+                     toggleMonitor: { [weak self] pin in self?.model.toggleMonitor(pin) })
     }
 
     private var screen: NSScreen? { anchor?.window?.screen ?? NSScreen.main }
@@ -386,6 +387,7 @@ final class PanelController: NSObject {
     private func activate() {
         guard let f = model.focus else { actions?.openTerminal(); return }
         if f == "map" { map.isSelected = true; return }
+        if let pin = model.panel.services.first(where: { $0.focusID == f })?.monitor?.pin { model.toggleMonitor(pin); return }
         if f == "attention:more" { actions?.openAttention(nil); return }
         if f.hasPrefix("attention:"), let item = model.panel.attention?.items.first(where: { "attention:" + $0.id == f }) {
             actions?.openAttention(item)
@@ -463,8 +465,8 @@ final class PanelController: NSObject {
         } else if id.hasPrefix("server:") {
             let cards = model.panel.servers + (model.panel.mac.flatMap { if case .server(let c, _) = $0 { [c] } else { nil } } ?? [])
             if let c = cards.first(where: { "server:" + $0.id == id }) { text = "\(c.name), \(c.pill.text)" }
-        } else if id.hasPrefix("service:"), let c = model.panel.services.first(where: { "service:" + $0.id == id }) {
-            text = "\(c.name), \(c.pill.text), \(c.checksText)"
+        } else if let c = model.panel.services.first(where: { $0.focusID == id }) {
+            text = "\(c.name), \(c.pill.text), \(c.monitor?.summary ?? c.checksText)"
         } else if id == "map", let m = model.panel.map {
             text = MapWords.summary(m)
         }

@@ -574,10 +574,14 @@ struct CardsSection: View, Equatable {
         case .map(let m): CardsMapCard(map: m, p: p, t: t, focused: focus == "map")
         case .services(let cards):
             Card(p: p) {
-                CardTitle(symbol: "waveform.path.ecg", title: tr("Services"), meta: tr("\(cards.count) pinned services"), p: p, t: t)
-                ForEach(Array(cards.enumerated()), id: \.element.id) { i, c in
+                CardTitle(symbol: "waveform.path.ecg", title: cards.contains(where: { $0.monitor != nil }) ? tr("Pinned") : tr("Services"), meta: tr("\(cards.count) pinned items"), p: p, t: t)
+                ForEach(Array(cards.enumerated()), id: \.element.focusID) { i, c in
                     if i > 0 { Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 10) }
-                    CardsService(card: c, p: p, t: t, focused: focus == "service:" + c.id)
+                    if let monitor = c.monitor {
+                        CardsMonitor(card: c, monitor: monitor, p: p, t: t, focused: focus == c.focusID)
+                    } else {
+                        CardsService(card: c, p: p, t: t, focused: focus == c.focusID)
+                    }
                 }
             }
         case .servers(let cards):

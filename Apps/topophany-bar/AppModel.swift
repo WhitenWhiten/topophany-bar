@@ -72,6 +72,7 @@ final class AppModel {
         #endif
     }
     @ObservationIgnored private var widgetNeeds = TemplateCompiler.WidgetNeeds.none
+    @ObservationIgnored private var expandedMonitors = Set<MonitorPin>()
     @ObservationIgnored private var panelVisible = false
     @ObservationIgnored private var settingsVisible = false
     @ObservationIgnored private var locateTask: Task<Void, Never>?
@@ -198,6 +199,23 @@ final class AppModel {
         return knownApplications.flatMap { a in
             a.services.map { ServiceListEntry(id: $0.id, name: $0.name, application: a.name, health: $0.health, monitored: $0.monitored) }
         }
+    }
+
+    var knownChecks: [CheckListEntry] {
+        guard let row = reading.row(TemplateCompiler.RowID.checks), case .checks(let entries) = reading.lastValue(of: row) else { return [] }
+        return entries
+    }
+    var knownLinks: [LinkSummary] {
+        guard let row = reading.row(TemplateCompiler.RowID.links), case .links(let entries) = reading.lastValue(of: row) else { return [] }
+        return entries
+    }
+    func supportsMonitoring(_ kind: MonitorPin.Kind) -> Bool {
+        capabilities?.supports(metric: kind.rawValue + ".card", source: effectiveSettings.topo.source) == true
+    }
+    func toggleMonitor(_ pin: MonitorPin) {
+        guard settings.sections.monitors.contains(pin) else { return }
+        if !expandedMonitors.insert(pin).inserted { expandedMonitors.remove(pin) }
+        refresh()
     }
 
     /// The applications in the latest list `topo` sent.
@@ -353,6 +371,9 @@ final class AppModel {
         let newScope = s.topo.source + ":" + s.topo.profile
         if oldScope != newScope {
             s.topo.scopedPins[oldScope] = old.sections.serverNodes
+            s.topo.scopedMonitors[oldScope] = old.sections.monitors
+            s.sections.monitors = s.topo.scopedMonitors[newScope] ?? []
+            expandedMonitors.removeAll()
             s.sections.serverNodes = s.topo.scopedPins[newScope] ?? []
             policy = ReaderPolicy()
             activeRequestID = nil
@@ -360,6 +381,7 @@ final class AppModel {
         }
         L10n.prefer(s.language.localization)
         settings = s
+        expandedMonitors.formIntersection(Set(s.sections.monitors))
         if old.appearance.menuBar.customIconID != s.appearance.menuBar.customIconID || old.appearance.menuBar.icon != s.appearance.menuBar.icon {
             reloadIcons()
         }
@@ -767,7 +789,7 @@ final class AppModel {
         let visible = panelVisible || settingsVisible
         if visible {
             panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: settings, local: local,
-                                                    machineModel: machine.model, quiet: quiet, fetch: fetch))
+                                                    machineModel: machine.model, quiet: quiet, fetch: fetch, expandedMonitors: expandedMonitors))
             panel.status = status
         }
         let item = StatusItemModel(status: status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)

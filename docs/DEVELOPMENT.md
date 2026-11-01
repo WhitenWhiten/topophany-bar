@@ -206,3 +206,16 @@ client and engine factory for deterministic state tests. Existing `-snapshot DIR
 now includes Data sources; the debug driver's `panelshot` and `settingsshot` capture
 only the test app's own windows. Use PID-directed debug commands when several
 copies run. No signing team, entitlement or installed app change is needed.
+
+### Monitoring card boundaries
+
+Collector metadata uses the existing status footer. Check/link cards reuse the
+pinned-services section, card primitives and Terminal boxes. Expansion belongs
+to AppModel's requested evidence set because it also controls history demand;
+only the changed service section is invalidated. Other sections and the map keep
+their drawing caches. Cells caches retain monitoring hit regions with each
+section's absolute coordinates; section movement invalidates those coordinates.
+The new drawing adds no frame callback or timer. Unpinning or changing profiles
+releases expansion state. Test `MonitoringSnapshots` renders compact/expanded
+cards in both renderers and three languages from a synthetic topo frame;
+`CellsPanelCacheTests` checks cached/fresh drawing and disclosure hit regions.

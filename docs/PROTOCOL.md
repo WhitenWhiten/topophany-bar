@@ -463,3 +463,17 @@ and check cards. Each nested check loses health, readings and diagnostics at its
 own deadline; that does not expire the enclosing link. Check/link history and
 names use distinct selector identities. Project and observer changes clear prior
 history. The app never derives health from diagnostic facts.
+
+Pinned monitoring selections are stored alongside service choices as
+`monitors: [{"kind":"check","id":"m-clash"},{"kind":"link","id":"home-cf"}]`.
+The section keeps its existing `services` identity. At most 16 monitoring pins
+are requested, with separate check/link focus identities and profile-scoped
+preferences. Direct mode requests neither metric. The chooser only offers
+supported categories. Missing rows are described as absent from this view,
+without asserting that a check absent from an observer view was deleted.
+
+The panel presents one conclusion and one selected reading per monitoring card.
+Expanded evidence reuses the service card's typography, marks and history strip.
+Reported runtime paths and core historical delays remain labeled as such; report
+acquisition latency is labeled “Read p50”. Adapter facts never decide health in
+bar. Unknown and expired evidence retains names but loses readings and diagnoses.

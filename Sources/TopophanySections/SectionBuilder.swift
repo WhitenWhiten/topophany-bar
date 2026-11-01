@@ -27,10 +27,11 @@ public struct PanelInput: Sendable {
     public var quiet: QuietAlert?
     /// Getting `topo` from its releases.
     public var fetch: TopoFetch
+    public var expandedMonitors: Set<MonitorPin> = []
 
     public init(reading: Reading, engine: EngineCondition, settings: Settings, local: LocalSnapshot? = nil,
                 machineModel: String = "Mac", here: TimeZone = .autoupdatingCurrent, quiet: QuietAlert? = nil,
-                fetch: TopoFetch = .idle) {
+                fetch: TopoFetch = .idle, expandedMonitors: Set<MonitorPin> = []) {
         self.reading = reading
         self.engine = engine
         self.settings = settings
@@ -39,6 +40,7 @@ public struct PanelInput: Sendable {
         self.here = here
         self.quiet = quiet
         self.fetch = fetch
+        self.expandedMonitors = expandedMonitors
     }
 }
 
@@ -80,7 +82,7 @@ public enum SectionBuilder {
             case .applications where s.applications:
                 if let a = applications(r, only: s.applicationsOnly) { sections.append(.applications(a)) }
             case .services where s.services:
-                let cards = services(r, ids: s.serviceIDs)
+                let cards = services(r, ids: s.serviceIDs) + monitors(r, pins: s.monitors, expanded: input.expandedMonitors)
                 if !cards.isEmpty { sections.append(.services(cards)) }
             case .fleet where s.fleet:
                 if let f = fleet(r, pinned: s.serverNodes) { sections.append(.fleet(f)) }

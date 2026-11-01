@@ -753,6 +753,15 @@ private struct CellsPanelContent: View, Equatable {
 
     /// The map as it moves, where a band from `top` to `bottom` shows it.
     @ViewBuilder func live(_ scene: CellScene, top: Double, bottom: Double) -> some View {
+        ForEach(model.services.filter { $0.monitor != nil }, id: \.focusID) { card in
+            if let m = card.monitor, let r = scene.regions[card.focusID], r.minY >= top, r.maxY <= bottom {
+                Button { actions.toggleMonitor(m.pin) } label: { Color.clear.contentShape(Rectangle()) }
+                    .buttonStyle(.plain).frame(width: r.width, height: r.height)
+                    .offset(x: r.minX, y: r.minY)
+                    .accessibilityLabel(Text(card.name + ", " + card.pill.text))
+                    .accessibilityValue(Text(m.expanded ? tr("Expanded") : tr("Collapsed")))
+            }
+        }
         if let m = model.map, let r = scene.regions["map"], r.maxY > top, r.minY < bottom {
             CellsMapLive(map: m, metrics: scene.metrics, size: scene.size, rect: r, meta: scene.regions["mapMeta"],
                          p: CellsPalette(ctx.theme))
@@ -864,6 +873,7 @@ private struct CellsPanelContent: View, Equatable {
                 if let focus = entry.focus { w.focused = focus }
                 if let map = entry.map { regions["map"] = map }
                 if let meta = entry.mapMeta { regions["mapMeta"] = meta }
+                regions.merge(entry.monitorRegions) { _, new in new }
                 continue
             }
             let start = w.items.count
@@ -884,7 +894,14 @@ private struct CellsPanelContent: View, Equatable {
                 }
             case .services(let cards):
                 for c in cards {
-                    w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: .panel) { b.service(&$0, c) }
+                    let startY = w.y
+                    if let m = c.monitor {
+                        let title = b.serviceTitle(c) + [.t(m.expanded ? "▾ " : "▸ ", p.muted)]
+                        w.box(title, b.servicePill(c), x0: x0, x1: x1, style: .panel) { b.monitor(&$0, c, m) }
+                        regions[c.focusID] = CGRect(x: x0, y: startY, width: x1 - x0, height: min(2 * w.lineHeight, w.y - startY))
+                    } else {
+                        w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: .panel) { b.service(&$0, c) }
+                    }
                 }
             case .map(let m):
                 w.box(title(tr("MAP")), [.t(" " + tr("\(m.places.count) places") + " ", p.muted)], x0: x0, x1: x1, style: .panel) {
@@ -918,7 +935,8 @@ private struct CellsPanelContent: View, Equatable {
             cache?.store(.init(key: key, items: Array(w.items[start...]), end: w.y,
                                focus: w.focused != oldFocus ? w.focused : nil,
                                map: s.id == .map ? regions["map"] : nil,
-                               mapMeta: s.id == .map ? regions["mapMeta"] : nil))
+                               mapMeta: s.id == .map ? regions["mapMeta"] : nil,
+                               monitorRegions: s.id == .services ? regions.filter { $0.key.hasPrefix("check:") || $0.key.hasPrefix("link:") } : [:]))
         }
 
         // Footer: keycaps and the connection. Live, the project is cut to

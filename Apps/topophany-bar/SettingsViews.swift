@@ -941,7 +941,7 @@ struct SectionLabel: View {
         case .seen: RowLabel("Seen from", "Which observers see a problem, and that the others don’t")
         case .attention: RowLabel("Needs attention", "Open incidents first, then anything else that needs a look")
         case .applications: RowLabel("Applications", "Services folded into the applications you declare")
-        case .services: RowLabel("Services", "The card of each service you pin: who sees it, and how fast")
+        case .services: RowLabel("Pinned", "Services, checks and links you follow")
         case .fleet: RowLabel("Fleet", "Every server, edge and platform topo lists, by who runs it")
         case .servers: RowLabel("Servers", "The Servers-tab card of each server you pin")
         case .zones: RowLabel("Time zones", "The time where your servers are, and each one’s health")
@@ -1231,24 +1231,72 @@ struct ServicesButton: View {
 struct ServicesPicker: View {
     @Environment(AppModel.self) private var model
     @State private var draft = ""
+    @State private var category = "services"
 
     var body: some View {
         let ids = model.settings.sections.serviceIDs
         let known = model.knownServices
         VStack(alignment: .leading, spacing: 10) {
-            Text("Pinned services").font(.headline)
-            if known.isEmpty {
-                typed(ids)
-            } else {
-                listed(known, pinned: ids)
+            Text("Pinned").font(.headline)
+            if model.supportsMonitoring(.check) || model.supportsMonitoring(.link) {
+                Picker("Kind", selection: $category) {
+                    Text("Services").tag("services")
+                    if model.supportsMonitoring(.check) { Text("Checks").tag("check") }
+                    if model.supportsMonitoring(.link) { Text("Links").tag("link") }
+                }.pickerStyle(.segmented)
             }
-            if !model.cardsServices {
+            if let kind = MonitorPin.Kind(rawValue: category) {
+                monitoring(kind)
+            } else if known.isEmpty { typed(ids) }
+            else { listed(known, pinned: ids) }
+            if category == "services", !model.cardsServices {
                 Foot("This topo doesn’t send service cards. Pinned services appear once it does.")
             }
         }
         .multilineTextAlignment(.leading)
         .padding(14)
         .frame(width: 340)
+    }
+
+    func monitoring(_ kind: MonitorPin.Kind) -> some View {
+        let entries: [(id: String, name: String, detail: String)] = kind == .check
+            ? model.knownChecks.map { ($0.id, $0.name, Words.join([$0.observer, $0.kind])) }
+            : model.knownLinks.map { ($0.id, $0.name, $0.transport) }
+        let missing = model.settings.sections.monitors.filter { pin in pin.kind == kind && !entries.contains(where: { $0.id == pin.entity }) }
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                if entries.isEmpty { Text("No items in this view").foregroundStyle(.secondary) }
+                ForEach(entries, id: \.id) { item in
+                    let pin = MonitorPin(kind: kind, id: item.id)
+                    Toggle(isOn: monitorBinding(pin)) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(verbatim: item.name).lineLimit(1).truncationMode(.middle)
+                            Text(verbatim: item.detail).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    }.toggleStyle(.checkbox)
+                    .disabled(model.settings.sections.monitors.count >= 16 && !model.settings.sections.monitors.contains(pin))
+                }
+                ForEach(missing) { pin in
+                    Toggle(isOn: monitorBinding(pin)) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(verbatim: pin.entity).lineLimit(1)
+                            Text("Not in this view").font(.callout).foregroundStyle(.secondary)
+                        }
+                    }.toggleStyle(.checkbox)
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }.frame(maxHeight: 360).fixedSize(horizontal: false, vertical: true)
+    }
+
+    func monitorBinding(_ pin: MonitorPin) -> Binding<Bool> {
+        Binding(get: { model.settings.sections.monitors.contains(pin) }, set: { on in
+            model.update { settings in
+                settings.sections.monitors.removeAll { $0 == pin }
+                if on, settings.sections.monitors.count < 16 {
+                    settings.sections.monitors.append(pin); settings.sections.services = true
+                }
+            }
+        })
     }
 
     /// The services by application, in `topo`'s order.
@@ -1333,7 +1381,7 @@ struct ServicesPicker: View {
     }
 
     func name(_ id: String) -> String {
-        model.panel.services.first { $0.id == id && !$0.isMissing }?.name ?? id
+        model.panel.services.first { $0.monitor == nil && $0.id == id && !$0.isMissing }?.name ?? id
     }
 
     func add() {

@@ -59,6 +59,7 @@ public struct Settings: Sendable, Hashable, Codable {
         public var profileRevision = ""
         /// Node preferences scoped to a mode and stable profile ID. No authentication material.
         public var scopedPins: [String: [String]] = [:]
+        public var scopedMonitors: [String: [MonitorPin]] = [:]
         public var modeProfiles: [String: String] = [:]
         /// The view each mode was left in, as `modeProfiles` saves profiles.
         public var modeObservers: [String: String] = [:]
@@ -68,7 +69,7 @@ public struct Settings: Sendable, Hashable, Codable {
         public init() {}
 
         enum CodingKeys: String, CodingKey {
-            case path, profile, observer, interval, source, scenario, profileRevision, scopedPins, modeProfiles, modeObservers
+            case path, profile, observer, interval, source, scenario, profileRevision, scopedPins, scopedMonitors, modeProfiles, modeObservers
         }
 
         public init(from decoder: Decoder) throws {
@@ -82,6 +83,7 @@ public struct Settings: Sendable, Hashable, Codable {
             modeProfiles = (try? c.decode([String: String].self, forKey: .modeProfiles)) ?? [:]
             modeObservers = (try? c.decode([String: String].self, forKey: .modeObservers)) ?? [:]
             scopedPins = (try? c.decode([String: [String]].self, forKey: .scopedPins)) ?? [:]
+            scopedMonitors = (try? c.decode([String: [MonitorPin]].self, forKey: .scopedMonitors)) ?? [:]
             scenario = c.count(.scenario)
             // Direct has one reader, not a collector view. A view saved while
             // direct was chosen belongs to the mode switched back to.
@@ -223,6 +225,7 @@ public struct Sections: Sendable, Hashable, Codable {
     public var services = false
     /// Pinned services by ID, in the order they were pinned.
     public var serviceIDs: [String] = []
+    public var monitors: [MonitorPin] = []
     /// Fleet: every node `topo` lists, by who runs it.
     public var fleet = true
     public var servers = false
@@ -289,6 +292,7 @@ public struct Sections: Sendable, Hashable, Codable {
         var only: [String]?
         var nodes: [String]?
         var ids: [String]?
+        var monitors: [MonitorPin]?
         var places: [String: String]?
         var mode: String?
         var frame: String?
@@ -329,6 +333,7 @@ public struct Sections: Sendable, Hashable, Codable {
             case .services:
                 services = e.enabled ?? false
                 serviceIDs = e.ids ?? []
+                monitors = Array((e.monitors ?? []).filter { TemplateCompiler.validNode($0.entity) }.prefix(16))
             case .fleet: fleet = e.enabled ?? true
             case .servers:
                 servers = e.enabled ?? false
@@ -378,6 +383,7 @@ public struct Sections: Sendable, Hashable, Codable {
             case .services:
                 e.enabled = services
                 e.ids = serviceIDs
+                e.monitors = monitors.isEmpty ? nil : monitors
             case .fleet: e.enabled = fleet
             case .servers:
                 e.enabled = servers

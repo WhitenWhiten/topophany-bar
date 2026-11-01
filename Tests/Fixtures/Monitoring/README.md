@@ -1,0 +1,1 @@
+Synthetic monitor frame captured from `topo monitor stream`, preview scenario 0, on 2026-11-01. Topophany commit: `f9e4fba`. Selectors: check `m-clash`, link `home-cf`. No credentials or live infrastructure were used. Tests evaluate at the captured generated_at clock.

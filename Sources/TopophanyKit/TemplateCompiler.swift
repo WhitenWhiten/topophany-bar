@@ -15,6 +15,8 @@ public struct TemplateCompiler: Sendable {
         public static func server(_ index: Int) -> String { "server-\(index + 1)" }
         public static func extra(_ index: Int) -> String { "widget-server-\(index + 1)" }
         public static let services = "services"
+        public static let checks = "checks"
+        public static let links = "links"
         public static func service(_ index: Int) -> String { "service-\(index + 1)" }
         public static func extraService(_ index: Int) -> String { "widget-service-\(index + 1)" }
         public static let map = "map"
@@ -82,9 +84,14 @@ public struct TemplateCompiler: Sendable {
                 rows.append(TemplateRow(id: RowID.attention, metric: "attention.list", visual: "list", limit: min(20, limit)))
             case .applications where s.applications || widgets.lists:
                 rows.append(TemplateRow(id: RowID.applications, metric: "applications.list", visual: "list"))
-            case .services where s.services && serviceCards:
-                for (i, service) in Self.unique(s.serviceIDs).enumerated() {
+            case .services where s.services:
+                for (i, service) in Self.unique(serviceCards ? s.serviceIDs : []).enumerated() {
                     rows.append(Self.serviceCard(RowID.service(i), service))
+                }
+                var seen = Set<MonitorPin>()
+                for pin in s.monitors.prefix(16) where Self.validNode(pin.entity) && seen.insert(pin).inserted {
+                    rows.append(TemplateRow(id: "monitor-\(seen.count)", metric: pin.metric, visual: "card",
+                                            select: pin.kind == .check ? .init(check: pin.entity) : .init(link: pin.entity)))
                 }
             case .servers where s.servers || widgets.lists:
                 for (i, node) in Self.unique(s.serverNodes).enumerated() {
@@ -109,7 +116,11 @@ public struct TemplateCompiler: Sendable {
             }
         }
         if listServers { rows.append(TemplateRow(id: RowID.servers, metric: "servers.list", visual: "list")) }
-        if listServices { rows.append(TemplateRow(id: RowID.services, metric: "services.list", visual: "list")) }
+        if listServices {
+            rows.append(TemplateRow(id: RowID.services, metric: "services.list", visual: "list"))
+            rows.append(TemplateRow(id: RowID.checks, metric: "checks.list", visual: "list"))
+            rows.append(TemplateRow(id: RowID.links, metric: "links.list", visual: "list"))
+        }
         let t = settings.topo
         let preview = t.source == "preview"
         return Request(

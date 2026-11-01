@@ -24,7 +24,7 @@ extension CellsBodies {
     func service(_ w: inout CellWriter, _ c: ServiceCardModel, foot: Bool = true) {
         let n = w.frame.columns
         let rows = Array(c.observers.prefix(3))
-        focusRow(&w, "service:" + c.id, lines: 1 + max(1, rows.count) + (foot ? 1 : 0))
+        focusRow(&w, c.focusID, lines: 1 + max(1, rows.count) + (foot ? 1 : 0))
         if c.isMissing {
             w.line([.t(CellText.truncate(c.subtitle, n), p.muted)])
         } else if !c.isBlank {
@@ -60,6 +60,7 @@ extension CellsBodies {
 
     /// "→ ● PostgreSQL", "used by 3" or "depends on nothing".
     func dependsLine(_ c: ServiceCardModel, _ n: Int) -> [Seg] {
+        if !c.diagnosticSummary.isEmpty { return [.t(CellText.truncate(c.diagnosticSummary, max(4, n - 10)), p.muted)] }
         guard !c.dependsOn.isEmpty else {
             return [.t(c.usedBy > 0 ? tr("used by \(c.usedBy)") : tr("depends on nothing"), p.faint)]
         }

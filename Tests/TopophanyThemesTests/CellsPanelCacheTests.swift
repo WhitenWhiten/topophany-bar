@@ -1,9 +1,30 @@
+import Foundation
 import Testing
+import TopophanyKit
 import TopophanySections
 @testable import TopophanyThemes
 
 @MainActor
 @Suite struct CellsPanelCacheTests {
+    @Test func monitorDisclosureRegionsSurviveReuseAndMoving() throws {
+        let url = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/Monitoring/preview.ndjson")
+        let frame = try #require(FrameDecoder.frame(from: Data(contentsOf: url)))
+        let now = try #require(frame.generatedAt)
+        var policy = ReaderPolicy(); policy.receive(frame, at: now)
+        let pin = MonitorPin(kind: .link, id: "home-cf")
+        var model = previewPanel(.clear)
+        model.sections.append(.services(SectionBuilder.monitors(policy.evaluate(at: now), pins: [pin], expanded: [pin])))
+        let cache = CellsPanelCache(), ctx = RenderContext(theme: ThemeStore.terminal)
+        for _ in 0..<2 {
+            let cached = CellsPanel.scene(model, ctx: ctx, cache: cache)
+            let fresh = CellsPanel.scene(model, ctx: ctx)
+            #expect(cached == fresh)
+            #expect(cached.regions[pin.id] != nil)
+        }
+        model.sections.reverse()
+        #expect(CellsPanel.scene(model, ctx: ctx, cache: cache) == CellsPanel.scene(model, ctx: ctx))
+    }
+
     @Test func reusedSectionsPreserveDrawingAndInteractionRegions() {
         let cache = CellsPanelCache()
         var model = MapSnapshots().panel(.incidents)

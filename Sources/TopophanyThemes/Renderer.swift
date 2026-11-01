@@ -119,6 +119,7 @@ public struct PanelActions: @unchecked Sendable {
     public var quit: @MainActor () -> Void
     public var openAttention: @MainActor (AttentionSection.Item?) -> Void
     public var focus: @MainActor (String?) -> Void
+    public var toggleMonitor: @MainActor (MonitorPin) -> Void
     /// Quiets the menu bar's alert until it gets worse, or shows it again:
     /// whichever the alert is ready for when it's called.
     public var toggleQuiet: @MainActor () -> Void
@@ -130,7 +131,8 @@ public struct PanelActions: @unchecked Sendable {
                 openAttention: @escaping @MainActor (AttentionSection.Item?) -> Void = { _ in },
                 focus: @escaping @MainActor (String?) -> Void = { _ in },
                 toggleQuiet: @escaping @MainActor () -> Void = {},
-                download: @escaping @MainActor (TopoBuild) -> Void = { _ in }) {
+                download: @escaping @MainActor (TopoBuild) -> Void = { _ in },
+                toggleMonitor: @escaping @MainActor (MonitorPin) -> Void = { _ in }) {
         self.openTerminal = openTerminal
         self.openSettings = openSettings
         self.openSources = openSources ?? openSettings
@@ -139,6 +141,7 @@ public struct PanelActions: @unchecked Sendable {
         self.focus = focus
         self.toggleQuiet = toggleQuiet
         self.download = download
+        self.toggleMonitor = toggleMonitor
     }
 }
 
@@ -236,7 +239,7 @@ public enum Renderers {
             case .seen(let s): ids += (s.problems ?? []).map { "seen:" + $0.id }
             case .map: ids.append("map")
             case .applications(let a): ids += a.rows.map { "app:" + $0.id }
-            case .services(let cards): ids += cards.map { "service:" + $0.id }
+            case .services(let cards): ids += cards.map(\.focusID)
             case .servers(let cards): ids += cards.map { "server:" + $0.id }
             case .zones, .fleet: break
             case .mac(.server(let c, _)): ids.append("server:" + c.id)

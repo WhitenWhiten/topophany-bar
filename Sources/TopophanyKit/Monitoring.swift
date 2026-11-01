@@ -1,5 +1,15 @@
 import Foundation
 
+public struct MonitorPin: Sendable, Hashable, Codable, Identifiable {
+    public enum Kind: String, Sendable, Codable { case check, link }
+    public var kind: Kind
+    public var entity: String
+    public var id: String { kind.rawValue + ":" + entity }
+    public var metric: String { kind.rawValue + ".card" }
+    public init(kind: Kind, id: String) { self.kind = kind; entity = id }
+    enum CodingKeys: String, CodingKey { case kind, entity = "id" }
+}
+
 /// Snapshot acquisition, independently of the health and age of its evidence.
 public struct CollectorRead: Sendable, Hashable, Decodable {
     public var state: String

@@ -337,7 +337,7 @@ import Testing
         let old = TemplateCompiler().request(for: s, revision: 1, widgets: widgets)
         #expect(old.template.rows.map(\.id) == ["status"])
         let r = TemplateCompiler().request(for: s, revision: 1, widgets: widgets, serviceCards: true, listServices: true)
-        #expect(r.template.rows.map(\.id) == ["status", "service-1", "service-2", "widget-service-1", "services"])
+        #expect(r.template.rows.map(\.id) == ["status", "service-1", "service-2", "widget-service-1", "services", "checks", "links"])
         #expect(r.template.rows[1].metric == "service.card")
         #expect(r.template.rows[1].visual == "card")
         #expect(r.template.rows[1].select == .init(service: "vless-entry"))

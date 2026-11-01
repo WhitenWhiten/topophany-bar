@@ -23,6 +23,7 @@ final class CellsPanelCache {
         var focus: CGRect?
         var map: CGRect?
         var mapMeta: CGRect?
+        var monitorRegions: [String: CGRect] = [:]
     }
 
     private var sections: [SectionID: Entry] = [:]

@@ -171,7 +171,7 @@ struct CardsService: View {
                 .padding(.top, card.observers.isEmpty ? 10 : 0)
                 .padding(.bottom, 8)
             // Where nothing measures it, the rows say so already.
-            let said = card.isUnmonitored ? "" : card.checksText
+            let said = card.isUnmonitored ? "" : card.diagnosticSummary.isEmpty ? card.checksText : card.diagnosticSummary
             if !said.isEmpty || card.edge != nil || !card.age.isEmpty {
                 HStack(spacing: 10) {
                     Text(said).lineLimit(1)

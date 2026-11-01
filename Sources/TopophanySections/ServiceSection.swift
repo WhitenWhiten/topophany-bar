@@ -103,6 +103,9 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         }
     }
 
+    public var monitor: MonitorCardModel? = nil
+    public var diagnosticSummary = ""
+    public var focusID: String { monitor?.pin.id ?? "service:" + id }
     public var id: String
     public var name: String
     /// Its application's name; empty for none.
@@ -231,6 +234,7 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         c.now = date
         guard !isMissing else { return c }
         c.isWithheld = true
+        c.diagnosticSummary = ""
         c.mark = .offline
         c.pill = .cached
         c.hostMark = .offline
@@ -302,7 +306,7 @@ extension SectionBuilder {
         for k in checks { if let colo = k.colo, !colos.contains(colo) { colos.append(colo) } }
         let mark: Mark = c.note == "cached" ? .offline : c.note == "affected" && c.health == .up ? .degraded : Mark(c.health)
         let pill = c.note.isEmpty ? Pill.health(c.health) : c.note == "cached" ? .cached : Pill.state(c.note, health: c.health)
-        let card = ServiceCardModel(
+        var card = ServiceCardModel(
             id: c.id, name: c.name, application: c.application?.name ?? "", host: host, hostPlace: c.host?.place ?? "",
             hostMark: Mark(c.host?.health ?? .unknown), mark: mark, pill: pill, isWithheld: false,
             isUnmonitored: c.monitored == false, isElsewhere: c.elsewhere, observers: observers,
@@ -316,6 +320,9 @@ extension SectionBuilder {
                 .init(id: d.id, name: d.name, mark: d.affected == true && d.health == .up ? .degraded : Mark(d.health))
             },
             usedBy: c.usedBy.count, reason: c.reason, sampledAt: checks.compactMap(\.sampledAt).max(), now: now)
+        if !withheld, let check = checks.first(where: { $0.diagnostic?.outcome == "fail" || $0.diagnostic?.outcome == "policy" || $0.diagnostic?.outcome == "error" }) {
+            card.diagnosticSummary = MonitorWords.summary(check)
+        }
         return withheld ? card.withheld(at: now) : card
     }
 }
