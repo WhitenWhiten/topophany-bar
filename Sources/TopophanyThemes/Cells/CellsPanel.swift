@@ -822,9 +822,16 @@ private struct CellsPanelContent: View, Equatable {
         w.y = 5
         let live: [Seg] = ch.isLive ? [.mark(.up, p), .t(" " + (ch.connection == .direct ? tr("RUNNING") : tr("LIVE")), p.up, bold: true)]
             : [.mark(.offline, p), .t(" " + tr("NO DATA"), p.muted, bold: true)]
-        let head = CellText.truncate(ch.view, columns - 26 - CellText.width(ch.project))
-        w.line([.glyph(.logo, p.accent), .t(" TOPOPHANY", p.accent, bold: true), .t(" ╱ ", p.faint), .t(ch.project, p.text, bold: true),
-                .t(" · " + head, p.faint)], live)
+        // The state keeps its width and two columns before it, whatever its
+        // words ("● RUNNING" is wider than "● LIVE"); the view gives way
+        // first, then the project.
+        let lead: [Seg] = [.glyph(.logo, p.accent), .t(" TOPOPHANY", p.accent, bold: true), .t(" ╱ ", p.faint)]
+        let headRoom = columns - lead.reduce(0) { $0 + $1.width } - live.reduce(0) { $0 + $1.width } - 2
+        let project = CellText.truncate(ch.project, max(1, headRoom))
+        let viewRoom = headRoom - CellText.width(project) - 3
+        var left = lead + [.t(project, p.text, bold: true)]
+        if viewRoom >= 4, !ch.view.isEmpty { left.append(.t(" · " + CellText.truncate(ch.view, viewRoom), p.faint)) }
+        w.line(left, live)
         w.y = 28
 
         var marks = ["header": w.y]
