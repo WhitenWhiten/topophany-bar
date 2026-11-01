@@ -154,6 +154,7 @@ public struct SourcesStatus: Sendable, Hashable, Decodable {
         }
     }
     public var state: String
+    public var reason: String? = nil
     public var counts: Counts?
     public var sources: [Source]
 }

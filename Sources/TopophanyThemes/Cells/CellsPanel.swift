@@ -819,7 +819,7 @@ private struct CellsPanelContent: View, Equatable {
             w.items.append(.fill(CGRect(x: 0, y: 27, width: width, height: 1), p.line.opacity(0.7), radius: 0))
         }
         w.y = 5
-        let live: [Seg] = ch.isLive ? [.mark(.up, p), .t(" " + tr("LIVE"), p.up, bold: true)]
+        let live: [Seg] = ch.isLive ? [.mark(.up, p), .t(" " + (ch.connection == .direct ? tr("RUNNING") : tr("LIVE")), p.up, bold: true)]
             : [.mark(.offline, p), .t(" " + tr("NO DATA"), p.muted, bold: true)]
         let head = CellText.truncate(ch.view, columns - 26 - CellText.width(ch.project))
         w.line([.glyph(.logo, p.accent), .t(" TOPOPHANY", p.accent, bold: true), .t(" ╱ ", p.faint), .t(ch.project, p.text, bold: true),
@@ -838,7 +838,7 @@ private struct CellsPanelContent: View, Equatable {
         let updated = (st.isBlind ? st.lastKnown?.at : st.updatedAt).map { Words.ago($0, now: st.now, style: .compact) } ?? ""
         // With nothing ever received there is no age, and "cached" stands
         // alone: Japanese and Chinese put the age before it.
-        let age = st.isBlind ? (updated.isEmpty ? tr("cached") : tr("cached \(updated)")) : tr("updated \(updated)")
+        let age = st.isBlind ? (updated.isEmpty ? tr("cached") : tr("cached \(updated)")) : st.sources != nil ? tr("status updated \(updated)") : tr("updated \(updated)")
         // Below the verdict, `m` quiets the menu bar's alert, or shows it
         // again; while no topo can run, `d` downloads one.
         var quietRegion: CGRect?
@@ -959,7 +959,7 @@ private struct CellsPanelContent: View, Equatable {
         let conn: Seg
         var ownLine = false
         if ch.isLive {
-            let text = Words.join([ch.project, ch.updatedAt.map { Words.span(since: $0, now: ch.now, style: .compact) } ?? ""])
+            let text = ch.connection == .direct ? ch.connectionText : Words.join([ch.project, ch.updatedAt.map { Words.span(since: $0, now: ch.now, style: .compact) } ?? ""])
             conn = .t(CellText.truncate(text, room), p.faint)
         } else {
             let text = ch.connection == .unreachable ? tr("unreachable") : ch.connectionText.lowercased()

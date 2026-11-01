@@ -315,6 +315,7 @@ public struct LocalSection: Sendable, Hashable {
 public struct PanelChrome: Sendable, Hashable {
     public enum Connection: Sendable, Hashable {
         case connected
+        case direct
         case unreachable
         case reading
         case starting
@@ -338,13 +339,14 @@ public struct PanelChrome: Sendable, Hashable {
         self.now = now
     }
 
-    public var isLive: Bool { connection == .connected }
+    public var isLive: Bool { connection == .connected || connection == .direct }
 
     /// "Connected · homelab".
     public var connectionText: String {
         let p = project.isEmpty ? tr("collector") : project
         switch connection {
         case .connected: return tr("Connected · \(p)")
+        case .direct: return tr("topo running · \(p)")
         case .unreachable: return tr("Unreachable · \(p)")
         case .reading: return tr("Reading collector…")
         case .starting: return tr("Starting topo…")

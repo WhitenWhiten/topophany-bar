@@ -518,7 +518,7 @@ public enum SectionBuilder {
     static func chrome(_ r: Reading, status: StatusSection, observer: String) -> PanelChrome {
         var connection: PanelChrome.Connection
         switch status.kind {
-        case .sources: connection = status.isBlind ? .notRunning(tr("Not current")) : .connected
+        case .sources: connection = status.isBlind ? .notRunning(tr("Not current")) : .direct
         case .verdict: connection = .connected
         // These describe evidence from an answering collector. Its verdict
         // can expire independently of the connection; keep withholding the

@@ -4151,7 +4151,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "最新 %lld"
+            "value": "有效 %lld"
           }
         }
       }
@@ -4195,7 +4195,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "%2$lld 台服务器中 %1$lld 台为最新"
+            "value": "%2$lld 台服务器中 %1$lld 台读数有效"
           }
         }
       }
@@ -4211,7 +4211,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "%2$lld 台中 %1$lld 台为最新"
+            "value": "%2$lld 台中 %1$lld 台读数有效"
           }
         }
       }
@@ -4259,7 +4259,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "台为最新"
+            "value": "台读数有效"
           }
         }
       }
@@ -4293,7 +4293,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "台为最新（共 %lld 台）"
+            "value": "台读数有效（共 %lld 台）"
           }
         }
       }
@@ -4343,7 +4343,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "最新"
+            "value": "有效"
           }
         }
       }
@@ -5576,6 +5576,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "コレクターを読み取り中…"
+          }
+        }
+      }
+    },
+    "Readings expired": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り値が期限切れ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读数已过期"
+          }
+        }
+      }
+    },
+    "topo running · %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 実行中 · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 运行中 · %@"
           }
         }
       }

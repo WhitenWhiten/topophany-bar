@@ -494,7 +494,7 @@ struct CardsStatusCard: View {
                 Spacer()
                 // A snapshot keeps the time it was read, current or not.
                 if status.collector == nil, let at = status.isBlind && status.sources == nil ? status.lastKnown?.at : status.updatedAt {
-                    Text(tr("Updated \(Words.ago(at, now: status.now))"))
+                    Text(status.sources != nil ? tr("Status updated \(Words.ago(at, now: status.now))") : tr("Updated \(Words.ago(at, now: status.now))"))
                 }
             }
             .font(t.font(11)).foregroundStyle(p.l3)

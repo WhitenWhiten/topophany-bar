@@ -9,7 +9,8 @@ import TopophanySections
     func model(_ state: String, at: Date? = nil, pinned: Bool = true) throws -> PanelModel {
         let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/DirectDevelopment")
         let now = Timestamp.parse("2026-10-21T12:00:00Z")!
-        let data = try Data(contentsOf: root.appending(path: state + ".json"))
+        let file = state == "samples_stale" ? root.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appending(path: "docs/contracts/direct-v1/fixtures/stream-expired.json") : root.appending(path: state + ".json")
+        let data = try Data(contentsOf: file)
         let frame = try #require(FrameDecoder.frame(from: data))
         var p = ReaderPolicy(); p.receive(frame, line: data, at: now)
         var s = Settings(); s.topo.source = "direct"; s.sections.servers = true; s.sections.mac.mode = .off
@@ -19,7 +20,7 @@ import TopophanySections
     @Test func sourcePanels() throws {
         for language in ["en", "ja", "zh-Hans"] {
             try L10n.with(language) {
-                for state in ["loading", "ready", "partial", "no_data", "auth_required", "forbidden", "retrying", "unknown", "expired",
+                for state in ["loading", "ready", "partial", "samples_stale", "no_data", "auth_required", "forbidden", "retrying", "unknown", "expired",
                               "fleet", "fleet_partial", "fleet_expired"] {
                     let expired = state.hasSuffix("expired")
                     let m = try model(expired ? (state == "expired" ? "ready" : "fleet") : state,

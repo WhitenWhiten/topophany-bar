@@ -13,6 +13,7 @@ public struct SourceStatusSection: Sendable, Hashable {
     /// The headline, the state alone: "Connected", "Needs attention".
     public var title: String {
         guard isCurrent else { return tr("Not current") }
+        if value.reason == "samples_stale" { return tr("Readings expired") }
         return SourceMessages.headline(value.state)
     }
     /// Who the sources are: "Beszel", or "Direct" when they're mixed.

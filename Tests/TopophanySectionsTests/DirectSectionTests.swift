@@ -4,6 +4,19 @@ import TopophanyKit
 @testable import TopophanySections
 
 struct DirectSectionTests {
+    @Test func expiredSamplesKeepSourceContactAndExplainTheirReason() throws {
+        let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appending(path: "docs/contracts/direct-v1/fixtures")
+        let frame = try #require(FrameDecoder.frame(from: Data(contentsOf: root.appending(path: "stream-expired.json"))))
+        let now = try #require(frame.generatedAt)
+        var policy = ReaderPolicy(); policy.receive(frame, at: now)
+        let status = SectionBuilder.status(policy.evaluate(at: now), engine: .running)
+        #expect(status.sources?.value.reason == "samples_stale")
+        #expect(status.sources?.value.sources.first?.state == "connected")
+        #expect(L10n.with("en") { status.title } == "Readings expired")
+        #expect(L10n.with("zh-Hans") { status.title } == "读数已过期")
+        #expect(status.count == 1 && status.verdictState == nil)
+    }
+
     @Test func statesPreserveBackendSemantics() throws {
         let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/DirectDevelopment")
         let now = Timestamp.parse("2026-10-21T12:00:00Z")!
@@ -15,6 +28,8 @@ struct DirectSectionTests {
             let panel = SectionBuilder.panel(.init(reading: policy.evaluate(at: now), engine: .running, settings: settings))
             #expect(panel.status.verdictState == nil)
             #expect(panel.status.sources != nil)
+            #expect(panel.chrome.connection == .direct)
+            #expect(L10n.with("en") { panel.chrome.connectionText.hasPrefix("topo running") })
             #expect(!panel.status.title.contains("All clear"))
             #expect(panel.seen == nil && panel.map == nil && panel.services.isEmpty && panel.zones == nil)
             #expect(panel.status.count == (name == "ready" || name == "partial" ? nil : 1))
