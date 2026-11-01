@@ -237,7 +237,7 @@ struct TerminalPicker: View {
         panel.allowedContentTypes = [.applicationBundle]
         panel.directoryURL = URL(filePath: "/Applications")
         panel.prompt = tr("Choose")
-        panel.message = tr("Choose the terminal that opens the TUI. It's given a shell script to open.")
+        panel.message = tr("Choose the terminal that opens the TUI. It’s given a shell script to open.")
         guard panel.runModal() == .OK, let url = panel.url, let id = Bundle(url: url)?.bundleIdentifier else { return }
         model.update { $0.terminal = id }
     }
@@ -1238,7 +1238,7 @@ struct ServersPicker: View {
                 .onSubmit(add)
             Button("Pin", action: add).disabled(!TemplateCompiler.validNode(draft.trimmingCharacters(in: .whitespaces)))
         }
-        Text("A node that isn't in the topology shows as such.").font(.callout).foregroundStyle(.secondary)
+        Text("A node that isn’t in the topology shows as such.").font(.callout).foregroundStyle(.secondary)
     }
 
     func name(_ node: String) -> String {
@@ -1463,7 +1463,7 @@ struct ServicesPicker: View {
                 .onSubmit(add)
             Button("Pin", action: add).disabled(!TemplateCompiler.validNode(draft.trimmingCharacters(in: .whitespaces)))
         }
-        Text("A service that isn't in the topology shows as such.").font(.callout).foregroundStyle(.secondary)
+        Text("A service that isn’t in the topology shows as such.").font(.callout).foregroundStyle(.secondary)
     }
 
     func name(_ id: String) -> String {

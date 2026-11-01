@@ -251,7 +251,7 @@
         }
       }
     },
-    "A node that isn't in the topology shows as such.": {
+    "A node that isn’t in the topology shows as such.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -299,7 +299,7 @@
         }
       }
     },
-    "A service that isn't in the topology shows as such.": {
+    "A service that isn’t in the topology shows as such.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -795,7 +795,7 @@
         }
       }
     },
-    "Choose the terminal that opens the TUI. It's given a shell script to open.": {
+    "Choose the terminal that opens the TUI. It’s given a shell script to open.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -4817,7 +4817,7 @@
         }
       }
     },
-    "Only this profile's source is removed. Systems in Beszel are kept.": {
+    "Only this profile’s source is removed. Systems in Beszel are kept.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -5651,7 +5651,7 @@
         }
       }
     },
-    "Choose the Hub's certificate authority, as a PEM file": {
+    "Choose the Hub’s certificate authority, as a PEM file": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -5827,7 +5827,7 @@
         }
       }
     },
-    "Only this profile's source is removed. Servers in Komari are kept.": {
+    "Only this profile’s source is removed. Servers in Komari are kept.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -6067,7 +6067,7 @@
         }
       }
     },
-    "Choose the server's certificate authority, as a PEM file": {
+    "Choose the server’s certificate authority, as a PEM file": {
       "localizations": {
         "ja": {
           "stringUnit": {

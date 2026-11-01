@@ -121,7 +121,7 @@ struct NodeQuery: EntityQuery {
 
 struct ServerWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Server"
-    static let description = IntentDescription("One server's card: CPU, memory and disk against its limits.")
+    static let description = IntentDescription("One server’s card: CPU, memory and disk against its limits.")
 
     @Parameter(title: "Server")
     var node: NodeEntity?
@@ -175,7 +175,7 @@ struct ServiceQuery: EntityQuery {
 
 struct ServiceWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Service"
-    static let description = IntentDescription("One service's card: who sees it from where, and how fast it answered.")
+    static let description = IntentDescription("One service’s card: who sees it from where, and how fast it answered.")
 
     @Parameter(title: "Service")
     var service: ServiceEntity?
@@ -241,7 +241,7 @@ struct MonitorQuery: EntityQuery {
 
 struct CheckWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Check"
-    static let description = IntentDescription("One check's or link's card: what it concludes, its reading and its history.")
+    static let description = IntentDescription("One check’s or link’s card: what it concludes, its reading and its history.")
 
     @Parameter(title: "Check or Link")
     var item: MonitorEntity?
@@ -524,7 +524,7 @@ struct ServerWidget: Widget {
             WidgetView(entry: entry)
         }
         .configurationDisplayName("Server")
-        .description("One server's card, as in the Servers tab.")
+        .description("One server’s card, as in the Servers tab.")
         .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }
@@ -536,7 +536,7 @@ struct ServiceWidget: Widget {
             WidgetView(entry: entry)
         }
         .configurationDisplayName("Service")
-        .description("One service's card, as in the Services tab.")
+        .description("One service’s card, as in the Services tab.")
         .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }
@@ -572,7 +572,7 @@ struct CheckWidget: Widget {
             WidgetView(entry: entry)
         }
         .configurationDisplayName("Check")
-        .description("One check's or link's card: a mihomo core, a Cloudflare Tunnel or any check you pin.")
+        .description("One check’s or link’s card: a mihomo core, a Cloudflare Tunnel or any check you pin.")
         .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }

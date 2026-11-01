@@ -167,7 +167,7 @@
         }
       }
     },
-    "One server's card, as in the Servers tab.": {
+    "One server’s card, as in the Servers tab.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -183,7 +183,7 @@
         }
       }
     },
-    "One server's card: CPU, memory and disk against its limits.": {
+    "One server’s card: CPU, memory and disk against its limits.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -199,7 +199,7 @@
         }
       }
     },
-    "One service's card, as in the Services tab.": {
+    "One service’s card, as in the Services tab.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -215,7 +215,7 @@
         }
       }
     },
-    "One service's card: who sees it from where, and how fast it answered.": {
+    "One service’s card: who sees it from where, and how fast it answered.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -551,7 +551,7 @@
         }
       }
     },
-    "One check's or link's card: what it concludes, its reading and its history.": {
+    "One check’s or link’s card: what it concludes, its reading and its history.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -567,7 +567,7 @@
         }
       }
     },
-    "One check's or link's card: a mihomo core, a Cloudflare Tunnel or any check you pin.": {
+    "One check’s or link’s card: a mihomo core, a Cloudflare Tunnel or any check you pin.": {
       "localizations": {
         "ja": {
           "stringUnit": {

@@ -86,8 +86,8 @@ struct SourceSettings: View {
             Button("Remove source", role: .destructive) { remove() }
             Button("Cancel", role: .cancel) { removing = nil }
         } message: {
-            Text(removing?.source.adapter == "komari" ? "Only this profile's source is removed. Servers in Komari are kept." as LocalizedStringKey
-                 : "Only this profile's source is removed. Systems in Beszel are kept.")
+            Text(removing?.source.adapter == "komari" ? "Only this profile’s source is removed. Servers in Komari are kept." as LocalizedStringKey
+                 : "Only this profile’s source is removed. Systems in Beszel are kept.")
         }
         .onDisappear { operation?.cancel(); editor?.close() }
     }
@@ -541,8 +541,8 @@ struct SourceEditorForm: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.message = komari ? tr("Choose the server's certificate authority, as a PEM file")
-            : tr("Choose the Hub's certificate authority, as a PEM file")
+        panel.message = komari ? tr("Choose the server’s certificate authority, as a PEM file")
+            : tr("Choose the Hub’s certificate authority, as a PEM file")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         editor.source.caFile = url.path
     }
