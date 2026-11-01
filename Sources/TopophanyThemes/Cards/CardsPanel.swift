@@ -390,6 +390,59 @@ struct CardTitle: View {
 
 // MARK: status
 
+/// The verdict's lines, and the button that goes with them: beside the
+/// title while the title fits whole, else under the lines, so a wide
+/// button ("Download topo 1.5.0") never cuts the verdict short. The first
+/// subview is the title; the one marked `Action` is the button.
+struct VerdictLines: Layout {
+    var spacing = 2.0
+    /// Between the title and a button beside it.
+    var gap = 8.0
+    /// Above a button set under the lines.
+    var above = 7.0
+
+    struct Action: LayoutValueKey { static let defaultValue = false }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrange(proposal.width, subviews).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for (v, f) in zip(subviews, arrange(bounds.width, subviews).frames) {
+            v.place(at: CGPoint(x: bounds.minX + f.minX, y: bounds.minY + f.minY), proposal: ProposedViewSize(f.size))
+        }
+    }
+
+    func arrange(_ proposed: CGFloat?, _ subviews: Subviews) -> (size: CGSize, frames: [CGRect]) {
+        var frames = Array(repeating: CGRect.zero, count: subviews.count)
+        guard let title = subviews.first else { return (.zero, frames) }
+        let action = subviews.indices.dropFirst().last { subviews[$0][Action.self] }
+        let lines = subviews.indices.dropFirst().filter { $0 != action }
+        let t = title.sizeThatFits(.unspecified)
+        let b = action.map { subviews[$0].sizeThatFits(.unspecified) } ?? .zero
+        let width = proposed ?? max(t.width + (action == nil ? 0 : gap + b.width),
+                                    lines.map { subviews[$0].sizeThatFits(.unspecified).width }.max() ?? 0)
+        var y = 0.0
+        func line(_ i: Int) {
+            let s = subviews[i].sizeThatFits(ProposedViewSize(width: width, height: nil))
+            frames[i] = CGRect(origin: CGPoint(x: 0, y: y), size: s)
+            y += s.height
+        }
+        if let action, t.width + gap + b.width <= width + 0.5 {
+            let row = max(t.height, b.height)
+            frames[0] = CGRect(x: 0, y: (row - t.height) / 2, width: t.width, height: t.height)
+            frames[action] = CGRect(x: width - b.width, y: (row - b.height) / 2, width: b.width, height: b.height)
+            y = row
+            for i in lines { y += spacing; line(i) }
+        } else {
+            line(0)
+            for i in lines { y += spacing; line(i) }
+            if let action { y += above; line(action) }
+        }
+        return (CGSize(width: width, height: y), frames)
+    }
+}
+
 struct CardsStatusCard: View {
     var status: StatusSection
     var alert: MenuBarAlert = .unavailable
@@ -410,16 +463,9 @@ struct CardsStatusCard: View {
         Card(p: p, padding: EdgeInsets(top: 12, leading: 12, bottom: 10, trailing: 12), tint: tint) {
             HStack(spacing: 12) {
                 HeroSymbol(status: status, size: 44, palette: p)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
-                        Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(1)
-                            .contentTransition(.numericText()).settles(on: status.title)
-                        if alert != .unavailable || download != nil {
-                            Spacer(minLength: 0)
-                            if alert != .unavailable { QuietButton(quiet: alert == .quiet, p: p, t: t) }
-                            if let download { DownloadButton(offer: download, p: p, t: t) }
-                        }
-                    }
+                VerdictLines {
+                    Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(1)
+                        .contentTransition(.numericText()).settles(on: status.title)
                     Text(download?.line ?? status.subtitle).font(t.font(12)).foregroundStyle(p.l2).lineLimit(2)
                     if let coverage = status.coverageText {
                         // A fact of its own beside the verdict, quiet once
@@ -430,6 +476,13 @@ struct CardsStatusCard: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 1)
                             .help(status.coverageHelp ?? "")
+                    }
+                    if alert != .unavailable || download != nil {
+                        HStack(spacing: 8) {
+                            if alert != .unavailable { QuietButton(quiet: alert == .quiet, p: p, t: t) }
+                            if let download { DownloadButton(offer: download, p: p, t: t) }
+                        }
+                        .layoutValue(key: VerdictLines.Action.self, value: true)
                     }
                 }
             }
