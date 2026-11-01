@@ -16,15 +16,19 @@ public struct WidgetNeedsStore: Sendable {
         public var zones: Bool?
         /// A Map widget, which draws the map's graph.
         public var map: Bool?
+        /// A Check widget's check or link.
+        public var monitor: MonitorPin?
         public var datasetScope: String?
         public var at: Date
 
-        public init(lists: Bool, node: String?, service: String? = nil, zones: Bool = false, map: Bool = false, datasetScope: String? = nil, at: Date) {
+        public init(lists: Bool, node: String?, service: String? = nil, zones: Bool = false, map: Bool = false,
+                    monitor: MonitorPin? = nil, datasetScope: String? = nil, at: Date) {
             self.lists = lists
             self.node = node
             self.service = service
             self.zones = zones ? true : nil
             self.map = map ? true : nil
+            self.monitor = monitor
             self.datasetScope = datasetScope
             self.at = at
         }
@@ -52,7 +56,8 @@ public struct WidgetNeedsStore: Sendable {
         guard let url else { return }
         var all = entries().filter { entry.at.timeIntervalSince($0.value.at) < Self.forgetAfter }
         guard all[key].map({ $0.lists != entry.lists || $0.node != entry.node || $0.service != entry.service || $0.zones != entry.zones
-            || $0.map != entry.map || $0.datasetScope != entry.datasetScope || entry.at.timeIntervalSince($0.at) > 60 }) ?? true
+            || $0.map != entry.map || $0.monitor != entry.monitor || $0.datasetScope != entry.datasetScope
+            || entry.at.timeIntervalSince($0.at) > 60 }) ?? true
         else { return }
         all[key] = entry
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -64,8 +69,9 @@ public struct WidgetNeedsStore: Sendable {
         let live = entries().values.filter { now.timeIntervalSince($0.at) < Self.forgetAfter && $0.datasetScope == datasetScope }
         let nodes = Set(live.compactMap(\.node)).sorted()
         let services = Set(live.compactMap(\.service)).sorted()
+        let monitors = Set(live.compactMap(\.monitor)).sorted { $0.id < $1.id }
         return TemplateCompiler.WidgetNeeds(lists: live.contains { $0.lists }, nodes: nodes, services: services,
-                                            map: live.contains { $0.map == true })
+                                            map: live.contains { $0.map == true }, monitors: monitors)
     }
 
     /// A Time zones widget was drawn lately.

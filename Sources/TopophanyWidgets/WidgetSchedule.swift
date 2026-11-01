@@ -77,8 +77,9 @@ public enum WidgetSchedule {
     }
 
     /// The two entries of a reload: now, then not current. A Server widget
-    /// passes its node, and a Service widget its service.
-    public static func entries(_ h: Handoff?, at now: Date, server node: String? = nil, service: String? = nil)
+    /// passes its node, a Service widget its service, and a Check widget its
+    /// check or link.
+    public static func entries(_ h: Handoff?, at now: Date, server node: String? = nil, service: String? = nil, monitor: MonitorPin? = nil)
         -> [(date: Date, panel: PanelModel, isCurrent: Bool)] {
         guard let h else {
             let empty = SectionBuilder.panel(PanelInput(reading: ReaderPolicy().evaluate(at: now), engine: .stopped,
@@ -91,7 +92,7 @@ public enum WidgetSchedule {
             guard stale > now else { return [(now, panel.withheld(at: now), false)] }
             return [(now, panel, true), (stale, (node.map { h.panel(server: $0, at: stale) } ?? h.panel(at: stale)).withheld(at: stale), false)]
         }
-        let panel = node.map { h.panel(server: $0) } ?? service.map { h.panel(service: $0) } ?? h.panel()
+        let panel = node.map { h.panel(server: $0) } ?? service.map { h.panel(service: $0) } ?? monitor.map { h.panel(monitor: $0) } ?? h.panel()
         let stale = notCurrent(after: h)
         if stale <= now { return [(now, panel.withheld(at: now), false)] }
         return [(now, panel, true), (stale, panel.withheld(at: stale), false)]

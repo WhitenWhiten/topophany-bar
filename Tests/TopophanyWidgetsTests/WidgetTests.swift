@@ -108,6 +108,25 @@ func temporaryStore() -> HandoffStore {
         #expect(stale.service?.observers.allSatisfy { $0.history == .withheld } == true)
     }
 
+    @Test func drawsTheCheckItShows() throws {
+        let url = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/Monitoring/preview.ndjson")
+        let line = try Data(contentsOf: url)
+        let frame = try #require(FrameDecoder.frame(from: line))
+        let now = try #require(frame.generatedAt)
+        var p = ReaderPolicy(); p.receive(frame, line: line, at: now)
+        let h = Handoff(policy: p, theme: ThemeStore.native, settings: settings(), engineRunning: true, at: now)
+        let pin = MonitorPin(kind: .check, id: "m-clash")
+        let m = WidgetModel(kind: .monitor(pin: pin), panel: h.panel(monitor: pin))
+        #expect(m.monitor?.name == "Clash Verge Runtime")
+        #expect(m.monitor?.monitor?.expanded == true)
+        #expect(m.monitor?.monitor?.summary == "Runtime matches policy")
+        let link = MonitorPin(kind: .link, id: "home-cf")
+        #expect(WidgetModel(kind: .monitor(pin: link), panel: h.panel(monitor: link)).monitor?.monitor?.checks.count == 1)
+        // One the stream didn't send has no card; past the lease it is history.
+        #expect(WidgetModel(kind: .monitor(pin: .init(kind: .check, id: "gone")), panel: h.panel(monitor: .init(kind: .check, id: "gone"))).monitor?.isMissing != false)
+        #expect(m.notCurrent(at: now.addingTimeInterval(47 * 60)).monitor?.isWithheld == true)
+    }
+
     @Test func emptyWithoutAnAppGroup() {
         let store = HandoffStore(appGroup: nil)
         #expect(!store.isAvailable)
@@ -294,6 +313,18 @@ func temporaryStore() -> HandoffStore {
         // A widget not drawn for long has been removed.
         #expect(store.needs(at: origin.addingTimeInterval(WidgetNeedsStore.forgetAfter + 1)) == .none)
     }
+    /// A Check widget asks for its check's or link's card.
+    @Test func recordsChecksAndLinks() {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "topophany-bar-tests-\(UUID().uuidString)")
+        let store = WidgetNeedsStore(directory: dir)
+        let check = MonitorPin(kind: .check, id: "m-clash"), link = MonitorPin(kind: .link, id: "home-cf")
+        store.record("check-small-check:m-clash", .init(lists: false, node: nil, monitor: check, at: origin))
+        store.record("check-medium-check:m-clash", .init(lists: false, node: nil, monitor: check, at: origin))
+        store.record("check-small-link:home-cf", .init(lists: false, node: nil, monitor: link, at: origin))
+        #expect(store.needs(at: origin.addingTimeInterval(60)) == .init(monitors: [check, link]))
+        #expect(store.needs(at: origin.addingTimeInterval(WidgetNeedsStore.forgetAfter + 1)) == .none)
+    }
+
     /// A Map widget asks for the map's graph, whatever the panel shows.
     @Test func recordsTheMap() {
         let dir = FileManager.default.temporaryDirectory.appending(path: "topophany-bar-tests-\(UUID().uuidString)")

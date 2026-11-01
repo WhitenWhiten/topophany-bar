@@ -19,6 +19,7 @@ public struct TemplateCompiler: Sendable {
         public static let links = "links"
         public static func service(_ index: Int) -> String { "service-\(index + 1)" }
         public static func extraService(_ index: Int) -> String { "widget-service-\(index + 1)" }
+        public static func extraMonitor(_ index: Int) -> String { "widget-monitor-\(index + 1)" }
         public static let map = "map"
     }
 
@@ -32,12 +33,15 @@ public struct TemplateCompiler: Sendable {
         public var services: [String]
         /// A Map widget is on the desktop.
         public var map: Bool
+        /// Checks and links shown by Check widgets.
+        public var monitors: [MonitorPin]
 
-        public init(lists: Bool = false, nodes: [String] = [], services: [String] = [], map: Bool = false) {
+        public init(lists: Bool = false, nodes: [String] = [], services: [String] = [], map: Bool = false, monitors: [MonitorPin] = []) {
             self.lists = lists
             self.nodes = nodes
             self.services = services
             self.map = map
+            self.monitors = monitors
         }
 
         public static let none = WidgetNeeds()
@@ -90,9 +94,8 @@ public struct TemplateCompiler: Sendable {
                 }
                 var seen = Set<MonitorPin>()
                 for pin in s.monitors.prefix(16) where Self.validNode(pin.entity) && seen.insert(pin).inserted {
-                    rows.append(TemplateRow(id: "monitor-\(seen.count)", metric: pin.metric, visual: "card",
-                                            select: pin.kind == .check ? .init(check: pin.entity) : .init(link: pin.entity),
-                                            history: monitorHistory.contains(pin)))
+                    // A Check widget draws the pin's history strip.
+                    rows.append(Self.monitorCard("monitor-\(seen.count)", pin, history: monitorHistory.contains(pin) || widgets.monitors.contains(pin)))
                 }
             case .servers where s.servers || widgets.lists:
                 for (i, node) in Self.unique(s.serverNodes).enumerated() {
@@ -116,6 +119,12 @@ public struct TemplateCompiler: Sendable {
                 rows.append(Self.serviceCard(RowID.extraService(i), service))
             }
         }
+        // Check widgets' checks and links the panel doesn't pin, with history.
+        let monitored = Set(rows.compactMap { $0.select?.check.map { MonitorPin(kind: .check, id: $0) } ?? $0.select?.link.map { MonitorPin(kind: .link, id: $0) } })
+        var extra = Set<MonitorPin>()
+        for pin in widgets.monitors.prefix(16) where Self.validNode(pin.entity) && !monitored.contains(pin) && extra.insert(pin).inserted {
+            rows.append(Self.monitorCard(RowID.extraMonitor(extra.count - 1), pin, history: true))
+        }
         if listServers { rows.append(TemplateRow(id: RowID.servers, metric: "servers.list", visual: "list")) }
         if listServices {
             rows.append(TemplateRow(id: RowID.services, metric: "services.list", visual: "list"))
@@ -133,6 +142,11 @@ public struct TemplateCompiler: Sendable {
             lang: preview ? lang : nil,
             interval: (Interval(t.interval) ?? Interval(seconds: 5)).clampedToRefresh.description,
             template: Template(title: title, bar: .init(row: RowID.status), rows: rows))
+    }
+
+    static func monitorCard(_ id: String, _ pin: MonitorPin, history: Bool) -> TemplateRow {
+        TemplateRow(id: id, metric: pin.metric, visual: "card",
+                    select: pin.kind == .check ? .init(check: pin.entity) : .init(link: pin.entity), history: history)
     }
 
     static func card(_ id: String, _ node: String) -> TemplateRow {

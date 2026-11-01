@@ -27,6 +27,7 @@ struct CardsWidget: View {
                 }
             case .map:
                 WidgetMap(model: model, size: size, p: p, t: t, ctx: ctx).padding(-14)
+            case .monitor: monitor(p)
             }
         }
         .padding(14)
@@ -154,6 +155,36 @@ struct CardsWidget: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
+    }
+
+    // MARK: Check
+
+    @ViewBuilder func monitor(_ p: CardsPalette) -> some View {
+        if let card = model.monitor, let m = card.monitor {
+            let left = WidgetMonitorCard(card: card, m: m, p: p, t: t, ctx: ctx)
+            if size == .small {
+                left
+            } else {
+                HStack(alignment: .top, spacing: 16) {
+                    WidgetMonitorCard(card: card, m: m, p: p, t: t, ctx: ctx, history: false).frame(width: 150)
+                    WidgetMonitorReadings(m: m, p: p, t: t, ctx: ctx)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
+            }
+        } else {
+            WidgetServiceCard(card: monitorPlaceholder, p: p, t: t, ctx: ctx)
+        }
+    }
+
+    /// A check or link whose card hasn't arrived, or that direct mode
+    /// doesn't read: its ID, and why nothing is shown.
+    var monitorPlaceholder: ServiceCardModel {
+        let id = if case .monitor(let pin) = model.kind { pin.entity } else { "" }
+        let why = id.isEmpty ? tr("Choose one in Edit Widget") : model.status.sources != nil ? tr("Not read in direct mode") : tr("Not received yet")
+        return ServiceCardModel(id: id, name: id.isEmpty ? tr("No check chosen") : id, application: "",
+                                host: .init(name: "", kind: "", provider: ""), hostMark: .offline, mark: .offline,
+                                pill: .cached, isWithheld: true, isMissing: true, observers: [], checks: [],
+                                placeholder: why, sampledAt: nil, now: model.status.now)
     }
 
     /// A service whose card hasn't arrived: its ID, and nothing else known.

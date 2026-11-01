@@ -44,6 +44,27 @@ import TopophanyKit
         #expect(!compiler.request(for: settings, revision: 2).template.rows.contains { $0.metric == "check.card" || $0.metric == "link.card" })
     }
 
+    @Test func checkWidgetsAskForTheirCardsWithHistory() {
+        var settings = Settings()
+        settings.sections.services = true
+        settings.sections.monitors = [.init(kind: .check, id: "runtime")]
+        let widgets = TemplateCompiler.WidgetNeeds(monitors: [.init(kind: .check, id: "runtime"), .init(kind: .link, id: "tunnel"),
+                                                              .init(kind: .link, id: "tunnel"), .init(kind: .check, id: "bad id")])
+        let rows = TemplateCompiler().request(for: settings, revision: 1, widgets: widgets).template.rows
+        // A pinned check is asked for once, with the history its widget draws.
+        let checks = rows.filter { $0.metric == "check.card" }
+        #expect(checks.count == 1 && checks.first?.history == true && checks.first?.id == "monitor-1")
+        let links = rows.filter { $0.metric == "link.card" }
+        #expect(links.count == 1 && links.first?.history == true && links.first?.id == "widget-monitor-1")
+        // The panel needn't pin anything for a widget to have its card.
+        settings.sections.services = false
+        let alone = TemplateCompiler().request(for: settings, revision: 2, widgets: widgets).template.rows
+        #expect(alone.filter { $0.metric == "check.card" || $0.metric == "link.card" }.map(\.id) == ["widget-monitor-1", "widget-monitor-2"])
+        // Direct mode reads no checks.
+        settings.topo.source = "direct"; settings.topo.profile = "test"
+        #expect(!TemplateCompiler().request(for: settings, revision: 3, widgets: widgets).template.rows.contains { $0.metric.hasSuffix(".card") && $0.metric != "server.card" })
+    }
+
     @Test func serviceWidgetHistoryIsNotSuppressedByCompactMonitoring() {
         var settings = Settings()
         settings.sections.services = true

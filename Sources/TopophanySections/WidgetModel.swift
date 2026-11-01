@@ -32,6 +32,8 @@ public struct WidgetModel: Sendable, Hashable {
         /// Where the nodes are: in a framing of its own, or `nil`
         /// for the panel's.
         case map(frame: Sections.MapFrame?)
+        /// One check's or link's card, as pinned in the panel.
+        case monitor(pin: MonitorPin)
     }
 
     /// The medium Status widget's right side.
@@ -69,6 +71,12 @@ public struct WidgetModel: Sendable, Hashable {
     public var service: ServiceCardModel? {
         guard case .service(let id) = kind else { return nil }
         return panel.services.first { $0.id == id }
+    }
+
+    /// The card a Check widget shows.
+    public var monitor: ServiceCardModel? {
+        guard case .monitor(let pin) = kind else { return nil }
+        return panel.services.first { $0.monitor?.pin == pin }
     }
 
     /// What a Time zones widget shows.

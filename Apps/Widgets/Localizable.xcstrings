@@ -518,6 +518,70 @@
           }
         }
       }
+    },
+    "Check": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チェック"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查"
+          }
+        }
+      }
+    },
+    "Check or Link": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チェックまたはリンク"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查或链路"
+          }
+        }
+      }
+    },
+    "One check's or link's card: what it concludes, its reading and its history.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 つのチェックまたはリンクのカード：結論、読み取り値、履歴。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个检查或链路的卡片：结论、读数与历史。"
+          }
+        }
+      }
+    },
+    "One check's or link's card: a mihomo core, a Cloudflare Tunnel or any check you pin.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 つのチェックまたはリンクのカード：mihomo コア、Cloudflare Tunnel、またはピン留めしたチェック。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个检查或链路的卡片：mihomo 内核、Cloudflare Tunnel 或任何已固定的检查。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

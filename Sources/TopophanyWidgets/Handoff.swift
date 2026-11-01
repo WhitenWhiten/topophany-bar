@@ -156,6 +156,27 @@ public struct Handoff: Sendable, Codable {
         return p
     }
 
+    /// The checks and links `topo` last listed, for choosing a Check
+    /// widget's.
+    public func monitors() -> (checks: [CheckListEntry], links: [LinkSummary]) {
+        let r = reading()
+        var checks: [CheckListEntry] = [], links: [LinkSummary] = []
+        if let row = r.row(TemplateCompiler.RowID.checks), case .checks(let list) = r.lastValue(of: row) { checks = list }
+        if let row = r.row(TemplateCompiler.RowID.links), case .links(let list) = r.lastValue(of: row) { links = list }
+        return (checks, links)
+    }
+
+    /// The panel for a Check widget: its check's or link's card is the one
+    /// pinned card, expanded for its readings and history.
+    public func panel(monitor pin: MonitorPin) -> PanelModel {
+        let r = reading()
+        var p = panel(reading: r, settings: decodedSettings)
+        let cards = isDirect ? [] : SectionBuilder.monitors(r, pins: [pin], expanded: [pin])
+        p.sections.removeAll { if case .services = $0 { true } else { false } }
+        p.sections.append(.services(cards))
+        return p
+    }
+
     /// The panel for a Server widget: its node's card is the one server,
     /// whether or not the panel pins it.
     public func panel(server node: String, at date: Date? = nil) -> PanelModel {

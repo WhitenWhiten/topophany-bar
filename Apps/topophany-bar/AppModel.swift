@@ -486,7 +486,7 @@ final class AppModel {
         // Direct node IDs include the immutable source ID; foreign selections never rebind by name.
         let sourceIDs = Set(knownServers.compactMap { $0.origin?.sourceID })
         needs.nodes = needs.nodes.filter { node in sourceIDs.contains { node.hasPrefix($0 + ".") } }
-        needs.services = []; needs.map = false; needs.lists = false
+        needs.services = []; needs.map = false; needs.lists = false; needs.monitors = []
         return needs
     }
 

@@ -40,7 +40,7 @@ See what needs attention from the menu bar, open the panel to find where the pro
 - **Put your servers on a map.** Explore locations and connections, browse your fleet by provider, and see the local time where your servers run.
 - **Keep important services close.** Pin service cards with recent checks, latency and uptime, or server cards with CPU, memory and disk readings.
 - **Make it yours.** Choose from six themes, and give the menu bar White Night's animated sky or an icon or animation of your own.
-- **Add desktop widgets.** Choose Status, Server, Service, Map or Time Zones, with sizes and themes to suit your desktop.
+- **Add desktop widgets.** Choose Status, Server, Service, Check, Map or Time Zones, with sizes and themes to suit your desktop.
 - **Watch this Mac too.** Show local CPU, memory, storage, network and battery readings in the panel; optionally put CPU, memory and network in the menu bar.
 
 ## The menu bar
@@ -117,7 +117,7 @@ Komari and Beszel servers can also reach the bar through a collector: add a `kom
   <br><sub>A healthy demo network in small, medium and large widgets across all six themes.</sub>
 </p>
 
-Choose **Status**, **Server**, **Service**, **Map** or **Time Zones**, from small up to extra large where the type has room, then edit a widget to pick the server, service, map view or theme. See [Add widgets](#add-widgets) to set them up.
+Choose **Status**, **Server**, **Service**, **Check**, **Map** or **Time Zones**, from small up to extra large where the type has room, then edit a widget to pick the server, service, check or link, map view or theme. A **Check** widget shows one check's or link's card, such as a mihomo core or a Cloudflare Tunnel, with its history. See [Add widgets](#add-widgets) to set them up.
 
 ## Get started
 

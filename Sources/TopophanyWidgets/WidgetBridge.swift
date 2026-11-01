@@ -62,6 +62,9 @@ public final class WidgetBridge {
             .map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
         extra += ";" + SectionBuilder.services(reading, ids: services)
             .map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
+        // A Check widget's card, by its pin, as it is marked.
+        let monitors = needs.monitors.filter { pin in !panel.services.contains { $0.monitor?.pin == pin } }
+        extra += ";" + SectionBuilder.monitors(reading, pins: monitors).map { "\($0.focusID)=\($0.mark.rawValue)" }.joined(separator: ",")
         if zones, let fleet = SectionBuilder.fleet(reading, pinned: settings.sections.serverNodes) {
             extra += ";" + fleet.groups.flatMap(\.nodes).map { "\($0.id)=\($0.mark.rawValue)" }.joined(separator: ",")
         }

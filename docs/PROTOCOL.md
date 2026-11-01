@@ -530,6 +530,13 @@ http(s) URL with a host: a Runbook button in Native's foot, and a last
 region is cached with the section's raster like the monitoring regions. Other
 schemes stay unopened.
 
+A Check widget shows one check's or link's card. The extension records its pin
+in `widget-needs.json`, and the app adds `check.card` or `link.card` for pins the
+panel doesn't request (`widget-monitor-N`), always with `history: true`. A
+pinned row gains history while a widget draws it. Direct mode requests neither.
+The widget card follows the pinned card's deadlines, and its mark joins the
+reload signature.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report

@@ -16,6 +16,7 @@ struct TopophanyWidgetBundle: WidgetBundle {
         ServiceWidget()
         ZonesWidget()
         MapWidget()
+        CheckWidget()
     }
 }
 
@@ -183,6 +184,72 @@ struct ServiceWidgetIntent: WidgetConfigurationIntent {
     var theme: ThemeChoice
 }
 
+/// A check or link a widget can show: the panel's pinned ones, then every
+/// other `topo` lists, mihomo and Cloudflare first, by the names it last sent.
+struct MonitorEntity: AppEntity {
+    /// "check:ID" or "link:ID", as a pin is identified.
+    var id: String
+    var name: String
+    var detail: String
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Check or Link"
+    static let defaultQuery = MonitorQuery()
+
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(name)", subtitle: "\(detail)")
+    }
+
+    var pin: MonitorPin? {
+        let parts = id.split(separator: ":", maxSplits: 1).map(String.init)
+        guard parts.count == 2, let kind = MonitorPin.Kind(rawValue: parts[0]) else { return nil }
+        return MonitorPin(kind: kind, id: parts[1])
+    }
+}
+
+struct MonitorQuery: EntityQuery {
+    func entities(for identifiers: [String]) async throws -> [MonitorEntity] {
+        let all = Self.known()
+        return identifiers.map { id in all.first { $0.id == id } ?? MonitorEntity(id: id, name: String(id.drop { $0 != ":" }.dropFirst()), detail: "") }
+    }
+
+    func suggestedEntities() async throws -> [MonitorEntity] { Self.known() }
+
+    func defaultResult() async -> MonitorEntity? { Self.known().first }
+
+    static func known() -> [MonitorEntity] {
+        guard let h = HandoffStore(appGroup: HandoffStore.bundleAppGroup).read(), !h.isDirect else { return [] }
+        let listed = h.monitors()
+        var out: [MonitorEntity] = []
+        func add(_ pin: MonitorPin, name: String, detail: String) {
+            guard !out.contains(where: { $0.id == pin.id }) else { return }
+            out.append(MonitorEntity(id: pin.id, name: name, detail: detail))
+        }
+        let checks = listed.checks.map { c in (pin: MonitorPin(kind: .check, id: c.id), name: c.name, kind: c.kind, observer: c.observer) }
+        let links = listed.links.map { l in (pin: MonitorPin(kind: .link, id: l.id), name: l.name, kind: l.transport, observer: "") }
+        for pin in h.decodedSettings.sections.monitors {
+            let known = (checks + links).first { $0.pin == pin }
+            add(pin, name: known?.name ?? pin.entity, detail: known.map { Words.join([MonitorWords.kindTitle($0.kind), $0.observer]) } ?? "")
+        }
+        for group in MonitorWords.grouped(checks + links, kind: \.kind) {
+            for item in group.items {
+                add(item.pin, name: item.name, detail: Words.join([MonitorWords.kindTitle(item.kind), item.observer]))
+            }
+        }
+        return out
+    }
+}
+
+struct CheckWidgetIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Check"
+    static let description = IntentDescription("One check's or link's card: what it concludes, its reading and its history.")
+
+    @Parameter(title: "Check or Link")
+    var item: MonitorEntity?
+
+    @Parameter(title: "Theme", default: .bar)
+    var theme: ThemeChoice
+}
+
 struct ZonesWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Time Zones"
     static let description = IntentDescription("The time where your servers are, and each one’s health.")
@@ -258,10 +325,13 @@ enum Timelines {
         if case .service(let id) = kind { service = id }
         var map = false
         if case .map = kind { map = true }
-        needs.record(key, .init(lists: !map && (family == .systemLarge || family == .systemExtraLarge), node: node, service: service,
-                                map: map, datasetScope: h?.isDirect == true ? h?.datasetScope : nil, at: now))
+        var monitor: MonitorPin?
+        if case .monitor(let pin) = kind, !pin.entity.isEmpty { monitor = pin }
+        let lists = !map && monitor == nil && (family == .systemLarge || family == .systemExtraLarge)
+        needs.record(key, .init(lists: lists, node: node, service: service, map: map, monitor: monitor,
+                                datasetScope: h?.isDirect == true ? h?.datasetScope : nil, at: now))
         let theme = theme(choice, h)
-        return WidgetSchedule.entries(h, at: now, server: node, service: service).map { e in
+        return WidgetSchedule.entries(h, at: now, server: node, service: service, monitor: monitor).map { e in
             Entry(date: e.date, model: WidgetModel(kind: kind, right: right, panel: e.panel, isCurrent: e.isCurrent), theme: theme)
         }
     }
@@ -337,6 +407,28 @@ struct ServiceProvider: AppIntentTimelineProvider {
         let service = c.service ?? ServiceQuery.known().first
         return Timelines.entries(kind: .service(id: service?.id ?? ""), right: .automatic, theme: c.theme, family: context.family,
                                  key: "service-\(context.family)-\(service?.id ?? "")")
+    }
+}
+
+struct CheckProvider: AppIntentTimelineProvider {
+    static let none = MonitorPin(kind: .check, id: "")
+
+    func placeholder(in context: Context) -> Entry {
+        Timelines.entries(kind: .monitor(pin: Self.none), right: .automatic, theme: .bar, family: context.family, key: "placeholder")[0]
+    }
+
+    func snapshot(for configuration: CheckWidgetIntent, in context: Context) async -> Entry {
+        timeline(configuration, context)[0]
+    }
+
+    func timeline(for configuration: CheckWidgetIntent, in context: Context) async -> Timeline<Entry> {
+        Timeline(entries: timeline(configuration, context), policy: .never)
+    }
+
+    func timeline(_ c: CheckWidgetIntent, _ context: Context) -> [Entry] {
+        let pin = (c.item ?? MonitorQuery.known().first)?.pin ?? Self.none
+        return Timelines.entries(kind: .monitor(pin: pin), right: .automatic, theme: c.theme, family: context.family,
+                                 key: "check-\(context.family)-\(pin.id)")
     }
 }
 
@@ -470,6 +562,18 @@ struct MapWidget: Widget {
         .configurationDisplayName("Map")
         .description("Where your servers are, and the lines between them.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
+        .contentMarginsDisabled()
+    }
+}
+
+struct CheckWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: "check", intent: CheckWidgetIntent.self, provider: CheckProvider()) { entry in
+            WidgetView(entry: entry)
+        }
+        .configurationDisplayName("Check")
+        .description("One check's or link's card: a mihomo core, a Cloudflare Tunnel or any check you pin.")
+        .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }
 }

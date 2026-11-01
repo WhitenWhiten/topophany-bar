@@ -34,6 +34,7 @@ struct CellsWidget: View {
         case .service: l.service(size)
         case .zones: l.zones(size)
         case .map: l.map(size)
+        case .monitor: l.monitor(size)
         }
         return CellScene(size: bounds, metrics: m, items: l.w.items, live: l.w.live)
     }
@@ -463,6 +464,61 @@ struct CellsWidget: View {
                     b.server(&w, c, bar: 22, observes: true)
                     if c.origin != nil, let at = c.sampledAt { w.line([.t(CellText.truncate(Words.asOf(at), w.frame.columns), self.p.faint)]) }
                 }
+            }
+        }
+    }
+}
+
+extension CellsWidget.Layout {
+    // MARK: Check
+
+    /// Small: its name and age, then a box with what it concludes, its
+    /// reading and history. Medium: the panel's card head, with its
+    /// readings as room allows and its history last.
+    mutating func monitor(_ size: WidgetSize) {
+        let x0 = CellsWidget.pad.side, x1 = CellsWidget.pad.side + Double(cols) * cell
+        let b = self.b, p = self.p
+        guard let c = model.monitor, let m = c.monitor else {
+            let id = if case .monitor(let pin) = model.kind { pin.entity } else { "" }
+            let why = id.isEmpty ? tr("choose one in Edit Widget") : model.status.sources != nil ? tr("not read in direct mode") : tr("not received yet")
+            w.line([.mark(.offline, p), .t(" " + CellText.truncate(id.isEmpty ? tr("no check chosen") : id, cols - 2), p.text, bold: true)])
+            for line in CellText.wrap(why, cols, lines: 2) { w.line([.t(line, p.muted)]) }
+            return
+        }
+        let age = c.isWithheld ? tr("last") : c.sampledAt.map { Words.span(since: $0, now: c.now, style: .compact) } ?? ""
+        let title: [Seg]
+        if size == .small {
+            w.line([.mark(c.mark, p), .t(" " + CellText.truncate(c.name, cols - 3 - CellText.width(age)), p.text, bold: true)], [.t(age, p.faint)])
+            title = [.t(" " + (m.pin.kind == .link ? tr("LINK") : tr("CHECK")) + " ", p.accent, bold: true)]
+        } else {
+            head(cols)
+            title = b.serviceTitle(c)
+        }
+        let room = linesLeft
+        w.box(title, b.servicePill(c), x0: x0, x1: x1, style: style) { w in
+            let n = w.frame.columns
+            var used = 0
+            let check = m.checks.first
+            let samples = check.map { if case .samples = $0.history { true } else { false } } ?? false
+            // Keep a line for the history, which says the most at a glance.
+            func fits(_ k: Int = 1) -> Bool { used + k + (samples ? 1 : 0) <= room }
+            // A small widget's name line carries the age already.
+            let shownAge = size == .small ? "" : age
+            if size != .small, fits() {
+                w.line([.t(CellText.truncate(m.subtitle, max(4, n - CellText.width(shownAge) - 1)), p.muted)], [.t(shownAge, p.faint)]); used += 1
+            }
+            for line in CellText.wrap(m.summary, n, lines: 2) where fits() { w.line([.t(line, p.text)]); used += 1 }
+            if !m.reading.isEmpty, fits() { w.line([.t(CellText.truncate(m.reading, n), p.muted)]); used += 1 }
+            if size == .small, fits() { w.line([.t(CellText.truncate(m.subtitle, n), p.faint)]); used += 1 }
+            if size != .small, let check {
+                for field in check.fields where fits() {
+                    w.line([.t(field.label + " ", p.faint), .t(CellText.truncate(field.value, max(4, n - CellText.width(field.label) - 1)), p.muted)])
+                    used += 1
+                }
+            }
+            if let check, samples, used < room {
+                let latency = size == .small ? "" : check.p50.map { check.p50Label + " " + Words.latency($0) } ?? ""
+                w.line([.samples(check.history, cells: max(4, n - CellText.width(latency) - 1))], [.t(latency, p.muted)])
             }
         }
     }
