@@ -27,12 +27,15 @@ import TopophanyKit
             // topo's own word wins over the inference, either way.
             let undeclared = try F.monitor(Self.mihomo("word", expected: ["mode": "rule"], policy: "not_configured"))
             #expect(undeclared.summary == "Runtime reported; no policy declared")
-            #expect(F.field(undeclared, "Policy") == "None declared")
             let matched = try F.monitor(Self.mihomo("matched", policy: "matched"))
             #expect(matched.summary == "Runtime matches policy")
-            #expect(F.field(matched, "Policy") == "Matches")
             let violated = try F.monitor(Self.mihomo("violated", outcome: "policy", code: "mode_mismatch", policy: "violated"))
-            #expect(F.field(violated, "Policy") == "Differs")
+            #expect(violated.summary == "Mode differs from policy")
+            // Each summary already says it, so no Policy field repeats it.
+            #expect([undeclared, matched, violated].allSatisfy { F.field($0, "Policy") == nil })
+            // Where the summary doesn't, the field says it.
+            let unread = try F.monitor(Self.mihomo("unread", outcome: "error", code: "authentication_failed", policy: "unverified"))
+            #expect(F.field(unread, "Policy") == "Not verified")
         }
     }
 

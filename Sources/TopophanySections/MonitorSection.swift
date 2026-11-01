@@ -209,7 +209,10 @@ public enum MonitorWords {
     /// `now`, the reading's own clock.
     public static func fields(_ c: ServiceCard.Check, now: Date) -> [MonitorCardModel.Field] {
         guard let d = c.diagnostic else { return [] }
-        var out: [MonitorCardModel.Field] = policyField(d).map { [$0] } ?? []
+        // Not where the summary already says it: a policy outcome names the
+        // difference, and a passing mihomo read says whether it matches.
+        let said = d.outcome == "policy" || (c.kind == "mihomo" && d.outcome == "ok")
+        var out: [MonitorCardModel.Field] = said ? [] : policyField(d).map { [$0] } ?? []
         switch c.kind {
         case "mihomo": out += mihomoFields(d, now: now)
         case "cloudflared": out += cloudflaredFields(d)

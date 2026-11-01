@@ -41,7 +41,7 @@ import TopophanyKit
             #expect(ok.monitor?.reading == "Reported route: test-net-a")
             #expect(ok.monitor?.subtitle == "This Mac · Core report")
             let fields = ok.monitor?.checks.first?.fields.map { "\($0.label)=\($0.value)" }
-            #expect(fields == ["Policy=Matches", "Mode=rule", "TUN=Off"])
+            #expect(fields == ["Mode=rule", "TUN=Off"])
             // Expecting Global while the engine runs by rule.
             let policy = try card("policy")
             #expect(policy.mark == .degraded && policy.monitor?.summary == "Mode differs from policy")

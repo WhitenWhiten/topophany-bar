@@ -520,7 +520,9 @@ without asserting that a check absent from an observer view was deleted.
 
 An adapter check's diagnostic may carry `policy`: `not_configured`, `unverified`,
 `matched` or `violated`, `topo`'s judgment of its declared policy (the TUI's
-"Policy check"). Expanded cards show it as a Policy field; absent, none is shown.
+"Policy check"). Expanded cards show it as a Policy field where the summary
+doesn't already say it (a policy outcome, or a passing mihomo read); absent,
+none is shown. Expanded fields sit side by side while they fit the card.
 A mihomo runtime read is said to match its policy only when one is declared:
 `policy` other than `not_configured`, or, from a `topo` without the field, an
 expectation or a provider comparison. Otherwise it says no policy is declared.

@@ -1,8 +1,9 @@
 import SwiftUI
 import TopophanySections
 
-/// The same head, type, dividers and footer as CardsService. Only the content
-/// changes: one conclusion and one reading, with evidence disclosed on demand.
+/// The same head, type and dividers as CardsService, with its age beside
+/// the subtitle: one conclusion and one reading, and the evidence, packed
+/// side by side, disclosed on demand.
 struct CardsMonitor: View {
     var card: ServiceCardModel
     var monitor: MonitorCardModel
@@ -23,7 +24,11 @@ struct CardsMonitor: View {
                             PillView(pill: card.pill, palette: p, type: t)
                             Image(systemName: monitor.expanded ? "chevron.down" : "chevron.right").font(t.font(9)).foregroundStyle(p.l3)
                         }
-                        Text(monitor.subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1).truncationMode(.middle)
+                        HStack(spacing: 8) {
+                            Text(monitor.subtitle).foregroundStyle(p.l2).lineLimit(1).truncationMode(.middle)
+                            Spacer(minLength: 0)
+                            Text(card.age).foregroundStyle(p.l3).lineLimit(1).fixedSize()
+                        }.font(t.font(11))
                     }
                 }
                 .contentShape(Rectangle())
@@ -31,14 +36,15 @@ struct CardsMonitor: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text(card.name + ", " + card.pill.text))
             .accessibilityValue(Text(monitor.expanded ? tr("Expanded") : tr("Collapsed")))
-            Text(monitor.summary).font(t.font(12)).foregroundStyle(p.l1).lineLimit(2).padding(.top, 10)
+            Text(monitor.summary).font(t.font(12)).foregroundStyle(p.l1).lineLimit(2).padding(.top, 7)
             if !monitor.reading.isEmpty {
                 Text(monitor.reading).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1).truncationMode(.middle).padding(.top, 3)
             }
             if monitor.expanded {
                 ForEach(monitor.checks.prefix(8)) { check in
-                    Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 8)
-                    if monitor.pin.kind == .link {
+                    Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 7)
+                    // A link's only check is the card itself: its name and source add nothing.
+                    if monitor.pin.kind == .link, monitor.checks.count > 1 {
                     HStack(spacing: 6) {
                         CardMark(mark: check.mark, size: 9, color: p.listColor(check.mark))
                         Text(check.name).font(t.font(11.5, .medium)).foregroundStyle(p.l1).lineLimit(1)
@@ -47,19 +53,25 @@ struct CardsMonitor: View {
                     }
                     if check.summary != monitor.summary { Text(check.summary).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2).padding(.top, 4) }
                     if !check.reading.isEmpty && check.reading != monitor.reading { Text(check.reading).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2).truncationMode(.middle).padding(.top, 2) }
-                    ForEach(check.fields) { field in
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(field.label).foregroundStyle(p.l3)
-                            Spacer(minLength: 0)
-                            Text(field.value).foregroundStyle(p.l2).multilineTextAlignment(.trailing).lineLimit(3).help(field.value)
-                        }.font(t.font(11)).padding(.top, 3)
+                    if !check.fields.isEmpty {
+                        // Side by side while they fit; a long one takes its own row.
+                        FlowLayout(spacing: 12, lineSpacing: 3) {
+                            ForEach(check.fields) { field in
+                                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                    Text(field.label).foregroundStyle(p.l3).lineLimit(1).fixedSize()
+                                    Text(field.value).foregroundStyle(p.l1).lineLimit(2).truncationMode(.middle).help(field.value)
+                                }
+                                .accessibilityElement(children: .combine)
+                            }
+                        }
+                        .font(t.font(11)).padding(.top, 4)
                     }
                     if !check.code.isEmpty { Text(check.code).font(t.mono(10)).foregroundStyle(p.l3).lineLimit(2).padding(.top, 2) }
                     if case .samples = check.history {
                         HStack(spacing: 8) {
                             ServiceSpark(history: check.history, count: 34, p: p).frame(height: 18)
                             if let ms = check.p50 { Text(check.p50Label + " " + Words.ms(ms)).font(t.font(10.5)).foregroundStyle(p.l3).fixedSize() }
-                        }.padding(.top, 6)
+                        }.padding(.top, 5)
                     }
                 }
                 if monitor.checks.count > 8 {
@@ -67,10 +79,6 @@ struct CardsMonitor: View {
                         .buttonStyle(.plain).font(t.font(11)).foregroundStyle(p.l2).padding(.top, 8)
                 }
             }
-            HStack {
-                Text(card.age).lineLimit(1)
-                Spacer(minLength: 0)
-            }.font(t.font(10.5)).foregroundStyle(p.l3).padding(.top, 8)
         }
         .modifier(FocusRing(on: focused, p: p))
         .id(card.focusID)

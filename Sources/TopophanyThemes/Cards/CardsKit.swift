@@ -622,17 +622,26 @@ struct PartsBar: View {
     }
 }
 
-/// Lays children out in rows, wrapping as needed.
+/// Lays children out in rows, wrapping as needed. A child wider than the
+/// row is offered the row's width, to wrap or truncate within it.
 struct FlowLayout: Layout {
     var spacing = 5.0
+    /// Between rows; `spacing` when `nil`.
+    var lineSpacing: Double? = nil
+
+    func size(_ v: LayoutSubview, _ width: Double) -> CGSize {
+        let s = v.sizeThatFits(.unspecified)
+        return s.width <= width ? s : v.sizeThatFits(ProposedViewSize(width: width, height: nil))
+    }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? .infinity
+        let spacing = self.spacing, lineSpacing = self.lineSpacing ?? self.spacing
         var x = 0.0, y = 0.0, row = 0.0, widest = 0.0
         for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
+            let s = size(v, width)
             if x > 0, x + s.width > width {
-                y += row + spacing
+                y += row + lineSpacing
                 x = 0
                 row = 0
             }
@@ -644,11 +653,12 @@ struct FlowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let lineSpacing = self.lineSpacing ?? spacing
         var x = bounds.minX, y = bounds.minY, row = 0.0
         for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
+            let s = size(v, bounds.width)
             if x > bounds.minX, x + s.width > bounds.maxX {
-                y += row + spacing
+                y += row + lineSpacing
                 x = bounds.minX
                 row = 0
             }
