@@ -41,6 +41,7 @@ See what needs attention from the menu bar, open the panel to find where the pro
 - **Keep important services close.** Pin service cards with recent checks, latency and uptime, server cards with CPU, memory and disk readings, or single checks and links such as a mihomo core, a Cloudflare Tunnel or a Tailscale peer.
 - **Make it yours.** Choose from six themes, and give the menu bar White Night's animated sky or an icon or animation of your own.
 - **Add desktop widgets.** Choose Status, Server, Service, Check, Map or Time Zones, with sizes and themes to suit your desktop.
+- **Watch your proxy app.** See whether the mihomo engine inside Clash Verge, Mihomo Party or FlClash is answering and which server it uses, with or without a collector.
 - **Watch this Mac too.** Show local CPU, memory, storage, network and battery readings in the panel; optionally put CPU, memory and network in the menu bar.
 
 ## The menu bar
@@ -96,9 +97,21 @@ Komari and Beszel servers can also reach the bar through a collector: add a `kom
 
 ## Proxies, tunnels and peers
 
+### Your proxy app on this Mac
+
+Many proxy apps, such as Clash Verge, Mihomo Party and FlClash, run the same engine inside: **mihomo**. topophany-bar can watch it on this Mac with no collector, beside whatever the panel reads from: a collector, Beszel and Komari, or nothing at all.
+
+1. In **Settings → This Mac**, under **Proxy engine**, choose **Add Proxy Engine…**.
+2. Enter the engine's address and secret. Proxy apps show both in their settings, often as the *external controller* (`127.0.0.1:9090` is mihomo's default; some apps use another port) and its *secret*.
+3. Choose **Test**, then pick what to watch: the proxy group whose server the card shows, and, if you like, the mode and TUN setting you expect. Save.
+
+The engine's card comes first under **Pinned**: whether the engine answers, which server the group uses, and whether the mode and TUN setting are the ones you expect. An engine that stops answering shows as degraded, then down, usually because the proxy app was quit. `topo` reads the engine's status on this Mac and never changes it: it doesn't switch servers, run speed tests or edit the configuration. The secret stays with `topo`, in its own private file; the app keeps it only while you type it. This needs a `topo` newer than 1.5.2.
+
+### Through a collector
+
 Through a Topophany collector, the panel can follow a single check or link as well as whole services: a mihomo core, a Cloudflare Tunnel, DNS record or load-balancer pool, a Tailscale or WireGuard peer, or a website's certificate and latency budget. Each card says in plain words what was read, how it compares with the policy you declared, and what it does not prove. A core's report, an established tunnel or an online peer never shows that the application answered.
 
-### Set them up in Topophany
+#### Set them up in Topophany
 
 The checks run in Topophany; the bar shows what they find. Topophany's templates write a topology whose checks are all paused, so you can review addresses, observers and credentials first:
 
@@ -113,7 +126,7 @@ topo validate mihomo.json
 - **Certificates and latency:** set `tls_min_days` or `max_duration_ms` on an HTTP or TLS check, and its card says "Certificate expires in 9 days" or "Slower than its 800 ms budget".
 - **Tailscale and WireGuard:** `tailscale` and `wireguard` checks read the observer's own runtime: backend and online state, the reported path and an optional ping, or the last handshake and transfer counters.
 
-### Pin them
+#### Pin them
 
 In **Settings → Sections**, click **Choose…** beside **Pinned**, switch to **Checks** or **Links**, and select up to 16. They're grouped by what they read, mihomo and Cloudflare first, with a filter when the list is long. A pinned card shows the summary and up to two readings; expand it for every reading, the stage and code, and its recent history. For one on the desktop, add a **Check** widget and choose the check or link to show.
 
@@ -178,7 +191,7 @@ With a signed build installed, open topophany-bar once, then right-click the des
 | **General** | Profile, observer, refresh rate, launch at login, language and a global shortcut to toggle the panel |
 | **Appearance** | Theme, panel appearance and text size; the menu bar icon (the globe, White Night or your own), its size, speed, text, status colors and motion, and This Mac's readings beside it |
 | **Sections** | Visible sections and their order, pinned servers and services, map framing and time zones |
-| **This Mac** | Local readings, a collector-backed card for this Mac, or neither |
+| **This Mac** | Local readings, a collector-backed card for this Mac, or neither; and the proxy engine to watch |
 | **Data sources** | Read from a Topophany collector, or from Beszel and Komari sources directly |
 
 Drag the panel's bottom edge to resize it. **Lock Geo Map** is enabled by default so scrolling moves the panel; pinch and keyboard zoom remain available.
