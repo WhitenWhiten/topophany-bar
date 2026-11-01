@@ -45,12 +45,14 @@ public struct Frame: Sendable, Hashable, Decodable {
     public var title: String
     public var barRow: String
     public var rows: [Row]
+    public var collectorRead: CollectorRead? = nil
     public var error: Problem?
 
     enum CodingKeys: String, CodingKey {
         case schema, name, requestID = "request_id", configRevision = "config_revision", instance, sequence, source
         case profile, profileRevision = "profile_revision", datasetID = "dataset_id"
         case project, observer, lifecycle, generatedAt = "generated_at", publisherExpiresAt = "publisher_expires_at"
+        case collectorRead = "collector_read"
         case title, barRow = "bar_row", rows, error
     }
 
@@ -97,6 +99,7 @@ public struct Frame: Sendable, Hashable, Decodable {
         barRow = c.text(.barRow) ?? ""
         rows = try c.decodeIfPresent([Row].self, forKey: .rows) ?? []
         error = try? c.decodeIfPresent(Problem.self, forKey: .error)
+        collectorRead = try? c.decodeIfPresent(CollectorRead.self, forKey: .collectorRead)
     }
 
     public func row(_ id: String) -> Row? { rows.first { $0.id == id } }
@@ -174,6 +177,10 @@ public enum RowValue: Sendable, Hashable {
     case applications([Application])
     case serverCard(ServerCard)
     case servers([ServerListEntry])
+    case checkCard(CheckCard)
+    case checks([CheckListEntry])
+    case linkCard(LinkCard)
+    case links([LinkSummary])
     case serviceCard(ServiceCard)
     case services([ServiceListEntry])
     case map(MapGraph)
@@ -196,6 +203,10 @@ public enum RowValue: Sendable, Hashable {
             case "applications.list": self = .applications(try c.decode([Application].self, forKey: key))
             case "server.card": self = .serverCard(try c.decode(ServerCard.self, forKey: key))
             case "servers.list": self = .servers(try c.decode([ServerListEntry].self, forKey: key))
+            case "check.card": self = .checkCard(try c.decode(CheckCard.self, forKey: key))
+            case "checks.list": self = .checks(try c.decode([CheckListEntry].self, forKey: key))
+            case "link.card": self = .linkCard(try c.decode(LinkCard.self, forKey: key))
+            case "links.list": self = .links(try c.decode([LinkSummary].self, forKey: key))
             case "service.card": self = .serviceCard(try c.decode(ServiceCard.self, forKey: key))
             case "services.list": self = .services(try c.decode([ServiceListEntry].self, forKey: key))
             case "map.graph": self = .map(try c.decode(MapGraph.self, forKey: key))

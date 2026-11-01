@@ -646,6 +646,7 @@ public struct ServiceCard: Sendable, Hashable, Decodable, Identifiable {
 
     /// One check of the service, from one observer, with its own deadline.
     public struct Check: Sendable, Hashable, Decodable {
+        public var diagnostic: CheckDiagnostic? = nil
         public var id: String
         public var name: String
         public var kind: String
@@ -667,7 +668,7 @@ public struct ServiceCard: Sendable, Hashable, Decodable, Identifiable {
 
         enum CodingKeys: String, CodingKey {
             case id, name, kind, endpoint, health, freshness, sampledAt = "sampled_at", validUntil = "valid_until"
-            case latency, up24h = "up_24h", firstByte = "first_byte", colo, samples
+            case diagnostic, latency, up24h = "up_24h", firstByte = "first_byte", colo, samples
         }
 
         public init(id: String, name: String, kind: String = "", endpoint: String = "", health: Health,
@@ -703,6 +704,7 @@ public struct ServiceCard: Sendable, Hashable, Decodable, Identifiable {
             firstByte = c.text(.firstByte) ?? ""
             colo = c.text(.colo).flatMap { $0.isEmpty ? nil : $0 }
             samples = (try? c.decodeIfPresent(Samples.self, forKey: .samples)) ?? nil
+            diagnostic = try? c.decodeIfPresent(CheckDiagnostic.self, forKey: .diagnostic)
         }
     }
 
@@ -962,23 +964,9 @@ extension ServiceCard {
     /// One check's deadline never expires the card.
     public func applyingDeadlines(at now: Date, tolerance: TimeInterval) -> ServiceCard {
         var c = self
-        let horizon = now.addingTimeInterval(tolerance)
-        func lapsed(_ k: Check) -> Bool {
-            (k.validUntil.map { now >= $0 || $0 > horizon } ?? false) || (k.sampledAt.map { $0 > horizon } ?? false)
-        }
         c.seenFrom = seenFrom.map { o in
             var o = o
-            o.checks = o.checks.map { k in
-                guard lapsed(k) else { return k }
-                var x = k
-                x.health = .unknown
-                x.freshness = "stale"
-                x.latency = nil
-                x.up24h = nil
-                x.colo = nil
-                x.samples = k.samples.map { Samples(interval: $0.interval, slots: nil) }
-                return x
-            }
+            o.checks = o.checks.map { $0.applyingDeadlines(at: now, tolerance: tolerance) }
             return o
         }
         return c

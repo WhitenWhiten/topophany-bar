@@ -54,6 +54,10 @@ public struct Request: Sendable, Hashable, Codable {
         var r = self
         let metrics = Set(capabilities.metrics.filter { capabilities.supports(metric: $0.name, source: source) }.map(\.name))
         r.template.rows.removeAll { !metrics.contains($0.metric) }
+        if source == "client", !capabilities.clientRetry { r.retryNonce = nil }
+        if !capabilities.cardHistory {
+            for i in r.template.rows.indices { r.template.rows[i].history = nil }
+        }
         return r
     }
 
@@ -95,12 +99,14 @@ public struct TemplateRow: Sendable, Hashable, Codable {
         public var collector: String?
         public var node: String?
         public var service: String?
+        public var link: String?
 
-        public init(check: String? = nil, collector: String? = nil, node: String? = nil, service: String? = nil) {
+        public init(check: String? = nil, collector: String? = nil, node: String? = nil, service: String? = nil, link: String? = nil) {
             self.check = check
             self.collector = collector
             self.node = node
             self.service = service
+            self.link = link
         }
     }
 
@@ -109,13 +115,15 @@ public struct TemplateRow: Sendable, Hashable, Codable {
     public var visual: String
     public var select: Selector?
     public var limit: Int?
+    public var history: Bool?
 
-    public init(id: String, metric: String, visual: String, select: Selector? = nil, limit: Int? = nil) {
+    public init(id: String, metric: String, visual: String, select: Selector? = nil, limit: Int? = nil, history: Bool? = nil) {
         self.id = id
         self.metric = metric
         self.visual = visual
         self.select = select
         self.limit = limit
+        self.history = history
     }
 }
 
@@ -136,6 +144,9 @@ public struct Capabilities: Sendable, Hashable, Decodable {
     public var metrics: [Metric]
     /// Whether `--profiles` is served.
     public var profiles: Bool
+    public var collectorRead: Bool
+    public var clientRetry: Bool
+    public var cardHistory: Bool
     public var direct: Direct?
     public struct Direct: Sendable, Hashable, Decodable {
         public var schema: Int
@@ -158,7 +169,9 @@ public struct Capabilities: Sendable, Hashable, Decodable {
         public var known: [String] { DirectSource.adapters.filter(adapters.contains) }
     }
 
-    enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles, direct }
+    enum CodingKeys: String, CodingKey { case `protocol`, protocols, version, sources, visuals, metrics, profiles, direct
+        case collectorRead = "collector_read", clientRetry = "client_retry", cardHistory = "card_history"
+    }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -170,6 +183,9 @@ public struct Capabilities: Sendable, Hashable, Decodable {
         metrics = (try? c.decodeIfPresent([Metric].self, forKey: .metrics)) ?? []
         direct = try? c.decodeIfPresent(Direct.self, forKey: .direct)
         profiles = (try? c.decodeIfPresent(Bool.self, forKey: .profiles)) ?? false
+        collectorRead = (try? c.decodeIfPresent(Bool.self, forKey: .collectorRead)) ?? false
+        clientRetry = (try? c.decodeIfPresent(Bool.self, forKey: .clientRetry)) ?? false
+        cardHistory = (try? c.decodeIfPresent(Bool.self, forKey: .cardHistory)) ?? false
     }
 
     /// Whether `servers.list` is offered, for choosing nodes.

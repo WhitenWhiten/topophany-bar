@@ -70,7 +70,7 @@ public struct ReaderPolicy: Sendable {
                let a = f.sequence, let b = incoming.sequence, b <= a {
                 return
             }
-            if let f = frame, f.source != incoming.source || f.datasetID != incoming.datasetID || (incoming.source == "direct" && f.profile != incoming.profile) {
+            if let f = frame, f.source != incoming.source || f.datasetID != incoming.datasetID || f.project != incoming.project || f.observer != incoming.observer || (incoming.source == "direct" && f.profile != incoming.profile) {
                 lastKnown = nil; lastValues.removeAll()
             }
             frame = incoming
@@ -111,7 +111,7 @@ public struct ReaderPolicy: Sendable {
         return r
     }
 
-    static func key(_ row: Row) -> String { "\(row.id)|\(row.metric)|\(row.select?.node ?? row.select?.service ?? "")" }
+    static func key(_ row: Row) -> String { "\(row.id)|\(row.metric)|\(row.select?.node ?? row.select?.service ?? row.select?.check ?? row.select?.link ?? "")" }
 
     func availability(at now: Date) -> Reading.Availability {
         switch source {
@@ -142,6 +142,14 @@ public struct ReaderPolicy: Sendable {
             return RowReading(row: row, status: .current, current: .serverCard(c.applyingDeadlines(at: now, tolerance: futureTolerance)))
         }
         // So do a service card's checks.
+        if case .checkCard(var c) = row.value {
+            c.check = c.check.applyingDeadlines(at: now, tolerance: futureTolerance, required: true)
+            return RowReading(row: row, status: .current, current: .checkCard(c))
+        }
+        if case .linkCard(var c) = row.value {
+            c.checks = c.checks.map { var x = $0; x.check = x.check.applyingDeadlines(at: now, tolerance: futureTolerance, required: true); return x }
+            return RowReading(row: row, status: .current, current: .linkCard(c))
+        }
         if case .serviceCard(let c) = row.value {
             return RowReading(row: row, status: .current, current: .serviceCard(c.applyingDeadlines(at: now, tolerance: futureTolerance)))
         }

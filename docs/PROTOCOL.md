@@ -443,3 +443,23 @@ no heartbeat grace. Snapshot publication, sample time, source contact and handof
 write time remain distinct. Direct snapshot writes may happen every 15 seconds;
 resource-only reload requests are limited to once per minute. WidgetKit controls
 execution. Collector Widget schedules retain their existing heartbeat policy.
+
+## Collector diagnostics and monitoring cards
+
+Protocol 1 additionally negotiates `collector_read`, `client_retry` and
+`card_history` booleans. Missing capabilities are false. New metrics are optional:
+`checks.list`, `check.card` (`select.check`), `links.list`, `link.card`
+(`select.link`). Unsupported options are removed before sending a request.
+
+`collector_read` is the last snapshot acquisition, independent of business
+health and evidence freshness. Its completed/success timestamps do not advance
+on a heartbeat or retry acknowledgment. Only an actual completed acquisition
+advances them. Expired publisher diagnostics are history.
+
+Checks share the service card's check fields and optional `diagnostic` containing
+outcome, evidence/path evidence, stage/code, policy confirmation, allowlisted
+facts and declared expectations. Link cards contain the collector's link summary
+and check cards. Each nested check loses health, readings and diagnostics at its
+own deadline; that does not expire the enclosing link. Check/link history and
+names use distinct selector identities. Project and observer changes clear prior
+history. The app never derives health from diagnostic facts.
