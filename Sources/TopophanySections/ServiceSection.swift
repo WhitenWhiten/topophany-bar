@@ -41,13 +41,17 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         public var p50: Double?
         /// The worst check's share of the day up; `nil` when unknown.
         public var up24h: Double?
-        public init(id: String, label: String, marks: [Mark], history: History, p50: Double?, up24h: Double?) {
+        /// The worst check's 95th percentile over the day, in ms; `nil` when unknown.
+        public var p95: Double?
+
+        public init(id: String, label: String, marks: [Mark], history: History, p50: Double?, up24h: Double?, p95: Double? = nil) {
             self.id = id
             self.label = label
             self.marks = marks
             self.history = history
             self.p50 = p50
             self.up24h = up24h
+            self.p95 = p95
         }
     }
 
@@ -123,6 +127,15 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
     public var diagnosticSummary = ""
     /// Every distinct diagnosis, by observer, worst first.
     public var diagnoses: [Diagnosis] = []
+    /// Where the edge in front answered from over 24 h, and its cache
+    /// statuses, as shares: "SEA 62%", "DYNAMIC 80%".
+    public var answeredFrom: [String] = []
+    public var cacheShares: [String] = []
+    /// The worst check's first byte over 24 h, as topo writes it:
+    /// "origin 98 ms".
+    public var firstByte = ""
+    /// The topology's own note on it.
+    public var memo = ""
     public var focusID: String { monitor?.pin.id ?? "service:" + id }
     public var id: String
     public var name: String
@@ -254,6 +267,9 @@ public struct ServiceCardModel: Sendable, Hashable, Identifiable {
         c.isWithheld = true
         c.diagnosticSummary = ""
         c.diagnoses = []
+        c.answeredFrom = []
+        c.cacheShares = []
+        c.firstByte = ""
         c.mark = .offline
         c.pill = .cached
         c.hostMark = .offline
@@ -314,7 +330,7 @@ extension SectionBuilder {
                 else if fresh { .none } else { .withheld }
             return .init(id: o.observer.id, label: o.label.isEmpty ? o.observer.name : o.label,
                          marks: o.checks.map { Mark($0.health) }, history: history,
-                         p50: fresh ? worst?.latency?.p50 : nil, up24h: worst?.up24h)
+                         p50: fresh ? worst?.latency?.p50 : nil, up24h: worst?.up24h, p95: fresh ? worst?.latency?.p95 : nil)
         }
         let checks = c.seenFrom.flatMap(\.checks)
         let host = ServiceCardModel.Node(name: c.host?.name ?? "", kind: c.host?.kind ?? "", provider: Provider.name(c.host?.provider ?? ""))
@@ -342,6 +358,10 @@ extension SectionBuilder {
         guard !withheld else { return card.withheld(at: now) }
         card.diagnoses = diagnoses(c)
         card.diagnosticSummary = card.diagnoses.first?.text ?? ""
+        card.answeredFrom = c.answeredFrom?.pops ?? []
+        card.cacheShares = c.answeredFrom?.cache ?? []
+        card.firstByte = checks.first { $0.freshness == "fresh" && !$0.firstByte.isEmpty }?.firstByte ?? ""
+        card.memo = c.memo
         return card
     }
 
@@ -365,4 +385,5 @@ extension SectionBuilder {
         func rank(_ m: Mark) -> Int { m == .down ? 0 : m == .unknown || m == .offline ? 1 : 2 }
         return out.enumerated().sorted { (rank($0.element.mark), $0.offset) < (rank($1.element.mark), $1.offset) }.map(\.element)
     }
+
 }

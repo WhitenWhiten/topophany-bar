@@ -101,6 +101,7 @@ struct ServiceRows: View {
                         .frame(maxWidth: .infinity)
                     latency(o.p50)
                         .frame(width: compact ? 34 : 44, alignment: .trailing)
+                        .help(o.p95.map { "p95 " + Words.ms($0) } ?? "")
                     if !compact {
                         Text(o.up24h.map(Words.share) ?? "—").font(t.mono(11)).foregroundStyle(p.l3)
                             .frame(width: 38, alignment: .trailing)
@@ -109,7 +110,7 @@ struct ServiceRows: View {
                 .font(t.font(compact ? 11 : 11.5))
                 .lineLimit(1)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(Words.join([o.label, o.marks.first?.word ?? "", o.p50.map(Words.ms) ?? tr("unknown"),
+                .accessibilityLabel(Text(Words.join([o.label, o.marks.first?.word ?? "", o.p50.map(Words.ms) ?? tr("unknown"), o.p95.map { "p95 " + Words.ms($0) } ?? "",
                                                      o.up24h.map { tr("\(Words.share($0)) up in 24 hours") } ?? ""])))
             }
         }
@@ -157,6 +158,9 @@ struct CardsService: View {
                 }
             }
             .accessibilityElement(children: .combine)
+            if !card.memo.isEmpty {
+                Text(card.memo).font(t.font(11)).foregroundStyle(p.l3).lineLimit(2).padding(.top, 6)
+            }
             if !card.observers.isEmpty {
                 HStack(spacing: 0) {
                     Text(tr("Seen from"))
@@ -172,6 +176,7 @@ struct CardsService: View {
                 .padding(.top, card.observers.isEmpty ? 10 : 0)
                 .padding(.bottom, 8)
             ServiceDiagnoses(card: card, p: p, t: t)
+            ServiceDay(card: card, p: p, t: t)
             // Where nothing measures it, the rows say so already; what its
             // checks say beyond their marks is listed above.
             let said = card.isUnmonitored ? "" : card.checksText
@@ -215,6 +220,34 @@ struct ServiceDiagnoses: View {
             .font(t.font(11))
             .padding(.bottom, 8)
         }
+    }
+}
+
+/// The day's account from the edge in front: where it answered from, its
+/// cache statuses and the first byte, as topo's rollups give them.
+struct ServiceDay: View {
+    var card: ServiceCardModel
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        if !card.answeredFrom.isEmpty || !card.cacheShares.isEmpty || !card.firstByte.isEmpty {
+            VStack(alignment: .leading, spacing: 3) {
+                if !card.answeredFrom.isEmpty { row(tr("Answered in 24 h"), card.answeredFrom.joined(separator: ", ")) }
+                if !card.cacheShares.isEmpty { row(tr("Cache"), card.cacheShares.joined(separator: ", ")) }
+                if !card.firstByte.isEmpty { row(tr("First byte"), card.firstByte) }
+            }
+            .font(t.font(11))
+            .padding(.bottom, 8)
+        }
+    }
+
+    func row(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(label).foregroundStyle(p.l3).lineLimit(1).fixedSize()
+            Text(value).foregroundStyle(p.l2).lineLimit(2).truncationMode(.tail).help(value)
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 

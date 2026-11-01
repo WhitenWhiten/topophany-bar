@@ -518,6 +518,12 @@ diagnosis once and three at most in the panel, then how many more Topophany
 shows. Widgets keep the first in their one line. Diagnoses go with each check's
 diagnostic at its own deadline, and with the card at its row's.
 
+Panel service cards also show the topology's `memo`, the edge's 24 h
+`answered_from` colos and cache statuses, and the worst current check's
+`first_byte` line as `topo` writes it. Native's p50 carries the check's p95 as a
+tooltip and to VoiceOver. A withheld card keeps its memo and drops the rest.
+Widgets keep their layout.
+
 The panel presents one conclusion and one selected reading per monitoring card.
 Expanded evidence reuses the service card's typography, marks and history strip.
 Reported runtime paths and core historical delays remain labeled as such; report

@@ -281,6 +281,28 @@ import TopophanyKit
         #expect(Words.latencyParts(1430) == ("1.43", "s"))
     }
 
+    @Test func aServiceCardCarriesTheDaysEdgeAccountAndItsNote() throws {
+        try L10n.with("en") {
+            let edge = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]],
+                               p50: 92, colo: "SEA", firstByte: "cached p50 12ms · p95 30ms · origin p50 98ms · p95 140ms")
+            let card = try F.serviceCard(F.service("site", seenFrom: [("MacBook", [edge])], extra: [
+                "answered_from": ["pops": ["SEA 62%", "NRT 38%"], "cache": ["DYNAMIC 80%", "HIT 20%"]],
+                "memo": "Public site behind Cloudflare.",
+            ]))
+            #expect(card.answeredFrom == ["SEA 62%", "NRT 38%"] && card.cacheShares == ["DYNAMIC 80%", "HIT 20%"])
+            #expect(card.firstByte == "cached p50 12ms · p95 30ms · origin p50 98ms · p95 140ms")
+            #expect(card.memo == "Public site behind Cloudflare.")
+            #expect(card.observers.first?.p95 == 115)
+            // History keeps the note and drops the readings.
+            let held = card.withheld(at: F.now)
+            #expect(held.answeredFrom.isEmpty && held.cacheShares.isEmpty && held.firstByte.isEmpty && held.observers.first?.p95 == nil)
+            #expect(held.memo == card.memo)
+            // Nothing named, nothing said.
+            let plain = try F.serviceCard(F.service("plain", seenFrom: [("MacBook", [F.check("p", diagnostic: nil)])]))
+            #expect(plain.answeredFrom.isEmpty && plain.firstByte.isEmpty && plain.memo.isEmpty)
+        }
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])

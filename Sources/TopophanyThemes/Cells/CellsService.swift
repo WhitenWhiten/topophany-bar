@@ -27,7 +27,11 @@ extension CellsBodies {
         let rows = Array(c.observers.prefix(3))
         let diagnoses = details ? Array(c.diagnoses.prefix(3)) : []
         let more = details && c.diagnoses.count > 3 ? 1 : 0
-        focusRow(&w, c.focusID, lines: 1 + max(1, rows.count) + diagnoses.count + more + (foot ? 1 : 0))
+        let memo = details && !c.memo.isEmpty && !c.isBlank
+        let day: [(String, String)] = details ? [(tr("24h"), c.answeredFrom.joined(separator: ", ")), (tr("cache"), c.cacheShares.joined(separator: ", ")),
+                                                 (tr("first byte"), c.firstByte)].filter { !$0.1.isEmpty } : []
+        let extra = (memo ? 1 : 0) + day.count
+        focusRow(&w, c.focusID, lines: 1 + max(1, rows.count) + diagnoses.count + more + extra + (foot ? 1 : 0))
         if c.isMissing {
             w.line([.t(CellText.truncate(c.subtitle, n), p.muted)])
         } else if !c.isBlank {
@@ -41,6 +45,7 @@ extension CellsBodies {
             if !c.application.isEmpty, app >= 4 { segs += [.t(" · ", p.faint), .t(CellText.truncate(c.application, app), p.muted)] }
             w.line(segs, [.t(age, p.faint)])
         }
+        if memo { w.line([.t(CellText.truncate(c.memo, n), p.faint)]) }
         if rows.isEmpty, !c.isMissing {
             let (title, why) = c.quiet
             w.line([.glyph(.mark(.offline), p.faint), .t(" " + title.lowercased(with: Locale.current), p.muted)]
@@ -63,6 +68,9 @@ extension CellsBodies {
             w.line([.mark(d.mark, p), .t(" " + label + " ", p.text), .t(CellText.truncate(d.text, max(4, n - 3 - CellText.width(label))), p.muted)])
         }
         if more > 0 { w.line([.t(CellText.truncate(tr("\(c.diagnoses.count - 3) more in Topophany"), n), p.faint)]) }
+        for (label, value) in day {
+            w.line([.t(label + " ", p.faint), .t(CellText.truncate(value, max(4, n - CellText.width(label) - 1)), p.muted)])
+        }
         if foot, !c.isBlank { w.line(dependsLine(c, n, summary: !details), viaLine(c)) }
     }
 
