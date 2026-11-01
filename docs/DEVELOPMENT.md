@@ -254,3 +254,14 @@ its old acquisition timestamp and configuration revision before new reads
 arrived. This establishes the observed read/retry behavior, not the cause of
 past Tailscale interruptions. No installed binaries or connection settings were
 replaced by these checks.
+
+
+### Local release preflight and receipts
+
+`VERSION=0.2.0 NOTARY_PROFILE=topophany-bar scripts/release.sh --check`
+checks the required tools, Developer ID identity and notarization profile without
+building, signing or submitting an artifact. A release requires committed source
+and no untracked files. Existing output directories are refused rather than
+removed; set `RELEASE_DIR` to a new absolute directory to retain prior builds.
+Successful packaging writes `release.json` with the exact source revision,
+version, notarization state and DMG SHA-256 alongside `sha256.txt`.
