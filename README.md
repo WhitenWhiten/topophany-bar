@@ -38,7 +38,7 @@ See what needs attention from the menu bar, open the panel to find where the pro
 - **Find where a problem is seen.** The panel brings together incidents, affected applications and the observers reporting trouble. Open an attention item in Topophany's terminal UI to investigate.
 - **Read Beszel and Komari directly.** Pick servers from a Beszel Hub or a Komari server and watch their CPU, memory and disk, with no Topophany collector to run.
 - **Put your servers on a map.** Explore locations and connections, browse your fleet by provider, and see the local time where your servers run.
-- **Keep important services close.** Pin service cards with recent checks, latency and uptime, or server cards with CPU, memory and disk readings.
+- **Keep important services close.** Pin service cards with recent checks, latency and uptime, server cards with CPU, memory and disk readings, or single checks and links such as a mihomo core, a Cloudflare Tunnel or a Tailscale peer.
 - **Make it yours.** Choose from six themes, and give the menu bar White Night's animated sky or an icon or animation of your own.
 - **Add desktop widgets.** Choose Status, Server, Service, Check, Map or Time Zones, with sizes and themes to suit your desktop.
 - **Watch this Mac too.** Show local CPU, memory, storage, network and battery readings in the panel; optionally put CPU, memory and network in the menu bar.
@@ -94,6 +94,29 @@ Closing the app stops its own collection; a terminal opened on its own keeps pol
 
 Komari and Beszel servers can also reach the bar through a collector: add a `komari` or `beszel` source and its resource checks to the collector's topology, as Topophany's adapter guides describe. Their cards say where they're read from in the provider's place ("host · Komari Monitor"), and keep the collector's verdict where its checks judge one. **Settings → Data sources** lists the Komari and Beszel sources the collector reports, with their servers.
 
+## Proxies, tunnels and peers
+
+Through a Topophany collector, the panel can follow a single check or link as well as whole services: a mihomo core, a Cloudflare Tunnel, DNS record or load-balancer pool, a Tailscale or WireGuard peer, or a website's certificate and latency budget. Each card says in plain words what was read, how it compares with the policy you declared, and what it does not prove. A core's report, an established tunnel or an online peer never shows that the application answered.
+
+### Set them up in Topophany
+
+The checks run in Topophany; the bar shows what they find. Topophany's templates write a topology whose checks are all paused, so you can review addresses, observers and credentials first:
+
+```sh
+topo templates mihomo --output mihomo.json
+topo templates cloudflare --output cloudflare.json
+topo validate mihomo.json
+```
+
+- **mihomo**, the Clash.Meta core inside many proxy clients: run a worker on the machine with the core. Its `mihomo` check reads the external controller on `127.0.0.1:9090` with the secret in the environment variable `adapter.token_env` names (`MIHOMO_TOKEN` in the template), and compares the reported mode, TUN and the `root_proxy` group's selection, and optionally provider members, with the policy you declare. The template keeps a separate HTTP check through the core's own listener for the application. The `mihomo` template needs a `topo` newer than 1.5.2; see Topophany's [mihomo adapter guide](https://github.com/WhitenWhiten/topophany/blob/main/internal/adapters/mihomo/README.md).
+- **Cloudflare:** a `cloudflared` check reads the connector's own metrics for a Tunnel link; HTTP checks through the edge record the colo, cache, edge RTT and when Access or a challenge answered instead of the app; `cloudflare` checks read a tunnel's status, a DNS record or a pool from the API with a read-only token. Topophany's [security notes](https://github.com/WhitenWhiten/topophany/blob/main/docs/SECURITY.md) list each token's least-privilege scopes.
+- **Certificates and latency:** set `tls_min_days` or `max_duration_ms` on an HTTP or TLS check, and its card says "Certificate expires in 9 days" or "Slower than its 800 ms budget".
+- **Tailscale and WireGuard:** `tailscale` and `wireguard` checks read the observer's own runtime: backend and online state, the reported path and an optional ping, or the last handshake and transfer counters.
+
+### Pin them
+
+In **Settings → Sections**, click **Choose…** beside **Pinned**, switch to **Checks** or **Links**, and select up to 16. They're grouped by what they read, mihomo and Cloudflare first, with a filter when the list is long. A pinned card shows the summary and up to two readings; expand it for every reading, the stage and code, and its recent history. For one on the desktop, add a **Check** widget and choose the check or link to show.
+
 ## Themes
 
 <p align="center">
@@ -146,7 +169,7 @@ This shows a simulated outage without a collector or credentials. Use `-preview 
 
 ### Add widgets
 
-With a signed build installed, open topophany-bar once, then right-click the desktop and choose **Edit Widgets**. Search for **Topophany**, add a widget, and edit it to choose the server, service, map view or theme where available. Keep the menu bar app running to supply fresh data to the widgets.
+With a signed build installed, open topophany-bar once, then right-click the desktop and choose **Edit Widgets**. Search for **Topophany**, add a widget, and edit it to choose the server, service, check or link, map view or theme where available. Keep the menu bar app running to supply fresh data to the widgets.
 
 ## Make it yours
 
