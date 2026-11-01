@@ -71,6 +71,9 @@ final class AppModel {
         return nil
         #endif
     }
+    var collectorCredentialsPath: String? {
+        directRoot.map { URL(filePath: $0).appending(path: "client-credentials.json").path }
+    }
     @ObservationIgnored private var widgetNeeds = TemplateCompiler.WidgetNeeds.none
     @ObservationIgnored private var expandedMonitors = Set<MonitorPin>()
     // Bounded by pinned entities. Keep acquired history across disclosure and
@@ -471,8 +474,8 @@ final class AppModel {
                                           lang: L10n.previewLanguage, listServers: true, serviceCards: true,
                                           listServices: true, mapGraph: true, monitorHistory: retainedMonitorHistory)
         r.retryNonce = effectiveSettings.topo.source == "direct" ? retryNonce : nil
-        if let root = directRoot, effectiveSettings.topo.source == "client" {
-            r.credentials = URL(filePath: root).appending(path: "client-credentials.json").path
+        if let credentials = collectorCredentialsPath, effectiveSettings.topo.source == "client" {
+            r.credentials = credentials
         }
         return r
     }
@@ -847,7 +850,7 @@ final class AppModel {
         }
         let item = StatusItemModel(status: status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)
         if item != statusItem { statusItem = item }
-        widgets?.tick(panel: visible ? panel : nil, status: status, reading: r, policy: policy, theme: theme, settings: settings, at: now)
+        widgets?.tick(panel: visible ? panel : nil, status: status, reading: r, policy: policy, theme: theme, settings: effectiveSettings, at: now)
         onChange?()
     }
 }

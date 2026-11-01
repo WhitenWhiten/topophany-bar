@@ -21,4 +21,14 @@ struct CollectorLoginTests {
             Issue.record("failed login accepted")
         } catch { #expect((error as? SourceProblem)?.code == "login_failed") }
     }
+
+    @Test func isolatedLoginUsesTheReadersCredentialFile() async throws {
+        let credentials = "/temporary-test-root/client-credentials.json"
+        let client = CollectorLoginClient { arguments, _ in
+            #expect(arguments.suffix(2) == ["--credentials", credentials])
+            return .init(status: 0, stdout: Data())
+        }
+        try await client.login(server: "https://example.invalid", project: "home", profile: "default",
+                               token: String(repeating: "x", count: 64), credentials: credentials)
+    }
 }

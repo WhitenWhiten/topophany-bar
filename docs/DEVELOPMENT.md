@@ -201,6 +201,9 @@ ready Komari cards, and removal. SIGTERM stops the server and removes its ready 
 
 A Debug app accepts `-settings ABS_TEMP/settings.json -topo ABS_BINARY
 -direct-root ABS_TEMP/direct` to isolate both public Settings and Go credentials.
+Collector sign-in and Terminal actions use the same isolated credential file
+as the monitor reader. Demo widget hand-offs use the effective preview settings,
+so returning to the connection restores the saved source and pins.
 Normal launches omit direct-root. `AppModel` also accepts a clock, source command
 client and engine factory for deterministic state tests. Existing `-snapshot DIR`
 now includes Data sources; the debug driver's `panelshot` and `settingsshot` capture

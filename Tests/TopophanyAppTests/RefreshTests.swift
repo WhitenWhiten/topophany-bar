@@ -3,6 +3,7 @@ import Synchronization
 import Testing
 import TopophanyEngine
 import TopophanyKit
+import TopophanyWidgets
 
 @MainActor
 @Suite struct RefreshTests {
@@ -299,9 +300,20 @@ extension RefreshTests {
         let engine = RecordingEngine()
         let model = AppModel(store: store, engineFactory: { _ in engine })
         defer { model.stopNow() }
+        let widgetDirectory = FileManager.default.temporaryDirectory.appending(path: "demo-widgets-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: widgetDirectory) }
+        let handoffStore = HandoffStore(directory: widgetDirectory)
+        model.widgets = WidgetBridge(store: handoffStore, reload: {})
         model.setDemo(true)
+        for _ in 0..<100 where model.reading.frame == nil { await Task.yield() }
         #expect(model.inAppDemo)
+        #expect(model.reading.frame?.source == "preview")
         #expect(model.effectiveSettings.topo.source == "preview")
+        let handoff = try #require(handoffStore.read())
+        #expect(handoff.decodedSettings.topo.source == "preview")
+        #expect(!handoff.isDirect)
+        #expect(handoff.panel().status.synthetic)
+        #expect(handoff.decodedSettings.sections.serverNodes == ["oracle-ny", "bwh-la"])
         #expect(store.load().topo.profile == "private-desktop")
         model.setDemo(false)
         #expect(model.effectiveSettings.topo.source == "direct")

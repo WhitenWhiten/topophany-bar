@@ -339,10 +339,11 @@ struct SignInForm: View {
         let client = CollectorLoginClient(path: path)
         let credential = trimmed(token), address = trimmed(server), identity = trimmed(project), name = profileName
         let ca = trimmed(caFile), insecure = allowInsecure
+        let credentials = model.collectorCredentialsPath
         token = ""; failed = false; busy = true
         operation = Task { @MainActor in
             do {
-                try await client.login(server: address, project: identity, profile: name, token: credential, caFile: ca, allowInsecure: insecure)
+                try await client.login(server: address, project: identity, profile: name, token: credential, caFile: ca, allowInsecure: insecure, credentials: credentials)
                 guard !Task.isCancelled else { return }
                 model.useCollectorAfterLogin(profile: name)
                 busy = false; open = false

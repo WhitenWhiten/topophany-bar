@@ -14,12 +14,13 @@ public struct CollectorLoginClient: Sendable {
         }
     }
     public func login(server: String, project: String, profile: String, token: String,
-                      caFile: String = "", allowInsecure: Bool = false) async throws {
+                      caFile: String = "", allowInsecure: Bool = false, credentials: String? = nil) async throws {
         guard (32...512).contains(token.utf8.count), token.utf8.allSatisfy({ $0 > 32 && $0 < 127 }),
               !server.isEmpty, !project.isEmpty, !profile.isEmpty else { throw SourceProblem(code: "invalid_request") }
         var arguments = ["login", "--server", server, "--project", project, "--profile", profile, "--token-stdin"]
         if !caFile.isEmpty { arguments += ["--ca-file", caFile] }
         if allowInsecure { arguments += ["--allow-insecure"] }
+        if let credentials { arguments += ["--credentials", credentials] }
         let output = try await execute(arguments, Data((token + "\n").utf8))
         try Task.checkCancellation()
         guard output.status == 0 else { throw SourceProblem(code: "login_failed") }

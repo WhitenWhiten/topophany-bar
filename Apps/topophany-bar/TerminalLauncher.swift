@@ -145,6 +145,18 @@ enum TerminalLauncher {
         run(model: model, args)
     }
 
+    /// Preserve the isolated development root in terminal hand-offs.
+    static func scopedArguments(_ args: [String], settings: TopophanyKit.Settings, directRoot: String?) -> [String] {
+        guard let directRoot else { return args }
+        // Login always writes collector credentials, including when the form
+        // was opened from direct mode or the in-app demo.
+        if args.first == "login" || settings.topo.source == "client" {
+            return args + ["--credentials", URL(filePath: directRoot).appending(path: "client-credentials.json").path]
+        }
+        if settings.topo.source == "direct" { return args + ["--direct-root", directRoot] }
+        return args
+    }
+
     /// Runs the `topo` the app runs, with `args`, in the user's terminal.
     static func run(model: AppModel, _ args: [String]) {
         let path: String
@@ -156,7 +168,7 @@ enum TerminalLauncher {
             NSSound.beep()
             return
         }
-        let command = ([path] + args).map(quote).joined(separator: " ")
+        let command = ([path] + scopedArguments(args, settings: model.effectiveSettings, directRoot: model.directRoot)).map(quote).joined(separator: " ")
         // The script removes itself before it becomes topo.
         let script = "#!/bin/sh\nrm -f \"$0\"\nclear\nexec \(command)\n"
         let dir = FileManager.default.temporaryDirectory.appending(path: "topophany-bar")

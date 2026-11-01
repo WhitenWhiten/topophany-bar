@@ -23,4 +23,18 @@ struct TerminalLauncherTests {
         s.topo.source = "preview"
         #expect(TerminalLauncher.diagnosticArguments(s) == nil)
     }
+
+    @MainActor @Test func isolatedCommandsStayInsideTheirCredentialRoot() {
+        var settings = Settings()
+        let root = "/temporary-test-root"
+        let credentials = ["--credentials", root + "/client-credentials.json"]
+        #expect(TerminalLauncher.scopedArguments(["compare"], settings: settings, directRoot: root) == ["compare"] + credentials)
+        settings.topo.source = "direct"
+        #expect(TerminalLauncher.scopedArguments(["doctor"], settings: settings, directRoot: root) == ["doctor", "--direct-root", root])
+        #expect(TerminalLauncher.scopedArguments(["login"], settings: settings, directRoot: root) == ["login"] + credentials)
+        settings.topo.source = "preview"
+        #expect(TerminalLauncher.scopedArguments(["preview"], settings: settings, directRoot: root) == ["preview"])
+        #expect(TerminalLauncher.scopedArguments(["login"], settings: settings, directRoot: root) == ["login"] + credentials)
+        #expect(TerminalLauncher.scopedArguments(["login"], settings: settings, directRoot: nil) == ["login"])
+    }
 }
