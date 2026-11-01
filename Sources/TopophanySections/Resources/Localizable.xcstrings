@@ -141,7 +141,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "インシデント %lld 件"
+            "value": "%lld 件のインシデント"
           }
         },
         "zh-Hans": {
@@ -955,13 +955,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "すべて正常"
+            "value": "現在のチェックは正常"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "全部正常"
+            "value": "当前检查全部通过"
           }
         }
       }
@@ -1131,13 +1131,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "縮退"
+            "value": "一部異常"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "降级"
+            "value": "存在异常"
           }
         }
       }
@@ -1163,13 +1163,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "縮退"
+            "value": "一部異常"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "降级"
+            "value": "存在异常"
           }
         }
       }
@@ -1489,7 +1489,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "没有证据"
+            "value": "暂无证据"
           }
         }
       }
@@ -1553,7 +1553,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "没有证据"
+            "value": "暂无证据"
           }
         }
       }
@@ -2379,13 +2379,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "縮退"
+            "value": "一部異常"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "降级"
+            "value": "存在异常"
           }
         }
       }

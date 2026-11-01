@@ -297,8 +297,15 @@ public struct StatusSection: Sendable, Hashable {
     }
 
     /// The TUI's short words, for the menu bar chip and small widgets.
+    /// Chinese and Japanese spell out all clear as the TUI does, "current
+    /// checks all pass", which is too long for a chip: there it says all
+    /// clear in the Native words.
     public var tuiShortTitle: String {
-        verdictState == .incomplete ? tr("INCOMPLETE") : tuiTitle
+        switch verdictState {
+        case .incomplete?: tr("INCOMPLETE")
+        case .clear?: tr("All clear").uppercased(with: L10n.locale)
+        default: tuiTitle
+        }
     }
 
     /// The TUI's big number and the two lines beside it.

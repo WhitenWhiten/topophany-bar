@@ -57,17 +57,22 @@ import TopophanyKit
     }
 
     /// The Terminal look's titles, pills and health words are translated
-    /// too, not left as the TUI's English.
+    /// too, not left as the TUI's English, in the TUI's own words since
+    /// Topophany 1.5.2. The menu bar chip keeps all clear short.
     @Test func terminalWords() {
         L10n.with("ja") {
             let p = panel(.incidents)
-            #expect(p.status.tuiTitle == "インシデント 5 件")
+            #expect(p.status.tuiTitle == "5 件のインシデント")
             #expect(Pill.state("open", health: .down).text == "未解決")
             #expect(Pill.health(.up).text == "正常")
-            #expect(tr("ALL CLEAR") == "すべて正常")
+            #expect(panel(.clear).status.tuiTitle == "現在のチェックは正常")
+            #expect(panel(.clear).status.tuiShortTitle == "すべて正常")
         }
         L10n.with("zh-Hans") {
             let p = panel(.incidents)
+            #expect(panel(.clear).status.tuiTitle == "当前检查全部通过")
+            #expect(panel(.clear).status.tuiShortTitle == "全部正常")
+            #expect(panel(.degraded).status.title == "存在异常")
             #expect(p.status.tuiTitle == "5 个事件")
             #expect(Pill.health(.down).text == "故障")
             #expect(p.status.shortSubtitle.hasPrefix("5 项故障"))
