@@ -1547,34 +1547,34 @@
         }
       }
     },
-    "Geo, fitted": {
+    "Every place": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "地理・全地点"
+            "value": "すべての地点"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "地理 · 全部地点"
+            "value": "所有地点"
           }
         }
       }
     },
-    "Geo, whole world": {
+    "Whole world": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "地理・世界全体"
+            "value": "世界全体"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "地理 · 整个世界"
+            "value": "整个世界"
           }
         }
       }
@@ -1899,18 +1899,18 @@
         }
       }
     },
-    "Lock Geo Map": {
+    "Lock the map": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Geo Map をロック"
+            "value": "マップをロック"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "锁定 Geo Map"
+            "value": "锁定地图"
           }
         }
       }

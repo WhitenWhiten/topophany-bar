@@ -921,7 +921,7 @@ struct SectionsSettings: View {
                 }
                 .toggleStyle(.switch)
                 Toggle(isOn: model.binding(\.sections.mapLocked)) {
-                    RowLabel("Lock Geo Map", "Scroll the panel without zooming or moving the map")
+                    RowLabel("Lock the map", "Scroll the panel without zooming or moving the map")
                 }
                 .toggleStyle(.switch)
             }
@@ -1044,8 +1044,9 @@ struct MapFramePicker: View {
     var body: some View {
         Picker("", selection: Binding(get: { model.settings.sections.mapFrame },
                                       set: { frame in model.update { $0.sections.mapFrame = frame } })) {
-            Text("Geo, fitted").tag(Sections.MapFrame.fit)
-            Text("Geo, whole world").tag(Sections.MapFrame.world)
+            // The map card's and the Map widget's words for its framings.
+            Text("Every place").tag(Sections.MapFrame.fit)
+            Text("Whole world").tag(Sections.MapFrame.world)
         }
         .labelsHidden().fixedSize()
     }

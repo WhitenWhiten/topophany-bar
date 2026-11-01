@@ -194,7 +194,7 @@ With a signed build installed, open topophany-bar once, then right-click the des
 | **This Mac** | Local readings, a collector-backed card for this Mac, or neither; and the proxy engine to watch |
 | **Data sources** | Read from a Topophany collector, or from Beszel and Komari sources directly |
 
-Drag the panel's bottom edge to resize it. **Lock Geo Map** is enabled by default so scrolling moves the panel; pinch and keyboard zoom remain available.
+Drag the panel's bottom edge to resize it. **Lock the map** is on by default so scrolling moves the panel; pinch and keyboard zoom remain available.
 
 ## How it fits with Topophany
 
