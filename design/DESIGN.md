@@ -640,7 +640,9 @@ or server, its servers and, while the bar reads it, its state; its kind too wher
 the profile mixes Beszel and Komari) and Add Source…. A source's button is what it
 needs, Sign In… when its sign-in lapsed and Edit… otherwise; the rest are in its
 menu. The editor sheet sizes to what it shows and follows source → test → server
-selection (checkboxes, "2 of 20 chosen") → save; Settings grows to hold it. A new
+selection (checkboxes, "2 of 20 chosen") → save; Settings grows to hold it. Lists longer than eight servers add a native search
+field and a Selected only checkbox; matching names or IDs never changes hidden
+selections or repeats discovery. A new
 source chooses its kind first, Beszel or Komari, from the adapters `topo` offers;
 an existing one keeps its own. The kind sets the words and the sign-in: a Hub URL
 with account and password or an API token for Beszel; a server URL with an API key,
@@ -671,7 +673,10 @@ clear is synthesized. The same card/row typography and theme tokens apply to Car
 and Cells, where the servers current are the big number. The header names the
 adapter as a collector's names its view. A server card says where it's read from
 in the provider's place ("host · Home Beszel"); Fleet adds no badge, and counts no
-providers when none are known. Provider logos retain their established meaning.
+providers when none are known. Provider logos retain their established meaning. A direct fleet of up to four
+servers omits its duplicate Fleet list only when every listed server already has
+a visible card and the list is current. Larger or partially pinned fleets retain
+their navigation, and the saved Fleet preference is never changed.
 
 Go judges no health for a direct server, so its card, never UNKNOWN for that,
 says how it is read, from the selected resource's own freshness and health:
@@ -724,3 +729,13 @@ coverage includes all six themes, three languages, acquisition states, several
 sources and servers, and the Widget sizes at both the design's and a 1080 pt
 display's bounds. Evidence and system validation limits are recorded in
 `docs/contracts/direct-v1/HANDOFF.md`.
+
+
+Direct presentation updates stay within the existing boundaries: status changes
+prepare the bounded source order before drawing, and diagnostic timestamps are
+absolute rather than per-row countdowns. Search and selected-only state belong
+to the server-selection subtree and disappear when the editor closes; they do
+not touch polling, credentials or the panel. Compact Fleet selection uses the
+same prepared server cards as the Servers section. It changes section presence
+only when list/card coverage changes, leaving geometry ownership, scroll state,
+per-section drawing caches and animation lifetimes unchanged.

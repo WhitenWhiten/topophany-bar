@@ -68,6 +68,7 @@ public enum SectionBuilder {
             for id in SectionID.allCases where id.needsCollector { s.setEnabled(id, false) }
         }
         let status = status(r, engine: input.engine)
+        let serverCards = s.servers ? servers(r, nodes: s.serverNodes).map { zoned($0, s.placeZones) } : []
         var sections: [PanelModel.Section] = []
         for id in s.order {
             switch id {
@@ -85,10 +86,18 @@ public enum SectionBuilder {
                 let cards = services(r, ids: s.serviceIDs) + monitors(r, pins: s.monitors, expanded: input.expandedMonitors)
                 if !cards.isEmpty { sections.append(.services(cards)) }
             case .fleet where s.fleet:
-                if let f = fleet(r, pinned: s.serverNodes) { sections.append(.fleet(f)) }
+                if let f = fleet(r, pinned: s.serverNodes) {
+                    // Small direct profiles already show every name in their cards.
+                    // Keep navigation when any card is absent, the list is historical,
+                    // or the fleet is large; never change the saved section preference.
+                    if direct && f.isCurrent && (1...4).contains(f.nodeCount) {
+                        let shown = Set(serverCards.filter { !$0.isMissing }.map(\.id))
+                        if f.groups.allSatisfy({ $0.nodes.allSatisfy { shown.contains($0.id) } }) { continue }
+                    }
+                    sections.append(.fleet(f))
+                }
             case .servers where s.servers:
-                let cards = servers(r, nodes: s.serverNodes).map { zoned($0, s.placeZones) }
-                if !cards.isEmpty { sections.append(.servers(cards)) }
+                if !serverCards.isEmpty { sections.append(.servers(serverCards)) }
             case .zones where s.zones:
                 sections.append(.zones(zones(r, chosen: s.placeZones, pinned: s.serverNodes, here: input.here)))
             case .mac:

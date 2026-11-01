@@ -502,40 +502,8 @@ struct SourceEditorForm: View {
         }
     }
 
-    /// Every server the Hub or server lists, ticked when it's read.
     func servers(_ result: DirectInspection) -> some View {
-        Section {
-            if result.systems.isEmpty {
-                Text(komari ? "No servers are listed. Hidden ones need an API key." as LocalizedStringKey
-                     : "No servers are visible to this account").foregroundStyle(.secondary)
-            }
-            ForEach(result.systems) { system in
-                Toggle(isOn: Binding(get: { editor.selected.contains(system.id) }, set: { on in
-                    if on { editor.selected.insert(system.id) } else { editor.selected.remove(system.id) }
-                })) {
-                    HStack {
-                        Text(verbatim: system.name).lineLimit(1)
-                        Spacer()
-                        Text(verbatim: system.id).font(.callout.monospaced()).foregroundStyle(.tertiary)
-                            .lineLimit(1).truncationMode(.middle)
-                    }
-                }
-                .toggleStyle(.checkbox)
-                .accessibilityLabel(Text(verbatim: system.name + " · " + system.id))
-                .disabled(editor.busy || (!editor.selected.contains(system.id) && editor.selected.count >= editor.selectionLimit))
-            }
-        } header: {
-            HStack(spacing: 6) {
-                Text("Servers")
-                Text("\(editor.selected.count) of \(editor.selectionLimit) chosen").fontWeight(.regular).foregroundStyle(.tertiary)
-            }
-        } footer: {
-            VStack(alignment: .leading, spacing: 4) {
-                if result.truncated { Foot("The Hub listed only some of its servers. More may be in Beszel.") }
-                if komari { Foot("A Komari server’s disk is the total its agent reports, not one mount.") }
-                Foot("Readings can take a moment to arrive after saving.")
-            }
-        }
+        SourceServerSelection(editor: editor, result: result)
     }
 
     /// After a save that may or may not have landed: the profile as it is
@@ -571,6 +539,68 @@ struct SourceEditorForm: View {
             : tr("Choose the Hub's certificate authority, as a PEM file")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         editor.source.caFile = url.path
+    }
+}
+
+/// Filtering is local to the selection list. Hidden choices stay selected;
+/// typing or filtering never invalidates an inspection or sends a request.
+struct SourceServerSelection: View {
+    @Bindable var editor: SourceEditor
+    var result: DirectInspection
+    @State private var query = ""
+    @State private var selectedOnly = false
+
+    var visible: [DirectInspection.System] {
+        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.systems.filter {
+            (!selectedOnly || editor.selected.contains($0.id)) &&
+            (term.isEmpty || $0.name.localizedStandardContains(term) || $0.id.localizedStandardContains(term))
+        }
+    }
+
+    var body: some View {
+        Section {
+            if result.systems.isEmpty {
+                Text(editor.source.adapter == "komari" ? "No servers are listed. Hidden ones need an API key." as LocalizedStringKey
+                     : "No servers are visible to this account").foregroundStyle(.secondary)
+            }
+            if result.systems.count > 8 {
+                HStack {
+                    TextField("Search servers", text: $query)
+                    Toggle("Selected only", isOn: $selectedOnly).toggleStyle(.checkbox).fixedSize()
+                }
+                .disabled(editor.busy)
+            }
+            if !result.systems.isEmpty && visible.isEmpty {
+                Text("No matching servers").foregroundStyle(.secondary)
+            }
+            ForEach(visible) { system in
+                Toggle(isOn: Binding(get: { editor.selected.contains(system.id) }, set: { on in
+                    if on { editor.selected.insert(system.id) } else { editor.selected.remove(system.id) }
+                })) {
+                    HStack {
+                        Text(verbatim: system.name).lineLimit(1)
+                        Spacer()
+                        Text(verbatim: system.id).font(.callout.monospaced()).foregroundStyle(.tertiary)
+                            .lineLimit(1).truncationMode(.middle)
+                    }
+                }
+                .toggleStyle(.checkbox)
+                .accessibilityLabel(Text(verbatim: system.name + " · " + system.id))
+                .disabled(editor.busy || (!editor.selected.contains(system.id) && editor.selected.count >= editor.selectionLimit))
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Text("Servers")
+                Text("\(editor.selected.count) of \(editor.selectionLimit) chosen").fontWeight(.regular).foregroundStyle(.tertiary)
+            }
+        } footer: {
+            VStack(alignment: .leading, spacing: 4) {
+                if result.truncated { Foot("The Hub listed only some of its servers. More may be in Beszel.") }
+                if editor.source.adapter == "komari" { Foot("A Komari server’s disk is the total its agent reports, not one mount.") }
+                Foot("Readings can take a moment to arrive after saving.")
+            }
+        }
     }
 }
 

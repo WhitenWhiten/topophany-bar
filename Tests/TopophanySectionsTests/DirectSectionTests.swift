@@ -4,6 +4,29 @@ import TopophanyKit
 @testable import TopophanySections
 
 struct DirectSectionTests {
+    @Test func compactFleetKeepsNavigationWhenCardsDoNotCoverIt() throws {
+        let file = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/DirectDevelopment/fleet_partial.json")
+        let frame = try #require(FrameDecoder.frame(from: Data(contentsOf: file)))
+        let now = try #require(frame.generatedAt)
+        var reader = ReaderPolicy(); reader.receive(frame, at: now)
+        var settings = Settings(); settings.topo.source = "direct"
+        settings.sections.servers = true; settings.sections.fleet = true; settings.sections.mac.mode = .off
+        settings.sections.serverNodes = frame.rows.compactMap(\.select?.node)
+        func panel() -> PanelModel { SectionBuilder.panel(.init(reading: reader.evaluate(at: now), engine: .running, settings: settings)) }
+        #expect(panel().fleet == nil && panel().servers.count == 4)
+        #expect(settings.sections.fleet, "presentation must preserve the saved preference")
+        settings.sections.serverNodes.removeLast()
+        #expect(panel().fleet != nil && panel().servers.count == 3)
+        settings.sections.servers = false
+        #expect(panel().fleet != nil)
+        settings.sections.servers = true
+        settings.sections.serverNodes = frame.rows.compactMap(\.select?.node)
+        var collector = frame; collector.source = "client"; collector.instance = "collector"
+        reader = ReaderPolicy(); reader.receive(collector, at: now)
+        settings.topo.source = "client"
+        #expect(panel().fleet != nil, "collector navigation is unchanged")
+    }
+
     @Test func failingSourcesLeadWithoutReorderingTheirPeers() throws {
         let data = Data(#"{"state":"partial","sources":[{"id":"a","state":"connected","counts":{"selected":1,"current":1}},{"id":"b","state":"loading"},{"id":"c","state":"retrying","code":"rate_limited","next_retry_at":"2026-10-21T12:01:00Z"},{"id":"d","state":"connected","counts":{"stale":1}},{"id":"e","state":"auth_required"}]}"#.utf8)
         let value = try JSONDecoder().decode(SourcesStatus.self, from: data)

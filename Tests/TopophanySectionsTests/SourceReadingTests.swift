@@ -34,8 +34,11 @@ struct SourceReadingTests {
         #expect(stale.age.hasPrefix("last reading"))
         let missing = try #require(byName["build-01"])
         #expect(missing.samples == .missing && missing.mark == .offline && missing.pill.text == "NO SAMPLES")
-        // Fleet takes each listed server's mark from its card.
-        let fleet = try #require(p.fleet).groups.flatMap(\.nodes)
+        // A compact panel omits the duplicate list; Fleet itself still takes
+        // each listed server's mark from its card when navigation is shown.
+        #expect(p.fleet == nil)
+        let r = try reading("DirectDevelopment/fleet_partial.json")
+        let fleet = try #require(SectionBuilder.fleet(r, pinned: p.servers.map(\.id))).groups.flatMap(\.nodes)
         #expect(fleet.map(\.mark) == [.up, .up, .offline, .offline])
     }
 
