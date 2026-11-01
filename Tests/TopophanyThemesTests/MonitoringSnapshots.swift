@@ -110,6 +110,33 @@ import TopophanySections
         }
     }
 
+    /// The proxy engine on this Mac, from captures of a real `topo` and a
+    /// synthetic mihomo engine: working, then not answering.
+    @Test func proxyEngineInBothRenderers() throws {
+        let pin = MonitorPin(kind: .check, id: "lc-engine")
+        for (name, lang) in [("ok", "en"), ("stopped-down", "en"), ("ok", "zh-Hans")] {
+            L10n.force(lang)
+            defer { L10n.force(nil) }
+            let url = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "Fixtures/Monitoring/local-\(name).ndjson")
+            let line = try Data(contentsOf: url)
+            let f = try #require(FrameDecoder.frame(from: line))
+            let now = try #require(f.generatedAt)
+            var policy = ReaderPolicy(); policy.receive(f, line: line, at: now)
+            var settings = TopophanyKit.Settings(); settings.sections.services = true
+            var model = SectionBuilder.panel(PanelInput(reading: ReaderPolicy().evaluate(at: now), engine: .running, settings: settings,
+                                                        expandedMonitors: [pin], localChecks: .init(reading: policy.evaluate(at: now), pins: [pin])))
+            let services = model.sections.filter { if case .services = $0 { true } else { false } }
+            #expect(services.count == 1)
+            let preview = previewPanel(.clear)
+            model.status = preview.status; model.chrome = preview.chrome
+            model.sections = services
+            for theme in [ThemeStore.native, ThemeStore.terminal] {
+                let ctx = RenderContext(theme: theme, colorScheme: .dark)
+                try snapshot("proxy-engine-\(name)-\(theme.id)-\(lang)", OnDesktop(dark: true) { Renderers.renderer(for: theme).panel(model, context: ctx) })
+            }
+        }
+    }
+
     @Test func collectorStatusUsesExistingFooter() throws {
         for lang in ["en", "zh-Hans", "ja"] {
             TopophanySections.L10n.force(lang)

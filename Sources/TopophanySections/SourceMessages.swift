@@ -29,6 +29,27 @@ public enum SourceMessages {
         default: tr("The source could not be configured. Refresh the sources list and try again.")
         }
     }
+    /// Setting up the proxy engine on this Mac, in plain words.
+    public static func local(_ code: String) -> String {
+        switch code {
+        case "not_local_address": tr("Use the engine’s address on this Mac, such as http://127.0.0.1:9090.")
+        case "connection_failed": tr("Nothing answered at this address. Check that the proxy app is running and the port is the one its settings show.")
+        case "authentication_failed": tr("The engine didn’t accept this password. Copy the secret from the proxy app’s settings.")
+        case "saved_auth_mismatch": tr("The address changed, so enter the password again.")
+        case "unsupported_response_shape", "upstream_incompatible": tr("This doesn’t look like a mihomo engine. Check the address and port.")
+        case "response_too_large", "response_limit_exceeded", "response_complexity_exceeded": tr("The engine lists more than topo reads. Try a smaller configuration.")
+        case "profile_conflict": tr("The proxy settings changed elsewhere. Look them over, then save again.")
+        case "check_limit": tr("topo watches at most 4 engines on this Mac.")
+        case "command_timeout": tr("The engine took too long to answer. Try again.")
+        case "tls_error": tr("The engine’s certificate could not be verified. Try its http:// address.")
+        case "unexpected_status": tr("The engine answered with an error. Check the address and port.")
+        case "state_budget": tr("The engine lists more than topo reads. Try a smaller configuration.")
+        case "not_found": tr("This engine is no longer set up. Refresh and try again.")
+        case "storage_error", "credential_storage_error", "profile_unavailable": tr("The settings could not be read or saved. Check local storage access.")
+        default: tr("The engine could not be set up. Try again.")
+        }
+    }
+
     /// Komari takes an API key or none, from a server rather than a Hub.
     static func komari(_ code: String) -> String? {
         switch code {

@@ -76,6 +76,8 @@ final class AppModel {
     }
     @ObservationIgnored private var widgetNeeds = TemplateCompiler.WidgetNeeds.none
     @ObservationIgnored private var expandedMonitors = Set<MonitorPin>()
+    /// The proxy engine on this Mac, read beside the panel's own source.
+    let localReader = LocalReader()
     // Bounded by pinned entities. Keep acquired history across disclosure and
     // panel reopening; a click must not rebuild the source repeatedly.
     @ObservationIgnored private var retainedMonitorHistory = Set<MonitorPin>()
@@ -142,6 +144,7 @@ final class AppModel {
         status = p.status
         statusItem = StatusItemModel(status: p.status, appearance: s.appearance.menuBar, local: nil)
         reloadIcons()
+        localReader.onChange = { [weak self] in self?.refresh() }
     }
 
     private(set) var inAppDemo = false
@@ -236,6 +239,13 @@ final class AppModel {
         capabilities?.supports(metric: kind.rawValue + ".card", source: effectiveSettings.topo.source) == true
     }
     func toggleMonitor(_ pin: MonitorPin) {
+        // This Mac's own checks always carry their history: expanding one
+        // changes no request.
+        if localReader.pins.contains(pin), !settings.sections.monitors.contains(pin) {
+            if !expandedMonitors.insert(pin).inserted { expandedMonitors.remove(pin) }
+            refresh()
+            return
+        }
         guard settings.sections.monitors.contains(pin) else { return }
         if !expandedMonitors.insert(pin).inserted { expandedMonitors.remove(pin) }
         else if capabilities?.cardHistory == true, retainedMonitorHistory.insert(pin).inserted { send(showNotice: false) }
@@ -383,6 +393,7 @@ final class AppModel {
         updateTask?.cancel(); pendingUpdate = nil
         locateTask?.cancel(); profilesTask?.cancel()
         (engine as? ProcessEngine)?.closeInputNow()
+        localReader.closeNow()
         localTask?.cancel()
     }
 
@@ -405,7 +416,7 @@ final class AppModel {
         }
         L10n.prefer(s.language.localization)
         settings = s
-        expandedMonitors.formIntersection(Set(s.sections.monitors))
+        expandedMonitors.formIntersection(Set(s.sections.monitors).union(localReader.pins))
         retainedMonitorHistory.formIntersection(Set(s.sections.monitors))
         if old.appearance.menuBar.customIconID != s.appearance.menuBar.customIconID || old.appearance.menuBar.icon != s.appearance.menuBar.icon {
             reloadIcons()
@@ -640,6 +651,7 @@ final class AppModel {
                 policy.sourceStarted()
                 restartAt = nil
                 if case .running(let r) = s, fixture == nil, capabilities?.profiles == true { loadProfiles(path: r.path) }
+                if case .running(let r) = s { followLocalChecks(path: r.path) }
             case .restarting(let after, _, _):
                 finishCollectorRetry()
                 policy.sourceEnded(at: now)
@@ -666,6 +678,26 @@ final class AppModel {
             return
         }
         refresh()
+    }
+
+    /// Reads this Mac's own checks with the `topo` the panel runs, when it
+    /// reads them. A demo, preview or fixture shows only its own data.
+    private func followLocalChecks(path: String) {
+        guard fixture == nil, effectiveSettings.topo.source != "preview", capabilities?.local?.readsMihomo == true else {
+            if localReader.path != nil { localReader.stop() }
+            return
+        }
+        localReader.attach(path: path)
+    }
+
+    /// Whether the running `topo` can watch a proxy engine on this Mac.
+    var readsLocalChecks: Bool { capabilities?.local?.readsMihomo == true && localReader.path != nil }
+
+    /// After saving or removing a local check: list and follow them again,
+    /// and show the Pinned section they appear in.
+    func localChecksChanged(saved: Bool) {
+        if saved, !settings.sections.services { update { $0.sections.services = true } }
+        localReader.reload()
     }
 
     private func appendDiagnostics(_ lines: [String]) {
@@ -844,8 +876,10 @@ final class AppModel {
         quiet = quiet?.after(status)
         let visible = panelVisible || settingsVisible
         if visible {
+            let own = localReader.evaluate(at: now).map { LocalChecksInput(reading: $0, pins: localReader.pins) }
             panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: effectiveSettings, local: local,
-                                                    machineModel: machine.model, quiet: quiet, fetch: fetch, expandedMonitors: expandedMonitors))
+                                                    machineModel: machine.model, quiet: quiet, fetch: fetch, expandedMonitors: expandedMonitors,
+                                                    localChecks: own))
             panel.status = status
         }
         let item = StatusItemModel(status: status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)

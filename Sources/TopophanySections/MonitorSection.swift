@@ -110,6 +110,9 @@ public enum MonitorWords {
         case "metrics_unavailable": return tr("Connector metrics unavailable")
         case "api_unavailable": return tr("Cloudflare API unavailable")
         case "tun_state_unavailable": return tr("TUN state not reported")
+        // The engine's status API didn't answer: usually the proxy app isn't running.
+        case "network_error" where c.kind == "mihomo", "timeout" where c.kind == "mihomo": return tr("Proxy engine not answering")
+        case "unexpected_status" where c.kind == "mihomo": return tr("Proxy engine answered with an error")
         // Tailscale and WireGuard: what this observer's own runtime reports.
         case "backend_needs_login": return tr("Tailscale needs a login")
         case "backend_needs_machine_auth": return tr("Tailscale awaits device approval")
@@ -238,6 +241,16 @@ public enum MonitorWords {
         return out
     }
 
+    /// mihomo's mode, as its apps name it.
+    public static func modeName(_ mode: String) -> String {
+        switch mode {
+        case "rule": tr("Rule mode")
+        case "global": tr("Global mode")
+        case "direct": tr("Direct mode")
+        default: mode
+        }
+    }
+
     static func onOff(_ value: String) -> String {
         switch value {
         case "true": tr("On")
@@ -351,7 +364,8 @@ public enum MonitorWords {
             return Words.join([handshake, traffic])
         }
         if c.kind == "mihomo" {
-            if let chain = f["reported_chain"], !chain.isEmpty { return tr("Reported route: \(chain.replacingOccurrences(of: " -> ", with: " → ").replacingOccurrences(of: "withheld_secret_request", with: tr("withheld")))") }
+            // `undeclared`: topo kept the names back, as for a secret sent to a collector's check.
+            if let chain = f["reported_chain"], !chain.isEmpty, chain != "undeclared" { return tr("Reported route: \(chain.replacingOccurrences(of: " -> ", with: " → ").replacingOccurrences(of: "withheld_secret_request", with: tr("withheld")))") }
             let tun = f["tun_enabled"].map { $0 == "true" ? tr("TUN on") : $0 == "false" ? tr("TUN off") : "" } ?? ""
             return Words.join([f["mode"] ?? "", tun])
         }
@@ -551,7 +565,9 @@ public enum MonitorWords {
 }
 
 extension SectionBuilder {
-    public static func monitors(_ r: Reading, pins: [MonitorPin], expanded: Set<MonitorPin> = []) -> [ServiceCardModel] {
+    /// `observer` names where every check was read, in place of the
+    /// observer `topo` names: "This Mac" for its own checks.
+    public static func monitors(_ r: Reading, pins: [MonitorPin], expanded: Set<MonitorPin> = [], observer: String? = nil) -> [ServiceCardModel] {
         var seen = Set<MonitorPin>()
         return pins.prefix(16).compactMap { pin in
             guard seen.insert(pin).inserted, TemplateCompiler.validNode(pin.entity),
@@ -566,7 +582,7 @@ extension SectionBuilder {
             case .checkCard(let c):
                 name = c.check.name; health = c.check.health; sampledAt = c.check.sampledAt
                 checks = [c]
-                subtitle = Words.join([c.observer.name, c.check.kind == "mihomo" ? tr("Core report") : MonitorWords.evidence(c.check.diagnostic?.evidence ?? "")])
+                subtitle = Words.join([observer ?? c.observer.name, c.check.kind == "mihomo" ? tr("Core report") : MonitorWords.evidence(c.check.diagnostic?.evidence ?? "")])
                 if c.check.kind == "cloudflare" || c.check.kind == "cloudflared" { provider = "Cloudflare" }
                 // An HTTP check names the edge that answered it; a trace check is Cloudflare's.
                 else if let edge = c.check.diagnostic?.facts["edge_provider"], !edge.isEmpty { provider = Provider.name(edge) }
@@ -610,7 +626,7 @@ extension SectionBuilder {
                         }
                     })
                 } else { history = .none }
-                return .init(id: k.id, name: k.name, source: Words.join([c.observer.name, MonitorWords.evidence(k.diagnostic?.evidence ?? "")]),
+                return .init(id: k.id, name: k.name, source: Words.join([observer ?? c.observer.name, MonitorWords.evidence(k.diagnostic?.evidence ?? "")]),
                              mark: current ? Mark(k.health) : .offline, summary: MonitorWords.summary(k), reading: MonitorWords.reading(k, now: r.now),
                              code: k.diagnostic?.code.isEmpty == false ? Words.join([k.diagnostic?.stage ?? "", k.diagnostic?.code ?? ""]) : "", history: history,
                              p50: k.latency?.p50, p50Label: k.diagnostic?.evidence == "reported" ? tr("Read p50") : "p50", fields: MonitorWords.fields(k, now: r.now), up24h: k.up24h)

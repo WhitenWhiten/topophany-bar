@@ -1601,6 +1601,227 @@ struct MacSettings: View {
             }
             if mode == .local { LocalReadingsSettings() }
             if mode == .server { MacServerSettings() }
+            ProxyEngineSettings()
+        }
+    }
+}
+
+/// The proxy engine on this Mac: mihomo, inside apps such as Clash Verge,
+/// Mihomo Party or FlClash. `topo` reads its status beside whatever the
+/// panel reads from, and never changes it.
+struct ProxyEngineSettings: View {
+    @Environment(AppModel.self) private var model
+    @State private var editor: LocalEditor?
+    @State private var removing: LocalChecks.Entry?
+    @State private var problem: String?
+    @State private var operation: Task<Void, Never>?
+
+    var body: some View {
+        let reader = model.localReader
+        Section {
+            if model.capabilities?.local?.readsMihomo != true {
+                Foot("Watching a proxy engine needs a newer topo. Update it in General.")
+            } else if reader.path == nil {
+                Foot("Not watched in a demo or preview.")
+            } else {
+                if reader.checks.isEmpty {
+                    RowLabel("No proxy engine yet", "Watch the mihomo engine inside apps such as Clash Verge, Mihomo Party or FlClash")
+                }
+                ForEach(reader.checks) { entry in row(entry) }
+                if let problem = problem ?? reader.problem {
+                    Text(verbatim: SourceMessages.local(problem)).font(.callout).foregroundStyle(.orange)
+                }
+                Button("Add Proxy Engine…") { edit(nil) }
+                    .disabled(reader.client == nil || reader.checks.count >= (model.capabilities?.local?.checks ?? 4))
+            }
+        } header: {
+            Text("Proxy engine")
+        } footer: {
+            Foot("topo reads the engine’s status on this Mac and never changes its settings. Its card comes first under Pinned, whatever the panel reads from.")
+        }
+        .sheet(item: $editor) { session in
+            Localized(content: LocalEditorForm(editor: session, finish: { session.close(); editor = nil })).environment(model)
+        }
+        .confirmationDialog("Stop watching this engine?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
+            Button("Stop Watching", role: .destructive) { remove() }
+            Button("Cancel", role: .cancel) { removing = nil }
+        } message: {
+            Text("topo forgets its address and password. The proxy app is not changed.")
+        }
+        .onDisappear { operation?.cancel(); editor?.close() }
+    }
+
+    func row(_ entry: LocalChecks.Entry) -> some View {
+        let card = model.panel.services.first { $0.monitor?.pin == MonitorPin(kind: .check, id: entry.check.id) }
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(color(card?.mark ?? .unknown))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: entry.check.name)
+                Text(verbatim: Words.join([card?.monitor?.summary ?? "", entry.check.url]))
+                    .font(.callout).foregroundStyle(.secondary).lineLimit(2)
+            }
+            Spacer()
+            Button("Edit…") { edit(entry) }
+            Button("Remove…") { removing = entry }
+        }
+    }
+
+    func color(_ mark: Mark) -> Color {
+        switch mark {
+        case .up: .green
+        case .degraded: .orange
+        case .down: .red
+        default: .secondary
+        }
+    }
+
+    func edit(_ entry: LocalChecks.Entry?) {
+        guard let client = model.localReader.client else { return }
+        problem = nil
+        let session = LocalEditor(client: client, revision: model.localReader.profileRevision, entry: entry, name: tr("Proxy engine"))
+        session.onSaved = { _ in
+            model.localChecksChanged(saved: true)
+            session.close(); editor = nil
+        }
+        editor = session
+    }
+
+    func remove() {
+        guard let entry = removing, let client = model.localReader.client else { return }
+        removing = nil
+        let request = LocalCommandRequest(baseRevision: model.localReader.profileRevision, checkID: entry.check.id)
+        operation?.cancel()
+        operation = Task {
+            do {
+                _ = try await client.call(.remove, request, as: LocalChanged.self)
+                guard !Task.isCancelled else { return }
+                problem = nil
+            } catch {
+                guard !Task.isCancelled else { return }
+                problem = (error as? SourceProblem)?.code ?? "command_cancelled"
+            }
+            model.localChecksChanged(saved: false)
+        }
+    }
+}
+
+/// Adding or editing the proxy engine: where it is, its password, and
+/// what to expect of it once a test has read it.
+struct LocalEditorForm: View {
+    @Bindable var editor: LocalEditor
+    var finish: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Form {
+                Section(editor.isNew ? "New proxy engine" : "Proxy engine") {
+                    TextField("Name", text: $editor.check.name, prompt: Text("Proxy engine"))
+                    TextField(text: $editor.check.url, prompt: Text(verbatim: LocalCheck.defaultURL)) {
+                        RowLabel("Address", "The external controller in the proxy app’s settings")
+                    }
+                    Picker("Password", selection: $editor.secret) {
+                        ForEach(editor.secrets, id: \.self) { s in Text(secretName(s)).tag(s) }
+                    }
+                    if editor.secret == .token {
+                        SecureField(text: $editor.token) { RowLabel("Secret", "The controller secret, also in the proxy app’s settings") }
+                    }
+                }
+                .disabled(editor.busy)
+                Section {
+                    LabeledContent {
+                        Button("Test") { editor.inspect() }.disabled(editor.busy || editor.check.url.isEmpty)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Connection")
+                            connection.font(.callout).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                if let result = editor.inspection { expectations(result) }
+                Section {
+                    DisclosureGroup("Advanced") {
+                        SecondsField(title: "Read every", value: $editor.check.intervalSeconds, range: 5...3600)
+                        SecondsField(title: "Time out after", value: $editor.check.timeoutSeconds, range: 1...30)
+                    }
+                }
+                .disabled(editor.busy)
+                if editor.needsReview {
+                    Section {
+                        Text("It may have been saved anyway. Save again to keep this form.").font(.callout).foregroundStyle(.secondary)
+                        Button("Continue") { editor.acknowledgeReview() }
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .frame(minHeight: 300, idealHeight: 460)
+            Divider()
+            HStack {
+                if editor.busy { ProgressView().controlSize(.small) }
+                Spacer()
+                Button("Cancel") { finish() }.keyboardShortcut(.cancelAction)
+                Button("Save") { editor.save() }.disabled(!editor.canSave).keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
+        }
+        .frame(width: 480)
+        .onChange(of: editor.check.url) { editor.changed() }
+        .onChange(of: editor.secret) { editor.token = ""; editor.changed() }
+        .onChange(of: editor.token) { editor.changed() }
+        .onChange(of: editor.check.intervalSeconds) {
+            // An answer is valid for three reads, and comes within one.
+            editor.check.staleSeconds = min(86400, editor.check.intervalSeconds * 3)
+            editor.check.timeoutSeconds = min(editor.check.timeoutSeconds, max(1, editor.check.intervalSeconds - 1), 30)
+        }
+        .onDisappear { editor.close() }
+    }
+
+    func secretName(_ s: LocalEditor.Secret) -> LocalizedStringKey {
+        switch s {
+        case .saved: "Saved password"
+        case .token: "Enter the secret"
+        case .none: "None"
+        }
+    }
+
+    @ViewBuilder var connection: some View {
+        if !editor.check.url.isEmpty, !editor.urlIsLocal {
+            Text(verbatim: SourceMessages.local("not_local_address")).foregroundStyle(.orange)
+        } else if let problem = editor.problem {
+            Text(verbatim: SourceMessages.local(problem)).foregroundStyle(.orange)
+        } else if editor.busy && editor.inspection == nil {
+            Text("Testing…").foregroundStyle(.secondary)
+        } else if let result = editor.inspection {
+            Text(verbatim: Words.join([Words.join(["mihomo", result.engine.version]), MonitorWords.modeName(result.engine.mode),
+                                       result.engine.tun.map { $0 ? tr("TUN on") : tr("TUN off") } ?? ""]))
+                .foregroundStyle(.secondary)
+        } else {
+            Text("Test it to choose what to watch").foregroundStyle(.secondary)
+        }
+    }
+
+    func expectations(_ result: LocalInspection) -> some View {
+        Section {
+            Picker(selection: $editor.check.rootProxy) {
+                Text("None").tag("")
+                ForEach(result.groups) { g in Text(verbatim: g.name).tag(g.name) }
+            } label: {
+                RowLabel("Follow group", "The card shows which server this group uses")
+            }
+            Picker(selection: $editor.check.expectedMode) {
+                Text("Don’t check").tag("")
+                ForEach(["rule", "global", "direct"], id: \.self) { m in Text(verbatim: MonitorWords.modeName(m)).tag(m) }
+            } label: {
+                RowLabel("Expected mode", "Warn when the engine is in another mode")
+            }
+            Picker(selection: $editor.check.expectedTUN) {
+                Text("Don’t check").tag(Bool?.none)
+                Text("On").tag(Bool?.some(true))
+                Text("Off").tag(Bool?.some(false))
+            } label: {
+                RowLabel("Expected TUN", "TUN mode sends all of this Mac’s traffic through the engine")
+            }
+        } header: {
+            Text("What to watch")
         }
     }
 }

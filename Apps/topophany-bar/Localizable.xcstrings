@@ -6696,6 +6696,486 @@
           }
         }
       }
+    },
+    "Watching a proxy engine needs a newer topo. Update it in General.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシコアの監視には新しい topo が必要です。「一般」で更新してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "监视代理内核需要更新版本的 topo。请在“通用”中更新。"
+          }
+        }
+      }
+    },
+    "Not watched in a demo or preview.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デモやプレビューでは監視しません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "演示或预览时不监视。"
+          }
+        }
+      }
+    },
+    "No proxy engine yet": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシコアはまだありません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚无代理内核"
+          }
+        }
+      }
+    },
+    "Watch the mihomo engine inside apps such as Clash Verge, Mihomo Party or FlClash": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clash Verge、Mihomo Party、FlClash などのアプリに入っている mihomo コアを監視します"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "监视 Clash Verge、Mihomo Party、FlClash 等应用中的 mihomo 内核"
+          }
+        }
+      }
+    },
+    "Add Proxy Engine…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシコアを追加…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加代理内核…"
+          }
+        }
+      }
+    },
+    "Proxy engine": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシコア"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代理内核"
+          }
+        }
+      }
+    },
+    "topo reads the engine’s status on this Mac and never changes its settings. Its card comes first under Pinned, whatever the panel reads from.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo はこの Mac 上でコアの状態を読み取るだけで、設定は変更しません。カードは、パネルの読み取り元にかかわらず「ピン留め」の先頭に表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 只在此 Mac 上读取内核状态，从不更改其设置。无论面板从哪里读取，它的卡片都显示在“已固定”的最前面。"
+          }
+        }
+      }
+    },
+    "Stop watching this engine?": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このコアの監視をやめますか？"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止监视此内核？"
+          }
+        }
+      }
+    },
+    "Stop Watching": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "監視をやめる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止监视"
+          }
+        }
+      }
+    },
+    "topo forgets its address and password. The proxy app is not changed.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo はアドレスとパスワードを削除します。プロキシアプリは変更されません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 会删除它的地址和密码。代理应用不会被更改。"
+          }
+        }
+      }
+    },
+    "New proxy engine": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいプロキシコア"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新的代理内核"
+          }
+        }
+      }
+    },
+    "Address": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アドレス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地址"
+          }
+        }
+      }
+    },
+    "The external controller in the proxy app’s settings": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシアプリの設定にある外部コントローラー"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代理应用设置中的外部控制器"
+          }
+        }
+      }
+    },
+    "Secret": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレット"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "密钥"
+          }
+        }
+      }
+    },
+    "The controller secret, also in the proxy app’s settings": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コントローラーのシークレット（これもプロキシアプリの設定にあります）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制器密钥，同样在代理应用的设置中"
+          }
+        }
+      }
+    },
+    "Read every": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り間隔"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读取间隔"
+          }
+        }
+      }
+    },
+    "It may have been saved anyway. Save again to keep this form.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存されている可能性があります。この内容を残すにはもう一度保存してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可能已经保存。要保留此表单，请再次保存。"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "続ける"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续"
+          }
+        }
+      }
+    },
+    "Saved password": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存済みのパスワード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存的密码"
+          }
+        }
+      }
+    },
+    "Enter the secret": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シークレットを入力"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入密钥"
+          }
+        }
+      }
+    },
+    "Test it to choose what to watch": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テストすると監視する内容を選べます"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "测试后即可选择要监视的内容"
+          }
+        }
+      }
+    },
+    "Follow group": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追跡するグループ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟踪的分组"
+          }
+        }
+      }
+    },
+    "The card shows which server this group uses": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このグループが使っているサーバーをカードに表示します"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卡片会显示该分组正在使用的服务器"
+          }
+        }
+      }
+    },
+    "Don’t check": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認しない"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不检查"
+          }
+        }
+      }
+    },
+    "Expected mode": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "想定するモード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预期模式"
+          }
+        }
+      }
+    },
+    "Warn when the engine is in another mode": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コアが別のモードのときに警告します"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内核处于其他模式时发出警告"
+          }
+        }
+      }
+    },
+    "On": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启"
+          }
+        }
+      }
+    },
+    "Expected TUN": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "想定する TUN"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预期 TUN"
+          }
+        }
+      }
+    },
+    "TUN mode sends all of this Mac’s traffic through the engine": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TUN モードでは、この Mac のすべての通信がコアを通ります"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TUN 模式会让此 Mac 的所有流量都经过内核"
+          }
+        }
+      }
+    },
+    "What to watch": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "監視する内容"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "监视内容"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

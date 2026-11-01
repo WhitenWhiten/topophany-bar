@@ -28,10 +28,12 @@ public struct PanelInput: Sendable {
     /// Getting `topo` from its releases.
     public var fetch: TopoFetch
     public var expandedMonitors: Set<MonitorPin> = []
+    /// This Mac's own checks, from their own stream, beside any source.
+    public var localChecks: LocalChecksInput?
 
     public init(reading: Reading, engine: EngineCondition, settings: Settings, local: LocalSnapshot? = nil,
                 machineModel: String = "Mac", here: TimeZone = .autoupdatingCurrent, quiet: QuietAlert? = nil,
-                fetch: TopoFetch = .idle, expandedMonitors: Set<MonitorPin> = []) {
+                fetch: TopoFetch = .idle, expandedMonitors: Set<MonitorPin> = [], localChecks: LocalChecksInput? = nil) {
         self.reading = reading
         self.engine = engine
         self.settings = settings
@@ -41,7 +43,15 @@ public struct PanelInput: Sendable {
         self.quiet = quiet
         self.fetch = fetch
         self.expandedMonitors = expandedMonitors
+        self.localChecks = localChecks
     }
+}
+
+/// The local stream's reading and the checks it was asked for, in order.
+public struct LocalChecksInput: Sendable {
+    public var reading: Reading
+    public var pins: [MonitorPin]
+    public init(reading: Reading, pins: [MonitorPin]) { self.reading = reading; self.pins = pins }
 }
 
 extension SectionID {
@@ -65,7 +75,8 @@ public enum SectionBuilder {
         var s = input.settings.sections
         let direct = r.frame?.source == "direct" || (r.frame == nil && input.settings.topo.source == "direct")
         if direct {
-            for id in SectionID.allCases where id.needsCollector { s.setEnabled(id, false) }
+            // Pinned stays for this Mac's own checks, which no collector reads.
+            for id in SectionID.allCases where id.needsCollector && !(id == .services && input.localChecks != nil) { s.setEnabled(id, false) }
         }
         let status = status(r, engine: input.engine)
         let serverCards = s.servers ? servers(r, nodes: s.serverNodes).map { zoned($0, s.placeZones) } : []
@@ -83,7 +94,9 @@ public enum SectionBuilder {
             case .applications where s.applications:
                 if let a = applications(r, only: s.applicationsOnly) { sections.append(.applications(a)) }
             case .services where s.services:
-                let cards = services(r, ids: s.serviceIDs) + monitors(r, pins: s.monitors, expanded: input.expandedMonitors)
+                // This Mac's own checks first: read beside the collector, not by it.
+                let own = input.localChecks.map { monitors($0.reading, pins: $0.pins, expanded: input.expandedMonitors, observer: tr("This Mac")) } ?? []
+                let cards = own + (direct ? [] : services(r, ids: s.serviceIDs) + monitors(r, pins: s.monitors, expanded: input.expandedMonitors))
                 if !cards.isEmpty { sections.append(.services(cards)) }
             case .fleet where s.fleet:
                 if let f = fleet(r, pinned: s.serverNodes) {

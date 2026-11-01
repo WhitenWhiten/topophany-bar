@@ -8779,6 +8779,326 @@
           }
         }
       }
+    },
+    "Use the engine’s address on this Mac, such as http://127.0.0.1:9090.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Mac 上のコアのアドレスを使います（例: http://127.0.0.1:9090）。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请使用此 Mac 上内核的地址，例如 http://127.0.0.1:9090。"
+          }
+        }
+      }
+    },
+    "Nothing answered at this address. Check that the proxy app is running and the port is the one its settings show.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアドレスから応答がありません。プロキシアプリが起動していて、ポートが設定画面のものと同じか確認してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此地址没有响应。请确认代理应用正在运行，且端口与其设置中显示的一致。"
+          }
+        }
+      }
+    },
+    "The engine didn’t accept this password. Copy the secret from the proxy app’s settings.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コアがこのパスワードを受け付けませんでした。プロキシアプリの設定からシークレットをコピーしてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内核未接受此密码。请从代理应用的设置中复制密钥。"
+          }
+        }
+      }
+    },
+    "The address changed, so enter the password again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アドレスが変わったため、パスワードをもう一度入力してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "地址已更改，请重新输入密码。"
+          }
+        }
+      }
+    },
+    "This doesn’t look like a mihomo engine. Check the address and port.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mihomo コアではないようです。アドレスとポートを確認してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这似乎不是 mihomo 内核。请检查地址和端口。"
+          }
+        }
+      }
+    },
+    "The engine lists more than topo reads. Try a smaller configuration.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コアの一覧が topo の読み取り上限を超えています。より小さな構成でお試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内核列出的内容超出 topo 的读取上限。请尝试更小的配置。"
+          }
+        }
+      }
+    },
+    "The proxy settings changed elsewhere. Look them over, then save again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシの設定が別の場所で変更されました。確認してからもう一度保存してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代理设置已在别处更改。请检查后再保存。"
+          }
+        }
+      }
+    },
+    "topo watches at most 4 engines on this Mac.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo がこの Mac で監視できるコアは最大 4 つです。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topo 在此 Mac 上最多监视 4 个内核。"
+          }
+        }
+      }
+    },
+    "The engine took too long to answer. Try again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コアの応答に時間がかかりすぎました。もう一度お試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内核响应超时。请重试。"
+          }
+        }
+      }
+    },
+    "This engine is no longer set up. Refresh and try again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このコアはもう設定されていません。更新してからもう一度お試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此内核已不再设置。请刷新后重试。"
+          }
+        }
+      }
+    },
+    "The settings could not be read or saved. Check local storage access.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定を読み込めないか保存できませんでした。ローカルストレージへのアクセスを確認してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取或保存设置。请检查本地存储访问权限。"
+          }
+        }
+      }
+    },
+    "The engine could not be set up. Try again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コアを設定できませんでした。もう一度お試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法设置内核。请重试。"
+          }
+        }
+      }
+    },
+    "Rule mode": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ルールモード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "规则模式"
+          }
+        }
+      }
+    },
+    "Global mode": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グローバルモード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全局模式"
+          }
+        }
+      }
+    },
+    "Direct mode": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダイレクトモード"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直连模式"
+          }
+        }
+      }
+    },
+    "Proxy engine": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシコア"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代理内核"
+          }
+        }
+      }
+    },
+    "Proxy engine not answering": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシコアが応答しません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代理内核没有响应"
+          }
+        }
+      }
+    },
+    "Proxy engine answered with an error": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロキシコアがエラーを返しました"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代理内核返回了错误"
+          }
+        }
+      }
+    },
+    "The engine’s certificate could not be verified. Try its http:// address.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コアの証明書を検証できませんでした。http:// のアドレスをお試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法验证内核的证书。请尝试它的 http:// 地址。"
+          }
+        }
+      }
+    },
+    "The engine answered with an error. Check the address and port.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コアがエラーを返しました。アドレスとポートを確認してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内核返回了错误。请检查地址和端口。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
