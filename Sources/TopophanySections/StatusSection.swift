@@ -36,6 +36,7 @@ public struct StatusSection: Sendable, Hashable {
         case blind(Blind)
     }
 
+    public var synthetic = false
     public var coverage: ServiceCoverage? = nil
     public var coverageText: String? {
         guard !isBlind, sources == nil, let coverage else { return nil }
@@ -116,6 +117,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The headline: "All clear", "5 incidents", "Offline".
     public var title: String {
+        if synthetic { return tr("Demo data") }
         if isAwaitingCollector { return tr("Waiting for data") }
         if let sources { return sources.title }
         switch kind {

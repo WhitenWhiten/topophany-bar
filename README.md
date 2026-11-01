@@ -127,14 +127,16 @@ topophany-bar is currently pre-release. [Build and launch the app from source](d
 
 1. **Set up Topophany.** You need a running Topophany collector for live network monitoring. If this is your first time using it, start with [Topophany's setup guide](https://github.com/WhitenWhiten/topophany#monitor-your-own-network). To watch Beszel or Komari servers without a collector, [add a direct source](#add-a-source) instead.
 2. **Open topophany-bar.** If it cannot find a compatible `topo`, choose **Download topo**. The app downloads the command-line companion from Topophany's releases and verifies its SHA-256 checksum.
-3. **Sign in.** Open **Settings → General → Sign In…** to run `topo login` in your terminal. If you already use Topophany, select your saved **Profile** instead.
+3. **Sign in.** Open **Settings → General → Sign In…** to enter the collector address, project and viewer token. The app passes the token privately to `topo login`, which verifies and stores it. **Continue in Terminal** remains available. If you already use Topophany, select your saved **Profile** instead.
 4. **Click the menu bar icon.** Your network's status, observers, applications and fleet appear in the panel. Choose a single observer in **Settings → General → View** to see the network from that location.
 
 The app needs a `topo` version with `monitor stream` protocol 1. If your installed copy is too old, use the download offered in the app or choose a compatible binary in Settings.
 
 ### Try a demo first
 
-Once the app and a compatible `topo` are installed, quit the app if it is running and launch the built-in preview network:
+Choose **Try a demo** from Settings → General or the menu bar’s right-click menu. It uses bundled synthetic data, needs no collector or `topo` installation, and clearly labels the display **Demo data**. Choose **Return to my connection** to leave it; the saved connection and pins are unchanged.
+
+For a command-line preview with a compatible `topo`, quit the app if it is running and launch:
 
 ```sh
 open -a topophany-bar --args -preview 1
@@ -162,7 +164,7 @@ Drag the panel's bottom edge to resize it. **Lock Geo Map** is enabled by defaul
 
 [Topophany](https://github.com/WhitenWhiten/topophany) runs the checks, collects evidence and determines network health; you can try its terminal UI in the browser at [topophany.com](https://topophany.com/demo/). **topophany-bar is its macOS companion:** it reads that information through `topo` and presents it in the menu bar, panel and widgets. In direct mode, `topo` reads your Beszel and Komari sources itself, without a collector. Closing the app does not stop your collectors or workers.
 
-Expired evidence is shown as unavailable or cached, so an old healthy result does not remain current. Sign-in credentials stay with `topo`; the app does not read or store tokens. This Mac's local readings stay on the Mac and are never uploaded.
+Expired evidence is shown as unavailable or cached, so an old healthy result does not remain current. Sign-in credentials stay with `topo`; the app keeps entered tokens only for the sign-in operation and does not persist them. This Mac's local readings stay on the Mac and are never uploaded.
 
 ## Contributing
 
@@ -183,3 +185,8 @@ right-click menu offers **Related incidents**, **Diagnose connection** and
 **Compare service history**. Choose a service by name to compare its recent
 checks in the terminal. These actions use the same profile as the app; direct
 resource mode exposes connection diagnosis without implying incident history.
+
+After migrating a direct profile with `topo sources export`, choose its collector
+profile, then **Settings → Data sources → Use pins from direct profile** to
+reuse the saved server selection. This explicit action replaces collector pins
+without changing the original direct selection.

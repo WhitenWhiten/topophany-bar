@@ -6440,6 +6440,214 @@
           }
         }
       }
+    },
+    "Use pins from direct profile": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沿用直连配置的固定服务器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接接続プロファイルの固定項目を使用"
+          }
+        }
+      }
+    },
+    "After exporting the direct profile to this collector, reuse its pinned server IDs. This replaces the current pinned-server selection.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将直连配置导出到此采集器后，可沿用原来的服务器 ID。这会替换当前固定的服务器选择。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接接続プロファイルをこのコレクターに移行した後、元のサーバー ID を再利用します。現在の固定サーバー選択を置き換えます。"
+          }
+        }
+      }
+    },
+    "Connect to collector": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接采集器"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コレクターに接続"
+          }
+        }
+      }
+    },
+    "Viewer token": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viewer 令牌"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閲覧用トークン"
+          }
+        }
+      }
+    },
+    "Trusted CA file (optional)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可信 CA 文件（可选）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "信頼する CA ファイル（任意）"
+          }
+        }
+      }
+    },
+    "Allow unencrypted HTTP for this connection": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许此连接使用未加密 HTTP"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この接続に暗号化されていない HTTP を許可"
+          }
+        }
+      }
+    },
+    "The token is passed privately to topo for verification and storage. The app does not save it.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "令牌通过私密输入交给 topo 验证和保存，应用自身不会保存令牌。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "トークンは非公開の入力で topo に渡して検証・保存します。アプリ自身は保存しません。"
+          }
+        }
+      }
+    },
+    "Could not verify sign-in. Check the address, project, viewer token and certificate trust. You can also continue in Terminal for details.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录验证未通过。请检查地址、项目、Viewer 令牌和证书信任，也可在终端继续查看详情。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続を検証できませんでした。アドレス、プロジェクト、閲覧用トークン、証明書を確認してください。ターミナルでも詳細を確認できます。"
+          }
+        }
+      }
+    },
+    "Connect": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続"
+          }
+        }
+      }
+    },
+    "Try a demo": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "体验演示"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デモを試す"
+          }
+        }
+      }
+    },
+    "Return to my connection": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回我的连接"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自分の接続に戻る"
+          }
+        }
+      }
+    },
+    "Synthetic preview — your saved connection is unchanged.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前为模拟演示，已保存的连接保持不变。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合成データのデモです。保存済みの接続は変更されません。"
+          }
+        }
+      }
+    },
+    "Demo data": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "演示数据"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デモデータ"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -148,6 +148,8 @@ struct GeneralSettings: View {
         SettingsForm {
             Section("Topophany") {
                 TopoRow()
+                Button(model.inAppDemo ? "Return to my connection" : "Try a demo") { model.setDemo(!model.inAppDemo) }
+                if model.inAppDemo { Text("Synthetic preview — your saved connection is unchanged.").font(.callout).foregroundStyle(.secondary) }
                 if model.settings.topo.source != "direct" {
                     ProfileRow()
                     Picker(selection: model.binding(\.topo.observer)) {
@@ -274,54 +276,82 @@ struct ProfileRow: View {
     static func title(_ p: ProfileList.Profile) -> String { p.project.isEmpty ? p.name : "\(p.name) — \(p.project)" }
 }
 
-/// Signs in with `topo login`, in the user's terminal: the app asks only
-/// where, and topo asks for the token there.
+/// A transient credential form; topo verifies and stores the connection.
 struct SignInForm: View {
     @Environment(AppModel.self) private var model
     @Binding var open: Bool
     @State private var server = ""
     @State private var project = ""
     @State private var profile = "default"
+    @State private var token = ""
+    @State private var caFile = ""
+    @State private var allowInsecure = false
+    @State private var busy = false
+    @State private var failed = false
+    @State private var operation: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Sign in with topo login").font(.headline)
+            Text("Connect to collector").font(.headline)
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 7) {
                 GridRow {
                     Text("Server").foregroundStyle(.secondary).gridColumnAlignment(.trailing)
                     TextField("", text: $server, prompt: Text(verbatim: "https://collector.example.com"))
                 }
-                GridRow {
-                    Text("Project").foregroundStyle(.secondary)
-                    TextField("", text: $project, prompt: Text(verbatim: "homelab"))
-                }
-                GridRow {
-                    Text("Profile").foregroundStyle(.secondary)
-                    TextField("", text: $profile)
-                }
+                GridRow { Text("Project").foregroundStyle(.secondary); TextField("", text: $project, prompt: Text(verbatim: "homelab")) }
+                GridRow { Text("Profile").foregroundStyle(.secondary); TextField("", text: $profile) }
+                GridRow { Text("Viewer token").foregroundStyle(.secondary); SecureField("", text: $token) }
             }
-            .textFieldStyle(.roundedBorder)
-            Text("Your terminal opens and runs topo login, which asks for the token there. The app never sees it.")
+            .textFieldStyle(.roundedBorder).disabled(busy)
+            DisclosureGroup("Advanced") {
+                TextField("Trusted CA file (optional)", text: $caFile)
+                Toggle("Allow unencrypted HTTP for this connection", isOn: $allowInsecure)
+            }.disabled(busy)
+            Text("The token is passed privately to topo for verification and storage. The app does not save it.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if failed {
+                Text("Could not verify sign-in. Check the address, project, viewer token and certificate trust. You can also continue in Terminal for details.")
+                    .font(.callout).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+            }
+            if busy { ProgressView().controlSize(.small) }
             HStack {
-                Spacer()
-                Button("Cancel") { open = false }.keyboardShortcut(.cancelAction)
                 Button("Continue in Terminal") {
-                    TerminalLauncher.login(model: model, server: trimmed(server), project: trimmed(project),
-                                           profile: trimmed(profile).isEmpty ? "default" : trimmed(profile))
+                    token = ""
+                    TerminalLauncher.login(model: model, server: trimmed(server), project: trimmed(project), profile: profileName, caFile: trimmed(caFile), allowInsecure: allowInsecure)
                     open = false
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(trimmed(server).isEmpty || trimmed(project).isEmpty)
+                }.disabled(busy || trimmed(server).isEmpty || trimmed(project).isEmpty)
+                Spacer()
+                Button("Cancel") { operation?.cancel(); token = ""; open = false }.keyboardShortcut(.cancelAction)
+                Button("Connect") { signIn() }.keyboardShortcut(.defaultAction)
+                    .disabled(busy || trimmed(server).isEmpty || trimmed(project).isEmpty || token.isEmpty)
             }
         }
-        .padding(14)
-        .frame(width: 330)
-        // Not the trailing alignment of the row it opens from.
-        .multilineTextAlignment(.leading)
+        .padding(14).frame(width: 420).multilineTextAlignment(.leading)
+        .onDisappear { operation?.cancel(); token = "" }
     }
-
+    var profileName: String { trimmed(profile).isEmpty ? "default" : trimmed(profile) }
     func trimmed(_ s: String) -> String { s.trimmingCharacters(in: .whitespacesAndNewlines) }
+    func signIn() {
+        let path: String
+        if case .running(let running) = model.engineStatus, model.fixture == nil, !model.inAppDemo { path = running.path }
+        else if case .success(let found)? = model.located { path = found.path }
+        else { failed = true; return }
+        let client = CollectorLoginClient(path: path)
+        let credential = trimmed(token), address = trimmed(server), identity = trimmed(project), name = profileName
+        let ca = trimmed(caFile), insecure = allowInsecure
+        token = ""; failed = false; busy = true
+        operation = Task { @MainActor in
+            do {
+                try await client.login(server: address, project: identity, profile: name, token: credential, caFile: ca, allowInsecure: insecure)
+                guard !Task.isCancelled else { return }
+                model.useCollectorAfterLogin(profile: name)
+                busy = false; open = false
+            } catch {
+                guard !Task.isCancelled else { return }
+                busy = false; failed = true
+            }
+        }
+    }
 }
 
 /// The `topo` executable: where it is and whether it speaks protocol 1.

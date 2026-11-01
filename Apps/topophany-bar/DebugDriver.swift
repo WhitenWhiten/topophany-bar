@@ -238,6 +238,8 @@ enum DebugDriver {
             try? lines.joined(separator: "\n").write(to: out.appending(path: "topos.txt"), atomically: true, encoding: .utf8)
         case "fixture":
             if w.count > 1, let s = FixtureEngine.Scenario(rawValue: w[1]) { d.model.replay(s) }
+        case "demo":
+            d.model.setDemo(w.count < 2 || w[1] == "on")
         case "menu":
             let lines = d.itemMenu().items.map { i in
                 i.isSeparatorItem ? "—" : "\(i.state == .on ? "✓" : " ") \(i.title)\(i.isEnabled ? "" : " (disabled)")"

@@ -524,7 +524,7 @@ The app runs a `topo` that's already on the Mac, or one it downloads when the us
 - **Before it's kept:** the archive must match its hash, hold a regular file `topo`, and pass the version check. Then its folder, with topo's own license, goes to `topo/<version>/` beside the settings file, replacing a copy of the same version, and the path setting names it.
 - **Choosing:** Settings' topo row lists every `topo` on the Mac, once each however it's linked, with its version; one without `monitor stream` is shown and can't be chosen. Choose… picks any other file.
 - **Deleting:** any downloaded copy, even the one running or the only one. The app then searches again, and offers to download when it finds none.
-- **Signing in:** a `topo` with no saved profile can sign in from Settings. The app asks for the server, project and profile name, and runs `topo login` with them in the user's terminal, which asks for the token itself. The app never sees it.
+- **Signing in:** a `topo` with no saved profile can sign in from Settings. The app asks for server, project, profile and a transient viewer token. A bounded child runs `topo login --token-stdin`; tokens are never arguments, logged output, Settings or widget handoff data. Dismissing the form cancels the child and clears the form. The terminal fallback remains available, including custom CA and explicit HTTP consent. topo verifies the connection before storing credentials.
 - **EmbeddedEngine** (later) links `libtopo`: the Go `monitor stream` core built with `-buildmode=c-archive` into an XCFramework. It exposes `topo_stream_start(request, callback)`, `topo_stream_update` and `topo_stream_stop`, and speaks the same request and frame JSON. This is for builds that can't start a process. Only that library build uses cgo, for its C exports; the `topo` binary stays CGO-free with zero modules.
 
 ### 10.3 Protocol
@@ -739,3 +739,11 @@ not touch polling, credentials or the panel. Compact Fleet selection uses the
 same prepared server cards as the Servers section. It changes section presence
 only when list/card coverage changes, leaving geometry ownership, scroll state,
 per-section drawing caches and animation lifetimes unchanged.
+
+
+In-app demo uses the existing fixture engine and request lifecycle. Entering or
+leaving it resets reader policy and restarts that one engine; it introduces no
+new timer or background loop. Effective demo settings choose the synthetic
+source and example pins without writing saved settings. Status and widgets label
+synthetic frames as Demo data. Rendering updates follow the normal data-refresh
+boundaries; scroll/map state and per-frame work are unchanged.

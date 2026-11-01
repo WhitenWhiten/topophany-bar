@@ -138,14 +138,17 @@ enum TerminalLauncher {
 
     /// `topo login` for a profile, in the user's terminal, which asks for
     /// the token itself.
-    static func login(model: AppModel, server: String, project: String, profile: String) {
-        run(model: model, ["login", "-server", server, "-project", project, "-profile", profile])
+    static func login(model: AppModel, server: String, project: String, profile: String, caFile: String = "", allowInsecure: Bool = false) {
+        var args = ["login", "--server", server, "--project", project, "--profile", profile]
+        if !caFile.isEmpty { args += ["--ca-file", caFile] }
+        if allowInsecure { args += ["--allow-insecure"] }
+        run(model: model, args)
     }
 
     /// Runs the `topo` the app runs, with `args`, in the user's terminal.
     static func run(model: AppModel, _ args: [String]) {
         let path: String
-        if case .running(let r) = model.engineStatus, model.fixture == nil {
+        if case .running(let r) = model.engineStatus, model.fixture == nil, !model.inAppDemo {
             path = r.path
         } else if case .success(let found) = TopoLocator(setting: model.effectiveSettings.topo.path, downloads: model.downloads).locate() {
             path = found.path

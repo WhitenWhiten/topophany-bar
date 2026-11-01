@@ -269,3 +269,43 @@ extension RefreshTests {
     }
 
 }
+
+@MainActor @Suite struct MigrationPinsTests {
+    @Test func directPinsAreCopiedOnlyByExplicitAction() throws {
+        let path = FileManager.default.temporaryDirectory.appending(path: "migration-pins-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: path) }
+        let store = SettingsStore(url: path)
+        var settings = Settings()
+        settings.topo.source = "client"; settings.topo.profile = "migrated"
+        settings.topo.modeProfiles["direct"] = "desktop"
+        settings.topo.scopedPins["direct:desktop"] = ["km.object-a", "bs.object-b"]
+        settings.sections.serverNodes = ["existing"]
+        try store.save(settings)
+        let model = AppModel(store: store)
+        #expect(model.settings.sections.serverNodes == ["existing"])
+        model.useDirectPinsForMigration()
+        #expect(model.settings.sections.serverNodes == ["km.object-a", "bs.object-b"])
+        #expect(model.settings.topo.scopedPins["direct:desktop"] == ["km.object-a", "bs.object-b"])
+    }
+}
+
+@MainActor @Suite struct InAppDemoTests {
+    @Test func previewDoesNotOverwriteConnection() async throws {
+        let path = FileManager.default.temporaryDirectory.appending(path: "demo-tests-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: path) }
+        let store = SettingsStore(url: path)
+        var settings = Settings(); settings.topo.source = "direct"; settings.topo.profile = "private-desktop"
+        try store.save(settings)
+        let engine = RecordingEngine()
+        let model = AppModel(store: store, engineFactory: { _ in engine })
+        defer { model.stopNow() }
+        model.setDemo(true)
+        #expect(model.inAppDemo)
+        #expect(model.effectiveSettings.topo.source == "preview")
+        #expect(store.load().topo.profile == "private-desktop")
+        model.setDemo(false)
+        #expect(model.effectiveSettings.topo.source == "direct")
+        #expect(model.effectiveSettings.topo.profile == "private-desktop")
+        #expect(store.load() == settings)
+    }
+}

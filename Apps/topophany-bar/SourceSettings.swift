@@ -47,6 +47,12 @@ struct SourceSettings: View {
                 }
             }
             if source == "client" {
+                if !model.directPinsForMigration.isEmpty {
+                    Section {
+                        Button("Use pins from direct profile") { model.useDirectPinsForMigration() }
+                        Text("After exporting the direct profile to this collector, reuse its pinned server IDs. This replaces the current pinned-server selection.").font(.callout).foregroundStyle(.secondary)
+                    }
+                }
                 let listed = ListedSource.from(model.reading)
                 if !listed.isEmpty { collectorSources(listed) }
             }

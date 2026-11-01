@@ -131,6 +131,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 menu.addItem(compare)
             }
         }
+        let demo = NSMenuItem(title: tr(model.inAppDemo ? "Return to my connection" : "Try a demo"), action: #selector(toggleDemo), keyEquivalent: "")
+        demo.target = self; menu.addItem(demo)
         let settings = NSMenuItem(title: tr("Settings…"), action: #selector(showSettingsFromMenu), keyEquivalent: "")
         settings.target = self
         menu.addItem(settings)
@@ -157,6 +159,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TerminalLauncher.run(model: model, args)
     }
 
+    @objc private func toggleDemo() { model.setDemo(!model.inAppDemo) }
     @objc private func toggleQuiet() { model.toggleQuiet() }
     @objc private func openTUIFromMenu() { openTUI(focus: nil) }
     @objc func showSettingsFromMenu() { showSettings() }

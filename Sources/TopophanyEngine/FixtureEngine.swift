@@ -199,6 +199,7 @@ public final class FixtureEngine: Engine {
         var o = shifted(object, by: at.timeIntervalSince(original))
         o["sequence"] = .number(Double(sequence))
         if let r = request {
+            if r.source == "preview" { o["source"] = .string("preview"); o["project"] = .string("preview-homelab") }
             o["request_id"] = .string(r.requestID)
             o["observer"] = .string(r.observer)
             o["bar_row"] = .string(r.template.bar.row)

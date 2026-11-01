@@ -89,7 +89,7 @@ final class AppModel {
         .flatMap(FixtureEngine.Scenario.init(rawValue:))
     /// Reads `topo`'s synthetic preview network for this launch, without
     /// saving it: `-preview 1` for scenario 1.
-    @ObservationIgnored let previewScenario: Int? = UserDefaults.standard.object(forKey: "preview") != nil
+    @ObservationIgnored private(set) var previewScenario: Int? = UserDefaults.standard.object(forKey: "preview") != nil
         ? max(0, UserDefaults.standard.integer(forKey: "preview")) : nil
     /// Runs another `topo` for this launch, without saving it: `-topo PATH`.
     @ObservationIgnored let topoOverride = UserDefaults.standard.string(forKey: "topo")
@@ -141,6 +141,17 @@ final class AppModel {
         reloadIcons()
     }
 
+    private(set) var inAppDemo = false
+
+    func setDemo(_ enabled: Bool) {
+        guard enabled != inAppDemo else { return }
+        inAppDemo = enabled
+        policy = ReaderPolicy()
+        activeRequestID = nil
+        restartEngine()
+        refresh()
+    }
+
     var theme: Theme { themes.theme(settings.appearance.theme) }
 
     /// The settings as this launch runs them: a `-preview` launch reads the
@@ -153,6 +164,11 @@ final class AppModel {
         if let previewScenario {
             e.topo.source = "preview"
             e.topo.scenario = previewScenario
+        }
+        if inAppDemo {
+            e.topo.source = "preview"; e.topo.profile = ""; e.topo.observer = ""; e.topo.scenario = 1
+            e.sections = TopophanyKit.Settings().sections
+            e.sections.servers = true; e.sections.serverNodes = ["oracle-ny", "bwh-la"]
         }
         return e
     }
@@ -568,7 +584,9 @@ final class AppModel {
         profilesTask?.cancel()
         profilesTask = nil
         let e: any Engine
-        if let fixture {
+        if inAppDemo {
+            e = FixtureEngine(scenario: .incidents, clock: clock)
+        } else if let fixture {
             e = FixtureEngine(scenario: fixture)
         } else {
             var configuration = ProcessEngine.Configuration(topoPath: effectiveSettings.topo.path, downloads: downloads)
@@ -664,6 +682,29 @@ final class AppModel {
         }
     }
 
+
+    func useCollectorAfterLogin(profile: String) {
+        let needsRestart = settings.topo.source == "client"
+        inAppDemo = false; previewScenario = nil
+        update {
+            $0.topo.modeProfiles[$0.topo.source] = $0.topo.profile
+            $0.topo.modeObservers[$0.topo.source] = $0.topo.observer
+            $0.topo.source = "client"; $0.topo.profile = profile
+            $0.topo.observer = $0.topo.modeObservers["client"] ?? ""
+            $0.topo.profileRevision = ""
+        }
+        if needsRestart { restartEngine() }
+    }
+
+    var directPinsForMigration: [String] {
+        guard settings.topo.source == "client", let profile = settings.topo.modeProfiles["direct"] else { return [] }
+        return settings.topo.scopedPins["direct:" + profile] ?? []
+    }
+    func useDirectPinsForMigration() {
+        let pins = directPinsForMigration
+        guard !pins.isEmpty else { return }
+        update { $0.sections.serverNodes = pins; $0.sections.servers = true }
+    }
 
     func selectSource(_ source: String) {
         guard source != settings.topo.source else { return }
@@ -800,7 +841,7 @@ final class AppModel {
         quiet = quiet?.after(status)
         let visible = panelVisible || settingsVisible
         if visible {
-            panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: settings, local: local,
+            panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: effectiveSettings, local: local,
                                                     machineModel: machine.model, quiet: quiet, fetch: fetch, expandedMonitors: expandedMonitors))
             panel.status = status
         }
