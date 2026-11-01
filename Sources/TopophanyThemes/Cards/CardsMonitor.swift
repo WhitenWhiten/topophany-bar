@@ -114,7 +114,7 @@ struct WidgetMonitorCard: View {
             .accessibilityElement(children: .combine)
             Text(m.summary).font(t.font(12)).foregroundStyle(p.l1).lineLimit(2).padding(.top, 8)
             if !m.reading.isEmpty {
-                Text(m.reading).font(t.font(11)).foregroundStyle(p.l2).lineLimit(history ? 1 : 2).truncationMode(.tail).padding(.top, 2)
+                Text(m.reading).font(t.font(11)).foregroundStyle(p.l2).lineLimit(history ? 1 : 2).truncationMode(.middle).padding(.top, 2)
             }
             Spacer(minLength: 0)
             if history, let check = m.checks.first, case .samples = check.history {

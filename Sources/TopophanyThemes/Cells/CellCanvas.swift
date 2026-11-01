@@ -437,6 +437,35 @@ public enum CellText {
         return out + "…"
     }
 
+    /// At most `n` cells, cut in the middle as the cards renderer cuts a
+    /// reading, so both ends stay: "Reported route: Proxy → Bandw…LA →
+    /// Oracle LA" keeps where the route leaves.
+    public static func truncateMiddle(_ s: String, _ n: Int) -> String {
+        guard width(s) > n else { return s }
+        guard n >= 5 else { return truncate(s, n) }
+        let chars = Array(s)
+        let headRoom = n / 2
+        var head = "", used = 0
+        for ch in chars {
+            let cw = width(ch)
+            if used + cw > headRoom { break }
+            head.append(ch)
+            used += cw
+        }
+        // A wide character that didn't fit leaves its room to the tail.
+        let tailRoom = n - 1 - used
+        var tail: [Character] = [], tailUsed = 0
+        for ch in chars.reversed() {
+            let cw = width(ch)
+            if tailUsed + cw > tailRoom { break }
+            tail.insert(ch, at: 0)
+            tailUsed += cw
+        }
+        while head.last?.isWhitespace == true { head.removeLast() }
+        while tail.first?.isWhitespace == true { tail.removeFirst() }
+        return head + "…" + String(tail)
+    }
+
     /// The first of `choices`, longest first, that fits in `n` cells; else
     /// the last, cut: "Seattle · San Jose +1" before "Seattle · San Jo…".
     public static func fit(_ choices: [String], _ n: Int) -> String {

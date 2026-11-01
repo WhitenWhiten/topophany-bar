@@ -7,7 +7,7 @@ extension CellsBodies {
         focusRow(&w, card.focusID, lines: 2)
         w.line([.t(CellText.truncate(m.subtitle, max(4, n - CellText.width(card.shortAge) - 1)), p.muted)], [.t(card.shortAge, p.faint)])
         for line in CellText.wrap(m.summary, n, lines: 2) { w.line([.t(line, p.text)]) }
-        if !m.reading.isEmpty { w.line([.t(CellText.truncate(m.reading, n), p.muted)]) }
+        if !m.reading.isEmpty { w.line([.t(CellText.truncateMiddle(m.reading, n), p.muted)]) }
         guard m.expanded else { return }
         for check in m.checks.prefix(8) {
             w.line([.dashes(n, p.faint)])
@@ -17,7 +17,7 @@ extension CellsBodies {
                 w.line([.t(CellText.truncate(check.source, n), p.faint)])
             }
             if check.summary != m.summary { for line in CellText.wrap(check.summary, n, lines: 2) { w.line([.t(line, p.muted)]) } }
-            if !check.reading.isEmpty && check.reading != m.reading { w.line([.t(CellText.truncate(check.reading, n), p.muted)]) }
+            if !check.reading.isEmpty && check.reading != m.reading { w.line([.t(CellText.truncateMiddle(check.reading, n), p.muted)]) }
             fields(&w, check.fields, n)
             if !check.code.isEmpty { w.line([.t(CellText.truncate(check.code, n), p.faint)]) }
             if case .samples = check.history {

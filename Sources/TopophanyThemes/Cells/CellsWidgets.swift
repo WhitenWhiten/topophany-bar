@@ -508,7 +508,7 @@ extension CellsWidget.Layout {
                 w.line([.t(CellText.truncate(m.subtitle, max(4, n - CellText.width(shownAge) - 1)), p.muted)], [.t(shownAge, p.faint)]); used += 1
             }
             for line in CellText.wrap(m.summary, n, lines: 2) where fits() { w.line([.t(line, p.text)]); used += 1 }
-            if !m.reading.isEmpty, fits() { w.line([.t(CellText.truncate(m.reading, n), p.muted)]); used += 1 }
+            if !m.reading.isEmpty, fits() { w.line([.t(CellText.truncateMiddle(m.reading, n), p.muted)]); used += 1 }
             if size == .small, fits() { w.line([.t(CellText.truncate(m.subtitle, n), p.faint)]); used += 1 }
             if size != .small, let check {
                 for field in check.fields where fits() {
