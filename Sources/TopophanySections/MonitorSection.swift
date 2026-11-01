@@ -121,6 +121,36 @@ public enum MonitorWords {
         }
     }
 
+    /// Check kinds and link transports in the order Settings groups them:
+    /// proxy cores and tunnels first, then protocols, then everything else.
+    static let kindOrder = ["mihomo", "cloudflared", "cloudflare", "tailscale", "wireguard", "http", "tls", "tcp", "dns", "icmp", "host", "external"]
+
+    /// A check kind or link transport as Settings titles its group.
+    public static func kindTitle(_ kind: String) -> String {
+        switch kind {
+        case "mihomo": tr("mihomo (Clash.Meta)")
+        case "cloudflared": tr("Cloudflare Tunnel connector")
+        case "cloudflare": tr("Cloudflare API")
+        case "tailscale": "Tailscale"
+        case "wireguard": "WireGuard"
+        case "http", "tls", "tcp", "dns": kind.uppercased()
+        case "icmp": tr("Ping")
+        case "host": tr("Host resources")
+        case "external": tr("External sources")
+        case "": tr("Other")
+        default: kind
+        }
+    }
+
+    /// `items` grouped by `kind`, groups in `kindOrder` then by name, items
+    /// in their given order.
+    public static func grouped<T>(_ items: [T], kind: (T) -> String) -> [(kind: String, items: [T])] {
+        var groups: [String: [T]] = [:]
+        for item in items { groups[kind(item), default: []].append(item) }
+        func rank(_ k: String) -> (Int, String) { (kindOrder.firstIndex(of: k) ?? kindOrder.count, k) }
+        return groups.keys.sorted { rank($0) < rank($1) }.map { ($0, groups[$0] ?? []) }
+    }
+
     /// Whether the check declares a policy at all: `topo`'s own word when it
     /// sends one, else what its expectations show. A runtime read with none
     /// matches nothing.

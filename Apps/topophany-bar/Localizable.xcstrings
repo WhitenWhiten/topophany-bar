@@ -6648,6 +6648,54 @@
           }
         }
       }
+    },
+    "Filter checks": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チェックを絞り込む"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "筛选检查"
+          }
+        }
+      }
+    },
+    "Filter links": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リンクを絞り込む"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "筛选链路"
+          }
+        }
+      }
+    },
+    "Nothing matches": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一致する項目がありません"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有匹配项"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

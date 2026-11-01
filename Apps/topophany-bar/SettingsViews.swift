@@ -1263,6 +1263,7 @@ struct ServicesPicker: View {
     @Environment(AppModel.self) private var model
     @State private var draft = ""
     @State private var category = "services"
+    @State private var filter = ""
 
     var body: some View {
         let ids = model.settings.sections.serviceIDs
@@ -1289,23 +1290,52 @@ struct ServicesPicker: View {
         .frame(width: 340)
     }
 
+    /// A check or link to pin: grouped by what it reads, mihomo and
+    /// Cloudflare first, and filtered by name, ID, observer or kind.
+    struct MonitorEntry {
+        var id: String
+        var name: String
+        var detail: String
+        var kind: String
+        var health: Health
+    }
+
     func monitoring(_ kind: MonitorPin.Kind) -> some View {
-        let entries: [(id: String, name: String, detail: String)] = kind == .check
-            ? model.knownChecks.map { ($0.id, $0.name, Words.join([$0.observer, $0.kind])) }
-            : model.knownLinks.map { ($0.id, $0.name, $0.transport) }
-        let missing = model.settings.sections.monitors.filter { pin in pin.kind == kind && !entries.contains(where: { $0.id == pin.entity }) }
-        return ScrollView {
+        let all: [MonitorEntry] = kind == .check
+            ? model.knownChecks.map { .init(id: $0.id, name: $0.name, detail: $0.observer, kind: $0.kind, health: $0.health) }
+            : model.knownLinks.map { .init(id: $0.id, name: $0.name, detail: $0.evidence.isEmpty ? "" : MonitorWords.evidence($0.evidence), kind: $0.transport, health: $0.health) }
+        let query = filter.trimmingCharacters(in: .whitespaces).lowercased()
+        let entries = query.isEmpty ? all : all.filter { e in
+            [e.id, e.name, e.detail, e.kind, MonitorWords.kindTitle(e.kind)].contains { $0.lowercased().contains(query) }
+        }
+        let missing = model.settings.sections.monitors.filter { pin in pin.kind == kind && !all.contains(where: { $0.id == pin.entity }) }
+        return VStack(alignment: .leading, spacing: 8) {
+            if all.count > 8 {
+                TextField(kind == .check ? "Filter checks" : "Filter links", text: $filter).textFieldStyle(.roundedBorder)
+            }
+            ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                if entries.isEmpty { Text("No items in this view").foregroundStyle(.secondary) }
-                ForEach(entries, id: \.id) { item in
-                    let pin = MonitorPin(kind: kind, id: item.id)
-                    Toggle(isOn: monitorBinding(pin)) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(verbatim: item.name).lineLimit(1).truncationMode(.middle)
-                            Text(verbatim: item.detail).font(.callout).foregroundStyle(.secondary).lineLimit(1)
-                        }
-                    }.toggleStyle(.checkbox)
-                    .disabled(model.settings.sections.monitors.count >= 16 && !model.settings.sections.monitors.contains(pin))
+                if all.isEmpty { Text("No items in this view").foregroundStyle(.secondary) }
+                else if entries.isEmpty { Text("Nothing matches").foregroundStyle(.secondary) }
+                ForEach(MonitorWords.grouped(entries, kind: \.kind), id: \.kind) { group in
+                    Text(verbatim: MonitorWords.kindTitle(group.kind)).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                        .padding(.top, 4)
+                    ForEach(group.items, id: \.id) { item in
+                        let pin = MonitorPin(kind: kind, id: item.id)
+                        Toggle(isOn: monitorBinding(pin)) {
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(healthColor(item.health))
+                                    .accessibilityLabel(Text(verbatim: item.health.rawValue))
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(verbatim: item.name).lineLimit(1).truncationMode(.middle)
+                                    if !item.detail.isEmpty {
+                                        Text(verbatim: item.detail).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                                    }
+                                }
+                            }
+                        }.toggleStyle(.checkbox)
+                        .disabled(model.settings.sections.monitors.count >= 16 && !model.settings.sections.monitors.contains(pin))
+                    }
                 }
                 ForEach(missing) { pin in
                     Toggle(isOn: monitorBinding(pin)) {
@@ -1316,7 +1346,17 @@ struct ServicesPicker: View {
                     }.toggleStyle(.checkbox)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
-        }.frame(maxHeight: 360).fixedSize(horizontal: false, vertical: true)
+            }.frame(maxHeight: 360).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    func healthColor(_ h: Health) -> Color {
+        switch h {
+        case .up: .green
+        case .degraded: .orange
+        case .down: .red
+        case .unknown: .secondary
+        }
     }
 
     func monitorBinding(_ pin: MonitorPin) -> Binding<Bool> {

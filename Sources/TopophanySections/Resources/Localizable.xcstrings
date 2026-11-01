@@ -7067,6 +7067,118 @@
           }
         }
       }
+    },
+    "mihomo (Clash.Meta)": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mihomo（Clash.Meta）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mihomo（Clash.Meta）"
+          }
+        }
+      }
+    },
+    "Cloudflare Tunnel connector": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloudflare Tunnel コネクター"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloudflare Tunnel 连接器"
+          }
+        }
+      }
+    },
+    "Cloudflare API": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloudflare API"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloudflare API"
+          }
+        }
+      }
+    },
+    "Ping": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ping"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ping"
+          }
+        }
+      }
+    },
+    "Host resources": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ホストのリソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主机资源"
+          }
+        }
+      }
+    },
+    "External sources": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外部ソース"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外部来源"
+          }
+        }
+      }
+    },
+    "Other": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "その他"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

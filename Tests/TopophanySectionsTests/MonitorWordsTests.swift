@@ -317,6 +317,21 @@ import TopophanyKit
         #expect(card.withheld(at: F.now).runbook == card.runbook)
     }
 
+    @Test func settingsGroupsProxyCoresAndTunnelsFirst() {
+        let kinds = ["http", "mihomo", "dns", "zz-custom", "cloudflare", "http", "", "cloudflared", "mihomo", "host"]
+        let groups = MonitorWords.grouped(Array(kinds.enumerated()), kind: \.element)
+        #expect(groups.map(\.kind) == ["mihomo", "cloudflared", "cloudflare", "http", "dns", "host", "", "zz-custom"])
+        // Items keep their order within a group.
+        #expect(groups.first?.items.map(\.offset) == [1, 8])
+        L10n.with("en") {
+            #expect(MonitorWords.kindTitle("mihomo") == "mihomo (Clash.Meta)")
+            #expect(MonitorWords.kindTitle("cloudflared") == "Cloudflare Tunnel connector")
+            #expect(MonitorWords.kindTitle("tls") == "TLS")
+            #expect(MonitorWords.kindTitle("") == "Other")
+            #expect(MonitorWords.kindTitle("zz-custom") == "zz-custom")
+        }
+    }
+
     @Test func aServiceTheEdgeAnsweredForSaysSo() throws {
         try L10n.with("en") {
             let plain = F.check("w-site", diagnostic: ["outcome": "ok", "evidence": "measured", "stage": "http", "facts": [:] as [String: String]])
