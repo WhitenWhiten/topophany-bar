@@ -1336,7 +1336,7 @@ struct ServicesPicker: View {
                         Toggle(isOn: monitorBinding(pin)) {
                             HStack(alignment: .firstTextBaseline, spacing: 6) {
                                 Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(healthColor(item.health))
-                                    .accessibilityLabel(Text(verbatim: item.health.rawValue))
+                                    .accessibilityLabel(Text(verbatim: Mark(item.health).word))
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(verbatim: item.name).lineLimit(1).truncationMode(.middle)
                                     if !item.detail.isEmpty {
@@ -1358,6 +1358,10 @@ struct ServicesPicker: View {
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
             }.frame(maxHeight: 360).fixedSize(horizontal: false, vertical: true)
+            // Why the rest can't be ticked: checks and links share the cap.
+            if model.settings.sections.monitors.count >= 16 {
+                Foot("The panel holds 16 checks and links. Unpin one to pin another.")
+            }
         }
     }
 

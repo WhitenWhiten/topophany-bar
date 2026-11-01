@@ -7208,6 +7208,22 @@
           }
         }
       }
+    },
+    "The panel holds 16 checks and links. Unpin one to pin another.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パネルに固定できるチェックとリンクは 16 個までです。別の項目を固定するには、どれかの固定を解除してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板最多可固定 16 个检查和链路。取消固定一项后，才能固定其他项。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
