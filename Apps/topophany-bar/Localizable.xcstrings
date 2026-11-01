@@ -4785,7 +4785,7 @@
         }
       }
     },
-    "Remove source": {
+    "Remove Source": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -6393,7 +6393,7 @@
         }
       }
     },
-    "Related incidents": {
+    "Related Incidents": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
@@ -6409,7 +6409,7 @@
         }
       }
     },
-    "Diagnose connection": {
+    "Diagnose Connection": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
@@ -6425,7 +6425,7 @@
         }
       }
     },
-    "Compare service history": {
+    "Compare Service History": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
@@ -6441,7 +6441,7 @@
         }
       }
     },
-    "Use pins from direct profile": {
+    "Use Pins from Direct Profile": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
@@ -6585,7 +6585,7 @@
         }
       }
     },
-    "Try a demo": {
+    "Try a Demo": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
@@ -6601,7 +6601,7 @@
         }
       }
     },
-    "Return to my connection": {
+    "Return to My Connection": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {

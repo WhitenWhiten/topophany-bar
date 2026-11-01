@@ -5852,38 +5852,6 @@
         }
       }
     },
-    "Try a demo": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "体验演示"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "デモを試す"
-          }
-        }
-      }
-    },
-    "Return to my connection": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "返回我的连接"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自分の接続に戻る"
-          }
-        }
-      }
-    },
     "Synthetic preview — your saved connection is unchanged.": {
       "localizations": {
         "zh-Hans": {

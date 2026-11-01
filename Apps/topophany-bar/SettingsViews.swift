@@ -167,7 +167,7 @@ struct GeneralSettings: View {
                 // A row like its neighbours, saying what the demo is before
                 // it's tried, and while it runs that nothing saved changed.
                 LabeledContent {
-                    Button(model.inAppDemo ? "Return to my connection" : "Try a demo") { model.setDemo(!model.inAppDemo) }
+                    Button(model.inAppDemo ? "Return to My Connection" : "Try a Demo") { model.setDemo(!model.inAppDemo) }
                 } label: {
                     if model.inAppDemo {
                         RowLabel("Demo", "Showing synthetic data; your saved connection is unchanged")

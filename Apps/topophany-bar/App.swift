@@ -111,16 +111,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         open.target = self
         menu.addItem(open)
         if model.capabilities?.investigation == true {
-            let related = NSMenuItem(title: tr("Related incidents"), action: #selector(openRelatedIncidents), keyEquivalent: "")
+            let related = NSMenuItem(title: tr("Related Incidents"), action: #selector(openRelatedIncidents), keyEquivalent: "")
             related.target = self
             related.isEnabled = model.effectiveSettings.topo.source != "direct"
             menu.addItem(related)
-            let diagnose = NSMenuItem(title: tr("Diagnose connection"), action: #selector(diagnoseConnection), keyEquivalent: "")
+            let diagnose = NSMenuItem(title: tr("Diagnose Connection"), action: #selector(diagnoseConnection), keyEquivalent: "")
             diagnose.target = self
             diagnose.isEnabled = model.effectiveSettings.topo.source != "preview"
             menu.addItem(diagnose)
             if model.effectiveSettings.topo.source == "client" {
-                let compare = NSMenuItem(title: tr("Compare service history"), action: nil, keyEquivalent: "")
+                let compare = NSMenuItem(title: tr("Compare Service History"), action: nil, keyEquivalent: "")
                 let services = NSMenu()
                 for service in model.knownServices.prefix(128) {
                     let item = NSMenuItem(title: service.name, action: #selector(compareServiceHistory(_:)), keyEquivalent: "")
@@ -131,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 menu.addItem(compare)
             }
         }
-        let demo = NSMenuItem(title: tr(model.inAppDemo ? "Return to my connection" : "Try a demo"), action: #selector(toggleDemo), keyEquivalent: "")
+        let demo = NSMenuItem(title: tr(model.inAppDemo ? "Return to My Connection" : "Try a Demo"), action: #selector(toggleDemo), keyEquivalent: "")
         demo.target = self; menu.addItem(demo)
         let settings = NSMenuItem(title: tr("Settings…"), action: #selector(showSettingsFromMenu), keyEquivalent: "")
         settings.target = self

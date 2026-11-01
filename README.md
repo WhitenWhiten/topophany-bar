@@ -170,7 +170,7 @@ The app needs a `topo` version with `monitor stream` protocol 1. If your install
 
 ### Try a demo first
 
-Choose **Try a demo** from Settings → General or the menu bar’s right-click menu. It uses bundled synthetic data, needs no collector or `topo` installation, and clearly labels the display **Demo data**. Choose **Return to my connection** to leave it; the saved connection and pins are unchanged.
+Choose **Try a Demo** from Settings → General or the menu bar’s right-click menu. It uses bundled synthetic data, needs no collector or `topo` installation, and clearly labels the display **Demo data**. Choose **Return to My Connection** to leave it; the saved connection and pins are unchanged.
 
 For a command-line preview with a compatible `topo`, quit the app if it is running and launch:
 
@@ -217,12 +217,12 @@ topophany-bar is source-available under the [PolyForm Noncommercial License 1.0.
 [Topophany](https://github.com/WhitenWhiten/topophany) itself is MIT-licensed. Provider logos and other third-party assets retain their own terms; see [Third-party notices](THIRD-PARTY-NOTICES.md).
 
 With a companion that advertises investigation support, the menu bar's
-right-click menu offers **Related incidents**, **Diagnose connection** and
-**Compare service history**. Choose a service by name to compare its recent
+right-click menu offers **Related Incidents**, **Diagnose Connection** and
+**Compare Service History**. Choose a service by name to compare its recent
 checks in the terminal. These actions use the same profile as the app; direct
 resource mode exposes connection diagnosis without implying incident history.
 
 After migrating a direct profile with `topo sources export`, choose its collector
-profile, then **Settings → Data sources → Use pins from direct profile** to
+profile, then **Settings → Data sources → Use Pins from Direct Profile** to
 reuse the saved server selection. This explicit action replaces collector pins
 without changing the original direct selection.

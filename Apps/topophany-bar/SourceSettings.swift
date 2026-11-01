@@ -49,7 +49,7 @@ struct SourceSettings: View {
             if source == "client" {
                 if !model.directPinsForMigration.isEmpty {
                     Section {
-                        Button("Use pins from direct profile") { model.useDirectPinsForMigration() }
+                        Button("Use Pins from Direct Profile") { model.useDirectPinsForMigration() }
                         Text("After exporting the direct profile to this collector, reuse its pinned server IDs. This replaces the current pinned-server selection.").font(.callout).foregroundStyle(.secondary)
                     }
                 }
@@ -83,7 +83,7 @@ struct SourceSettings: View {
             Localized(content: SourceEditorForm(editor: session, finish: { session.close(); editor = nil }, onHeight: { sheetHeight = $0 })).environment(model)
         }
         .confirmationDialog("Remove this source?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
-            Button("Remove source", role: .destructive) { remove() }
+            Button("Remove Source", role: .destructive) { remove() }
             Button("Cancel", role: .cancel) { removing = nil }
         } message: {
             Text(removing?.source.adapter == "komari" ? "Only this profile’s source is removed. Servers in Komari are kept." as LocalizedStringKey
