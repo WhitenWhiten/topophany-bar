@@ -27,6 +27,17 @@ import TopophanyKit
             #expect(waiting.subtitle == "Reading collector…")
             #expect(waiting.shortSubtitle == waiting.subtitle)
             #expect(StatusItemModel(status: waiting, appearance: .init()).activity == .connecting)
+
+            var updating = expired
+            source.isCurrent = false; source.read.state = "ok"; source.refreshing = true
+            updating.collector = source
+            #expect(updating.isBlind && updating.count == nil)
+            #expect(updating.title == "Updating")
+            #expect(updating.subtitle == "Reading collector…")
+            #expect(updating.shortSubtitle == updating.subtitle)
+            #expect(StatusItemModel(status: updating, appearance: .init()).activity == .connecting)
+            updating.collector?.refreshing = false
+            #expect(updating.title == expired.title)
         }
     }
 }

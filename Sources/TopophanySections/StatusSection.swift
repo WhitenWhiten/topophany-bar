@@ -152,7 +152,8 @@ public struct StatusSection: Sendable, Hashable {
     }
 
     public var isAwaitingCollector: Bool {
-        isBlind && collector?.isCurrent == true && collector?.read.state == "waiting"
+        guard isBlind, let collector else { return false }
+        return collector.refreshing || (collector.isCurrent && collector.read.state == "waiting")
     }
 
     public var verdictState: VerdictState? {
@@ -180,7 +181,7 @@ public struct StatusSection: Sendable, Hashable {
     /// The headline: "All clear", "5 incidents", "Offline".
     public var title: String {
         if synthetic { return tr("Demo data") }
-        if isAwaitingCollector { return tr("Waiting for data") }
+        if isAwaitingCollector { return collector?.refreshing == true ? tr("Updating") : tr("Waiting for data") }
         if let sources { return sources.title }
         switch kind {
         case .sources: return ""

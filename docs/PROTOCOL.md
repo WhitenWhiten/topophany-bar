@@ -632,6 +632,12 @@ history. A history-only template update does not display a configuration notice.
 
 A live `collector_read.state == "waiting"` is awaiting the first acquisition,
 not a failed connection. It uses neutral waiting text and connecting activity.
+Opening a panel with expired evidence requests a collector retry when supported.
+While that read is outstanding, the blind status uses "Updating" and connecting
+activity; its values stay withheld. An acknowledgment with old read timestamps
+does not complete the retry. A completed read or the ten-second retry timeout
+restores the actual data status. On reopening, hidden content catches up without
+animating its old presentation; subsequent visible updates animate normally.
 A stopped stream ends an in-progress refresh indication immediately; an
 outstanding retry identity remains recognizable if the supervisor restarts with
 that request. Historical row values are bounded to the active template's keys.

@@ -66,6 +66,54 @@ private final class RecordingEngine: Engine, Sendable {
 }
 
 extension RefreshTests {
+    @Test func openingExpiredCollectorShowsAcquisitionUntilReadCompletes() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "open-expired-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SettingsStore(url: root.appending(path: "settings.json"))
+        var settings = Settings(); settings.topo.source = "client"; settings.topo.profile = "S2"; settings.sections.mac.mode = .off
+        try store.save(settings)
+        let clock = ManualClock(Timestamp.parse("2026-11-01T10:00:00Z")!)
+        let engine = RecordingEngine()
+        let m = AppModel(store: store, clock: clock, engineFactory: { _ in engine })
+        m.restartEngine()
+        defer { m.stopNow() }
+        m.handle(.capabilities(try JSONDecoder().decode(Capabilities.self, from: Data(#"{"protocol":1,"sources":["client"],"client_retry":true,"collector_read":true}"#.utf8))))
+        m.handle(.status(.running(.init(pid: 0, path: "fixture", version: "test", startedAt: clock.now()))))
+        var f = try #require(FrameDecoder.frame(from: FixtureEngine.lines(.clear)[0]))
+        f.source = "client"; f.requestID = try #require(engine.all.first?.requestID); f.instance = "open-test"; f.sequence = 1
+        f.generatedAt = clock.now(); f.publisherExpiresAt = clock.now().addingTimeInterval(30)
+        for i in f.rows.indices { f.rows[i].validUntil = clock.now().addingTimeInterval(2); f.rows[i].sampledAt = clock.now() }
+        f.collectorRead = try JSONDecoder().decode(CollectorRead.self, from: Data(#"{"state":"ok","completed_at":"2026-11-01T10:00:00Z","last_success_at":"2026-11-01T10:00:00Z"}"#.utf8))
+        m.handle(.frame(f, line: Data()))
+        clock.advance(3)
+        m.setPanelVisible(true)
+        #expect(m.panel.status.isBlind && m.panel.status.counts == nil)
+        #expect(m.panel.status.collector?.refreshing == true)
+        #expect(m.panel.status.isAwaitingCollector)
+        for _ in 0..<10 { await Task.yield() }
+        #expect(engine.all.count == 2)
+
+        // A retry acknowledgment carries the old evidence. It cannot end the
+        // acquisition state or restore withheld verdicts.
+        f.requestID = try #require(engine.all.last?.requestID); f.sequence = 2
+        m.handle(.frame(f, line: Data()))
+        #expect(m.panel.status.isAwaitingCollector && m.panel.status.counts == nil)
+        f.sequence = 3; f.generatedAt = clock.now()
+        for i in f.rows.indices { f.rows[i].validUntil = clock.now().addingTimeInterval(2); f.rows[i].sampledAt = clock.now() }
+        f.collectorRead?.completedAt = clock.now(); f.collectorRead?.lastSuccessAt = clock.now()
+        m.handle(.frame(f, line: Data()))
+        #expect(!m.panel.status.isBlind && !m.refreshingCollector)
+
+        m.setPanelVisible(false)
+        clock.advance(6)
+        m.setPanelVisible(true)
+        #expect(m.panel.status.isAwaitingCollector)
+        clock.advance(10)
+        m.refresh()
+        #expect(m.panel.status.isBlind && !m.panel.status.isAwaitingCollector)
+        #expect(!m.refreshingCollector, "an unanswered retry must return to the actual expiry state")
+    }
+
     @Test func historyDemandSurvivesDisclosureAndPinsStayScoped() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "history-demand-" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

@@ -73,7 +73,11 @@ final class PanelController: NSObject {
         isOpen = true
         turn += 1
         model.focus = nil
-        model.setPanelVisible(true)
+        // Hidden content keeps its last presentation. Catch it up before
+        // showing the window, without animating those accumulated changes.
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { model.setPanelVisible(true) }
         // Only a height the user chose can be too short.
         height.shortest = model.settings.appearance.panelHeight == nil ? 0 : measureShortest()
         layout()
