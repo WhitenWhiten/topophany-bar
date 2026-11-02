@@ -76,6 +76,7 @@ struct CellsWidget: View {
         mutating func head(_ columns: Int) {
             let ch = model.panel.chrome
             let live: [Seg] = if let sources = model.status.sources { [.t(sources.adapter, p.muted)] }
+                else if ch.historicalAt != nil { [.mark(.offline, p), .t(" " + tr("Last snapshot"), p.muted)] }
                 else if ch.isLive && model.isCurrent { [.mark(.up, p), .t(" " + tr("LIVE"), p.up, bold: true)] }
                 else { [.mark(.offline, p)] }
             let name = ch.project.isEmpty ? "Topophany" : ch.project

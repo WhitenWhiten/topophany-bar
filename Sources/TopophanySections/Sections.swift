@@ -313,6 +313,7 @@ public struct LocalSection: Sendable, Hashable {
 
 /// The panel's header and footer.
 public struct PanelChrome: Sendable, Hashable {
+    public var historicalAt: Date? = nil
     public enum Connection: Sendable, Hashable {
         case connected
         case direct
@@ -339,10 +340,11 @@ public struct PanelChrome: Sendable, Hashable {
         self.now = now
     }
 
-    public var isLive: Bool { connection == .connected || connection == .direct }
+    public var isLive: Bool { historicalAt == nil && (connection == .connected || connection == .direct) }
 
     /// "Connected · homelab".
     public var connectionText: String {
+        if historicalAt != nil { return tr("Last snapshot") }
         let p = project.isEmpty ? tr("collector") : project
         switch connection {
         case .connected: return tr("Connected · \(p)")

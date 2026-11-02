@@ -37,6 +37,21 @@ public struct StatusSection: Sendable, Hashable {
     }
 
     public var synthetic = false
+    /// Display-only snapshot. The live reader and menu bar never use these
+    /// historical judgments to claim current health.
+    public var historicalAt: Date? = nil
+    public var snapshotLabel: String? {
+        historicalAt == nil ? nil : tr("Waiting for data")
+    }
+    public func withAcquisition(_ current: StatusSection) -> StatusSection {
+        guard historicalAt != nil else { return current }
+        var value = self
+        value.updatedAt = historicalAt
+        value.collector = current.collector
+        value.now = current.now
+        value.notice = current.notice ?? tr("Updating — showing the last snapshot.")
+        return value
+    }
     public var coverage: ServiceCoverage? = nil
     /// What the checks establish about services, in Topophany 1.5.2's
     /// words: "Service availability: 3/23 known". The verdict concerns
@@ -164,6 +179,7 @@ public struct StatusSection: Sendable, Hashable {
     /// The number the status item shows in Count mode: what needs
     /// attention. `nil` when nothing does, or nothing is known.
     public var count: Int? {
+        if historicalAt != nil { return nil }
         if let sources { return sources.isCurrent ? sources.value.counts?.attention.flatMap { $0 > 0 ? $0 : nil } : nil }
         guard let s = verdictState, let c = counts else { return nil }
         let n: Int?
@@ -180,6 +196,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The headline: "All clear", "5 incidents", "Offline".
     public var title: String {
+        if historicalAt != nil { return tr("Last snapshot") }
         if synthetic { return tr("Demo data") }
         if isAwaitingCollector { return collector?.refreshing == true ? tr("Updating") : tr("Waiting for data") }
         if let sources { return sources.title }
@@ -209,6 +226,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The menu bar's Words mode: "All clear", "5 incidents", "Incomplete".
     public var shortTitle: String {
+        if historicalAt != nil { return title }
         if let sources { return sources.title }
         switch verdictState {
         case .incomplete?, .noEvidence?, .noChecks?: return tr("Incomplete")
@@ -218,6 +236,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The line under the headline.
     public var subtitle: String {
+        if let snapshotLabel { return snapshotLabel }
         if isAwaitingCollector { return tr("Reading collector…") }
         if let sources { return sources.subtitle }
         switch kind {
@@ -250,6 +269,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The line under a small widget's headline: "5 down · 63 of 68 up".
     public var shortSubtitle: String {
+        if let snapshotLabel { return snapshotLabel }
         if isAwaitingCollector { return subtitle }
         if let sources { return sources.subtitle }
         switch kind {
@@ -312,6 +332,7 @@ public struct StatusSection: Sendable, Hashable {
 
     /// The TUI's words for the verdict: "5 INCIDENTS", "OFFLINE".
     public var tuiTitle: String {
+        if historicalAt != nil { return title.uppercased(with: L10n.locale) }
         if let sources { return sources.title.uppercased() }
         switch kind {
         case .sources: return ""
@@ -345,7 +366,8 @@ public struct StatusSection: Sendable, Hashable {
     /// checks all pass", which is too long for a chip: there it says all
     /// clear in the Native words.
     public var tuiShortTitle: String {
-        switch verdictState {
+        if historicalAt != nil { return tuiTitle }
+        return switch verdictState {
         case .incomplete?: tr("INCOMPLETE")
         case .clear?: tr("All clear").uppercased(with: L10n.locale)
         default: tuiTitle

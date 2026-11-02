@@ -40,16 +40,28 @@ public struct ReaderPolicy: Sendable {
     /// Each row's last value, by row ID, metric and node. Shown only as
     /// history: names with every health withheld.
     public private(set) var lastValues: [String: Row] = [:]
+    /// One coherent collector snapshot, for explicitly labelled history only.
+    /// Replaced on a usable frame and discarded on scope/template changes.
+    public struct Snapshot: Sendable {
+        public var frame: Frame
+        public var line: Data?
+        public var at: Date
+        public init(frame: Frame, line: Data?, at: Date) {
+            self.frame = frame; self.line = line; self.at = at
+        }
+    }
+    public private(set) var snapshot: Snapshot?
 
     public init() {}
 
     /// Restores what the policy knew, as the widget hand-off keeps it.
-    public init(frame: Frame?, line: Data?, receivedAt: Date?, lastKnown: LastKnown?, source: Source) {
+    public init(frame: Frame?, line: Data?, receivedAt: Date?, lastKnown: LastKnown?, source: Source, snapshot: Snapshot? = nil) {
         self.frame = frame
         self.line = line
         self.receivedAt = receivedAt
         self.lastKnown = lastKnown
         self.source = source
+        self.snapshot = snapshot
     }
 
     /// A new process started. What an ended source left stays unavailable
@@ -71,8 +83,9 @@ public struct ReaderPolicy: Sendable {
                 return
             }
             if let f = frame, f.source != incoming.source || f.datasetID != incoming.datasetID || f.project != incoming.project || f.observer != incoming.observer || (incoming.source == "direct" && f.profile != incoming.profile) {
-                lastKnown = nil; lastValues.removeAll()
+                lastKnown = nil; lastValues.removeAll(); snapshot = nil
             }
+            if let old = frame, old.rows.map(Self.key) != incoming.rows.map(Self.key) { snapshot = nil }
             frame = incoming
             self.line = line
             receivedAt = now
@@ -86,6 +99,10 @@ public struct ReaderPolicy: Sendable {
             error = nil
             errorRequestID = nil
             source = .open
+            if incoming.source == "client", incoming.collectorRead?.state != "error",
+               Self.currentVerdict(in: incoming, at: now) != nil {
+                snapshot = Snapshot(frame: incoming, line: line, at: now)
+            }
             // History: the last verdict that was current when topo stated it.
             if let g = incoming.generatedAt, g <= now.addingTimeInterval(Self.futureTolerance),
                let v = Self.currentVerdict(in: incoming, at: g) {
@@ -112,6 +129,7 @@ public struct ReaderPolicy: Sendable {
         var r = Reading(now: now, availability: availability, frame: frame, receivedAt: receivedAt, rows: rows,
                         error: error, errorRequestID: errorRequestID, lastKnown: lastKnown)
         r.lastValues = lastValues
+        r.snapshot = snapshot
         return r
     }
 
@@ -230,6 +248,24 @@ public struct Reading: Sendable {
 
     /// Rows' last values, for history only.
     public var lastValues: [String: Row] = [:]
+    public var snapshot: ReaderPolicy.Snapshot?
+
+    /// Presentation-only history. Strict current values and alert evaluation
+    /// continue to use this reading. Never reevaluate old evidence as new.
+    public var historicalReading: Reading? {
+        guard frame?.source == "client", let snapshot,
+              snapshot.frame.source == frame?.source, snapshot.frame.datasetID == frame?.datasetID,
+              snapshot.frame.profile == frame?.profile,
+              snapshot.frame.project == frame?.project, snapshot.frame.observer == frame?.observer,
+              snapshot.frame.rows.map(ReaderPolicy.key) == frame?.rows.map(ReaderPolicy.key) else { return nil }
+        let p = ReaderPolicy(frame: snapshot.frame, line: snapshot.line, receivedAt: snapshot.at,
+                             lastKnown: lastKnown, source: .open)
+        var history = p.evaluate(at: snapshot.at)
+        // Values are evaluated only at their actual receipt; ages and time
+        // zones still use today's clock when this snapshot is displayed.
+        history.now = now
+        return history
+    }
 
     public var isLive: Bool { availability == .live }
 

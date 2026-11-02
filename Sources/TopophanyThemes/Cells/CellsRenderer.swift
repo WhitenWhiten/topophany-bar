@@ -32,7 +32,9 @@ public struct CellsRenderer: Renderer {
     }
 
     public func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView {
-        AnyView(CellsWidget(model: model, size: size, bounds: bounds, ctx: context))
+        AnyView(SnapshotWidget(model: model, bounds: bounds, context: context, ink: Color(CellsPalette(context.theme).muted)) { room in
+            CellsWidget(model: model, size: size, bounds: room, ctx: context)
+        })
     }
 
     public func widgetBackground(context: RenderContext) -> AnyView {

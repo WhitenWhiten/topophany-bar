@@ -378,6 +378,26 @@ These are the rules `topo monitor preview` applies, and topophany-bar's `ReaderP
 - **For `server.card`, also apply each resource and nested observer deadline,** and **for `service.card`, each check's deadline,** as specified in section 3.3, even when the row itself remains current. A renewed publisher lease never renews these nested deadlines.
 - **Treat implausibly future timestamps as unavailable.** A timestamp is implausible when it lies more than 5 minutes beyond the consumer's clock.
 - **Never extend a row's validity** because a later frame renewed the lease without changing that row.
+
+### Historical presentation during collector interruptions
+
+The live reader, menu bar alerts and reload signatures still apply all deadlines
+above. A collector read failure does not itself invalidate the previous
+snapshot: transient failures may retain its values until their original
+deadlines, alongside `collector_read.state: "error"`. Authentication and malformed
+responses still follow their rejection paths; foreign project data is never used.
+
+After expiry, the panel and collector widgets may present the last usable
+snapshot as **Last snapshot**, with its time and the current acquisition state.
+These are historical readings, not current health. Standalone server, service,
+check, map and zones widgets carry their own history label. A first launch with
+no usable snapshot still shows the waiting state.
+
+The reader retains one coherent snapshot, evaluated at its original receipt
+time. Its original timestamps remain unchanged; displayed ages use the current
+clock. Source, dataset, project, observer and template changes clear the history.
+The private widget handoff includes this snapshot so a failed latest frame
+cannot erase it. Direct-mode resource deadline rules are unchanged.
 - **Treat the process exiting, or stdout closing, as unavailable at once.**
 - **Never show an error frame as content.** Keep the last `running` frame and apply the rules above to it.
 

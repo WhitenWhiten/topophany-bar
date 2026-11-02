@@ -3634,6 +3634,28 @@
           }
         }
       }
+    },
+    "Last snapshot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last snapshot"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前回のデータ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次数据"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

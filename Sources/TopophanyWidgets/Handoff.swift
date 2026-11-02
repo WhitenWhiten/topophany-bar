@@ -17,6 +17,9 @@ public struct Handoff: Sendable, Codable {
     public var frame: Data?
     public var receivedAt: Date?
     public var lastKnown: LastKnown?
+    /// Preserve one usable snapshot even when the latest acquisition failed.
+    public var snapshotFrame: Data? = nil
+    public var snapshotAt: Date? = nil
     /// Whether the engine was producing frames when this was written.
     public var engineRunning: Bool
     public var theme: Data
@@ -42,6 +45,8 @@ public struct Handoff: Sendable, Codable {
         self.init(writtenAt: now, heartbeat: heartbeat, frame: policy.line, receivedAt: policy.receivedAt,
                   lastKnown: policy.lastKnown, engineRunning: engineRunning,
                   theme: (try? e.encode(theme)) ?? Data(), settings: (try? e.encode(settings)) ?? Data())
+        snapshotFrame = policy.snapshot?.line
+        snapshotAt = policy.snapshot?.at
     }
 
     public var decodedTheme: Theme {
@@ -77,8 +82,11 @@ public struct Handoff: Sendable, Codable {
         // Direct is explicitly a resource snapshot, bounded by its original row/resource deadlines.
         // A snapshot does not claim that a publisher is still alive.
         if isDirect, date != nil { f?.publisherExpiresAt = evaluatedAt.addingTimeInterval(30) }
+        let snapshot: ReaderPolicy.Snapshot? = if let line = snapshotFrame, let at = snapshotAt, let past = FrameDecoder.frame(from: line) {
+            .init(frame: past, line: line, at: at)
+        } else { nil }
         var p = ReaderPolicy(frame: f, line: frame, receivedAt: receivedAt, lastKnown: lastKnown,
-                             source: engineRunning ? .open : .ended(at: writtenAt))
+                             source: engineRunning ? .open : .ended(at: writtenAt), snapshot: snapshot)
         if f == nil, !engineRunning { p.sourceEnded(at: writtenAt) }
         return p.evaluate(at: evaluatedAt)
     }
@@ -106,7 +114,7 @@ public struct Handoff: Sendable, Codable {
         widgetSettings.sections.zones = false
         if widgetSettings.sections.mac.mode == .local { widgetSettings.sections.mac.mode = .off }
         return SectionBuilder.panel(PanelInput(reading: reading, engine: engineRunning ? .running : .stopped,
-                                               settings: widgetSettings))
+                                               settings: widgetSettings, displayHistory: true))
     }
 
     /// The panel for a Time zones widget: the zones as the clocks read at
@@ -122,10 +130,11 @@ public struct Handoff: Sendable, Codable {
         let s = decodedSettings
         var minimal = s
         minimal.sections.order = []
-        let base = SectionBuilder.panel(PanelInput(reading: r, engine: engineRunning ? .running : .stopped, settings: minimal))
+        let base = SectionBuilder.panel(PanelInput(reading: r, engine: engineRunning ? .running : .stopped, settings: minimal, displayHistory: true))
+        let displayed = base.status.historicalAt != nil ? r.historicalReading ?? r : r
         return { date in
             var p = base
-            p.sections = [.zones(SectionBuilder.zones(r, chosen: s.sections.placeZones, pinned: s.sections.serverNodes,
+            p.sections = [.zones(SectionBuilder.zones(displayed, chosen: s.sections.placeZones, pinned: s.sections.serverNodes,
                                                      here: here, at: date))]
             return p
         }
@@ -150,7 +159,7 @@ public struct Handoff: Sendable, Codable {
     public func panel(service id: String) -> PanelModel {
         let r = reading()
         var p = panel(reading: r, settings: decodedSettings)
-        let cards = SectionBuilder.services(r, ids: [id])
+        let cards = SectionBuilder.services(p.status.historicalAt != nil ? r.historicalReading ?? r : r, ids: [id])
         p.sections.removeAll { if case .services = $0 { true } else { false } }
         p.sections.append(.services(cards))
         return p
@@ -171,7 +180,7 @@ public struct Handoff: Sendable, Codable {
     public func panel(monitor pin: MonitorPin) -> PanelModel {
         let r = reading()
         var p = panel(reading: r, settings: decodedSettings)
-        let cards = isDirect ? [] : SectionBuilder.monitors(r, pins: [pin], expanded: [pin])
+        let cards = isDirect ? [] : SectionBuilder.monitors(p.status.historicalAt != nil ? r.historicalReading ?? r : r, pins: [pin], expanded: [pin])
         p.sections.removeAll { if case .services = $0 { true } else { false } }
         p.sections.append(.services(cards))
         return p
@@ -183,7 +192,7 @@ public struct Handoff: Sendable, Codable {
         let r = reading(at: date)
         var p = panel(at: date)
         if case .server(let c, _)? = p.mac, c.id == node { return p }
-        let cards = SectionBuilder.servers(r, nodes: [node])
+        let cards = SectionBuilder.servers(p.status.historicalAt != nil ? r.historicalReading ?? r : r, nodes: [node])
         p.sections.removeAll { if case .servers = $0 { true } else { false } }
         p.sections.append(.servers(cards))
         return p

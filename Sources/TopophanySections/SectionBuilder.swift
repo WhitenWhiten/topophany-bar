@@ -30,11 +30,15 @@ public struct PanelInput: Sendable {
     public var expandedMonitors: Set<MonitorPin> = []
     /// This Mac's own checks, from their own stream, beside any source.
     public var localChecks: LocalChecksInput?
+    /// Presentation opt-in only. Alert/signature consumers use strict models.
+    public var displayHistory: Bool
 
     public init(reading: Reading, engine: EngineCondition, settings: Settings, local: LocalSnapshot? = nil,
                 machineModel: String = "Mac", here: TimeZone = .autoupdatingCurrent, quiet: QuietAlert? = nil,
-                fetch: TopoFetch = .idle, expandedMonitors: Set<MonitorPin> = [], localChecks: LocalChecksInput? = nil) {
+                fetch: TopoFetch = .idle, expandedMonitors: Set<MonitorPin> = [], localChecks: LocalChecksInput? = nil,
+                displayHistory: Bool = false) {
         self.reading = reading
+        self.displayHistory = displayHistory
         self.engine = engine
         self.settings = settings
         self.local = local
@@ -72,13 +76,25 @@ public enum SectionBuilder {
 
     public static func panel(_ input: PanelInput) -> PanelModel {
         let r = input.reading
+        let currentStatus = status(r, engine: input.engine)
+        if input.displayHistory, currentStatus.isBlind, let history = r.historicalReading {
+            var past = input
+            past.reading = history
+            var panel = panel(past)
+            panel.status.historicalAt = history.frame?.collectorRead?.lastSuccessAt ?? history.frame?.generatedAt ?? history.receivedAt
+            panel.status = panel.status.withAcquisition(currentStatus)
+            panel.chrome = chrome(r, status: currentStatus, observer: input.settings.topo.observer)
+            panel.chrome.historicalAt = panel.status.historicalAt
+            panel.alert = .unavailable
+            return panel
+        }
         var s = input.settings.sections
         let direct = r.frame?.source == "direct" || (r.frame == nil && input.settings.topo.source == "direct")
         if direct {
             // Pinned stays for this Mac's own checks, which no collector reads.
             for id in SectionID.allCases where id.needsCollector && !(id == .services && input.localChecks != nil) { s.setEnabled(id, false) }
         }
-        let status = status(r, engine: input.engine)
+        let status = currentStatus
         let serverCards = s.servers ? servers(r, nodes: s.serverNodes).map { zoned($0, s.placeZones) } : []
         var sections: [PanelModel.Section] = []
         for id in s.order {

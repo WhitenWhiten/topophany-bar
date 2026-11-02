@@ -19,7 +19,9 @@ public struct CardsRenderer: Renderer {
     }
 
     public func widget(_ model: WidgetModel, size: WidgetSize, bounds: CGSize, context: RenderContext) -> AnyView {
-        AnyView(CardsWidget(model: model, size: size, bounds: bounds, ctx: context))
+        AnyView(SnapshotWidget(model: model, bounds: bounds, context: context, ink: CardsPalette.resolve(context).l2) { room in
+            CardsWidget(model: model, size: size, bounds: room, ctx: context)
+        })
     }
 
     public func widgetBackground(context: RenderContext) -> AnyView {

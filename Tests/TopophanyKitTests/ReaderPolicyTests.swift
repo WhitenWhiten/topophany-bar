@@ -27,6 +27,27 @@ import Testing
         #expect(p.evaluate(at: t0).rows.isEmpty)
     }
 
+    @Test func historyDoesNotRenewLiveEvidenceAndStaysInScope() throws {
+        var p = ReaderPolicy()
+        var f = frame(at: t0); f.source = "client"
+        p.receive(f, at: t0)
+        let expired = p.evaluate(at: t0.addingTimeInterval(20))
+        #expect(expired.row("status")?.value == RowValue.none)
+        #expect(expired.historicalReading?.row("status")?.value == verdict())
+        #expect(expired.historicalReading?.frame?.generatedAt == t0)
+        #expect(expired.historicalReading?.now == expired.now)
+        f.sequence = 2; f.project = "another"
+        f.rows[0].value = .none
+        p.receive(f, at: t0.addingTimeInterval(21))
+        #expect(p.evaluate(at: t0.addingTimeInterval(21)).historicalReading == nil)
+        f = frame(at: t0, sequence: 3); f.source = "client"
+        p.receive(f, at: t0)
+        f.sequence = 4; f.rows.append(Row(id: "new", metric: "servers.list", value: .none, health: .unknown, validUntil: nil))
+        f.rows[0].value = .none
+        p.receive(f, at: t0.addingTimeInterval(21))
+        #expect(p.snapshot == nil)
+    }
+
     @Test func currentWithinLeaseAndDeadline() {
         let c = clock
         var p = ReaderPolicy()

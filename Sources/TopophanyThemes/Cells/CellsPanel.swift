@@ -838,7 +838,8 @@ private struct CellsPanelContent: View, Equatable {
             w.items.append(.fill(CGRect(x: 0, y: 27, width: width, height: 1), p.line.opacity(0.7), radius: 0))
         }
         w.y = 5
-        let live: [Seg] = ch.isLive ? [.mark(.up, p), .t(" " + (ch.connection == .direct ? tr("RUNNING") : tr("LIVE")), p.up, bold: true)]
+        let live: [Seg] = ch.historicalAt != nil ? [.mark(.offline, p), .t(" " + tr("Last snapshot"), p.muted, bold: true)]
+            : ch.isLive ? [.mark(.up, p), .t(" " + (ch.connection == .direct ? tr("RUNNING") : tr("LIVE")), p.up, bold: true)]
             : [.mark(.offline, p), .t(" " + tr("NO DATA"), p.muted, bold: true)]
         // The state keeps its width and two columns before it, whatever its
         // words ("● RUNNING" is wider than "● LIVE"); the view gives way

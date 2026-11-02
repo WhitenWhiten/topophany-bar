@@ -879,8 +879,8 @@ final class AppModel {
             let own = localReader.evaluate(at: now).map { LocalChecksInput(reading: $0, pins: localReader.pins) }
             panel = SectionBuilder.panel(PanelInput(reading: r, engine: engineCondition, settings: effectiveSettings, local: local,
                                                     machineModel: machine.model, quiet: quiet, fetch: fetch, expandedMonitors: expandedMonitors,
-                                                    localChecks: own))
-            panel.status = status
+                                                    localChecks: own, displayHistory: true))
+            panel.status = panel.status.withAcquisition(status)
         }
         let item = StatusItemModel(status: status, appearance: settings.appearance.menuBar, local: local, quiet: quiet)
         if item != statusItem { statusItem = item }
