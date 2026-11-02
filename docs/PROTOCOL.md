@@ -362,6 +362,10 @@ These are the same rules as `topo monitor` output today, with the pipe as the si
 - **Source refresh:** at most 5 s apart. Evidence ages every second.
 - **Changed values:** written at the display cadence (`interval`).
 - **Health, freshness and lifecycle transitions:** written at once.
+- **Evidence renewal:** a changed row or nested evidence deadline bypasses the
+  display cadence if either deadline falls before the next publication (including
+  the one-second evaluation tick). Fresh evidence already acquired must not wait
+  while a reader's previous copy expires. Unchanged deadlines are never extended.
 - **Unchanged content:** skipped, except that the lease is renewed at least every 10 s.
 - **The lease:** `publisher_expires_at` is the frame's time plus 30 s.
 - **No buffering:** each frame is one write followed by a flush.

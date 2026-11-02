@@ -1,5 +1,9 @@
 # Usability verification, 2026-11-01
 
+The later [live collector expiry investigation](expiry-root-cause.md) identifies
+and repairs a companion publication-cadence bug; its evidence and local
+installation are separate from the synthetic UI verification below.
+
 Real isolated Debug app, Chinese UI, Apple M6/macOS arm64, synthetic fixtures.
 `panel-interactions.json` records 10 wheel and 10 map interactions per theme,
 including main-thread gaps and existing drawing counters. No claimed speedup or
