@@ -6,8 +6,11 @@ public enum TopoBuild: Sendable, Hashable {
     case latest
     case tested
 
+    /// The oldest release this app can run.
+    public static let minimumVersion = "1.5.3"
+
     /// The release this app was tested with.
-    public static let testedVersion = "1.5.0"
+    public static let testedVersion = minimumVersion
 }
 
 /// Getting `topo` from its releases, as the panel and Settings show it.

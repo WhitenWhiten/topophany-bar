@@ -80,7 +80,7 @@ topophany-bar can read servers straight from a Beszel Hub or a Komari server thr
 
 Editing an existing source uses its saved authentication unless you choose to sign in again. The app never saves your password or API key.
 
-Direct mode needs a `topo` that advertises **Direct v1 / config API 1** (Topophany 1.4.2 or later), and Komari one that lists `komari` among its direct adapters (1.5.0 or later); choose or download a newer one in **Settings → General** if needed. Sources must be a Beszel Hub or a Komari 1.6 server.
+topophany-bar requires **Topophany 1.5.3 or later**. Direct mode needs a `topo` that advertises **Direct v1 / config API 1**, and Komari one that lists `komari` among its direct adapters; choose or download a newer one in **Settings → General** if needed. Sources must be a Beszel Hub or a Komari 1.6 server.
 
 ### What you see
 
@@ -105,7 +105,7 @@ Many proxy apps, such as Clash Verge, Mihomo Party and FlClash, run the same eng
 2. Enter the engine's address and secret. Proxy apps show both in their settings, often as the *external controller* (`127.0.0.1:9090` is mihomo's default; some apps use another port) and its *secret*.
 3. Choose **Test**, then pick what to watch: the proxy group whose server the card shows, and, if you like, the mode and TUN setting you expect. Save.
 
-The engine's card comes first under **Pinned**: whether the engine answers, which server the group uses, and whether the mode and TUN setting are the ones you expect. An engine that stops answering shows as degraded, then down, usually because the proxy app was quit. `topo` reads the engine's status on this Mac and never changes it: it doesn't switch servers, run speed tests or edit the configuration. The secret stays with `topo`, in its own private file; the app keeps it only while you type it. This needs a `topo` newer than 1.5.2.
+The engine's card comes first under **Pinned**: whether the engine answers, which server the group uses, and whether the mode and TUN setting are the ones you expect. An engine that stops answering shows as degraded, then down, usually because the proxy app was quit. `topo` reads the engine's status on this Mac and never changes it: it doesn't switch servers, run speed tests or edit the configuration. The secret stays with `topo`, in its own private file; the app keeps it only while you type it. This needs Topophany 1.5.3 or later.
 
 ### Through a collector
 
@@ -121,7 +121,7 @@ topo templates cloudflare --output cloudflare.json
 topo validate mihomo.json
 ```
 
-- **mihomo**, the Clash.Meta core inside many proxy clients: run a worker on the machine with the core. Its `mihomo` check reads the external controller on `127.0.0.1:9090` with the secret in the environment variable `adapter.token_env` names (`MIHOMO_TOKEN` in the template), and compares the reported mode, TUN and the `root_proxy` group's selection, and optionally provider members, with the policy you declare. The template keeps a separate HTTP check through the core's own listener for the application. The `mihomo` template needs a `topo` newer than 1.5.2; see Topophany's [mihomo adapter guide](https://github.com/WhitenWhiten/topophany/blob/main/internal/adapters/mihomo/README.md).
+- **mihomo**, the Clash.Meta core inside many proxy clients: run a worker on the machine with the core. Its `mihomo` check reads the external controller on `127.0.0.1:9090` with the secret in the environment variable `adapter.token_env` names (`MIHOMO_TOKEN` in the template), and compares the reported mode, TUN and the `root_proxy` group's selection, and optionally provider members, with the policy you declare. The template keeps a separate HTTP check through the core's own listener for the application. The `mihomo` template needs Topophany 1.5.3 or later; see Topophany's [mihomo adapter guide](https://github.com/WhitenWhiten/topophany/blob/main/internal/adapters/mihomo/README.md).
 - **Cloudflare:** a `cloudflared` check reads the connector's own metrics for a Tunnel link; HTTP checks through the edge record the colo, cache, edge RTT and when Access or a challenge answered instead of the app; `cloudflare` checks read a tunnel's status, a DNS record or a pool from the API with a read-only token. Topophany's [security notes](https://github.com/WhitenWhiten/topophany/blob/main/docs/SECURITY.md) list each token's least-privilege scopes.
 - **Certificates and latency:** set `tls_min_days` or `max_duration_ms` on an HTTP or TLS check, and its card says "Certificate expires in 9 days" or "Slower than its 800 ms budget".
 - **Tailscale and WireGuard:** `tailscale` and `wireguard` checks read the observer's own runtime: backend and online state, the reported path and an optional ping, or the last handshake and transfer counters.

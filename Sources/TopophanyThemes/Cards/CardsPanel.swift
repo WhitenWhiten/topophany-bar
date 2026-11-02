@@ -392,7 +392,7 @@ struct CardTitle: View {
 
 /// The verdict's lines, and the button that goes with them: beside the
 /// title while the title fits whole, else under the lines, so a wide
-/// button ("Download topo 1.5.0") never cuts the verdict short. The first
+/// button ("Download topo 1.5.3") never cuts the verdict short. The first
 /// subview is the title; the one marked `Action` is the button.
 struct VerdictLines: Layout {
     var spacing = 2.0

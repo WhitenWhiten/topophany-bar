@@ -90,6 +90,23 @@ func config(_ path: String, backoff: TimeInterval = 0.2) -> ProcessEngine.Config
 }
 
 @Suite(.serialized) struct ProcessEngineTests {
+    @Test(arguments: ["1.5.0", "1.5.2", "1.5.3-rc.1", "", "dev"])
+    func rejectsVersionsBelowMinimum(version: String) throws {
+        let body = FakeTopo.script.replacingOccurrences(of: "9.9.9-fake", with: version)
+        let path = try FakeTopo.install(body)
+        defer { try? FileManager.default.removeItem(at: URL(filePath: path).deletingLastPathComponent()) }
+        #expect(ProcessEngine.check(path) == .failure(.unsupported(path: path, version: version,
+                                                                  missing: ["topo >= \(TopoBuild.minimumVersion)"])))
+    }
+
+    @Test(arguments: ["1.5.3", "1.5.3+local", "1.5.4", "1.10.0", "2.0.0"])
+    func acceptsMinimumAndNewerVersions(version: String) throws {
+        let body = FakeTopo.script.replacingOccurrences(of: "9.9.9-fake", with: version)
+        let path = try FakeTopo.install(body)
+        defer { try? FileManager.default.removeItem(at: URL(filePath: path).deletingLastPathComponent()) }
+        #expect(try ProcessEngine.check(path).get().version == version)
+    }
+
     @Test func firstRequestUsesProbedCapabilities() async throws {
         let captured = FileManager.default.temporaryDirectory.appending(path: "requests-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: captured) }

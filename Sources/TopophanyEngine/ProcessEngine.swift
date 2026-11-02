@@ -214,6 +214,15 @@ public final class ProcessEngine: Engine {
         guard let caps = try? JSONDecoder().decode(Capabilities.self, from: line) else {
             return .failure(.upgradeNeeded(path: path))
         }
+        let version = caps.version.components(separatedBy: "+")[0]
+        let release = version.components(separatedBy: "-")[0]
+        let parts = release.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 3, parts.allSatisfy({ !$0.isEmpty && $0.allSatisfy(\.isNumber) }),
+              !TopoDownloads.newer(TopoBuild.minimumVersion, than: release),
+              release != TopoBuild.minimumVersion || !version.contains("-") else {
+            return .failure(.unsupported(path: path, version: caps.version,
+                                         missing: ["topo >= \(TopoBuild.minimumVersion)"]))
+        }
         guard caps.isUsable else {
             return .failure(.unsupported(path: path, version: caps.version, missing: caps.missing()))
         }
