@@ -378,7 +378,7 @@ final class PanelController: NSObject {
     }
 
     private func move(_ d: Int) {
-        let order = Renderers.focusOrder(model.panel)
+        let order = Renderers.renderer(for: model.theme).focusOrder(model.panel)
         guard !order.isEmpty else { return }
         if let f = model.focus, let i = order.firstIndex(of: f) {
             model.focus = order[(i + d + order.count) % order.count]

@@ -375,7 +375,7 @@ struct CardTitle: View {
                 // Small capitals, as a printed page titles its sections.
                 Text(title.uppercased(with: L10n.locale)).font(t.font(10, .semibold)).tracking(1.4).foregroundStyle(p.accent)
             } else {
-                Image(systemName: symbol).font(.system(size: 11.5 * t.scale, weight: .medium)).frame(width: 14)
+                if p.style.symbols { Image(systemName: symbol).font(.system(size: 11.5 * t.scale, weight: .medium)).frame(width: 14) }
                 Text(title).font(t.font(11.5, .semibold))
             }
             Spacer(minLength: 6)

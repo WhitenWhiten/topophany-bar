@@ -101,7 +101,7 @@ enum ServiceStates {
 
     @Test func panels() throws {
         for theme in ThemeStore.builtIn {
-            let looks = theme.renderer == .cards ? [true, false] : [theme.id != "paper"]
+            let looks = theme.renderer != .cells ? [true, false] : [theme.id != "paper"]
             for dark in looks {
                 try snapshot("service-panel-\(theme.id)-\(dark ? "dark" : "light")", panel(pinned(), theme: theme, dark: dark))
             }
@@ -118,9 +118,9 @@ enum ServiceStates {
         let cards = fixtureCards
         let set: [(String, ServiceCardModel)] = [("failing", cards[0]), ("up", cards[1]), ("edge", cards[2])]
         for theme in ThemeStore.builtIn {
-            let looks = theme.renderer == .cards ? [true, false] : [theme.id != "paper"]
+            let looks = theme.renderer != .cells ? [true, false] : [theme.id != "paper"]
             for dark in looks {
-                let a = theme.renderer == .cards ? "-\(dark ? "dark" : "light")" : ""
+                let a = theme.renderer != .cells ? "-\(dark ? "dark" : "light")" : ""
                 for (name, c) in set {
                     for (size, n) in [(WidgetSize.small, "s"), (.medium, "m")] {
                         try snapshot("service-widget-\(theme.id)\(a)-\(name)-\(n)", onDesktop(widget(c), size, theme: theme, dark: dark))

@@ -87,6 +87,22 @@
         }
       }
     },
+    "Glance": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グランス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一览"
+          }
+        }
+      }
+    },
     "Linen": {
       "localizations": {
         "ja": {

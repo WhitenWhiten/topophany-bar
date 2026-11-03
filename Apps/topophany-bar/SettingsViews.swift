@@ -735,6 +735,7 @@ extension Theme {
     var title: String {
         switch id {
         case "native": tr("Native")
+        case "glance": tr("Glance")
         case "aurora": tr("Aurora")
         case "linen": tr("Linen")
         case "terminal": tr("Terminal")
@@ -748,6 +749,7 @@ extension Theme {
     var blurb: String? {
         switch id {
         case "native": tr("macOS glass, SF Pro and system colors, like the apps beside it.")
+        case "glance": tr("Native’s glass and colors, laid out to be read at a glance: what’s calm folds into a line, what needs a look opens.")
         case "aurora": tr("A northern sky at night: teal deepening to violet, round shapes, meters of dots.")
         case "linen": tr("A matte, woven page set in New York: ruled sections, small capitals, meters as scales.")
         case "terminal": tr("Topophany’s TUI: ink, phosphor and monospace, the same glyphs as topo.")

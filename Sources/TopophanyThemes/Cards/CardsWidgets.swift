@@ -462,7 +462,7 @@ struct WidgetHeading: View {
             if p.style.caps {
                 Text(title.uppercased(with: L10n.locale)).font(t.font(9.5, .semibold)).tracking(1.3).foregroundStyle(p.accent)
             } else {
-                if let symbol { Image(systemName: symbol).font(.system(size: 11, weight: .medium)) }
+                if let symbol, p.style.symbols { Image(systemName: symbol).font(.system(size: 11, weight: .medium)) }
                 Text(title)
             }
             Spacer(minLength: 4)

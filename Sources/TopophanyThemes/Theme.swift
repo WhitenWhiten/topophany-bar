@@ -6,6 +6,9 @@ import Foundation
 public enum RendererID: String, Sendable, Hashable, Codable, CaseIterable {
     case cards
     case cells
+    /// The cards renderer's glass, type and colors, laid out to be read at
+    /// a glance: what's calm folds into a line, what needs a look opens.
+    case glance
 }
 
 /// A theme is data: a renderer's name and its tokens (DESIGN.md §8). The
@@ -17,9 +20,9 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
         case system
     }
 
-    /// The type a theme is set in. `cards` draws SF Pro, SF Pro Rounded or
-    /// New York, and SF Pro for any other family; `cells` always draws SF
-    /// Mono, which its grid is measured in.
+    /// The type a theme is set in. `cards` and `glance` draw SF Pro, SF Pro
+    /// Rounded or New York, and SF Pro for any other family; `cells` always
+    /// draws SF Mono, which its grid is measured in.
     public struct Font: Sendable, Hashable, Codable {
         public var family: String
         public var size: Double
@@ -38,7 +41,7 @@ public struct Theme: Sendable, Hashable, Codable, Identifiable {
     /// Slot name → color, such as `"ink": "#0A1016"`. A cards theme may
     /// leave slots out; they fall back to the system's.
     public var tokens: [String: String]
-    /// A cards theme that follows the system may give slots per
+    /// A cards or glance theme that follows the system may give slots per
     /// appearance: these are drawn in dark, over `tokens`.
     public var dark: [String: String]
     /// Drawn in light, over `tokens`.
@@ -137,11 +140,17 @@ public enum StyleSlots {
         "meter": ["blocks", "shade", "braille"],
         "texture": ["none", "weave", "grain"],
     ]
+    /// Glance draws on glass, its sections titled in words alone; of the
+    /// cards renderer's styles, it takes the meter.
+    public static let glance: [String: [String]] = [
+        "meter": ["ticks", "rule", "dots"],
+    ]
 
     public static func slots(_ renderer: RendererID) -> [String: [String]] {
         switch renderer {
         case .cards: cards
         case .cells: cells
+        case .glance: glance
         }
     }
 }
@@ -151,9 +160,9 @@ public enum TokenSlots {
     /// `cells` requires every one.
     public static let cells = ["ink", "inkHigh", "selection", "key", "line", "track", "text", "muted", "faint",
                                "accent", "accent2", "kind", "up", "warning", "down", "unknown"]
-    /// `cards` reads these; missing ones fall back to the system's.
-    /// `panelMaterial2` is where a night surface deepens to, and `grain`
-    /// a texture's ink.
+    /// `cards` and `glance` read these; missing ones fall back to the
+    /// system's. `panelMaterial2` is where a night surface deepens to, and
+    /// `grain` a texture's ink.
     public static let cards = ["accent", "accent2", "card", "cardEdge", "panelMaterial", "panelMaterial2", "fill", "fill2", "grain"]
     /// Status colors, optional for `cards`.
     public static let status = ["up", "warning", "down", "unknown"]

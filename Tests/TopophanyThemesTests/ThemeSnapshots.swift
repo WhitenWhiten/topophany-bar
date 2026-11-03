@@ -94,7 +94,8 @@ import TopophanySections
             }
         }
         let size = try snapshot("themes-swatches", OnDesktop(dark: true, padding: 12) { rows })
-        #expect(abs(size.width - (6 * 68 + 5 * 8 + 20 + 24)) < 0.5, "\(size)")
+        let n = Double(ThemeStore.builtIn.count)
+        #expect(abs(size.width - (n * 68 + (n - 1) * 8 + 20 + 24)) < 0.5, "\(size)")
     }
 
     /// Every built-in theme's panel in one row, in each appearance.

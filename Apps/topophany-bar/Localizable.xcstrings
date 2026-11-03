@@ -1563,6 +1563,38 @@
         }
       }
     },
+    "Glance": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グランス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一览"
+          }
+        }
+      }
+    },
+    "Native’s glass and colors, laid out to be read at a glance: what’s calm folds into a line, what needs a look opens.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ネイティブのガラスと色を、ひと目で読める配置に。落ち着いている欄は 1 行にたたみ、確認が必要な欄は開いて表示します。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生的玻璃材质与颜色，排布得一眼可读：正常的栏目收成一行，需要查看的栏目展开显示。"
+          }
+        }
+      }
+    },
     "Whole world": {
       "localizations": {
         "ja": {

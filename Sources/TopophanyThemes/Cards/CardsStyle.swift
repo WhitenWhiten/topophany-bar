@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// How the cards renderer draws beyond its colors, from a theme's style
-/// slots (`StyleSlots.cards`).
+/// slots (`StyleSlots.cards`); Glance draws its cards with them too.
 struct CardsStyle: Equatable {
     enum Surface: String { case glass, matte, night }
 
@@ -9,6 +9,9 @@ struct CardsStyle: Equatable {
     var meter = MeterStyle.ticks
     /// Section titles in letterspaced capitals, without their symbols.
     var caps = false
+    /// Section titles beside their symbols; Glance titles them in words
+    /// alone.
+    var symbols = true
     var texture = Texture.none
 
     init() {}
@@ -17,6 +20,7 @@ struct CardsStyle: Equatable {
         surface = Surface(rawValue: theme.style("surface")) ?? .glass
         meter = MeterStyle(rawValue: theme.style("meter")) ?? .ticks
         caps = theme.style("titles") == "caps"
+        symbols = theme.renderer != .glance
         texture = Texture(theme.style("texture"))
     }
 

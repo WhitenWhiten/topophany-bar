@@ -21,6 +21,15 @@ public struct ThemeStore: Sendable {
      "tokens": {}, "font": {"family": "SF Pro", "size": 13}}
     """#
 
+    /// Native's glass, type and colors, laid out to be read at a glance:
+    /// Status and Seen from as one card, what's calm folded into a line,
+    /// what needs a look open, and the map, Fleet and Time zones as one
+    /// card.
+    public static let glanceJSON = #"""
+    {"schema": 1, "id": "glance", "name": "Glance", "renderer": "glance", "appearance": "system",
+     "tokens": {}, "font": {"family": "SF Pro", "size": 13}}
+    """#
+
     /// The TUI's palette (internal/tui/theme.go).
     public static let terminalJSON = #"""
     {"schema": 1, "id": "terminal", "name": "Terminal", "renderer": "cells", "appearance": "dark",
@@ -90,9 +99,10 @@ public struct ThemeStore: Sendable {
      "font": {"family": "SF Mono", "size": 12}}
     """#
 
-    /// Every built-in theme, through the same path a file takes: the cards
-    /// themes, then the cells themes.
-    public static let builtIn: [Theme] = [nativeJSON, auroraJSON, linenJSON, terminalJSON, paperJSON, duskJSON].map { json in
+    /// Every built-in theme, through the same path a file takes: Native and
+    /// Glance, the other cards themes, then the cells themes.
+    public static let builtIn: [Theme] = [nativeJSON, glanceJSON, auroraJSON, linenJSON, terminalJSON, paperJSON,
+                                          duskJSON].map { json in
         switch load(Data(json.utf8)) {
         case .success(let t): return t
         case .failure(let e): fatalError("built-in theme refused: \(e)")
@@ -100,11 +110,12 @@ public struct ThemeStore: Sendable {
     }
 
     public static var native: Theme { builtIn[0] }
-    public static var aurora: Theme { builtIn[1] }
-    public static var linen: Theme { builtIn[2] }
-    public static var terminal: Theme { builtIn[3] }
-    public static var paper: Theme { builtIn[4] }
-    public static var dusk: Theme { builtIn[5] }
+    public static var glance: Theme { builtIn[1] }
+    public static var aurora: Theme { builtIn[2] }
+    public static var linen: Theme { builtIn[3] }
+    public static var terminal: Theme { builtIn[4] }
+    public static var paper: Theme { builtIn[5] }
+    public static var dusk: Theme { builtIn[6] }
 
     /// Where user themes will be read from.
     public static var userDirectory: URL {

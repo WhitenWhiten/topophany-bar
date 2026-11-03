@@ -5,13 +5,13 @@ import Testing
 
 @Suite struct ThemeTests {
     @Test func builtInsPassValidation() {
-        #expect(ThemeStore.builtIn.map(\.id) == ["native", "aurora", "linen", "terminal", "paper", "dusk"])
+        #expect(ThemeStore.builtIn.map(\.id) == ["native", "glance", "aurora", "linen", "terminal", "paper", "dusk"])
         for t in ThemeStore.builtIn { #expect(ThemeValidator.refusals(t).isEmpty, "\(t.id): \(ThemeValidator.refusals(t))") }
         // Red-green margins under simulated color-blindness are advisories:
         // the TUI's own palette is under 8 for up/warning.
         #expect(ThemeValidator.validate(ThemeStore.terminal).contains { $0.isAdvisory && $0.description.contains("protanopia") })
-        #expect(ThemeStore.builtIn.map(\.renderer) == [.cards, .cards, .cards, .cells, .cells, .cells])
-        #expect(ThemeStore.builtIn.map(\.appearance) == [.system, .system, .system, .dark, .light, .dark])
+        #expect(ThemeStore.builtIn.map(\.renderer) == [.cards, .glance, .cards, .cards, .cells, .cells, .cells])
+        #expect(ThemeStore.builtIn.map(\.appearance) == [.system, .system, .system, .system, .dark, .light, .dark])
         for t in ThemeStore.builtIn { #expect(ThemeStore().theme(t.id) == t) }
     }
 
@@ -36,10 +36,10 @@ import Testing
         #expect(!native.contains("\"dark\"") && !native.contains("\"light\""))
     }
 
-    /// Only cards draws a theme in both appearances, so only a cards theme
-    /// that follows the system may give slots per appearance.
+    /// Only cards and glance draw a theme in both appearances, so only
+    /// their themes that follow the system may give slots per appearance.
     @Test func tokensPerAppearanceAreForCardsThatFollowTheSystem() {
-        let message = "dark and light tokens are for cards themes that follow the system"
+        let message = "dark and light tokens are for cards and glance themes that follow the system"
         func refusals(_ json: String) -> [String] {
             guard case .failure(.refused(let p)) = ThemeStore.load(Data(json.utf8)) else { return [] }
             return p.map(\.description)
@@ -51,6 +51,9 @@ import Testing
         // Status colors are checked in each appearance, with its own.
         let close = ##"{"schema":1,"id":"x","renderer":"cards","light":{"warning":"#FF3B30"}}"##
         #expect(refusals(close) == ["warning and down differ by ΔE 0.0 in light, under 15"])
+        // Glance draws in both, as cards does; it takes no surface.
+        #expect(refusals(##"{"schema":1,"id":"x","renderer":"glance","dark":{"accent":"#2DD4BF"}}"##).isEmpty)
+        #expect(refusals(##"{"schema":1,"id":"x","renderer":"glance","style":{"surface":"matte"}}"##) == ["glance has no style surface"])
     }
 
     /// Cards sets a theme in its family; cells keeps the monospace its grid

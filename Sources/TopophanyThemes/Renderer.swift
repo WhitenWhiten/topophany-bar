@@ -169,6 +169,9 @@ public protocol Renderer {
     func panelCornerRadius(_ theme: Theme) -> Double
     /// The theme's colors, as this renderer resolves its slots.
     func colors(context: RenderContext) -> ThemeColors
+    /// The keyboard's stops in the panel, in the order this renderer lays
+    /// them out: what ↑ and ↓ move between and ↵ opens.
+    func focusOrder(_ model: PanelModel) -> [String]
 }
 
 /// A theme's colors, for choosing one: what its panel sits on, its edge,
@@ -207,6 +210,10 @@ public struct ThemeSwatch: View {
 }
 
 extension Renderer {
+    /// The sections' own order, as the cards and cells renderers lay them
+    /// out.
+    public func focusOrder(_ model: PanelModel) -> [String] { Renderers.focusOrder(model) }
+
     public func statusItem(_ model: StatusItemModel, context: StatusItemContext) -> AnyView {
         let parts = statusItemParts(model, context: context)
         return AnyView(HStack(spacing: parts.spacing) {
@@ -222,31 +229,31 @@ public enum Renderers {
         switch id {
         case .cards: CardsRenderer()
         case .cells: CellsRenderer()
+        case .glance: GlanceRenderer()
         }
     }
 
     public static func renderer(for theme: Theme) -> any Renderer { renderer(for: theme.renderer) }
 
-    /// The keyboard's stops in the panel, in order: what ↑ and ↓ move
-    /// between and ↵ opens.
+    /// The keyboard's stops in the panel, in the sections' order: what ↑
+    /// and ↓ move between and ↵ opens.
     public static func focusOrder(_ model: PanelModel) -> [String] {
-        var ids: [String] = []
-        for s in model.sections {
-            switch s {
-            case .attention(let a):
-                ids += a.items.map { "attention:" + $0.id }
-                if a.more > 0 { ids.append("attention:more") }
-            case .seen(let s): ids += (s.problems ?? []).map { "seen:" + $0.id }
-            case .map: ids.append("map")
-            case .applications(let a): ids += a.rows.map { "app:" + $0.id }
-            case .services(let cards): ids += cards.map(\.focusID)
-            case .servers(let cards): ids += cards.map { "server:" + $0.id }
-            case .zones, .fleet: break
-            case .mac(.server(let c, _)): ids.append("server:" + c.id)
-            case .mac(.local): break
-            }
+        model.sections.flatMap(focusStops)
+    }
+
+    /// A section's own stops, in order.
+    nonisolated static func focusStops(_ section: PanelModel.Section) -> [String] {
+        switch section {
+        case .attention(let a): a.items.map { "attention:" + $0.id } + (a.more > 0 ? ["attention:more"] : [])
+        case .seen(let s): (s.problems ?? []).map { "seen:" + $0.id }
+        case .map: ["map"]
+        case .applications(let a): a.rows.map { "app:" + $0.id }
+        case .services(let cards): cards.map(\.focusID)
+        case .servers(let cards): cards.map { "server:" + $0.id }
+        case .zones, .fleet: []
+        case .mac(.server(let c, _)): ["server:" + c.id]
+        case .mac(.local): []
         }
-        return ids
     }
 }
 
