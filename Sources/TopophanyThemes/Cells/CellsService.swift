@@ -201,8 +201,11 @@ extension CellsWidget.Layout {
             if !c.isBlank, !c.host.name.isEmpty, room - used >= 1 {
                 w.blank(Double(room - used - 1) * w.lineHeight)
                 let logo = Seg.logo(c.host.provider, kind: c.host.kind, p)
-                let used = 3 + logo.reduce(0) { $0 + $1.width }
-                w.line([.t(tr("on") + " ", p.faint)] + logo + [.t(CellText.truncate(c.host.name, n - used), p.kind)])
+                let on = tr("on") + " ", glyph = logo.reduce(0) { $0 + $1.width }
+                // "on" gives way before the name is cut.
+                let lead: [Seg] = CellText.width(on) + glyph + CellText.width(c.host.name) <= n ? [.t(on, p.faint)] : []
+                let used = lead.reduce(0) { $0 + $1.width } + glyph
+                w.line(lead + logo + [.t(CellText.truncate(c.host.name, n - used), p.kind)])
             }
         }
     }

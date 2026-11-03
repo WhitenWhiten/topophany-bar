@@ -29,7 +29,7 @@ struct CardsMonitor: View {
                                 .rotationEffect(.degrees(monitor.expanded ? 90 : 0))
                         }
                         HStack(spacing: 8) {
-                            Text(monitor.subtitle).foregroundStyle(p.l2).lineLimit(1).truncationMode(.middle)
+                            FittedText(parts: monitor.subtitle).foregroundStyle(p.l2)
                             Spacer(minLength: 0)
                             Text(card.age).foregroundStyle(p.l3).lineLimit(1).fixedSize()
                         }.font(t.font(11))
@@ -108,7 +108,7 @@ struct WidgetMonitorCard: View {
                 NodeAvatar(provider: card.host.provider, kind: card.host.kind, size: 26, p: p)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(card.name).font(t.font(12.5, .semibold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                    Text(m.subtitle).font(t.font(10.5)).foregroundStyle(p.l2).lineLimit(1)
+                    FittedText(parts: m.subtitle).font(t.font(10.5)).foregroundStyle(p.l2)
                 }
             }
             .accessibilityElement(children: .combine)

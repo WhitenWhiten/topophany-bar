@@ -1052,14 +1052,7 @@ struct CardsZones: View {
 struct ZoneTitle: View {
     var zone: ZonesSection.Zone
 
-    var body: some View {
-        let titles = zone.titles
-        ViewThatFits(in: .horizontal) {
-            ForEach(titles.dropLast(), id: \.self) { Text(verbatim: $0).fixedSize() }
-            Text(verbatim: titles.last ?? "").truncationMode(.tail)
-        }
-        .lineLimit(1)
-    }
+    var body: some View { FittedText(choices: zone.titles) }
 }
 
 /// A zone's day from 12 hours before now to 12 hours after: a fine band,

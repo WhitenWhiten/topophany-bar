@@ -747,6 +747,34 @@ struct RouteLayout: Layout {
     }
 }
 
+/// The first of `choices`, longest first, that fits on its line whole; the
+/// last is cut only when even it won't fit. So a line gives up whole parts
+/// before it cuts one: "Seattle MacBook", never "Seattle MacBook · C…".
+struct FittedText: View {
+    var choices: [String]
+
+    var body: some View {
+        // Each once, so each is its own view.
+        let choices = self.choices.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+        ViewThatFits(in: .horizontal) {
+            ForEach(choices.dropLast(), id: \.self) { Text(verbatim: $0).fixedSize() }
+            Text(verbatim: choices.last ?? "").truncationMode(.tail)
+        }
+        .lineLimit(1)
+    }
+}
+
+extension FittedText {
+    /// Parts joined by " · ", as many as fit whole.
+    init(parts text: String) { choices = Self.choices(parts: text) }
+
+    /// Every part, then one fewer, down to the first.
+    nonisolated static func choices(parts text: String) -> [String] {
+        let parts = text.components(separatedBy: " · ")
+        return (1...max(1, parts.count)).reversed().map { parts.prefix($0).joined(separator: " · ") }
+    }
+}
+
 /// Markdown with its strong runs in `strong`.
 func emphasized(_ markdown: String, _ strong: Color) -> AttributedString {
     var a = (try? AttributedString(markdown: markdown)) ?? AttributedString(markdown)

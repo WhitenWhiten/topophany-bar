@@ -342,8 +342,15 @@ struct WidgetServiceCard: View {
                 NodeAvatar(provider: card.host.provider, kind: card.host.kind, size: 26, p: p)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(card.name).font(t.font(12.5, .semibold)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                    Text(card.isMissing ? card.subtitle : card.onHost).font(t.font(10.5)).foregroundStyle(p.l2)
-                        .lineLimit(card.isMissing ? 2 : 1)
+                    Group {
+                        if card.isMissing {
+                            Text(card.subtitle).lineLimit(2)
+                        } else {
+                            // Where it runs, whole: "on" gives way before the name.
+                            FittedText(choices: [card.onHost, card.host.name])
+                        }
+                    }
+                    .font(t.font(10.5)).foregroundStyle(p.l2)
                 }
             }
             .accessibilityElement(children: .combine)
