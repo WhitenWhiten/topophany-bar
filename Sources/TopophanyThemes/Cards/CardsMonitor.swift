@@ -40,7 +40,8 @@ struct CardsMonitor: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text(card.name + ", " + card.pill.text))
             .accessibilityValue(Text(monitor.expanded ? tr("Expanded") : tr("Collapsed")))
-            Text(monitor.summary).font(t.font(12)).foregroundStyle(p.l1).lineLimit(2).padding(.top, 7)
+            Text(monitor.summary).font(t.font(12)).foregroundStyle(p.l1).lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true).padding(.top, 7)
             if !monitor.reading.isEmpty {
                 Text(monitor.reading).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1).truncationMode(.middle).padding(.top, 3)
             }
@@ -55,8 +56,14 @@ struct CardsMonitor: View {
                     }
                     Text(check.source).font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(1).padding(.top, 2)
                     }
-                    if check.summary != monitor.summary { Text(check.summary).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2).padding(.top, 4) }
-                    if !check.reading.isEmpty && check.reading != monitor.reading { Text(check.reading).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2).truncationMode(.middle).padding(.top, 2) }
+                    if check.summary != monitor.summary {
+                        Text(check.summary).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true).padding(.top, 4)
+                    }
+                    if !check.reading.isEmpty && check.reading != monitor.reading {
+                        Text(check.reading).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2).truncationMode(.middle)
+                            .fixedSize(horizontal: false, vertical: true).padding(.top, 2)
+                    }
                     if !check.fields.isEmpty {
                         // Side by side while they fit; a long one takes its own row.
                         FlowLayout(spacing: 12, lineSpacing: 3) {
@@ -70,7 +77,10 @@ struct CardsMonitor: View {
                         }
                         .font(t.font(11)).padding(.top, 4)
                     }
-                    if !check.code.isEmpty { Text(check.code).font(t.mono(10)).foregroundStyle(p.l3).lineLimit(2).padding(.top, 2) }
+                    if !check.code.isEmpty {
+                        Text(check.code).font(t.mono(10)).foregroundStyle(p.l3).lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true).padding(.top, 2)
+                    }
                     if case .samples = check.history {
                         HStack(spacing: 8) {
                             ServiceSpark(history: check.history, count: 34, p: p).frame(height: 18)

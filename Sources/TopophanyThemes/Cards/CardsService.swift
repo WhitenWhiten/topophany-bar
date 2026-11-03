@@ -95,16 +95,16 @@ struct ServiceRows: View {
                     }
                     .frame(width: Double(marks) * mark + Double(marks - 1) * 2, alignment: .leading)
                     Text(o.label).foregroundStyle(p.l1).lineLimit(1).truncationMode(.tail)
-                        .frame(width: compact ? 52 : 64, alignment: .leading)
+                        .frame(width: (compact ? 52 : 64) * t.scale, alignment: .leading)
                     ServiceSpark(history: o.history, count: compact ? 14 : 34, p: p, vibrant: vibrant)
                         .frame(height: compact ? 16 : 18)
                         .frame(maxWidth: .infinity)
                     latency(o.p50)
-                        .frame(width: compact ? 34 : 44, alignment: .trailing)
+                        .frame(width: (compact ? 34 : 44) * t.scale, alignment: .trailing)
                         .help(o.p95.map { "p95 " + Words.ms($0) } ?? "")
                     if !compact {
                         Text(o.up24h.map(Words.share) ?? "—").font(t.mono(11)).foregroundStyle(p.l3)
-                            .frame(width: 38, alignment: .trailing)
+                            .frame(width: 38 * t.scale, alignment: .trailing)
                     }
                 }
                 .font(t.font(compact ? 11 : 11.5))
@@ -160,15 +160,16 @@ struct CardsService: View {
             }
             .accessibilityElement(children: .combine)
             if !card.memo.isEmpty {
-                Text(card.memo).font(t.font(11)).foregroundStyle(p.l3).lineLimit(2).padding(.top, 6)
+                Text(card.memo).font(t.font(11)).foregroundStyle(p.l3).lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 6)
             }
             if let scope = card.scope { ServiceScope(scope: scope, p: p, t: t).padding(.top, 8) }
             if !card.observers.isEmpty {
                 HStack(spacing: 0) {
                     Text(tr("Seen from"))
                     Spacer(minLength: 4)
-                    Text(tr("p50")).frame(width: 44, alignment: .trailing)
-                    Text(tr("24h")).frame(width: 44, alignment: .trailing)
+                    Text(tr("p50")).frame(width: 44 * t.scale, alignment: .trailing)
+                    Text(tr("24h")).frame(width: 44 * t.scale, alignment: .trailing)
                 }
                 .font(t.font(10.5)).foregroundStyle(p.l3)
                 .padding(.top, 10).padding(.bottom, 3)
@@ -272,6 +273,7 @@ struct ServiceScope: View {
             }
             ForEach(scope.hints, id: \.self) { hint in
                 Label(hint, systemImage: "lightbulb").font(t.font(10.5)).foregroundStyle(p.l3).lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .accessibilityElement(children: .combine)
@@ -300,7 +302,8 @@ struct ServiceDay: View {
     func row(_ label: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(label).foregroundStyle(p.l3).lineLimit(1).fixedSize()
-            Text(value).foregroundStyle(p.l2).lineLimit(2).truncationMode(.tail).help(value)
+            Text(value).foregroundStyle(p.l2).lineLimit(2).truncationMode(.tail).fixedSize(horizontal: false, vertical: true)
+                .help(value)
         }
         .accessibilityElement(children: .combine)
     }
