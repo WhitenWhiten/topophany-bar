@@ -15,6 +15,20 @@ struct CardsFleet: View {
         Card(p: p) {
             CardTitle(symbol: "square.grid.2x2", title: tr("Fleet"),
                       meta: fleet.meta, p: p, t: t)
+            FleetBody(fleet: fleet, p: p, t: t, marks: marks)
+        }
+    }
+}
+
+/// Edges and platforms, a hairline, then servers by provider.
+struct FleetBody: View {
+    var fleet: FleetSection
+    var p: CardsPalette
+    var t: CardsType
+    var marks = 6
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
             FleetGrid(groups: fleet.edges, isCurrent: fleet.isCurrent, p: p, t: t, marks: marks, spacing: 5.5)
             if !fleet.edges.isEmpty, !fleet.servers.isEmpty {
                 Rectangle().fill(p.sep).frame(height: 0.5).padding(.vertical, 6)

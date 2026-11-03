@@ -14,7 +14,7 @@ import TopophanySections
     @Test func columnCentresMatchMemory() throws {
         let ctx = RenderContext(theme: ThemeStore.native, colorScheme: .light)
         let p = CardsPalette.resolve(ctx)
-        let local = CardsLocal(local: .init(model: "Mac", readings: [], snapshot: nil), p: p, t: CardsType(scale: 1))
+        let local = LocalTiles(local: .init(model: "Mac", readings: [], snapshot: nil), p: p, t: CardsType(scale: 1))
         for style in [MeterStyle.ticks, .rule, .dots] {
             for value in [0.0, 12, 100] {
                 let row = HStack(spacing: 5) {

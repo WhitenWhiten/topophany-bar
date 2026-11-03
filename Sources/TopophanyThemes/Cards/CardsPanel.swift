@@ -662,24 +662,38 @@ struct CardsSection: View, Equatable {
         case .mac(.server(let c, let node)):
             Card(p: p) {
                 CardTitle(symbol: "apple.logo", title: tr("This Mac"), meta: tr("as a server · \(node)"), p: p, t: t)
-                CardsServer(card: c, symbol: "apple.logo", p: p, t: t, focused: focus == "server:" + c.id)
-                if let o = c.observes.first {
-                    VStack(spacing: 0) {
-                        Rectangle().fill(p.sep).frame(height: 0.5).padding(.top, 8)
-                        HStack(spacing: 6) {
-                            Image(systemName: "target").font(.system(size: 11 * t.scale))
-                            Text(tr("Observes from here"))
-                            Spacer()
-                            CardMark(mark: o.mark, size: 10, color: p.color(o.mark))
-                            Text(o.text).fontWeight(.medium).foregroundStyle(p.l1)
-                        }
-                        .font(t.font(11.5)).foregroundStyle(p.l2).padding(.top, 8)
-                    }
-                    .accessibilityElement(children: .combine)
-                }
+                MacServer(card: c, p: p, t: t, focused: focus == "server:" + c.id)
             }
         case .mac(.local(let l)):
             CardsLocal(local: l, p: p, t: t)
+        }
+    }
+}
+
+/// This Mac as a server: its card, and what it observes from here.
+struct MacServer: View {
+    var card: ServerCardModel
+    var p: CardsPalette
+    var t: CardsType
+    var focused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            CardsServer(card: card, symbol: "apple.logo", p: p, t: t, focused: focused)
+            if let o = card.observes.first {
+                VStack(spacing: 0) {
+                    Rectangle().fill(p.sep).frame(height: 0.5).padding(.top, 8)
+                    HStack(spacing: 6) {
+                        Image(systemName: "target").font(.system(size: 11 * t.scale))
+                        Text(tr("Observes from here"))
+                        Spacer()
+                        CardMark(mark: o.mark, size: 10, color: p.color(o.mark))
+                        Text(o.text).fontWeight(.medium).foregroundStyle(p.l1)
+                    }
+                    .font(t.font(11.5)).foregroundStyle(p.l2).padding(.top, 8)
+                }
+                .accessibilityElement(children: .combine)
+            }
         }
     }
 }
@@ -743,6 +757,23 @@ struct CardsSeen: View {
     }
 
     func chip(_ m: Mark, _ name: String, _ note: String?, calm: Bool, focused: Bool) -> some View {
+        SeenChip(mark: m, name: name, note: note, calm: calm, focused: focused, p: p, t: t)
+    }
+}
+
+/// An observer and what it sees: tinted in its mark's color while it sees
+/// a problem, outlined while calm.
+struct SeenChip: View {
+    var mark: Mark
+    var name: String
+    var note: String?
+    var calm: Bool
+    var focused: Bool
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        let m = mark
         HStack(spacing: 5) {
             CardMark(mark: m, size: calm ? 10 : 11, color: p.listColor(m))
             Text(name).foregroundStyle(calm ? p.l2 : p.l1)
@@ -836,6 +867,21 @@ struct CardsApplications: View {
         Card(p: p) {
             CardTitle(symbol: "square.3.layers.3d", title: tr("Applications"),
                       meta: tr("\(apps.serviceCount) services in \(apps.rows.count)"), p: p, t: t)
+            ApplicationRows(apps: apps, p: p, t: t, focus: focus)
+        }
+    }
+}
+
+/// An application a row: its mark and name, a mark per service, and a
+/// note where it says more than the marks do.
+struct ApplicationRows: View {
+    var apps: ApplicationsSection
+    var p: CardsPalette
+    var t: CardsType
+    var focus: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(apps.rows) { a in
                 HStack(spacing: 8) {
                     HStack(spacing: 7) {
@@ -975,6 +1021,20 @@ struct CardsZones: View {
         Card(p: p) {
             CardTitle(symbol: "clock", title: tr("Time zones"),
                       meta: Words.join([tr("\(zones.zones.count) zones"), tr("\(zones.serverCount) servers")]), p: p, t: t)
+            ZonesList(zones: zones, p: p, t: t)
+        }
+    }
+}
+
+/// A row per zone: its clock, its places over its day, and how far it is
+/// from here; and what has no zone, counted.
+struct ZonesList: View {
+    var zones: ZonesSection
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
             // One grid, so every ribbon is as wide as the others and the now
             // ticks line up.
             Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
@@ -1121,6 +1181,19 @@ struct CardsLocal: View {
         Card(p: p) {
             CardTitle(symbol: "apple.logo", title: tr("This Mac"),
                       meta: Words.join([local.model, tr("local readings")]), p: p, t: t)
+            LocalTiles(local: local, p: p, t: t)
+        }
+    }
+}
+
+/// This Mac's readings, a tile each two to a row, and its battery.
+struct LocalTiles: View {
+    var local: LocalSection
+    var p: CardsPalette
+    var t: CardsType
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
             let tiles = Array(tilesList.enumerated())
             Grid(horizontalSpacing: 5, verticalSpacing: 5) {
                 ForEach(0..<((tiles.count + 1) / 2), id: \.self) { r in
