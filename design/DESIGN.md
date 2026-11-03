@@ -313,7 +313,7 @@ Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary
 | **Map** | the map, each place's mark, a short name where it fits | the map with its places named | plus each node named beside its place | the same, wider |
 
 - **A mark per check.** In a narrow column (the small widget, and the medium widget's left), the bar's ticks wrap into a grid: every check as its mark, filled a column at a time in the bar's order, so trouble gathers at the right as it does on the bar. Up is quieter than trouble. Past what can be read, the stacked bar.
-- **Room to spare** spreads between the blocks, up to twice their usual gap, instead of pooling above the foot.
+- **Room to spare** spreads between the blocks, up to twice their usual gap, instead of pooling above the foot. In the cells renderer, each column's last box reaches the widget's foot, as the TUI's panels fill the screen, so boxes side by side end level; a box that is the widget's whole body ends in its foot line: the counts, what it observes from there, where it is reached, or when it was read.
 - **The mark** sits small and a little muted in the corner: it says whose widget it is without competing with the verdict.
 - **Fleet.** The extra large widget shows as many groups as fit. The rest are counted in a last cell that keeps their nodes' marks, trouble first, so trouble left out still shows.
 

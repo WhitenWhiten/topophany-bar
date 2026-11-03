@@ -13,7 +13,9 @@ struct CellsBodies {
     func statusTint(_ s: StatusSection) -> RGBA { p.tone(s.mark).mix(p.ink, 0.42) }
 
     /// The verdict, the big count, every check by health and the observers.
-    func status(_ w: inout CellWriter, _ s: StatusSection, short: Bool = false, blockHeight: Double) {
+    /// `spring` is room set above the checks' rule, so a box that reaches
+    /// a widget's foot ends in its counts.
+    func status(_ w: inout CellWriter, _ s: StatusSection, short: Bool = false, blockHeight: Double, spring: Double = 0) {
         let tone = p.tone(s.mark)
         let title = short ? s.tuiShortTitle : s.tuiTitle
         w.line([.mark(s.mark, p), .t(" " + CellText.truncate(title, w.frame.columns - 2), tone, bold: true)])
@@ -32,6 +34,7 @@ struct CellsBodies {
         if !short, !s.coverageIsComplete, let reasons = s.coverageReasons {
             for line in CellText.wrap(reasons, n, lines: 2) { w.line([.t(line, p.faint)]) }
         }
+        w.blank(spring)
         if let c = s.counts?.complete, !s.isBlind {
             let total = Double(max(1, c.up + c.warning + c.down + c.unknown))
             func share(_ v: Int) -> Int { Int((Double(v) / total * Double(n)).rounded()) }
@@ -347,9 +350,11 @@ struct CellsBodies {
     }
 
     /// `clock` adds the time where the server is: the panel's, which is
-    /// drawn every second, never a widget's.
+    /// drawn every second, never a widget's. `spring` is room set above
+    /// what it observes from there, so a box that reaches a widget's foot
+    /// ends in it.
     func server(_ w: inout CellWriter, _ c: ServerCardModel, bar: Int = 20, labelWidth: Int = 7, detail: Bool = true,
-                observes: Bool = false, short: Bool = false, clock: Bool = false) {
+                observes: Bool = false, short: Bool = false, clock: Bool = false, spring: Double = 0) {
         focusRow(&w, "server:" + c.id, lines: 4)
         let age = c.sampledAt.map { Words.ago($0, now: c.now, style: .compact) } ?? ""
         let ageText = c.isWithheld || c.samples == .stale ? tr("last \(age)") : age
@@ -400,6 +405,7 @@ struct CellsBodies {
         row(labelWidth < 7 ? tr("MEM") : tr("MEMORY"), c.memory)
         row(tr("DISK"), c.disk)
         if observes, let o = c.observes.first {
+            w.blank(spring)
             w.line([.glyph(.target, p.accent2), .t(tr(" from here  "), p.muted), .mark(o.mark, p),
                     .t(" " + o.text, o.mark == .up ? p.text : p.tone(o.mark))], [.t(ageText, p.faint)])
         }

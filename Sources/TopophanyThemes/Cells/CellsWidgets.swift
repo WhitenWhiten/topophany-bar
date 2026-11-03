@@ -65,6 +65,15 @@ struct CellsWidget: View {
         /// How many lines a box started now can hold above the bottom.
         var linesLeft: Int { max(0, Int(((bottom - w.y - chrome) / w.lineHeight + 0.001).rounded(.down))) }
 
+        /// The room `draw` would leave above the bottom, tried on a copy:
+        /// what a box that reaches the widget's foot sets above its last
+        /// lines, so they end it.
+        func spare(_ draw: (inout Self) -> Void) -> Double {
+            var probe = self
+            draw(&probe)
+            return max(0, bottom - probe.w.y)
+        }
+
         func title(_ t: String, _ extra: String? = nil) -> [Seg] {
             var s: [Seg] = [.t(" " + t, p.accent, bold: true)]
             if let extra { s += [.t(" · ", p.faint), .t(extra, p.muted)] }
@@ -104,12 +113,15 @@ struct CellsWidget: View {
 
         var updated: Date? { status.isBlind ? status.lastKnown?.at ?? status.updatedAt : status.updatedAt }
 
-        mutating func statusBox(x0: Double, x1: Double, short: Bool) {
+        /// `reach` takes it to the widget's foot, its counts last.
+        mutating func statusBox(x0: Double, x1: Double, short: Bool, reach: Bool = false) {
             let b = self.b
             let st = status
+            let spring = reach ? spare { $0.statusBox(x0: x0, x1: x1, short: short) } : 0
             ageBox(title(tr("STATUS")), at: updated, x0: x0, x1: x1, tint: b.statusTint(st)) { w in
-                b.status(&w, st, short: short, blockHeight: 48)
+                b.status(&w, st, short: short, blockHeight: 48, spring: spring)
             }
+            if reach { w.reach(bottom) }
         }
 
         /// Up to two observers that see a problem, as many as fit; the rest
@@ -179,19 +191,23 @@ struct CellsWidget: View {
                 direct(size, sources, x0: x0, x1: x1)
                 return
             }
+            // Each column's last box reaches the foot, so boxes side by side
+            // end level and no band of the widget is left empty.
             switch size {
             case .small:
-                statusBox(x0: x0, x1: x1, short: true)
+                statusBox(x0: x0, x1: x1, short: true, reach: true)
             case .medium:
                 let split = x(22)
                 let top = w.y
-                statusBox(x0: x0, x1: split, short: true)
+                statusBox(x0: x0, x1: split, short: true, reach: true)
                 w.y = top
                 rightBox(x0: split + cell, x1: x1, narrow: true)
+                w.reach(bottom)
             case .large:
                 statusBox(x0: x0, x1: x1, short: false)
                 seenBox(x0: x0, x1: x1)
                 rightBox(x0: x0, x1: x1, narrow: false)
+                w.reach(bottom)
             case .extraLarge:
                 let split = x(54)
                 let top = w.y
@@ -202,6 +218,7 @@ struct CellsWidget: View {
                     let b = self.b
                     w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: split, style: style) { b.server(&$0, c, bar: 23) }
                 }
+                w.reach(bottom)
                 w.y = top
                 if let a = attention {
                     attentionBox(a, x0: split + cell, x1: x1)
@@ -210,6 +227,7 @@ struct CellsWidget: View {
                     servicesBox(apps, x0: split + cell, x1: x1, narrow: false)
                 }
                 if let f = model.panel.fleet { fleetBox(f, x0: split + cell, x1: x1) }
+                w.reach(bottom)
             }
         }
 
@@ -222,22 +240,25 @@ struct CellsWidget: View {
             let servers = model.panel.servers
             switch size {
             case .small:
-                sourcesBox(sources, at: at, x0: x0, x1: x1, short: true)
+                sourcesBox(sources, at: at, x0: x0, x1: x1, short: true, reach: true)
             case .medium:
                 let split = x(22)
                 let top = w.y
                 // Without servers, the sources take the right; the left needn't name them.
-                sourcesBox(sources, at: at, x0: x0, x1: split, short: true, names: !servers.isEmpty)
+                sourcesBox(sources, at: at, x0: x0, x1: split, short: true, names: !servers.isEmpty, reach: true)
                 w.y = top
                 if servers.isEmpty { sourceListBox(sources, x0: split + cell, x1: x1) } else { resourcesBox(servers, x0: split + cell, x1: x1) }
+                w.reach(bottom)
             case .large:
                 sourcesBox(sources, at: at, x0: x0, x1: x1, short: false)
                 // Boxes while every server fits in one, a line each past that.
+                // Tiles end where their rows do, and the hint sits under the box.
                 if servers.isEmpty {
                     pinHint(x0: x0, x1: x1)
                 } else if !serverBoxes(servers, x0: x0, x1: x1, per: 1, detail: true),
                           !serverBoxes(servers, x0: x0, x1: x1, per: 2, detail: false) {
                     resourcesBox(servers, x0: x0, x1: x1)
+                    w.reach(bottom)
                 }
             case .extraLarge:
                 let split = x(54)
@@ -262,9 +283,10 @@ struct CellsWidget: View {
                     self = across
                     return
                 }
-                sourcesBox(sources, at: at, x0: x0, x1: split, short: false)
+                sourcesBox(sources, at: at, x0: x0, x1: split, short: false, reach: true)
                 w.y = top
                 resourcesBox(servers, x0: split + cell, x1: x1)
+                w.reach(bottom)
             }
         }
 
@@ -326,10 +348,13 @@ struct CellsWidget: View {
 
         /// The state, then its sources: by name alone in a narrow box, with
         /// the big number and each source's servers in a wide one. When
-        /// it was read ends the box.
-        mutating func sourcesBox(_ s: SourceStatusSection, at: Date?, x0: Double, x1: Double, short: Bool, names: Bool = true) {
+        /// it was read ends the box, at the widget's foot with `reach`.
+        mutating func sourcesBox(_ s: SourceStatusSection, at: Date?, x0: Double, x1: Double, short: Bool, names: Bool = true,
+                                 reach: Bool = false) {
             let b = self.b, p = self.p, st = status
             let room = linesLeft
+            let spring = reach ? spare { $0.sourcesBox(s, at: at, x0: x0, x1: x1, short: short, names: names) } : 0
+            defer { if reach { w.reach(bottom) } }
             w.box(title(tr("STATUS")), x0: x0, x1: x1, style: style, tint: b.statusTint(st)) { w in
                 w.line([.mark(st.mark, p), .t(" " + CellText.truncate(st.tuiTitle, w.frame.columns - 2), p.tone(st.mark), bold: true)])
                 let n = w.frame.columns
@@ -346,6 +371,7 @@ struct CellsWidget: View {
                 } else {
                     b.sources(&w, s, tone: p.tone(st.mark), short: !names, blockHeight: 48, rows: max(0, room - 6))
                 }
+                w.blank(spring)
                 if let at { w.line([.t(CellText.truncate(Words.asOf(at), n), p.faint)]) }
             }
         }
@@ -411,6 +437,7 @@ struct CellsWidget: View {
             let b = self.b
             guard let m = model.map else {
                 w.box(title(tr("MAP")), x0: x0, x1: x1, style: style) { $0.line([.mark(.offline, p), .t(" " + tr("not received yet"), p.muted)]) }
+                w.reach(bottom)
                 return
             }
             let tray = size != .small && b.mapHasTray(m)
@@ -468,9 +495,22 @@ struct CellsWidget: View {
                 w.live += ages
             } else {
                 head(cols)
-                w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: style) { w in
-                    b.server(&w, c, bar: 22, observes: true)
-                    if c.origin != nil, let at = c.sampledAt { w.line([.t(CellText.truncate(Words.asOf(at), w.frame.columns), self.p.faint)]) }
+                // What it observes from there, or when it was read, ends the
+                // box at the widget's foot, as the small size sets its place.
+                let spring = spare { $0.serverBox(c, spring: 0) }
+                serverBox(c, spring: spring)
+                w.reach(bottom)
+            }
+        }
+
+        mutating func serverBox(_ c: ServerCardModel, spring: Double) {
+            let b = self.b, p = self.p
+            let x0 = pad.side, x1 = pad.side + Double(cols) * cell
+            w.box(b.serverTitle(c), b.serverPill(c), x0: x0, x1: x1, style: style) { w in
+                b.server(&w, c, bar: 22, observes: true, spring: spring)
+                if c.origin != nil, let at = c.sampledAt {
+                    if c.observes.isEmpty { w.blank(spring) }
+                    w.line([.t(CellText.truncate(Words.asOf(at), w.frame.columns), p.faint)])
                 }
             }
         }
@@ -505,8 +545,10 @@ extension CellsWidget.Layout {
             w.box(title, [], x0: x0, x1: x1, style: style) { w in
                 for line in CellText.wrap(why, w.frame.columns, lines: 2) { w.line([.t(line, p.muted)]) }
             }
+            w.reach(bottom)
             return
         }
+        defer { w.reach(bottom) }
         let age = c.isWithheld ? tr("last") : c.sampledAt.map { Words.span(since: $0, now: c.now, style: .compact) } ?? ""
         let title: [Seg]
         if size == .small {

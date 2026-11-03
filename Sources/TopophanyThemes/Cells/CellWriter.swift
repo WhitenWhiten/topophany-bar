@@ -147,6 +147,9 @@ struct CellWriter {
     var plain = false
     /// Where the last box's right-hand title was drawn, if it had one.
     var titleRight: CGRect?
+    /// The last box drawn, by its place among `items`, to take it further
+    /// down.
+    var lastBox: Int?
 
     var cell: Double { metrics.cell }
     var lineHeight: Double { metrics.line }
@@ -408,8 +411,19 @@ struct CellWriter {
         }
         let rect = CGRect(x: x0, y: top, width: x1 - x0, height: bottom - top)
         items.insert(.box(rect, tint ?? p.line, radius: style.radius, gaps: gaps, style: p.box), at: start)
+        lastBox = start
         items += titleItems.items
         y = bottom
+    }
+
+    /// Takes the last box down to `bottom`, as the TUI's panels fill the
+    /// screen: a column of boxes then ends where the widget does, and boxes
+    /// side by side end level. Its lines stay where they are.
+    mutating func reach(_ bottom: Double) {
+        guard let i = lastBox, i < items.count, case .box(let r, let c, let radius, let gaps, let style) = items[i],
+              bottom > r.maxY else { return }
+        items[i] = .box(CGRect(x: r.minX, y: r.minY, width: r.width, height: bottom - r.minY), c, radius: radius, gaps: gaps, style: style)
+        y = max(y, bottom)
     }
 
     /// The focused row's background and accent bar, from border to border.

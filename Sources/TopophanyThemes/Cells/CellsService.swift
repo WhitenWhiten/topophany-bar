@@ -155,15 +155,27 @@ extension CellsWidget.Layout {
         let x0 = CellsWidget.pad.side, x1 = CellsWidget.pad.side + Double(cols) * cell
         let b = self.b
         let p = self.p
+        // The box reaches the widget's foot, as the TUI's panels fill the
+        // screen.
+        defer { w.reach(bottom) }
         guard size == .small else {
             head(cols)
-            w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: style) { w in
-                b.service(&w, c, details: false)
-                if !c.isBlank {
-                    let (left, right) = b.knownAt(c, w.frame.columns)
-                    w.line(left, right)
+            let style = self.style
+            // Where it's reached ends the box, as the small size ends in
+            // where it runs.
+            func draw(_ w: inout CellWriter, spring: Double) {
+                w.box(b.serviceTitle(c), b.servicePill(c), x0: x0, x1: x1, style: style) { w in
+                    b.service(&w, c, details: false)
+                    if !c.isBlank {
+                        w.blank(spring)
+                        let (left, right) = b.knownAt(c, w.frame.columns)
+                        w.line(left, right)
+                    }
                 }
             }
+            var probe = w
+            draw(&probe, spring: 0)
+            draw(&w, spring: max(0, bottom - probe.y))
             return
         }
         let age = c.isBlank ? "" : c.isWithheld ? tr("last") : c.sampledAt.map { Words.span(since: $0, now: c.now, style: .compact) } ?? ""
