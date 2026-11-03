@@ -420,11 +420,17 @@ struct CellsWidget: View {
             case .medium: .one(ribbon: true)
             default: .two
             }
+            let foot = !rest.isEmpty || (extra > 0 && shown.count * per + 1 <= room)
+            // The large size's taller rows: room to spare spreads between
+            // zones, a line at most, rather than pooling under them.
+            let free = room - shown.count * per - (foot ? 1 : 0)
+            let gap = size == .large && shown.count > 1 && free > 0
+                ? min(w.lineHeight, Double(free) * w.lineHeight / Double(shown.count - 1)) : 0
             w.box(title(tr("TIME ZONES"), "\(z.zones.count)"), size == .small ? [] : [.t(" " + tr("\(z.serverCount) servers") + " ", p.muted)],
                   x0: x0, x1: x1, style: style) { w in
-                b.zones(&w, z, shown: shown, rest: rest, lines: lines,
-                        foot: !rest.isEmpty || (extra > 0 && shown.count * per + 1 <= room))
+                b.zones(&w, z, shown: shown, rest: rest, lines: lines, foot: foot, gap: gap)
             }
+            w.reach(bottom)
         }
 
         // MARK: Map

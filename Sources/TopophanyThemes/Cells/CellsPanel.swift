@@ -427,9 +427,9 @@ struct CellsBodies {
     /// Each zone in `lines`, every ribbon as wide as the others so the now
     /// ticks line up. `shown` are the zones that fit, `rest` those left
     /// out, counted on a last line with their servers' marks, trouble
-    /// first.
+    /// first. `gap` is room to spare, set between zones.
     func zones(_ w: inout CellWriter, _ z: ZonesSection, shown: [ZonesSection.Zone]? = nil, rest: [ZonesSection.Zone] = [],
-               lines: ZoneLines = .two, foot: Bool = true) {
+               lines: ZoneLines = .two, foot: Bool = true, gap: Double = 0) {
         let n = w.frame.columns
         let shown = shown ?? z.zones
         // As wide as the widest clock or zone name ("GMT-10", "GMT+5:30"),
@@ -467,7 +467,8 @@ struct CellsBodies {
         switch lines {
         case .two:
             let width = max(8, n - tw - 2 - 1 - rw)
-            for zone in shown {
+            for (i, zone) in shown.enumerated() {
+                if i > 0 { w.blank(gap) }
                 let m = marks(zone.servers, room: 10)
                 let room = n - tw - 2 - m.reduce(0) { $0 + $1.width } - 1 - rw - 1
                 w.line([clock(zone), .t("  ", p.text), .t(CellText.fit(zone.titles, max(1, room)), p.text)],
