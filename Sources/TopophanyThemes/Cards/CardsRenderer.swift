@@ -36,7 +36,7 @@ public struct CardsRenderer: Renderer {
         let p = CardsPalette.resolve(context)
         let ground: [Color] = switch p.style.surface {
         case .glass: [p.isDark ? Color(rgb: 0x1E1E23) : Color(rgb: 0xF4F4F6), p.panel, p.card]
-        case .matte: [p.panel]
+        case .matte, .paper: [p.panel]
         case .night: [p.panel2 ?? p.panel, p.panel.opacity(0.55), p.card]
         }
         return ThemeColors(ground: ground,

@@ -33,13 +33,13 @@ struct CardsMapPainter {
     // MARK: colors
 
     /// The land's ink: the text's on glass, the accent at night, the page's
-    /// ink on matte.
+    /// ink on matte and paper.
     var landInk: Color {
         if vibrant { return p.l1 }
         return switch p.style.surface {
         case .glass: p.isDark ? .white : .black
         case .night: p.accent
-        case .matte: p.l1
+        case .matte, .paper: p.l1
         }
     }
 
@@ -47,7 +47,7 @@ struct CardsMapPainter {
         let base: Double = switch p.style.surface {
         case .glass: p.isDark ? 0.34 : 0.24
         case .night: p.isDark ? 0.42 : 0.4
-        case .matte: p.isDark ? 0.3 : 0.24
+        case .matte, .paper: p.isDark ? 0.3 : 0.24
         }
         return base * (p.increaseContrast ? 1.5 : 1)
     }

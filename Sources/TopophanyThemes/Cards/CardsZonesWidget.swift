@@ -176,7 +176,9 @@ struct WidgetZones: View {
                 marks(z.servers, 8, size: 7.5)
             }
             // Long past a reload, its now would be an hour gone by.
-            if !zones.isLongPast { DayRibbon(zone: z, dark: p.isDark, now: p.accent, contrast: p.increaseContrast, band: 3.5) }
+            if !zones.isLongPast {
+                DayRibbon(zone: z, dark: p.isDark, now: p.accent, contrast: p.increaseContrast, band: 3.5, neutral: p.style.isPaper)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

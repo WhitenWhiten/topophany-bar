@@ -18,8 +18,15 @@ struct CardsPanel: View {
     var p: CardsPalette { CardsPalette.resolve(ctx) }
     var t: CardsType { CardsType(scale: ctx.scale, theme: ctx.theme) }
 
-    /// Between cards; ruled sections meet at their rules.
-    var gap: Double { p.style.surface == .matte ? 0 : 6 }
+    /// Between cards; ruled sections meet at their rules, and paper's
+    /// cards stand a little apart, as the homepage's do.
+    var gap: Double {
+        switch p.style.surface {
+        case .glass, .night: 6
+        case .matte: 0
+        case .paper: 8
+        }
+    }
 
     /// The most the scroll shows at once: what the panel's height leaves
     /// it.
@@ -137,7 +144,7 @@ struct CardsGround<S: Shape>: View {
         switch p.style.surface {
         case .glass:
             if live { shape.fill(.clear).glassEffect(.regular.tint(p.panel), in: shape) } else { shape.fill(p.panel) }
-        case .matte:
+        case .matte, .paper:
             shape.fill(p.panel)
         case .night:
             shape.fill(LinearGradient(colors: [p.panel, p.panel2 ?? p.panel], startPoint: .top, endPoint: .bottom))
@@ -158,9 +165,11 @@ struct CardsHeader: View {
         HStack(spacing: 9) {
             BrandMark()
                 .frame(width: 26, height: 26)
-                .shadow(color: .black.opacity(0.35), radius: 1, y: 1)
+                // Paper casts no soft shadows.
+                .shadow(color: .black.opacity(p.style.isPaper ? 0 : 0.35), radius: 1, y: 1)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Topophany").font(t.font(13.5, .semibold)).foregroundStyle(p.l1)
+                // In a book, the name in monospace, as topophany.com sets it.
+                Text("Topophany").font(t.book ? t.label(13, .semibold) : t.font(13.5, .semibold)).foregroundStyle(p.l1)
                 Text(Words.join([chrome.project, chrome.view]))
                     .font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
             }
@@ -186,8 +195,8 @@ struct HeaderButton: View {
                 .font(.system(size: 14, weight: .regular))
                 .foregroundStyle(hover ? p.l1 : p.l2)
                 .frame(width: 26, height: 26)
-                .background(Circle().fill(p.fill2).opacity(hover ? 1 : 0))
-                .contentShape(Circle())
+                .background(p.style.round.fill(p.fill2).opacity(hover ? 1 : 0))
+                .contentShape(p.style.round)
                 .animation(Highlight.easing(hover), value: hover)
         }
         .buttonStyle(PressStyle())
@@ -219,8 +228,8 @@ struct QuietButton: View {
             .lineLimit(1)
             .fixedSize()
             .padding(.horizontal, 8).padding(.vertical, 3.5)
-            .background(Capsule().fill(quiet ? p.accent.opacity(hover ? 0.24 : 0.16) : hover ? p.fill : p.fill2))
-            .contentShape(Capsule())
+            .background(p.style.capsule.fill(quiet ? p.accent.opacity(hover ? 0.24 : 0.16) : hover ? p.fill : p.fill2))
+            .contentShape(p.style.capsule)
             .animation(Highlight.easing(hover), value: hover)
             .animation(.easeOut(duration: 0.2), value: quiet)
         }
@@ -252,8 +261,8 @@ struct DownloadButton: View {
             .lineLimit(1)
             .fixedSize()
             .padding(.horizontal, 8).padding(.vertical, 3.5)
-            .background(Capsule().fill(p.accent.opacity(hover && !offer.isDownloading ? 0.24 : 0.16)))
-            .contentShape(Capsule())
+            .background(p.style.capsule.fill(p.accent.opacity(hover && !offer.isDownloading ? 0.24 : 0.16)))
+            .contentShape(p.style.capsule)
             .animation(Highlight.easing(hover), value: hover)
         }
         .buttonStyle(PressStyle())
@@ -281,8 +290,10 @@ struct CardsFooter: View {
         HStack {
             let color: Color = chrome.isLive ? p.up : p.l3
             HStack(spacing: 7) {
-                Circle().fill(color).frame(width: 6, height: 6)
-                    .background(Circle().fill(color.opacity(0.22)).frame(width: 12, height: 12))
+                // On paper a square with no halo, as the homepage marks
+                // what's live.
+                p.style.round.fill(color).frame(width: 6, height: 6)
+                    .background(Circle().fill(color.opacity(p.style.isPaper ? 0 : 0.22)).frame(width: 12, height: 12))
                 Text(chrome.connectionText).lineLimit(1)
             }
             .font(t.font(11)).foregroundStyle(p.l3)
@@ -321,14 +332,15 @@ struct CardsFooter: View {
     /// A footer button's ground: a fill on glass, an outline on a page.
     @ViewBuilder var key: some View {
         let shape = RoundedRectangle(cornerRadius: p.style.radius(7), style: .continuous)
-        if p.style.surface == .glass { shape.fill(p.fill2) } else { shape.strokeBorder(p.cardEdge, lineWidth: 0.75) }
+        if p.style.surface == .glass { shape.fill(p.fill2) } else { shape.strokeBorder(p.cardEdge, lineWidth: p.style.isPaper ? 1 : 0.75) }
     }
 }
 
 // MARK: cards
 
-/// A section: a card on glass, outlined at night, or on matte a ruled
-/// block of the page, its rule above it.
+/// A section: a card on glass, outlined at night, on matte a ruled block
+/// of the page, its rule above it, or on paper a white card edged by a
+/// hairline, untinted: there the verdict's tile carries its color.
 struct Card<Content: View>: View {
     var p: CardsPalette
     var padding = EdgeInsets(top: 8, leading: 11, bottom: 9, trailing: 11)
@@ -346,7 +358,7 @@ struct Card<Content: View>: View {
                     if let tint { Rectangle().fill(tint.opacity(0.5)).frame(height: 2).frame(maxHeight: .infinity, alignment: .top) }
                 } else {
                     shape.fill(p.card)
-                    if let tint {
+                    if let tint, !p.style.isPaper {
                         shape.fill(LinearGradient(stops: [.init(color: tint, location: 0), .init(color: .clear, location: 0.55)],
                                                   startPoint: .topLeading, endPoint: .bottomTrailing))
                     }
@@ -356,7 +368,7 @@ struct Card<Content: View>: View {
                 if matte {
                     Rectangle().fill(p.cardEdge).frame(height: 0.75).frame(maxHeight: .infinity, alignment: .top)
                 } else {
-                    shape.strokeBorder(p.cardEdge, lineWidth: p.style.surface == .night ? 0.75 : 0.5)
+                    shape.strokeBorder(p.cardEdge, lineWidth: p.style.surface == .night ? 0.75 : p.style.isPaper ? 1 : 0.5)
                 }
             }
     }
@@ -371,20 +383,45 @@ struct CardTitle: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            if p.style.caps {
-                // Small capitals, as a printed page titles its sections.
-                Text(title.uppercased(with: L10n.locale)).font(t.font(10, .semibold)).tracking(1.4).foregroundStyle(p.accent)
+            if p.style.book {
+                BookTitle(title: title, meta: meta, p: p, t: t)
             } else {
-                if p.style.symbols { Image(systemName: symbol).font(.system(size: 11.5 * t.scale, weight: .medium)).frame(width: 14) }
-                Text(title).font(t.font(11.5, .semibold))
+                if p.style.caps {
+                    // Small capitals, as a printed page titles its sections.
+                    Text(title.uppercased(with: L10n.locale)).font(t.font(10, .semibold)).tracking(1.4).foregroundStyle(p.accent)
+                } else {
+                    if p.style.symbols { Image(systemName: symbol).font(.system(size: 11.5 * t.scale, weight: .medium)).frame(width: 14) }
+                    Text(title).font(t.font(11.5, .semibold))
+                }
+                Spacer(minLength: 6)
+                Text(meta).font(t.font(p.style.caps ? 10.5 : 11, .medium)).foregroundStyle(p.l3).lineLimit(1)
             }
-            Spacer(minLength: 6)
-            Text(meta).font(t.font(p.style.caps ? 10.5 : 11, .medium)).foregroundStyle(p.l3).lineLimit(1)
         }
         .foregroundStyle(p.l2)
-        .padding(.bottom, p.style.caps ? 8 : 6)
+        .padding(.bottom, p.style.caps || p.style.book ? 8 : 6)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// A section's title as a book sets it, as the homepage heads its
+/// chapters: letterspaced monospace capitals, a dotted rule, and after
+/// it the count as a running head, in italic serif.
+struct BookTitle: View {
+    var title: String
+    var meta: String
+    var p: CardsPalette
+    var t: CardsType
+    var size = 10.0
+
+    var body: some View {
+        HStack(spacing: 8) {
+            // The words take their room before the rule takes what's left.
+            Text(title.uppercased(with: L10n.locale)).font(t.label(size, .medium)).tracking(size * t.scale * 0.14)
+                .foregroundStyle(p.l2).lineLimit(1).layoutPriority(2)
+            DottedRule(color: p.l3).frame(minWidth: 12)
+            if !meta.isEmpty { Text(meta).font(t.running(size + 1)).foregroundStyle(p.l2).lineLimit(1).layoutPriority(1) }
+        }
     }
 }
 
@@ -464,7 +501,8 @@ struct CardsStatusCard: View {
             HStack(spacing: 12) {
                 HeroSymbol(status: status, size: 44, palette: p)
                 VerdictLines {
-                    Text(status.title).font(t.font(19, .semibold)).tracking(-0.34).foregroundStyle(p.l1).lineLimit(1)
+                    Text(status.title).font(t.book ? t.display(21, .medium) : t.font(19, .semibold))
+                        .tracking(t.book ? 0.2 : -0.34).foregroundStyle(p.l1).lineLimit(1)
                         .contentTransition(.numericText()).settles(on: status.title)
                     Text(download?.line ?? status.subtitle).font(t.font(12)).foregroundStyle(p.l2).lineLimit(2)
                     if let coverage = status.coverageText {
@@ -1088,7 +1126,7 @@ struct ZonesList: View {
                 }
                 .fixedSize()
             }
-            DayRibbon(zone: z, dark: p.isDark, now: p.accent, contrast: p.increaseContrast)
+            DayRibbon(zone: z, dark: p.isDark, now: p.accent, contrast: p.increaseContrast, neutral: p.style.isPaper)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityHidden(true)
@@ -1118,18 +1156,23 @@ struct ZoneTitle: View {
 /// A zone's day from 12 hours before now to 12 hours after: a fine band,
 /// slate around its midnight and pale around its noon, a gap at midnight,
 /// and now a tick in the accent, in the middle, where every zone's now
-/// lines up. Neither tone is a status color.
+/// lines up. Neither tone is a status color; on paper, night is the ink's.
 struct DayRibbon: View {
     var zone: ZonesSection.Zone
     var dark: Bool
     var now: Color
     var contrast = false
     var band = 4.0
+    /// Night in the page's own gray rather than slate.
+    var neutral = false
 
     /// Night and day, as red, green, blue and opacity.
     var tones: (night: [Double], day: [Double]) {
-        dark ? ([0.42, 0.49, 0.72, contrast ? 0.42 : 0.26], [0.97, 0.96, 0.93, contrast ? 0.75 : 0.5])
+        let (night, day) = dark ? ([0.42, 0.49, 0.72, contrast ? 0.42 : 0.26], [0.97, 0.96, 0.93, contrast ? 0.75 : 0.5])
             : ([0.2, 0.25, 0.42, contrast ? 0.62 : 0.44], [0.24, 0.24, 0.3, contrast ? 0.16 : 0.08])
+        guard neutral else { return (night, day) }
+        let ink = dark ? 0.6 : 0.1
+        return ([ink, ink, ink, night[3]], [ink, ink, ink, day[3]])
     }
 
     var body: some View {
@@ -1214,7 +1257,7 @@ struct LocalTiles: View {
                 .font(t.font(11.5)).foregroundStyle(p.l2)
                 .padding(.horizontal, 9).padding(.vertical, 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: p.style.surface == .matte ? 3 : 9, style: .continuous).fill(p.fill2))
+                .background(RoundedRectangle(cornerRadius: p.style.tileRadius, style: .continuous).fill(p.fill2))
                 .padding(.top, 6)
                 .accessibilityElement(children: .combine)
             }

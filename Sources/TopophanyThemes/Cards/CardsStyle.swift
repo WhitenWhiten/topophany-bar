@@ -3,12 +3,15 @@ import SwiftUI
 /// How the cards renderer draws beyond its colors, from a theme's style
 /// slots (`StyleSlots.cards`); Glance draws its cards with them too.
 struct CardsStyle: Equatable {
-    enum Surface: String { case glass, matte, night }
+    enum Surface: String { case glass, matte, night, paper }
 
     var surface = Surface.glass
     var meter = MeterStyle.ticks
     /// Section titles in letterspaced capitals, without their symbols.
     var caps = false
+    /// Titles as a book sets them (`"titles": "book"`): sections in
+    /// letterspaced monospace over a dotted rule, the verdict in the serif.
+    var book = false
     /// Section titles beside their symbols; Glance titles them in words
     /// alone.
     var symbols = true
@@ -20,21 +23,45 @@ struct CardsStyle: Equatable {
         surface = Surface(rawValue: theme.style("surface")) ?? .glass
         meter = MeterStyle(rawValue: theme.style("meter")) ?? .ticks
         caps = theme.style("titles") == "caps"
+        book = theme.style("titles") == "book"
         symbols = theme.renderer != .glance
         texture = Texture(theme.style("texture"))
     }
 
-    /// The panel's corners: a ruled page has crisp ones.
-    var panelRadius: Double { surface == .matte ? 10 : 18 }
+    var isPaper: Bool { surface == .paper }
+
+    /// The panel's corners: a ruled page has crisp ones, and paper none.
+    var panelRadius: Double {
+        switch surface {
+        case .glass, .night: 18
+        case .matte: 10
+        case .paper: 0
+        }
+    }
     /// A card's, and what follows from it: tiles, chips, the hero.
-    var cardRadius: Double { surface == .matte ? 4 : 13 }
+    var cardRadius: Double {
+        switch surface {
+        case .glass, .night: 13
+        case .matte: 4
+        case .paper: 0
+        }
+    }
+    /// A tile's within a card: crisp on matte, square on paper.
+    var tileRadius: Double {
+        switch surface {
+        case .glass, .night: 9
+        case .matte: 3
+        case .paper: 0
+        }
+    }
     /// A row's or a tile's corners, at `r` on glass: crisp on matte, softer
-    /// at night.
+    /// at night, square on paper.
     func radius(_ r: Double) -> Double {
         switch surface {
         case .glass: r
         case .matte: min(r, 3)
         case .night: r + 3
+        case .paper: 0
         }
     }
 
@@ -42,13 +69,20 @@ struct CardsStyle: Equatable {
     /// the ends.
     func chip(_ r: Double) -> Double { surface == .night ? 100 : radius(r) }
 
+    /// A button round at its ends (Quiet, Download): square on paper.
+    var capsule: AnyShape { isPaper ? AnyShape(Rectangle()) : AnyShape(Capsule()) }
+    /// A round control or dot: square on paper, as the homepage's status
+    /// squares are.
+    var round: AnyShape { isPaper ? AnyShape(Rectangle()) : AnyShape(Circle()) }
+
     /// The verdict's tile, `size` wide: a squircle, a crisp square on matte,
-    /// a disc at night.
+    /// a disc at night, a square on paper.
     func heroRadius(_ size: Double) -> Double {
         switch surface {
         case .glass: size * 12 / 44
         case .matte: size * 5 / 44
         case .night: size / 2
+        case .paper: 0
         }
     }
 }
@@ -62,6 +96,11 @@ enum MeterStyle: String {
     case rule
     /// A matrix of dots.
     case dots
+    /// A 1-bit dither, a point to a cell: the reading solid and square, on
+    /// a field of dots, one cell in four, as the homepage's sky thins out
+    /// into its paper. The field starts where the meter does, so its dots
+    /// hold still while the reading moves.
+    case dither
 
     struct Part {
         /// Where it ends along the meter, 0 … 1; it starts where the one
@@ -136,12 +175,57 @@ enum MeterStyle: String {
                 let x = s.width * l / 100
                 ctx.fill(Path(roundedRect: CGRect(x: x - 0.5, y: -2, width: 1, height: s.height + 4), cornerRadius: 0.5), with: .color(ink))
             }
+        case .dither:
+            // Whole points throughout, so every edge lands on a pixel.
+            var x = 0.0
+            for p in parts where p.end > x {
+                let from = (s.width * x).rounded(), to = (s.width * min(1, p.end)).rounded()
+                if to > from { ctx.fill(Path(CGRect(x: from, y: 0, width: to - from, height: s.height)), with: .color(p.color)) }
+                x = p.end
+            }
+            // The field, a cell clear of the reading.
+            let end = (s.width * min(1, x)).rounded()
+            let lit = end > 0 ? end + 1 : 0
+            var field = Path()
+            var c = lit.truncatingRemainder(dividingBy: 2) == 0 ? lit : lit + 1
+            while c + 1 <= s.width {
+                var r = 0.0
+                while r + 1 <= s.height {
+                    field.addRect(CGRect(x: c, y: r, width: 1, height: 1))
+                    r += 2
+                }
+                c += 2
+            }
+            ctx.fill(field, with: .color(track))
+            if let l = limit, l < 100 {
+                let x = min(s.width - 1, (s.width * l / 100).rounded(.down))
+                ctx.fill(Path(CGRect(x: x, y: -2, width: 1, height: s.height + 4)), with: .color(ink))
+            }
         }
+    }
+
+    /// Every other cell of `s`, a point each: the dither's half tone.
+    static func checker(_ s: CGSize) -> Path {
+        var p = Path()
+        var r = 0.0
+        while r + 1 <= s.height {
+            var c = r.truncatingRemainder(dividingBy: 2)
+            while c + 1 <= s.width {
+                p.addRect(CGRect(x: c, y: r, width: 1, height: 1))
+                c += 2
+            }
+            r += 1
+        }
+        return p
     }
 
     /// What is unknown: never empty, never zero.
     func drawUnknown(_ ctx: GraphicsContext, size s: CGSize, color: Color) {
         switch self {
+        case .dither:
+            // The half tone: twice the field's dots, so it never reads as
+            // an empty track.
+            ctx.fill(Self.checker(s), with: .color(color))
         case .ticks, .dots:
             var hatch = ctx
             hatch.clip(to: Path(roundedRect: CGRect(origin: .zero, size: s), cornerRadius: s.height / 2))
@@ -162,15 +246,28 @@ enum MeterStyle: String {
     }
 
     /// A history of readings as bars, newest at the right: lit columns of
-    /// ticks, hairlines on a scale, or columns of dots. Each column is
-    /// centred vertically so its middle stays aligned as readings change.
+    /// ticks, hairlines on a scale, columns of dots, or solid columns on a
+    /// dotted rule. Each column is centred vertically so its middle stays
+    /// aligned as readings change.
     func drawHistory(_ ctx: GraphicsContext, size s: CGSize, values: [Double], top: Double, capacity: Int, color: Color, baseline: Color) {
         let n = max(capacity, values.count)
         guard n > 0 else { return }
         let mid = s.height / 2
-        let line = self == .rule ? 0.75 : 1.0
-        ctx.fill(Path(CGRect(x: 0, y: mid - line / 2, width: s.width, height: line)),
-                 with: .color(baseline))
+        if self == .dither {
+            // A dot every other point, as the homepage rules its sections.
+            let y = (mid - 0.5).rounded()
+            var dots = Path()
+            var x = 0.0
+            while x + 1 <= s.width {
+                dots.addRect(CGRect(x: x, y: y, width: 1, height: 1))
+                x += 2
+            }
+            ctx.fill(dots, with: .color(baseline))
+        } else {
+            let line = self == .rule ? 0.75 : 1.0
+            ctx.fill(Path(CGRect(x: 0, y: mid - line / 2, width: s.width, height: line)),
+                     with: .color(baseline))
+        }
         let pitch = s.width / Double(n)
         let shown = Array(values.suffix(n).reversed().enumerated())
         switch self {
@@ -201,6 +298,17 @@ enum MeterStyle: String {
                 for row in 0..<k {
                     path.addEllipse(in: CGRect(x: x, y: start + Double(row) * step, width: d, height: d))
                 }
+            }
+            ctx.fill(path, with: .color(color))
+        case .dither:
+            // Whole points: a column at least a point wide and a point
+            // tall, so no edge falls between pixels.
+            let w = max(1, (pitch * 0.6).rounded(.down))
+            var path = Path()
+            for (i, v) in shown {
+                let h = max(1, (min(1, v / max(top, 1e-9)) * s.height).rounded())
+                let x = (s.width - Double(i + 1) * pitch + (pitch - w)).rounded()
+                path.addRect(CGRect(x: x, y: ((s.height - h) / 2).rounded(.down), width: w, height: h))
             }
             ctx.fill(path, with: .color(color))
         }

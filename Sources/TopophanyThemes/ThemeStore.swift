@@ -30,6 +30,22 @@ public struct ThemeStore: Sendable {
      "tokens": {}, "font": {"family": "SF Pro", "size": 13}}
     """#
 
+    /// White Night, after the author's homepage and topophany.com: ink on
+    /// white paper, square at every corner, cards edged by a hairline,
+    /// sections titled in letterspaced monospace over a dotted rule and
+    /// the verdict in a book's serif. Black, white and gray, a 1-bit dither
+    /// standing in for the tones between; only what needs a look takes
+    /// color, the White Night moon's amber and red. Always light.
+    public static let whiteNightJSON = #"""
+    {"schema": 1, "id": "whiteNight", "name": "White Night", "renderer": "cards", "appearance": "light",
+     "style": {"surface": "paper", "meter": "dither", "titles": "book"},
+     "tokens": {
+       "accent": "#1A1A1A", "accent2": "#6B6B6B", "card": "#FFFFFF", "cardEdge": "#E3E3E3",
+       "panelMaterial": "#FFFFFF", "fill": "#B4B4B4", "fill2": "#F6F6F4",
+       "up": "#1A1A1A", "warning": "#EA8400", "down": "#D2261E", "unknown": "#6B6B6B"},
+     "font": {"family": "SF Pro", "size": 13}}
+    """#
+
     /// The TUI's palette (internal/tui/theme.go).
     public static let terminalJSON = #"""
     {"schema": 1, "id": "terminal", "name": "Terminal", "renderer": "cells", "appearance": "dark",
@@ -101,8 +117,8 @@ public struct ThemeStore: Sendable {
 
     /// Every built-in theme, through the same path a file takes: Native and
     /// Glance, the other cards themes, then the cells themes.
-    public static let builtIn: [Theme] = [nativeJSON, glanceJSON, auroraJSON, linenJSON, terminalJSON, paperJSON,
-                                          duskJSON].map { json in
+    public static let builtIn: [Theme] = [nativeJSON, glanceJSON, auroraJSON, linenJSON, whiteNightJSON, terminalJSON,
+                                          paperJSON, duskJSON].map { json in
         switch load(Data(json.utf8)) {
         case .success(let t): return t
         case .failure(let e): fatalError("built-in theme refused: \(e)")
@@ -113,9 +129,10 @@ public struct ThemeStore: Sendable {
     public static var glance: Theme { builtIn[1] }
     public static var aurora: Theme { builtIn[2] }
     public static var linen: Theme { builtIn[3] }
-    public static var terminal: Theme { builtIn[4] }
-    public static var paper: Theme { builtIn[5] }
-    public static var dusk: Theme { builtIn[6] }
+    public static var whiteNight: Theme { builtIn[4] }
+    public static var terminal: Theme { builtIn[5] }
+    public static var paper: Theme { builtIn[6] }
+    public static var dusk: Theme { builtIn[7] }
 
     /// Where user themes will be read from.
     public static var userDirectory: URL {

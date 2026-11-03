@@ -123,13 +123,19 @@ public enum StyleSlots {
     public static let cards: [String: [String]] = [
         // Glass, as the system draws it; matte, an opaque ground whose
         // sections are ruled, not carded; night, an opaque ground that
-        // deepens toward the foot, its cards outlined.
-        "surface": ["glass", "matte", "night"],
+        // deepens toward the foot, its cards outlined; paper, a white page
+        // square at every corner, its cards edged by a hairline, a 1-bit
+        // dither where the others would shade.
+        "surface": ["glass", "matte", "night", "paper"],
         // Fine graduated ticks; a scale's rule and its graduations; a
-        // matrix of dots.
-        "meter": ["ticks", "rule", "dots"],
-        // Section titles as written, or in letterspaced capitals.
-        "titles": ["plain", "caps"],
+        // matrix of dots; a 1-bit dither, the reading solid on a field of
+        // dots.
+        "meter": ["ticks", "rule", "dots", "dither"],
+        // Section titles as written; in letterspaced capitals; or as a
+        // book sets them: letterspaced monospace over a dotted rule, the
+        // count a running head in italic serif, and the verdict, the
+        // panel's own title, in the serif.
+        "titles": ["plain", "caps", "book"],
         "texture": ["none", "weave", "grain"],
     ]
     public static let cells: [String: [String]] = [
@@ -143,7 +149,7 @@ public enum StyleSlots {
     /// Glance draws on glass, its sections titled in words alone; of the
     /// cards renderer's styles, it takes the meter.
     public static let glance: [String: [String]] = [
-        "meter": ["ticks", "rule", "dots"],
+        "meter": ["ticks", "rule", "dots", "dither"],
     ]
 
     public static func slots(_ renderer: RendererID) -> [String: [String]] {

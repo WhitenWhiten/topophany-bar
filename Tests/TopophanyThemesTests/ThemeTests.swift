@@ -5,13 +5,13 @@ import Testing
 
 @Suite struct ThemeTests {
     @Test func builtInsPassValidation() {
-        #expect(ThemeStore.builtIn.map(\.id) == ["native", "glance", "aurora", "linen", "terminal", "paper", "dusk"])
+        #expect(ThemeStore.builtIn.map(\.id) == ["native", "glance", "aurora", "linen", "whiteNight", "terminal", "paper", "dusk"])
         for t in ThemeStore.builtIn { #expect(ThemeValidator.refusals(t).isEmpty, "\(t.id): \(ThemeValidator.refusals(t))") }
         // Red-green margins under simulated color-blindness are advisories:
         // the TUI's own palette is under 8 for up/warning.
         #expect(ThemeValidator.validate(ThemeStore.terminal).contains { $0.isAdvisory && $0.description.contains("protanopia") })
-        #expect(ThemeStore.builtIn.map(\.renderer) == [.cards, .glance, .cards, .cards, .cells, .cells, .cells])
-        #expect(ThemeStore.builtIn.map(\.appearance) == [.system, .system, .system, .system, .dark, .light, .dark])
+        #expect(ThemeStore.builtIn.map(\.renderer) == [.cards, .glance, .cards, .cards, .cards, .cells, .cells, .cells])
+        #expect(ThemeStore.builtIn.map(\.appearance) == [.system, .system, .system, .system, .light, .dark, .light, .dark])
         for t in ThemeStore.builtIn { #expect(ThemeStore().theme(t.id) == t) }
     }
 
@@ -62,6 +62,11 @@ import Testing
         #expect(CardsType(scale: 1, theme: ThemeStore.native).design == .default)
         #expect(CardsType(scale: 1, theme: ThemeStore.aurora).design == .rounded)
         #expect(CardsType(scale: 1, theme: ThemeStore.linen).design == .serif)
+        // White Night sets its body in SF Pro, and its titles as a book:
+        // labels in monospace, the verdict in the serif.
+        let book = CardsType(scale: 1, theme: ThemeStore.whiteNight)
+        #expect(book.design == .default && book.book)
+        #expect(!CardsType(scale: 1, theme: ThemeStore.linen).book)
         var rounded = ThemeStore.native
         rounded.font = Theme.Font(family: "SF Pro Rounded", size: 13)
         #expect(CardsType(scale: 1, theme: rounded).design == .rounded)
@@ -76,11 +81,14 @@ import Testing
             guard case .failure(.refused(let p)) = ThemeStore.load(Data(json.utf8)) else { return [] }
             return p.map(\.description)
         }
-        #expect(refusals(##"{"schema":1,"id":"x","renderer":"cards","style":{"meter":"rule","surface":"paper"}}"##)
-            == ["style surface is glass, matte, night, not paper"])
+        #expect(refusals(##"{"schema":1,"id":"x","renderer":"cards","style":{"meter":"rule","surface":"chrome"}}"##)
+            == ["style surface is glass, matte, night, paper, not chrome"])
         #expect(refusals(##"{"schema":1,"id":"x","renderer":"cards","style":{"box":"rules"}}"##) == ["cards has no style box"])
         #expect(ThemeStore.native.style("surface") == "glass")
         #expect(ThemeStore.linen.style("meter") == "rule")
+        #expect(ThemeStore.whiteNight.style("surface") == "paper" && ThemeStore.whiteNight.style("titles") == "book")
+        // Glance takes the dither as it takes the cards renderer's other meters.
+        #expect(refusals(##"{"schema":1,"id":"x","renderer":"glance","style":{"meter":"dither"}}"##).isEmpty)
         #expect(ThemeStore.terminal.style("box") == "rounded")
         #expect(ThemeStore.dusk.style("meter") == "braille")
         // Every built-in theme looks its own: no two share a renderer and

@@ -119,6 +119,22 @@
         }
       }
     },
+    "White Night": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "白夜"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "白夜"
+          }
+        }
+      }
+    },
     "Map": {
       "localizations": {
         "ja": {

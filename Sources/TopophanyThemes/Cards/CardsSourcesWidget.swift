@@ -128,7 +128,8 @@ struct WidgetSources: View {
                 Spacer(minLength: 0)
                 WidgetMark(palette: p, rendering: ctx.widgetRendering)
             }
-            Text(status.title).font(t.font(16, .semibold)).tracking(-0.24).lineLimit(1)
+            Text(status.title).font(t.book ? t.display(18, .medium) : t.font(16, .semibold))
+                .tracking(t.book ? 0.2 : -0.24).lineLimit(1)
                 .padding(.top, 10)
             Text(subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -144,7 +145,8 @@ struct WidgetSources: View {
         HStack(spacing: 12) {
             HeroSymbol(status: status, size: 44, palette: p)
             VStack(alignment: .leading, spacing: 2) {
-                Text(status.title).font(t.font(18, .semibold)).tracking(-0.27).lineLimit(1)
+                Text(status.title).font(t.book ? t.display(20, .medium) : t.font(18, .semibold))
+                    .tracking(t.book ? 0.2 : -0.27).lineLimit(1)
                 Text(subtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -168,7 +170,7 @@ struct WidgetSources: View {
         } else {
             Hatch(color: p.fill, line: 3, gap: 3)
                 .frame(height: min(6, ticks))
-                .clipShape(Capsule())
+                .clipShape(p.style.capsule)
                 .frame(height: ticks)
                 .accessibilityHidden(true)
         }

@@ -251,6 +251,22 @@
         }
       }
     },
+    "Ink on white paper, as topophany.com is set: square cards, dotted rules, a serif verdict and 1-bit dithered meters.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "topophany.com と同じ、白い紙に墨：角の立ったカード、点線の罫、セリフ体の判定、1 ビットのディザで描くメーター。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与 topophany.com 相同的白纸黑墨：方角卡片、点线分隔、衬线体判定、1-bit 抖动仪表。"
+          }
+        }
+      }
+    },
     "A node that isn’t in the topology shows as such.": {
       "localizations": {
         "ja": {

@@ -278,7 +278,8 @@ struct WidgetStatus {
                 Spacer(minLength: 0)
                 WidgetMark(palette: p, rendering: ctx.widgetRendering)
             }
-            Text(status.shortTitle).font(t.font(16, .semibold)).tracking(-0.24).lineLimit(1)
+            Text(status.shortTitle).font(t.book ? t.display(18, .medium) : t.font(16, .semibold))
+                .tracking(t.book ? 0.2 : -0.24).lineLimit(1)
                 .padding(.top, 10)
             Text(status.shortSubtitle).font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
                 .padding(.top, 2).padding(.bottom, 9)
@@ -304,7 +305,8 @@ struct WidgetStatus {
             HStack(spacing: 12) {
                 HeroSymbol(status: status, size: 44, palette: p)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(status.title).font(t.font(18, .semibold)).tracking(-0.27).lineLimit(1)
+                    Text(status.title).font(t.book ? t.display(20, .medium) : t.font(18, .semibold))
+                        .tracking(t.book ? 0.2 : -0.27).lineLimit(1)
                     Text(status.isBlind ? status.shortSubtitle : status.subtitle)
                         .font(t.font(11)).foregroundStyle(p.l2).lineLimit(1)
                 }
@@ -323,7 +325,7 @@ struct WidgetStatus {
         } else {
             Hatch(color: p.fill, line: 3, gap: 3)
                 .frame(height: 6)
-                .clipShape(Capsule())
+                .clipShape(p.style.capsule)
                 .frame(height: StackBar.tickHeight)
         }
     }
@@ -459,18 +461,22 @@ struct WidgetHeading: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            if p.style.caps {
-                Text(title.uppercased(with: L10n.locale)).font(t.font(9.5, .semibold)).tracking(1.3).foregroundStyle(p.accent)
+            if p.style.book {
+                BookTitle(title: title, meta: meta, p: p, t: t, size: 9.5)
             } else {
-                if let symbol, p.style.symbols { Image(systemName: symbol).font(.system(size: 11, weight: .medium)) }
-                Text(title)
+                if p.style.caps {
+                    Text(title.uppercased(with: L10n.locale)).font(t.font(9.5, .semibold)).tracking(1.3).foregroundStyle(p.accent)
+                } else {
+                    if let symbol, p.style.symbols { Image(systemName: symbol).font(.system(size: 11, weight: .medium)) }
+                    Text(title)
+                }
+                Spacer(minLength: 4)
+                Text(meta).fontWeight(.medium).foregroundStyle(p.l3)
             }
-            Spacer(minLength: 4)
-            Text(meta).fontWeight(.medium).foregroundStyle(p.l3)
         }
         .font(t.font(11, .semibold)).foregroundStyle(p.l2)
         .lineLimit(1)
-        .padding(.bottom, p.style.caps ? 6 : 5)
+        .padding(.bottom, p.style.caps || p.style.book ? 6 : 5)
     }
 }
 

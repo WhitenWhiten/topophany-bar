@@ -140,6 +140,9 @@ struct PressStyle: ButtonStyle {
 struct CardsType: Equatable {
     var scale: Double
     var design: Font.Design = .default
+    /// Titles as a book sets them: labels in monospace, the verdict in the
+    /// serif, the rest in the theme's family.
+    var book = false
 
     init(scale: Double, theme: Theme? = nil) {
         self.scale = scale
@@ -148,10 +151,30 @@ struct CardsType: Equatable {
         case "New York": .serif
         default: .default
         }
+        book = theme?.style("titles") == "book"
     }
 
     func font(_ size: Double, _ weight: Font.Weight = .regular) -> Font {
         .system(size: size * scale, weight: weight, design: design)
+    }
+
+    /// A label's: a section's title, a state word. Monospace in a book.
+    func label(_ size: Double, _ weight: Font.Weight = .regular) -> Font {
+        .system(size: size * scale, weight: weight, design: book ? .monospaced : design)
+    }
+
+    /// The verdict's: the serif in a book, as a title page sets its name.
+    func display(_ size: Double, _ weight: Font.Weight = .regular) -> Font {
+        .system(size: size * scale, weight: weight, design: book ? .serif : design)
+    }
+
+    /// A section's running head, its count: in a book, the serif, italic
+    /// in English as the homepage's running heads are; Han and kana have
+    /// no italic, so in Japanese and Chinese it stands upright.
+    func running(_ size: Double, _ weight: Font.Weight = .regular) -> Font {
+        guard book else { return font(size, weight) }
+        let serif = Font.system(size: size * scale, weight: weight, design: .serif)
+        return L10n.previewLanguage == "en" ? serif.italic() : serif
     }
 
     func mono(_ size: Double, _ weight: Font.Weight = .regular) -> Font {
@@ -254,10 +277,29 @@ struct HeroSymbol: View {
     }
 
     var body: some View {
+        if palette.style.isPaper { paper } else { tile }
+    }
+
+    /// On paper: a white square edged in its color, and the color's half
+    /// tone stepping out from under it, as the homepage lifts a card. A
+    /// status with no color is hollow, and casts nothing.
+    var paper: some View {
+        let c = palette.color(status.mark)
+        let step = max(3, (size / 11).rounded())
+        return Rectangle().fill(palette.card)
+            .overlay(Rectangle().strokeBorder(hasColor ? c : palette.l3, lineWidth: palette.increaseContrast ? 1.5 : 1))
+            .overlay { glyphView }
+            .background { if hasColor { HalfTone(color: c).offset(x: step, y: step) } }
+            .frame(width: size, height: size)
+            .settles(on: status.mark)
+            .accessibilityHidden(true)
+    }
+
+    var tile: some View {
         let shape = RoundedRectangle(cornerRadius: palette.style.heroRadius(size), style: .continuous)
         let c = palette.color(status.mark)
         let hc = palette.increaseContrast
-        shape
+        return shape
             .fill(hasColor ? c.opacity((palette.isDark ? 0.2 : 0.15) + (hc ? 0.1 : 0)) : palette.fill2)
             .overlay(shape.strokeBorder(hasColor ? c.opacity(hc ? 0.6 : 0.3) : palette.sep, lineWidth: hc ? 1 : 0.75))
             .overlay { glyphView }
@@ -345,6 +387,53 @@ struct Hatch: View {
     }
 }
 
+/// The dither's half tone in one ink, a point to a cell: every other
+/// point, as the homepage draws a shadow stepping out from under a card.
+/// One tile, made once, that the view lends its color.
+struct HalfTone: View {
+    var color: Color
+
+    /// Two points square at 2x: a cell lit at the top left and the bottom
+    /// right, white on clear.
+    static let tile: CGImage? = {
+        guard let ctx = CGContext(data: nil, width: 4, height: 4, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
+        ctx.fill(CGRect(x: 2, y: 2, width: 2, height: 2))
+        return ctx.makeImage()
+    }()
+
+    var body: some View {
+        if let tile = Self.tile {
+            Rectangle().fill(color)
+                .mask { Rectangle().fill(ImagePaint(image: Image(decorative: tile, scale: 2), scale: 1)) }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+/// The homepage's dotted rule: a dot a point wide every three points.
+struct DottedRule: View {
+    var color: Color
+
+    var body: some View {
+        Canvas { ctx, s in
+            var dots = Path()
+            var x = 0.0
+            while x + 1 <= s.width {
+                dots.addRect(CGRect(x: x, y: 0, width: 1, height: 1))
+                x += 3
+            }
+            ctx.fill(dots, with: .color(color))
+        }
+        .frame(height: 1)
+        .accessibilityHidden(true)
+    }
+}
+
 /// Every configured check by health: up, warn, down and unknown, in that
 /// order. One tick per check while each can be told apart, an unknown
 /// check a hollow tick; past that, runs of color with the unknown hatched.
@@ -402,7 +491,8 @@ struct StackBar: View {
                     x += t.tick + t.gap
                 }
             }
-            let r = min(1, t.tick / 3)
+            // Square on paper.
+            let r = p.style.isPaper ? 0 : min(1, t.tick / 3)
             // Up is quieter than trouble, so what needs a look stands out.
             draw(c.up) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(up)) }
             draw(c.warning) { ctx.fill(Path(roundedRect: $0, cornerRadius: r), with: .color(warn)) }
@@ -439,7 +529,7 @@ struct StackBar: View {
                 }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: height / 2, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: palette.style.isPaper ? 0 : height / 2, style: .continuous))
     }
 }
 
@@ -447,16 +537,17 @@ struct StackBar: View {
 /// the limit it reads in the warning color. Unknown is hatched, never
 /// empty.
 /// A tile's ground within a card: a fill on glass, an outline at night,
-/// a fainter fill on matte.
+/// a fainter fill on matte, a hairline on paper.
 struct TileGround: View {
     var p: CardsPalette
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: p.style.surface == .matte ? 3 : 9, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: p.style.tileRadius, style: .continuous)
         switch p.style.surface {
         case .glass: shape.fill(p.fill2)
         case .night: shape.strokeBorder(p.cardEdge, lineWidth: 0.75)
         case .matte: shape.fill(p.fill2.opacity(0.6))
+        case .paper: shape.strokeBorder(p.cardEdge, lineWidth: 1)
         }
     }
 }
@@ -526,8 +617,8 @@ struct PillView: View {
         // `Pill.none`: nothing was read, so there's no state to say.
         if !pill.text.isEmpty {
             Text(pill.text)
-                .font(type.font(9.5, .bold))
-                .tracking(plain ? 0.6 : 0.45)
+                .font(type.book ? type.label(9.5, .medium) : type.font(9.5, .bold))
+                .tracking(type.book ? 1 : plain ? 0.6 : 0.45)
                 .lineLimit(1)
                 .fixedSize()
                 .foregroundStyle(pill.mark == .unknown || pill.mark == .offline ? palette.l2 : palette.color(pill.mark))

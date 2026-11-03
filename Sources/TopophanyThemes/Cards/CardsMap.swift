@@ -17,13 +17,17 @@ struct CardsMapCard: View {
         let matte = p.style.surface == .matte
         Card(p: p) {
             HStack(spacing: 6) {
-                if p.style.caps {
-                    Text(tr("Map").uppercased(with: L10n.locale)).font(t.font(10, .semibold)).tracking(1.4).foregroundStyle(p.accent)
+                if p.style.book {
+                    BookTitle(title: tr("Map"), meta: "", p: p, t: t)
                 } else {
-                    Image(systemName: "map").font(.system(size: 11.5 * t.scale, weight: .medium)).frame(width: 14)
-                    Text(tr("Map")).font(t.font(11.5, .semibold))
+                    if p.style.caps {
+                        Text(tr("Map").uppercased(with: L10n.locale)).font(t.font(10, .semibold)).tracking(1.4).foregroundStyle(p.accent)
+                    } else {
+                        Image(systemName: "map").font(.system(size: 11.5 * t.scale, weight: .medium)).frame(width: 14)
+                        Text(tr("Map")).font(t.font(11.5, .semibold))
+                    }
+                    Spacer(minLength: 6)
                 }
-                Spacer(minLength: 6)
                 // Selected, what the keys do, clear of the map.
                 if viewport?.isSelected == true {
                     Text(tr("↑ ↓ zoom · esc")).font(t.font(10, .medium)).foregroundStyle(p.accent).lineLimit(1)
@@ -33,7 +37,7 @@ struct CardsMapCard: View {
             }
             .foregroundStyle(p.l2)
             .animation(Highlight.easing(viewport?.isSelected == true), value: viewport?.isSelected == true)
-            .padding(.bottom, p.style.caps ? 8 : 6)
+            .padding(.bottom, p.style.caps || p.style.book ? 8 : 6)
             .accessibilityElement(children: .contain)
             .accessibilityAddTraits(.isHeader)
             MapCanvas(map: map, p: p, t: t, focused: focused)
@@ -164,8 +168,8 @@ struct MapCanvas: View {
                 }
                 .foregroundStyle(p.l2)
                 .padding(.horizontal, 6).padding(.vertical, 2)
-                .background(Capsule().fill(p.fill2))
-                .contentShape(Capsule())
+                .background(p.style.capsule.fill(p.fill2))
+                .contentShape(p.style.capsule)
             }
             .buttonStyle(PressStyle())
             .help(map.frame == .world ? tr("Back to the whole world") : tr("Back to every place"))

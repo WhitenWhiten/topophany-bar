@@ -24,7 +24,7 @@ struct TopophanyWidgetBundle: WidgetBundle {
 
 /// The menu bar's theme, or a built-in one by its ID.
 enum ThemeChoice: String, AppEnum {
-    case bar, native, glance, aurora, linen, terminal, paper, dusk
+    case bar, native, glance, aurora, linen, whiteNight, terminal, paper, dusk
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Theme"
     static let caseDisplayRepresentations: [ThemeChoice: DisplayRepresentation] = [
@@ -33,6 +33,7 @@ enum ThemeChoice: String, AppEnum {
         .glance: "Glance",
         .aurora: "Aurora",
         .linen: "Linen",
+        .whiteNight: "White Night",
         .terminal: "Terminal",
         .paper: "Paper",
         .dusk: "Dusk",
