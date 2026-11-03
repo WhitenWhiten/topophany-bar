@@ -302,11 +302,12 @@ Each theme looks its own, not only in its colors: its style (section 8) chooses 
 | **Glance** | `glance` | Native's glass, laid out to be read at a glance (section 4.4): Status and Seen from as one card, calm sections folded into lines, what needs a look open, the places as one card with a lens each, pinned items as tiles. Titles in words alone. The Status widget sets its checks on a dial. | As Native. |
 | **Aurora** | `cards` | A northern sky at night: an opaque ground deepening from teal to violet (mint to lavender in light), hairline-outlined cards, round shapes (a disc for the verdict, chips round at the ends), meters as a matrix of dots, SF Pro Rounded. | Accent `#2DD4BF` / `#0D9488`, a violet second accent, teal-edged cards and fills. System status colors. Light or dark, as Native. |
 | **Linen** | `cards` | A matte page with a fine weave, set in New York: sections ruled rather than carded, titled in letterspaced small capitals, crisp corners, meters as a scale with its graduations and the limit a notch. | An ink-blue accent (`#A9B8EA` / `#34509A`), walnut or linen ground. System status colors. Light or dark, as Native. |
+| **White Night** | `cards` | The author's homepage and topophany.com as a panel: a white page square at every corner, its cards edged by a hairline. Section titles in letterspaced SF Mono over a dotted rule, their counts as running heads in italic serif; the verdict in New York. The verdict's tile is a white square edged in its color, the color's 1-bit half tone stepping out beneath it as the homepage lifts a card; unknown and offline are hollow and cast nothing. Meters as a 1-bit dither, a point to a cell: the reading solid on a field of dots, unknown a half tone; history as solid columns on a dotted rule. | Ink `#1A1A1A` on paper `#FFFFFF`, hairlines `#E3E3E3`, the accent the ink. Up in the ink; warning `#EA8400` and down `#D2261E`, the White Night moon's amber and red, the only color; unknown `#6B6B6B`. Always light. |
 | **Terminal** | `cells` | The TUI's rounded boxes. Meters of solid cells, a hairline apart. | The TUI's palette from `internal/tui/theme.go`: ink `#0A1016`, accent `#5EEAD4`, sky `#7DD3FC`, up `#4ADE80`, warn `#FBBF24`, down `#F87171`, unknown `#6B7A8C`, line `#243443`. It always paints its ink. |
 | **Paper** | `cells` | The TUI printed: paper grain, a masthead over a double rule, a rule over each section instead of a box, meters as a halftone on a dotted track, history drawn as a pen's hairlines. | Ink `#F5F0E6`, text `#2A2925`, accent `#0F766E`, up `#15803D`, warn `#B8720A`, down `#B91C1C`, unknown `#87929B`. Always light. |
 | **Dusk** | `cells` | The TUI at nightfall: each section held by its four corners, meters and history in braille dots. | Ink `#1A1735`, text `#E6E2F8`, accent `#B4A7FA`, sky `#8BD3F7`, up `#6EE7B0`, warn `#F7B96B`, down `#F7768E`, unknown `#7A759F`. Always dark. |
 
-Meters never shine: no gloss, no gradient lit from above. A reading past its check's limit reads in the warning color, and unknown is hatched (or a dashed rule), never empty.
+Meters never shine: no gloss, no gradient lit from above. A reading past its check's limit reads in the warning color, and unknown is hatched (or a dashed rule, or a half tone), never empty.
 
 The theme applies to the panel, the menu bar item and every widget. Settings shows each theme as a chip of its colors, in one line that scrolls when more than fit: its ground, then accent, second accent, up, warning, down and unknown, as the panel would draw it now. Each renderer says what those colors are (`Renderer.colors`). In Edit Widget, a widget can take any built-in theme, or the menu bar's.
 
@@ -401,16 +402,16 @@ A `cards` or `glance` theme that follows the system gives its slots per appearan
 
   | Slot | `cards` | `cells` | `glance` |
   |---|---|---|---|
-  | `surface` | `glass`, `matte` (opaque, sections ruled), `night` (opaque, deepening, cards outlined) | n/a | n/a (glass) |
+  | `surface` | `glass`, `matte` (opaque, sections ruled), `night` (opaque, deepening, cards outlined), `paper` (white, square, cards edged by a hairline, a half tone for a shadow) | n/a | n/a (glass) |
   | `box` | n/a | `rounded`, `rules` (a rule over each section), `corners` | n/a |
-  | `meter` | `ticks`, `rule` (a scale), `dots` | `blocks`, `shade` (halftone), `braille` | as `cards` |
-  | `titles` | `plain`, `caps` | n/a | n/a (words alone) |
+  | `meter` | `ticks`, `rule` (a scale), `dots`, `dither` (1-bit, the reading solid on a field of dots) | `blocks`, `shade` (halftone), `braille` | as `cards` |
+  | `titles` | `plain`, `caps`, `book` (monospace over a dotted rule, counts in italic serif, the verdict in serif) | n/a | n/a (words alone) |
   | `texture` | `none`, `weave`, `grain` | `none`, `weave`, `grain` | n/a |
 
   ```json
   "style": { "surface": "matte", "meter": "rule", "titles": "caps", "texture": "weave" }
   ```
-- **Type:** `font.family` is SF Pro, SF Pro Rounded or New York for `cards` and `glance`, which draw SF Pro for any other. `cells` always draws SF Mono, which its grid is measured in. The size is the renderer's, scaled by the Text size setting.
+- **Type:** `font.family` is SF Pro, SF Pro Rounded or New York for `cards` and `glance`, which draw SF Pro for any other. A `cards` theme titled as a `book` sets its labels in SF Mono and its verdict in New York, whatever its family. `cells` always draws SF Mono, which its grid is measured in. The size is the renderer's, scaled by the Text size setting.
 - **Validation:** a theme is refused, with the reason, unless all of these hold:
   - text on ink is at least 4.5:1;
   - every pair of status colors differs by at least ΔE 15 (OKLab ×100) to normal vision, in each appearance it draws in. Under simulated color-blindness, pairs under ΔE 8 are reported as advisories: no green, orange and red palette keeps that margin, and every status has its own shape;
@@ -424,7 +425,7 @@ A `cards` or `glance` theme that follows the system gives its slots per appearan
   - v1 ships the loader disabled, but every built-in theme goes through the same `Theme` type and validator, so the path is already exercised.
 - **Swift types:** `Theme { id, renderer: RendererID, tokens: Tokens }`. `Renderer` is a protocol with `panel(_:)`, `statusItem(_:)` and `widget(_:family:)`, each taking section models and tokens.
 
-**Aurora** and **Linen** (`cards`) and **Paper** and **Dusk** (`cells`) are built in, and each is only tokens and a style: proof that a theme file can look its own.
+**Aurora**, **Linen** and **White Night** (`cards`) and **Paper** and **Dusk** (`cells`) are built in, and each is only tokens and a style: proof that a theme file can look its own.
 
 ## 9. Configuration
 

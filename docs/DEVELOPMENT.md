@@ -126,7 +126,7 @@ Outputs:
 - `white-night.gif`: White Night's 24-second loop through clear, degraded, down and clear, at 4× so each dot of its dither lands on 2 × 2 pixels. Moons dissolve as the app plays them, and the words roll.
 - `menu-bar.png`: every status as White Night, the globe and the Terminal chip, and This Mac's readings beside the item, at 4×.
 - `direct-sources.png`: direct mode with both kinds of source, in the panel and two widgets.
-- `themes.png`: the panel's status, attention and This Mac sections in all six built-in themes.
+- `themes.png`: the panel's status, attention and This Mac sections in all eight built-in themes.
 - `widget-gallery.png`: ten widgets covering all five types and six themes.
 - `icon.png` and `icon-dark.png`: the app icon as macOS draws it in light and dark, exported at 256 pixels by Icon Composer's `ictool`.
 

@@ -286,7 +286,7 @@ import UniformTypeIdentifiers
         let model = previewPanel(.incidents, settings: settings)
         let rows: [[(Theme, Bool)]] = [
             [(ThemeStore.native, true), (ThemeStore.glance, true), (ThemeStore.aurora, true), (ThemeStore.linen, false)],
-            [(ThemeStore.terminal, true), (ThemeStore.paper, false), (ThemeStore.dusk, true)],
+            [(ThemeStore.whiteNight, false), (ThemeStore.terminal, true), (ThemeStore.paper, false), (ThemeStore.dusk, true)],
         ]
         try snapshot("readme-themes", opaque: true, OnDesktop(dark: true, padding: 32) {
             VStack(spacing: 32) {

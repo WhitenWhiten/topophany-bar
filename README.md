@@ -39,7 +39,7 @@ See what needs attention from the menu bar, open the panel to find where the pro
 - **Read Beszel and Komari directly.** Pick servers from a Beszel Hub or a Komari server and watch their CPU, memory and disk, with no Topophany collector to run.
 - **Put your servers on a map.** Explore locations and connections, browse your fleet by provider, and see the local time where your servers run.
 - **Keep important services close.** Pin service cards with recent checks, latency and uptime, server cards with CPU, memory and disk readings, or single checks and links such as a mihomo core, a Cloudflare Tunnel or a Tailscale peer.
-- **Make it yours.** Choose from seven themes, including Glance, which folds what's calm and opens what needs a look, and give the menu bar White Night's animated sky or an icon or animation of your own.
+- **Make it yours.** Choose from eight themes, including Glance, which folds what's calm and opens what needs a look, and White Night, ink on white paper; give the menu bar White Night's animated sky or an icon or animation of your own.
 - **Add desktop widgets.** Choose Status, Server, Service, Check, Map or Time Zones, with sizes and themes to suit your desktop.
 - **Watch your proxy app.** See whether the mihomo engine inside Clash Verge, Mihomo Party or FlClash is answering and which server it uses, with or without a collector.
 - **Watch this Mac too.** Show local CPU, memory, storage, network and battery readings in the panel; optionally put CPU, memory and network in the menu bar.
@@ -133,8 +133,8 @@ In **Settings → Sections**, click **Choose…** beside **Pinned**, switch to *
 ## Themes
 
 <p align="center">
-  <img src="docs/assets/themes.png" alt="The panel in all seven themes, each showing 5 incidents, what needs attention and This Mac's readings: Native, Glance, Aurora and Linen above; Terminal, Paper and Dusk below. Glance folds This Mac's readings into one line" width="1000">
-  <br><sub>The same simulated outage in every built-in theme. Each draws its own meters: bars, dots, a scale, blocks, halftone and braille. Glance folds what's calm.</sub>
+  <img src="docs/assets/themes.png" alt="The panel in all eight themes, each showing 5 incidents, what needs attention and This Mac's readings: Native, Glance, Aurora and Linen above; White Night, Terminal, Paper and Dusk below. Glance folds This Mac's readings into one line" width="1000">
+  <br><sub>The same simulated outage in every built-in theme. Each draws its own meters: bars, dots, a scale, a 1-bit dither, blocks, halftone and braille. Glance folds what's calm.</sub>
 </p>
 
 | Theme | Look |
@@ -143,6 +143,7 @@ In **Settings → Sections**, click **Choose…** beside **Pinned**, switch to *
 | **Glance** | Native's glass, laid out to be read at a glance: Status and Seen from as one card, calm sections folded into a line, what needs a look open, the map, Fleet and Time zones as one card, pinned items as tiles, and a dial on the Status widget |
 | **Aurora** | A northern sky at night: a teal-to-violet ground, hairline cards and dotted meters, in SF Pro Rounded |
 | **Linen** | Matte and woven, set in New York, with ruled sections and small-capital titles |
+| **White Night** | Ink on white paper, as [topophany.com](https://topophany.com) is set: square cards edged by a hairline, monospace titles over dotted rules, the verdict in a serif, and 1-bit dithered meters. Only what needs a look takes color |
 | **Terminal** | Topophany's terminal UI, in its own palette and SF Mono |
 | **Paper** | The terminal UI printed on warm paper, with grain, rules and halftone meters |
 | **Dusk** | The terminal UI at nightfall: pastels on deep indigo, with braille meters |
