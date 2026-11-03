@@ -183,25 +183,38 @@ struct CardsService: View {
             // checks say beyond their marks is listed above.
             let said = card.isUnmonitored ? "" : card.checksText
             if !said.isEmpty || card.edge != nil || card.runbook != nil || !card.age.isEmpty {
-                HStack(spacing: 10) {
-                    Text(said).lineLimit(1)
-                    Spacer(minLength: 8)
-                    if let url = card.runbook {
-                        Button { openURL(url) } label: {
-                            Label(tr("Runbook"), systemImage: "book").labelStyle(.titleAndIcon).foregroundStyle(p.l2)
-                        }
-                        .buttonStyle(.plain).fixedSize()
-                        .help(url.absoluteString)
-                        .accessibilityLabel(Text(tr("Open runbook for \(card.name)")))
-                    }
-                    if let edge = card.edge { ServiceVia(edge: edge, colos: card.colos, p: p, t: t) }
-                    Text(card.age).lineLimit(1)
+                // What its checks say stays whole: where the line is short,
+                // the runbook gives up its word and keeps its symbol.
+                ViewThatFits(in: .horizontal) {
+                    foot(said, runbookWord: true)
+                    foot(said, runbookWord: false)
                 }
                 .font(t.font(10.5)).foregroundStyle(p.l3)
             }
         }
         .modifier(FocusRing(on: focused, p: p))
         .id("service:" + card.id)
+    }
+
+    func foot(_ said: String, runbookWord: Bool) -> some View {
+        HStack(spacing: 10) {
+            Text(said).lineLimit(1)
+            Spacer(minLength: 8)
+            if let url = card.runbook {
+                Button { openURL(url) } label: {
+                    if runbookWord {
+                        Label(tr("Runbook"), systemImage: "book").labelStyle(.titleAndIcon)
+                    } else {
+                        Image(systemName: "book")
+                    }
+                }
+                .buttonStyle(.plain).foregroundStyle(p.l2).fixedSize()
+                .help(url.absoluteString)
+                .accessibilityLabel(Text(tr("Open runbook for \(card.name)")))
+            }
+            if let edge = card.edge { ServiceVia(edge: edge, colos: card.colos, p: p, t: t) }
+            Text(card.age).lineLimit(1).fixedSize()
+        }
     }
 }
 
