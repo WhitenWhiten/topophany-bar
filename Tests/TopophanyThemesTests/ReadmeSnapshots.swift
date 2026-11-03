@@ -285,7 +285,7 @@ import UniformTypeIdentifiers
         settings.sections.zones = false
         let model = previewPanel(.incidents, settings: settings)
         let rows: [[(Theme, Bool)]] = [
-            [(ThemeStore.native, true), (ThemeStore.aurora, true), (ThemeStore.linen, false)],
+            [(ThemeStore.native, true), (ThemeStore.glance, true), (ThemeStore.aurora, true), (ThemeStore.linen, false)],
             [(ThemeStore.terminal, true), (ThemeStore.paper, false), (ThemeStore.dusk, true)],
         ]
         try snapshot("readme-themes", opaque: true, OnDesktop(dark: true, padding: 32) {
@@ -301,6 +301,35 @@ import UniformTypeIdentifiers
                                     .padding(.leading, 10)
                                 panel(model, theme: theme, dark: dark)
                             }
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    /// Glance on the whole panel, calm and in trouble, beside its Status
+    /// widget's dial in each state.
+    @Test func glance() throws {
+        let widgets = previewSettings(mac: .off, servers: true)
+        func label(_ text: String) -> some View {
+            Text(verbatim: text).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white.opacity(0.85)).padding(.leading, 10)
+        }
+        try snapshot("readme-glance", opaque: true, OnDesktop(dark: true, padding: 32) {
+            HStack(alignment: .top, spacing: 28) {
+                VStack(alignment: .leading, spacing: 12) {
+                    label("All clear")
+                    panel(previewPanel(.clear), theme: ThemeStore.glance)
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    label("5 incidents")
+                    panel(previewPanel(.incidents), theme: ThemeStore.glance)
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    label("Status widgets")
+                    VStack(spacing: 24) {
+                        ForEach([FixtureEngine.Scenario.clear, .degraded, .incidents, .incomplete], id: \.self) { s in
+                            tile(WidgetModel(kind: .status, panel: previewPanel(s, settings: widgets)), .small, theme: ThemeStore.glance)
                         }
                     }
                 }

@@ -240,6 +240,17 @@ The map draws `topo`'s `map.graph`: the nodes `View.Graph()` places, the lines b
 
 `Sources/TopophanyThemes/Map/` holds the layout both renderers share (`GeoView`, the TUI's framing; `GeoScene`, its sites and arcs), and `Resources/land.bin` the land: Natural Earth 1:110m, a 720×360 bit mask, the same as `design/assets/land.bin`.
 
+### 4.4 Glance
+
+The Glance theme lays the same sections out to be read at a glance: a calm panel is short, and what needs a look is open.
+
+- **The hero.** Status and Seen from are one card. The verdict is set larger, and at the trouble end of the check bar what needs a look is counted beside its mark (warn, down, unknown), one figure where Native's legend has four; while nothing does, the checks that pass. Observers that see a problem are chips beneath; while none do, one line says so.
+- **Open or folded.** Needs attention and pinned lists are always open. Applications, and This Mac as a server, open while something in them is down or warns, or a note asks for a look ("3 attention"); otherwise each is a line in one card with its calm neighbours: its title, what it comes to (a mark per application; This Mac's readings, fewer where they don't fit), and a chevron. Unknown isn't trouble, nor is it calm: a line shows it by its marks, never as up. This Mac's own readings carry no health and never open a line on their own.
+- **Order.** Sections keep the order Settings gives them. State decides what opens, never where a section stands, so nothing changes places while the panel is read and the panel keeps its shape from one opening to the next. A line opens on a click and stays open while the app runs; the keyboard's focus on a row inside a line opens it while it's there. ↑ ↓ go as the panel is drawn: the hero's observers, then each part in turn.
+- **Places.** Map, Fleet and Time zones are one card, where the first of them stands, with a lens for each that's shown. One shows at a time; a lens not shown has its worst mark beside its name while something in it is down or warns. The keyboard's focus on the map shows the map. Alone, a section is titled as itself.
+- **Pinned.** Pinned services, checks and servers are tiles, two to a row: the mark and name, then a check's conclusion and recent samples, a service's samples from its first observer and their median, or a server's three meters. A tile is tinted while it's down or warns. A click opens it in place as its whole card; a click on the card closes it. A pinned check opens as its card's own disclosure does, so ↵ opens it too.
+- **The rest** is Native's: header, footer, glass, cards, scrolling and the hero pinned as Status is. Section titles are words alone, without symbols.
+
 ## 5. This Mac
 
 There are three modes: **Local readings**, **As a server** and **Off**.
@@ -288,6 +299,7 @@ Each theme looks its own, not only in its colors: its style (section 8) chooses 
 | Theme | Renderer | Style | Tokens |
 |---|---|---|---|
 | **Native** | `cards` | Glass cards. Meters of fine graduated ticks. | System materials and colors. Glass, SF Pro, SF Symbols, system green, orange, red and gray, and the accent color for capacity. Light, dark or Match System. |
+| **Glance** | `glance` | Native's glass, laid out to be read at a glance (section 4.4): Status and Seen from as one card, calm sections folded into lines, what needs a look open, the places as one card with a lens each, pinned items as tiles. Titles in words alone. The Status widget sets its checks on a dial. | As Native. |
 | **Aurora** | `cards` | A northern sky at night: an opaque ground deepening from teal to violet (mint to lavender in light), hairline-outlined cards, round shapes (a disc for the verdict, chips round at the ends), meters as a matrix of dots, SF Pro Rounded. | Accent `#2DD4BF` / `#0D9488`, a violet second accent, teal-edged cards and fills. System status colors. Light or dark, as Native. |
 | **Linen** | `cards` | A matte page with a fine weave, set in New York: sections ruled rather than carded, titled in letterspaced small capitals, crisp corners, meters as a scale with its graduations and the limit a notch. | An ink-blue accent (`#A9B8EA` / `#34509A`), walnut or linen ground. System status colors. Light or dark, as Native. |
 | **Terminal** | `cells` | The TUI's rounded boxes. Meters of solid cells, a hairline apart. | The TUI's palette from `internal/tui/theme.go`: ink `#0A1016`, accent `#5EEAD4`, sky `#7DD3FC`, up `#4ADE80`, warn `#FBBF24`, down `#F87171`, unknown `#6B7A8C`, line `#243443`. It always paints its ink. |
@@ -313,6 +325,7 @@ Sizes in points sit on a 170 pt grid with 24 pt gaps. WidgetKit's own sizes vary
 | **Map** | the map, each place's mark, a short name where it fits | the map with its places named | plus each node named beside its place | the same, wider |
 
 - **A mark per check.** In a narrow column (the small widget, and the medium widget's left), the bar's ticks wrap into a grid: every check as its mark, filled a column at a time in the bar's order, so trouble gathers at the right as it does on the bar. Up is quieter than trouble. Past what can be read, the stacked bar.
+- **The dial.** Glance's Status widget sets every check on a dial around the verdict's glyph instead: a tick each from the top round clockwise, up, then warn, down and unknown, so what needs a look gathers where the dial ends, beside where it began. Up is quieter, and unknown ticks are short, so they read apart without their color. Past what can be told apart, runs of color. While nothing current is known, a dashed ring. The large widget sets the verdict beside a larger dial, and the extra large adds the map, naming only the places that need a look. Its other widgets are Native's.
 - **Room to spare** spreads between the blocks, up to twice their usual gap, instead of pooling above the foot. In the cells renderer, each column's last box reaches the widget's foot, as the TUI's panels fill the screen, so boxes side by side end level; a box that is the widget's whole body ends in its foot line: the counts, what it observes from there, where it is reached, or when it was read.
 - **The mark** sits small and a little muted in the corner: it says whose widget it is without competing with the verdict.
 - **Fleet.** The extra large widget shows as many groups as fit. The rest are counted in a last cell that keeps their nodes' marks, trouble first, so trouble left out still shows.
@@ -347,7 +360,7 @@ macOS draws desktop widgets without background or color while another app is in 
 
 Themes must be able to grow: more built-in themes, and user themes later. So a theme is split in two.
 
-- **A renderer** is code, in `TopophanyThemes`. It lays out every section model for every surface (panel, status item, widget sizes). It owns the status glyph shapes and the meaning of each token slot. v1 has `cards` and `cells`. A new renderer (say, a gauge-heavy one) is a new type that conforms to the `Renderer` protocol, and every surface gets it at once.
+- **A renderer** is code, in `TopophanyThemes`. It lays out every section model for every surface (panel, status item, widget sizes). It owns the status glyph shapes and the meaning of each token slot. v1 has `cards`, `cells` and `glance`. A new renderer (say, a gauge-heavy one) is a new type that conforms to the `Renderer` protocol, and every surface gets it at once. `glance` is one: it takes the `cards` slots and draws with the cards renderer's pieces, and differs only in how it lays sections out, which is why a layout is a renderer's and not a theme's. A renderer also says the keyboard's order through the panel (`Renderer.focusOrder`), as it lays the panel out.
 - **A theme** is data: the renderer's name plus its tokens.
 
 ```json
@@ -368,7 +381,7 @@ Themes must be able to grow: more built-in themes, and user themes later. So a t
 }
 ```
 
-A `cards` theme that follows the system gives its slots per appearance. `dark` and `light` each override `tokens` in that appearance:
+A `cards` or `glance` theme that follows the system gives its slots per appearance. `dark` and `light` each override `tokens` in that appearance:
 
 ```json
 {
@@ -383,25 +396,26 @@ A `cards` theme that follows the system gives its slots per appearance. `dark` a
 - **Token slots:**
   - `cells` takes the slots above, and optionally `grain`, its texture's ink.
   - `cards` takes `accent`, `accent2`, `card`, `cardEdge`, `panelMaterial`, `panelMaterial2` (where a night surface deepens to), `fill`, `fill2`, `grain`, and optionally the status colors. Missing slots fall back to the system's. When it follows the system, `dark` and `light` may give any slot per appearance.
+  - `glance` takes the `cards` slots, the same way.
 - **Style slots:** a theme's `style` names how its renderer draws beyond its colors. Each renderer declares its slots and the names each takes; one left out is the renderer's first.
 
-  | Slot | `cards` | `cells` |
-  |---|---|---|
-  | `surface` | `glass`, `matte` (opaque, sections ruled), `night` (opaque, deepening, cards outlined) | n/a |
-  | `box` | n/a | `rounded`, `rules` (a rule over each section), `corners` |
-  | `meter` | `ticks`, `rule` (a scale), `dots` | `blocks`, `shade` (halftone), `braille` |
-  | `titles` | `plain`, `caps` | n/a |
-  | `texture` | `none`, `weave`, `grain` | `none`, `weave`, `grain` |
+  | Slot | `cards` | `cells` | `glance` |
+  |---|---|---|---|
+  | `surface` | `glass`, `matte` (opaque, sections ruled), `night` (opaque, deepening, cards outlined) | n/a | n/a (glass) |
+  | `box` | n/a | `rounded`, `rules` (a rule over each section), `corners` | n/a |
+  | `meter` | `ticks`, `rule` (a scale), `dots` | `blocks`, `shade` (halftone), `braille` | as `cards` |
+  | `titles` | `plain`, `caps` | n/a | n/a (words alone) |
+  | `texture` | `none`, `weave`, `grain` | `none`, `weave`, `grain` | n/a |
 
   ```json
   "style": { "surface": "matte", "meter": "rule", "titles": "caps", "texture": "weave" }
   ```
-- **Type:** `font.family` is SF Pro, SF Pro Rounded or New York for `cards`, which draws SF Pro for any other. `cells` always draws SF Mono, which its grid is measured in. The size is the renderer's, scaled by the Text size setting.
+- **Type:** `font.family` is SF Pro, SF Pro Rounded or New York for `cards` and `glance`, which draw SF Pro for any other. `cells` always draws SF Mono, which its grid is measured in. The size is the renderer's, scaled by the Text size setting.
 - **Validation:** a theme is refused, with the reason, unless all of these hold:
   - text on ink is at least 4.5:1;
   - every pair of status colors differs by at least ΔE 15 (OKLab ×100) to normal vision, in each appearance it draws in. Under simulated color-blindness, pairs under ΔE 8 are reported as advisories: no green, orange and red palette keeps that margin, and every status has its own shape;
   - every required slot is present;
-  - only a `cards` theme that follows the system gives `dark` and `light` sets;
+  - only a `cards` or `glance` theme that follows the system gives `dark` and `light` sets;
   - every style slot is one its renderer has, set to a name it takes.
 - **What a theme can't change:** glyphs, layout and meaning. A style changes how a surface is drawn; a mark is the same shape in every theme.
 - **Where themes live:**
@@ -725,7 +739,7 @@ which has no services to list, sets its three readings across the widget, each
 large over its meter and its size, its pill and As of time at the top. A new
 handoff cannot renew measurements. Their node choices carry dataset identity so
 a Hub/account/profile change cannot silently reuse a choice. Static ImageRenderer
-coverage includes all six themes, three languages, acquisition states, several
+coverage includes all seven themes, three languages, acquisition states, several
 sources and servers, and the Widget sizes at both the design's and a 1080 pt
 display's bounds. Evidence and system validation limits are recorded in
 `docs/contracts/direct-v1/HANDOFF.md`.

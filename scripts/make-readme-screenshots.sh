@@ -50,6 +50,7 @@ images=(
     readme-white-night.gif:white-night.gif
     readme-direct.png:direct-sources.png
     readme-themes.png:themes.png
+    readme-glance.png:glance.png
     readme-widgets.png:widget-gallery.png
     readme-icon.png:icon.png
     readme-icon-dark.png:icon-dark.png
