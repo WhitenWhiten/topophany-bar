@@ -849,7 +849,10 @@ struct CardsApplications: View {
                         }
                     }
                     .frame(width: 70 * t.scale, alignment: .leading)
-                    Text(a.note)
+                    // A calm row says no more than its marks do, as the
+                    // Terminal leaves it, so a note that asks for a look
+                    // stands out; VoiceOver still hears it.
+                    Text(a.note == tr("all up") ? "" : a.note)
                         .font(t.font(11, a.noteNeedsLook ? .semibold : .regular))
                         .foregroundStyle(a.noteNeedsLook ? p.l1 : p.l3)
                         .lineLimit(1)
@@ -860,7 +863,8 @@ struct CardsApplications: View {
                 .opacity(apps.isCurrent ? 1 : 0.55)
                 .modifier(FocusRing(on: focus == "app:" + a.id, p: p))
                 .id("app:" + a.id)
-                .accessibilityElement(children: .combine)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(Words.join([a.name, a.note])))
             }
         }
     }

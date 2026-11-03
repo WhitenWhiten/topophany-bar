@@ -165,7 +165,7 @@ Sections run in this default order:
 2. **Seen from.** Observers that see a problem, worst first, then "*N* others report no problem". This answers "is it me or them?"
 3. **Needs attention.** Open ledger incidents, then other entries ranked by `view.AttentionRank`. It shows 3 or 5 rows, then "*N* more in Topophany". The section is hidden when empty. Each row ends in its state word (OPEN, WARN), the word alone in its color: the row's mark already says the state, so it takes no chip. A route too long for its row is cut so both ends stay readable: an end that fits half the room keeps its width, and the other takes the rest.
 4. **Map.** Where the nodes are and what joins them, as the TUI's geo map draws it. See section 4.3.
-5. **Applications.** One row per declared application: its health glyph, a dot per service, and a note.
+5. **Applications.** One row per declared application: its health glyph, a dot per service, and a note where it says more than the marks do ("3 attention", "1 not monitored"). A row that is all up says no more, so the notes that ask for a look stand out.
 6. **Services.** Off by default. The card of each pinned service: the observers that see it, how fast it answered them lately and how much of the day it was up. See section 4.2.
 7. **Fleet.** Every node `topo` lists (`servers.list`), by who runs it, two to a row with each provider's logo (section 4.1).
    - **Edges and platforms first,** each on its own and saying what it is: what stands in front of everything else. A hairline, then servers: a provider's together, where its first server is in `topo`'s list, and a node that names no provider on its own, by its name and kind.
