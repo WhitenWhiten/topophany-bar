@@ -575,9 +575,29 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%#@svc@ in %2$lld"
+            "value": "%#@svc@ in %#@apps@"
           },
           "substitutions": {
+            "apps": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg app"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg apps"
+                    }
+                  }
+                }
+              }
+            },
             "svc": {
               "argNum": 1,
               "formatSpecifier": "lld",
@@ -3330,7 +3350,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld pinned items"
+            "value": "%lld pinned"
           }
         },
         "zh-Hans": {
