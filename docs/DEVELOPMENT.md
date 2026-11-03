@@ -29,6 +29,42 @@ open build/DerivedData/Build/Products/Debug/topophany-bar.app
 
 The commands above build ad hoc with no developer team or entitlements: the app runs, but macOS does not load the widgets. To build with widgets, omit `TOPOPHANY_SIGN=NO` and set `TOPOPHANY_TEAM` to your own Apple Developer Team ID. The app and widget extension need a shared App Group belonging to that team. `scripts/release.sh` signs with Developer ID, notarizes, and packs the app into a disk image to drag to Applications. `scripts/make-dmg.sh APP OUT.dmg` packs any build the same way, for a look; `swift scripts/make-dmg-background.swift` redraws the image's window.
 
+### Widgets showing only their background
+
+Check the system log before changing the reader or renderer. Notification Center's
+`Widget extension could not be looked up` and chronod's `LS doesn't have a
+containing bundle` indicate a registration failure. The extension can still
+generate timelines successfully while Notification Center rejects their archives.
+
+Local builds, archives and backup app bundles have the same bundle identifiers as
+the installed app. Inspect the registered extensions:
+
+```sh
+pluginkit -m -A -D -vv -i io.github.whitenwhiten.topophany-bar.widgets
+```
+
+Stop unused development copies. For each unused extension path in the output,
+unregister that extension and its containing app, substituting its actual path:
+
+```sh
+old_app="/absolute/path/to/unused/topophany-bar.app"
+pluginkit -r "$old_app/Contents/PlugIns/TopophanyWidgetsExtension.appex"
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$old_app"
+```
+
+Then refresh the installed signed app and extension:
+
+```sh
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/topophany-bar.app
+pluginkit -a /Applications/topophany-bar.app/Contents/PlugIns/TopophanyWidgetsExtension.appex
+```
+
+Repeat the inspection to confirm that only the intended extension remains, and
+check for `Content load successful` in Notification Center's subsequent log
+events. This repairs registration while retaining widget placement and choices,
+app bundles, settings and credentials. Opening another local copy can register it
+again; check registration after testing or replacing the installed app.
+
 ## Panel performance
 
 Follow the state, layout, drawing and animation boundaries in the repository's
